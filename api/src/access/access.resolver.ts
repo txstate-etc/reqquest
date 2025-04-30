@@ -3,7 +3,8 @@ import {
   Access, AccessUser, AccessUserFilter, AccessRole, AccessRoleFilter, AccessRoleValidatedResponse,
   RoleActions, AccessUserService, AccessRoleService, AccessRoleGrantCreate, AccessRoleGrant,
   AccessUserIdentifier, AccessRoleInput, AccessGrantControlTag, AccessControl, AccessSubjectType,
-  AccessTag, AccessSubjectInstance, AccessSearchType, RQContext, subjectTypes
+  AccessTag, AccessSubjectInstance, AccessSearchType, RQContext, subjectTypes,
+  AccessGrantSubject
 } from '../internal.js'
 import { UnimplementedError, ValidatedResponse } from '@txstate-mws/graphql-server'
 import { isBlank } from 'txstate-utils'
@@ -117,6 +118,16 @@ export class AccessRoleResolver {
   @Mutation(returns => AccessRoleValidatedResponse)
   async roleDeleteGrant (@Ctx() ctx: RQContext, @Arg('grantId', type => ID) grantId: string) {
     return await ctx.svc(AccessRoleService).deleteAccessRoleGrant(grantId)
+  }
+}
+
+@Resolver(of => AccessGrantSubject)
+export class AccessGrantSubjectResolver {
+  @FieldResolver(returns => String, { description: 'A human readable name for the subject. May change without breaking existing grants.' })
+  async name (@Ctx() ctx: RQContext, @Root() subject: AccessGrantSubject) {
+    const def = subjectTypes[subject.subjectType]
+    const instance = ('getInstance' in def) ? await def.getInstance(subject.id) : undefined
+    return instance?.name ?? subject.id
   }
 }
 

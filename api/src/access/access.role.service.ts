@@ -29,6 +29,21 @@ const accessRoleGrantsByRoleIdLoader = new OneToManyLoader({
   idLoader: accessRoleGrantsByIdLoader
 })
 
+const accessRoleGrantControlsByGrantIdLoader = new OneToManyLoader({
+  fetch: async (grantIds: string[]) => await database.getControlsByGrantIds(grantIds),
+  extractKey: control => control.grantId
+})
+
+const accessRoleGrantSubjectsByGrantIdLoader = new OneToManyLoader({
+  fetch: async (grantIds: string[]) => await database.getSubjectsByGrantIds(grantIds),
+  extractKey: subject => String(subject.grantId)
+})
+
+const accessTagsByControlIdLoader = new OneToManyLoader({
+  fetch: async (controlIds: number[]) => await database.getTagsByControlIds(controlIds),
+  extractKey: tag => tag.controlId
+})
+
 const groupsByRoleIdLoader = new ManyJoinedLoader({
   fetch: async (roleIds: string[]) => await database.getGroupsByRoleIds(roleIds)
 })
@@ -77,6 +92,18 @@ export class AccessRoleService extends AuthService<AccessRole> {
 
   async getGrantsByRoleId (roleId: string) {
     return await this.loaders.get(accessRoleGrantsByRoleIdLoader).load(roleId)
+  }
+
+  async getControlsByGrantId (grantId: string) {
+    return await this.loaders.get(accessRoleGrantControlsByGrantIdLoader).load(grantId)
+  }
+
+  async getSubjectsByGrantId (grantId: string) {
+    return await this.loaders.get(accessRoleGrantSubjectsByGrantIdLoader).load(grantId)
+  }
+
+  async getTagsByControlId (controlId: number) {
+    return await this.loaders.get(accessTagsByControlIdLoader).load(controlId)
   }
 
   mayView (role: AccessRole) {

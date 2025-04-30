@@ -1,6 +1,6 @@
-import { ValidatedResponse, ValidatedResponseArgs } from '@txstate-mws/graphql-server'
+import { Context, ValidatedResponse, ValidatedResponseArgs } from '@txstate-mws/graphql-server'
 import { ObjectType, InputType, Field, ID, registerEnumType } from 'type-graphql'
-import { AccessRoleGrantControlRow, AccessRoleGrantControlTagRow, AccessRoleGrantRow, AccessRoleService, AccessUserIdentifierRow, AccessUserRow, ControlDefinition, JsonData, safeParse, SubjectDefinition, subjectTypes, TagDefinition } from '../internal.js'
+import { AccessRoleGrantControlRow, AccessRoleGrantControlTagRow, AccessRoleGrantRow, AccessRoleGrantSubjectRow, AccessRoleService, AccessRoleServiceInternal, AccessUserIdentifierRow, AccessUserRow, ControlDefinition, JsonData, safeParse, SubjectDefinition, subjectTypes, TagDefinition } from '../internal.js'
 
 @ObjectType()
 export class Access {}
@@ -86,7 +86,7 @@ export class AccessRole {
   loadedGrants!: AccessRoleGrant[]
   loadedSubjects!: AccessSubjectInstance[]
 
-  async load (ctx: any) {
+  async load (ctx: Context) {
     if (this.loadedGrants) return
     this.loadedGrants = await ctx.svc(AccessRoleService).getGrantsByRoleId(this.id)
     await Promise.all(this.loadedGrants.map(grant => grant.load(ctx)))
@@ -132,6 +132,21 @@ export class AccessSubjectInstance {
 
   @Field()
   name: string
+}
+
+@ObjectType()
+export class AccessGrantSubject {
+  constructor (row: AccessRoleGrantSubjectRow) {
+    this.subjectType = row.subjectType
+    this.id = row.subject
+    this.grantId = String(row.grantId)
+    this.roleId = String(row.roleId)
+  }
+
+  subjectType: string
+  id: string
+  grantId: string
+  roleId: string
 }
 
 export enum AccessSearchType {
@@ -231,8 +246,8 @@ export class AccessRoleGrant {
   allow: boolean
 
   loadedControls!: AccessGrantControl[]
-  loadedSubjects!: AccessSubjectInstance[]
-  async load (ctx: any) {
+  loadedSubjects!: AccessGrantSubject[]
+  async load (ctx: Context) {
     if (this.loadedControls) return
     ([this.loadedControls, this.loadedSubjects] = await Promise.all([
       ctx.svc(AccessRoleService).getControlsByGrantId(this.id),
@@ -245,14 +260,20 @@ export class AccessRoleGrant {
 @ObjectType({ description: 'This is a control record on a specific grant on a specific role, whereas AccessControl represents the control as a global concept.' })
 export class AccessGrantControl {
   constructor (row: AccessRoleGrantControlRow) {
+    this.internalId = row.id
     this.name = row.control
     this.description = subjectTypes[row.subjectType].controls[row.control].description
-    this.grantId = row.grantId
-    this.roleId = row.roleId
+    this.grantInternalId = row.grantId
+    this.grantId = String(row.grantId)
+    this.roleInternalId = row.roleId
+    this.roleId = String(row.roleId)
   }
 
-  roleId: number
-  grantId: number
+  internalId: number
+  roleInternalId: number
+  roleId: string
+  grantInternalId: number
+  grantId: string
 
   @Field()
   name: string
@@ -261,9 +282,9 @@ export class AccessGrantControl {
   description: string
 
   loadedTags!: AccessGrantControlTag[]
-  async loadTags (ctx: any) {
+  async loadTags (ctx: Context) {
     if (this.loadedTags) return
-    this.loadedTags = await ctx.svc(AccessRoleService).getTagsByControlId(this.grantId, this.roleId)
+    this.loadedTags = await ctx.svc(AccessRoleService).getTagsByControlId(this.internalId)
   }
 }
 

@@ -55,7 +55,7 @@ export const rqAccessSeed: AccessRoleGrantDefinition = {
   SystemAdministrator: {
     groups: [process.env.RQ_ADMIN_GROUP ?? 'administrators'],
     grants: [
-      { subjectType: 'AppRequest', controls: ['view'], allow: true },
+      { subjectType: 'AppRequest', controls: ['review'], allow: true },
       { subjectType: 'Period', controls: ['view', 'create', 'update', 'delete'], allow: true },
       { subjectType: 'Program', controls: ['view', 'configure', 'disable'], allow: true },
       { subjectType: 'Prompt', controls: ['view', 'configure'], allow: true },

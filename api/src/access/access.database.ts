@@ -1,5 +1,5 @@
 import db from 'mysql2-async/db'
-import { AccessRole, AccessUser, type AccessUserFilter, AccessRoleFilter, AccessRoleGrant, ReqquestUser, AccessUserIdentifier, AccessGrantControl, AccessRoleInput, AccessRoleGrantCreate } from '../internal.js'
+import { AccessRole, AccessUser, type AccessUserFilter, AccessRoleFilter, AccessRoleGrant, ReqquestUser, AccessUserIdentifier, AccessGrantControl, AccessRoleInput, AccessRoleGrantCreate, AccessSubjectInstance, AccessGrantSubject, AccessGrantControlTag } from '../internal.js'
 
 export interface AccessUserRow {
   id: number
@@ -39,6 +39,8 @@ export interface AccessRoleGrantRow {
 export interface AccessRoleGrantSubjectRow {
   grantId: number
   subject: string
+  subjectType: string
+  roleId: number
 }
 
 export interface AccessRoleGrantControlRow {
@@ -156,10 +158,11 @@ export namespace AccessDatabase {
       const groupsToInsert = user.groups.filter((g: any) => !groupsExisting.has(g))
       const groupsToDelete = groups.filter((g: any) => !groupsCurrent.has(g))
       if (groupsToInsert.length > 0) {
-        const binds: any[] = []
+        const binds: any[] = [userId]
         await db.insert(`
           INSERT INTO accessUserGroups (userId, groupId)
-          VALUES ${db.in(binds, groupsToInsert.map((g: any) => [userId, g]))}
+          SELECT ?, g.id FROM accessGroups g
+          WHERE g.name IN (${db.in(binds, groupsToInsert)})
           ON DUPLICATE KEY UPDATE userId = userId
         `, binds)
       }
@@ -224,30 +227,30 @@ export namespace AccessDatabase {
       FROM accessRoles ar
       INNER JOIN accessRoleGroups arg ON ar.id = arg.roleId
       INNER JOIN accessUserGroups aug ON arg.groupId = aug.groupId
-      WHERE aug.userId IN ${db.in(binds, ids)}
+      WHERE aug.userId IN (${db.in(binds, ids)})
     `, binds)
   }
 
   export async function getGroupsByRoleIds (roleIds: string[]) {
     const params: any[] = []
-    const rows = await db.getall<{ roleId: number, group: string }>(`
-      SELECT arg.roleId, ag.name AS group
+    const rows = await db.getall<{ roleId: number, groupName: string }>(`
+      SELECT arg.roleId, ag.name AS groupName
       FROM accessGroups ag
       INNER JOIN accessRoleGroups arg ON ag.id = arg.groupId
       WHERE arg.roleId IN (${db.in(params, roleIds)})
     `, params)
-    return rows.map(row => ({ key: String(row.roleId), value: row.group }))
+    return rows.map(row => ({ key: String(row.roleId), value: row.groupName }))
   }
 
   export async function getGroupsByUserIds (userInternalIds: number[]) {
     const params: any[] = []
-    const rows = await db.getall<{ userId: number, group: string }>(`
-      SELECT aug.userId, ag.name AS group
+    const rows = await db.getall<{ userId: number, groupName: string }>(`
+      SELECT aug.userId, ag.name AS groupName
       FROM accessGroups ag
       INNER JOIN accessUserGroups aug ON ag.id = aug.groupId
       WHERE aug.userId IN (${db.in(params, userInternalIds)})
     `, params)
-    return rows.map(row => ({ key: row.userId, value: row.group }))
+    return rows.map(row => ({ key: row.userId, value: row.groupName }))
   }
 
   export async function getAccessRoleGrants (filter: { ids?: string[], roleIds?: string[] }) {
@@ -260,9 +263,9 @@ export namespace AccessDatabase {
       where.push(`arg.roleId IN (${db.in(params, filter.roleIds)})`)
     }
     const rows = await db.getall<AccessRoleGrantRow>(`
-      select * from accessRoleGrants
+      select arg.* from accessRoleGrants arg
       ${where.length > 0 ? `WHERE ${where.join(' AND ')}` : ''}
-      order by subjectType asc, subject asc, control asc
+      order by arg.subjectType, arg.id
     `, params)
     return rows.map(row => new AccessRoleGrant(row))
   }
@@ -288,10 +291,10 @@ export namespace AccessDatabase {
       WHERE s.grantId IN (${db.in(params, grantIds)})
       ORDER BY s.grantId, s.subject
     `, params)
-    return rows.map(row => row.subject)
+    return rows.map(row => new AccessGrantSubject(row))
   }
 
-  export async function getTagsByControlIds (controlIds: string[]) {
+  export async function getTagsByControlIds (controlIds: number[]) {
     const params: any[] = []
     const rows = await db.getall<AccessRoleGrantControlTagRow>(`
       SELECT t.*, c.control, c.grantId, g.roleId, g.subjectType
@@ -301,7 +304,7 @@ export namespace AccessDatabase {
       WHERE controlId IN (${db.in(params, controlIds)})
       ORDER BY controlId, category, tag
     `, params)
-    return rows.map(row => ({ category: row.category, tag: row.tag }))
+    return rows.map(row => new AccessGrantControlTag(row))
   }
 
   export async function createAccessRole (role: AccessRoleInput) {
