@@ -1,0 +1,99 @@
+import type { Queryable } from 'mysql2-async'
+import db from 'mysql2-async/db'
+import { ApplicationRequirement, PeriodConfigurationRow, PeriodPrompt, PeriodPromptFilters, RequirementPrompt, RequirementPromptFilter } from '../internal.js'
+
+export interface PromptRow {
+  id: number
+  appRequestId: number
+  periodId: number
+  applicationId: number
+  requirementId: number
+  userId: number
+  promptKey: string
+  answered: 0 | 1
+  invalidated: 0 | 1
+  reachable: 0 | 1
+  askedInEarlierRequirement: 0 | 1
+  askedInEarlierApplication: 0 | 1
+}
+
+function processFilters (filter: RequirementPromptFilter) {
+  const where: string[] = []
+  const binds: any[] = []
+  if (filter.ids?.length) {
+    where.push(`p.id IN (${db.in(binds, filter.ids)})`)
+  }
+  if (filter.appRequestIds?.length) {
+    where.push(`p.appRequestId IN (${db.in(binds, filter.appRequestIds)})`)
+  }
+  if (filter.applicationIds?.length) {
+    where.push(`p.applicationId IN (${db.in(binds, filter.applicationIds)})`)
+  }
+  if (filter.requirementIds?.length) {
+    where.push(`p.requirementId IN (${db.in(binds, filter.requirementIds)})`)
+  }
+  if (filter.promptKeys?.length) {
+    where.push(`p.promptKey IN (${db.in(binds, filter.promptKeys)})`)
+  }
+  if (filter.reachable != null) {
+    where.push('p.reachable = ?')
+    binds.push(filter.reachable ? 1 : 0)
+  }
+  return { where, binds }
+}
+
+export async function getRequirementPrompts (filter: RequirementPromptFilter, tdb: Queryable = db) {
+  const { where, binds } = processFilters(filter)
+  const rows = await tdb.getall<PromptRow>(`SELECT p.*, r.userId, r.periodId FROM requirement_prompts p INNER JOIN app_requests r ON r.id=p.appRequestId WHERE (${where.join(') AND (')}) ORDER BY evaluationOrder`, binds)
+  return rows.map(row => new RequirementPrompt(row))
+}
+
+export async function syncPromptRecords (requirement: ApplicationRequirement, db: Queryable) {
+  const existingPrompts = await db.getall<PromptRow>('SELECT * FROM requirement_prompts WHERE requirementId = ?', [requirement.internalId])
+  const existingPromptKeys = new Set(existingPrompts.map(row => row.promptKey))
+  const definitionPromptKeys = requirement.definition.promptKeySet
+  const promptsToInsert = requirement.definition.allPromptKeys.filter(promptKey => !existingPromptKeys.has(promptKey))
+  const promptsToDelete = existingPrompts.filter(row => !definitionPromptKeys.has(row.promptKey))
+  if (promptsToInsert?.length) {
+    const binds: any[] = []
+    await db.query(`
+      INSERT INTO requirement_prompts (appRequestId, applicationId, requirementId, promptKey)
+      VALUES ${db.in(binds, promptsToInsert.map(promptKey => [requirement.appRequestId, requirement.applicationId, requirement.internalId, promptKey]))}
+    `, binds)
+  }
+  if (promptsToDelete.length) {
+    const binds: any[] = []
+    await db.query(`DELETE FROM requirement_prompts WHERE id IN (${db.in(binds, promptsToDelete.map(row => row.id))})`, binds)
+  }
+  for (let i = 0; i < requirement.definition.allPromptKeys.length; i++) {
+    const promptKey = requirement.definition.allPromptKeys[i]
+    await db.update('UPDATE requirement_prompts SET evaluationOrder = ? WHERE requirementId = ? AND promptKey = ?', [i, requirement.internalId, promptKey])
+  }
+  return await getRequirementPrompts({ requirementIds: [requirement.id] })
+}
+
+export async function updatePromptComputed (prompts: RequirementPrompt[], db: Queryable) {
+  for (const prompt of prompts) {
+    await db.update('UPDATE requirement_prompts SET reachable = ?, answered = ?, askedInEarlierRequirement = ?, askedInEarlierApplication = ?, WHERE id = ?', [prompt.reachable, prompt.answered, prompt.askedInEarlierRequirement, prompt.askedInEarlierApplication, prompt.internalId])
+  }
+}
+
+function processPeriodPromptFilters (filter: PeriodPromptFilters) {
+  const where: string[] = []
+  const binds: any[] = []
+  if (filter.periodIds?.length) {
+    where.push(`pc.periodId IN (${db.in(binds, filter.periodIds)})`)
+  }
+  if (filter.keys?.length) {
+    where.push(`pc.promptKey IN (${db.in(binds, filter.keys)})`)
+  }
+  return { where, binds }
+}
+
+export async function getPeriodPrompts (filter: PeriodPromptFilters) {
+  const { where, binds } = processPeriodPromptFilters(filter)
+  return (await db.getall<PeriodConfigurationRow>(`
+    SELECT pc.* FROM period_configuration pc
+    ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+  `, binds)).map(row => new PeriodPrompt(String(row.periodId), row.definitionKey))
+}

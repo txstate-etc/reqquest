@@ -1,0 +1,49 @@
+services:
+  api:
+    depends_on:
+      mysql:
+        condition: service_healthy
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    environment:
+      NODE_ENV: development
+      MYSQL_HOST: mysql
+      MYSQL_DATABASE: default_database
+      MYSQL_USER: user
+      MYSQL_PASS: password
+      MOTION_URL: http://motion-mock:3000/graphql
+      JWT_TRUSTED_ISSUERS: '[{ "iss": "unified-auth", "url": "http://fakeauth/jwks" }]'
+      JWT_TRUSTED_CLIENTIDS: reqquest
+      RESET_DB_ON_STARTUP: 'true'
+      ELASTIC_APM_ACTIVE: 'false'
+      VALID_ORIGIN_HOSTS: ui
+  ui:
+    build:
+      context: .
+      dockerfile: ui/Dockerfile
+    environment:
+      PUBLIC_API_BASE: http://api
+      PUBLIC_AUTH_REDIRECT: http://fakeauth/login?clientId=reqquest&returnUrl=http%3A%2F%2Fui
+  testing-container:
+    build:
+      context: .
+      dockerfile: test/Dockerfile
+    volumes:
+      - ./test/test-results:/test-results
+  fakeauth:
+    image: registry.its.txstate.edu/unified-auth-stub:dev
+  motion-mock:
+    image: registry.its.txstate.edu/motion-mock
+  mysql:
+    image: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: default_database
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 6

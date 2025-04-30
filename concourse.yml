@@ -1,0 +1,4 @@
+rootContext: true
+excludeModules:
+  - test
+  - api

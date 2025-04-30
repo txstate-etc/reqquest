@@ -1,0 +1,28 @@
+{
+  "name": "reqquest-demo",
+  "version": "1.0.0",
+  "description": "A demo service that pretends to facilitate a pet adoption process.",
+  "scripts": {
+    "start:dev": "fifo=$(mktemp -u); mkfifo $fifo; cat \"$fifo\" & tsc -w --preserveWatchOutput | tee \"$fifo\" | {\ngrep -q 'Watching for file changes' && node --no-warnings --inspect=0.0.0.0:9229 --enable-source-maps --watch ./dist/index.js\ncat >/dev/null\n}",
+    "start:nodemon": "nodemon",
+    "start": "node --no-warnings --enable-source-maps ./dist/index.js"
+  },
+  "dependencies": {
+    "@txstate-mws/graphql-server": "^2.3.2",
+    "@txstate-mws/reqquest": "file:../api",
+    "luxon": "^3.6.1"
+  },
+  "devDependencies": {
+    "@stylistic/eslint-plugin": "^4.0.0",
+    "@types/luxon": "^3.3.1",
+    "@types/node": "^22.0.0",
+    "eslint-config-love": "^119.0.0",
+    "nodemon": "^3.1.9",
+    "typescript": "^5.1.6"
+  },
+  "nodemonConfig": {
+    "exec": "cd ../api && npm run build && cd ../testserver && tsc && node --no-warnings --enable-source-maps ./dist/index.js",
+    "ext": "js,ts",
+    "watch": ["/usr/app/testserver/src", "/usr/app/api/src"]
+  }
+}

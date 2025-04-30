@@ -1,0 +1,36 @@
+{
+  "name": "@txstate-mws/reqquest",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "test": "./test.sh",
+    "build": "rm -rf dist && tsc",
+    "lint": "eslint",
+    "start:dev": "fifo=$(mktemp -u); mkfifo $fifo; cat \"$fifo\" & tsc -w --preserveWatchOutput | tee \"$fifo\" | {\ngrep -q 'Watching for file changes' && node --no-warnings --inspect=0.0.0.0:9229 --enable-source-maps --watch ./dist/index.js\ncat >/dev/null\n}",
+    "start": "node --no-warnings --enable-source-maps ./dist/index.js"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@stylistic/eslint-plugin": "^4.0.0",
+    "@types/luxon": "^3.3.1",
+    "@types/node": "^22.0.0",
+    "eslint-config-love": "^119.0.0",
+    "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "@txstate-mws/graphql-server": "^2.3.2",
+    "dataloader-factory": "^4.5.0",
+    "fastify": "^4.24.3",
+    "luxon": "^3.3.0",
+    "mysql2-async": "^2.0.0",
+    "txstate-utils": "^1.8.13",
+    "type-graphql": "^1.1.1"
+  },
+  "files": [
+    "dist"
+  ]
+}

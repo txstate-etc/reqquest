@@ -1,0 +1,55 @@
+services:
+  api:
+    depends_on:
+      - mysql
+    build:
+      context: .
+      dockerfile: testserver/Dockerfile.dev
+    ports:
+      - 81:80
+      - 9229:9229
+    environment:
+      NODE_ENV: development
+      MYSQL_HOST: mysql
+      MYSQL_DATABASE: default_database
+      MYSQL_USER: user
+      MYSQL_PASS: password
+      JWT_TRUSTED_ISSUERS: '[{ "iss": "unified-auth", "url": "http://fakeauth/jwks" }]'
+      JWT_TRUSTED_CLIENTIDS: reqquest
+      RESET_DB_ON_STARTUP: 'true'
+    volumes:
+      - ./api/src:/usr/app/api/src
+      - ./api/build:/usr/app/api/build
+      - ./testserver/src:/usr/app/testserver/src
+  ui:
+    build:
+      context: .
+      dockerfile: ui/Dockerfile.dev
+    ports:
+      - 80:80
+    environment:
+      PUBLIC_API_BASE: http://localhost:81
+      PUBLIC_AUTH_REDIRECT: http://localhost:3001/login?clientId=reqquest&returnUrl=http%3A%2F%2Flocalhost
+      PUBLIC_ENVIRONMENT: 'DEV'
+    volumes:
+      - ./ui/src:/usr/app/src
+      - ./ui/.svelte-kit/types:/usr/app/ui/.svelte-kit/types
+      - ./ui/svelte.config.js:/usr/app/ui/svelte.config.js
+      - ./ui/vite.config.ts:/usr/app/ui/vite.config.ts
+  fakeauth:
+    image: registry.its.txstate.edu/unified-auth-stub:dev
+    ports:
+      - 3001:80
+  mysql:
+    image: percona/percona-server:8.4
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: default_database
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    volumes:
+      - reqquestdb:/var/lib/mysql
+volumes:
+  reqquestdb: {}
