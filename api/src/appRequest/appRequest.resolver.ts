@@ -3,7 +3,7 @@ import { AppRequest, Application, AppRequestService, JsonData, RQContext, Applic
 
 @Resolver(of => AppRequest)
 export class AppRequestResolver {
-  @Query(returns => AppRequest)
+  @Query(returns => [AppRequest])
   async appRequests (@Ctx() ctx: RQContext, @Arg('filter', { nullable: true }) filter?: AppRequestFilter) {
     return await ctx.svc(AppRequestService).find(filter)
   }

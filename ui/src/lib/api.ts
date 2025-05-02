@@ -2,10 +2,33 @@ import { PUBLIC_API_BASE, PUBLIC_AUTH_REDIRECT } from '$env/static/public'
 import type { ValidationMessage } from '@txstate-mws/fastify-shared'
 import { APIBase } from '@txstate-mws/sveltekit-utils'
 import { GET_ACCESS, type IAccessResponse, GET_APP_REQUESTS, type GetAppRequestsResponse, type AppRequestFilter, GET_NEXT_PROMPT, type GetNextPrompt, RequirementType, GET_APP_REQUEST, type GetAppRequestResponse } from './queries'
+import { createClient } from './typed-client/index.js'
 
 class API extends APIBase {
+  client = createClient({
+    url: PUBLIC_API_BASE,
+    fetcher: async operation => {
+      if (Array.isArray(operation)) throw new Error('Batching not supported')
+      const data = await this.graphql(operation.query, operation.variables)
+      return { data }
+    }
+  })
+
   async getAccess () {
     return (await this.graphql<IAccessResponse>(GET_ACCESS))
+  }
+
+  async getApplicantRequests () {
+    const response = await this.client.query({
+      __name: 'GetApplicantRequests',
+      appRequests: {
+        __args: { filter: { own: true } },
+        id: true,
+        status: true
+      }
+    })
+
+    return response.appRequests
   }
 
   async getAppRequests (filter: AppRequestFilter) {

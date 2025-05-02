@@ -1,9 +1,9 @@
-import { analyticsPlugin, unifiedAuthenticate } from 'fastify-txstate'
 import { RQServer } from '@txstate-mws/reqquest'
-import { have_yard_prompt, adopt_a_dog_program } from './definitions/index.js'
+import { analyticsPlugin, unifiedAuthenticate } from 'fastify-txstate'
+import { have_yard_prompt, adopt_a_dog_program, have_big_yard_req, have_adequate_personal_space_req } from './definitions/index.js'
+import { testMigrations } from './testdata.js'
 
 async function main () {
-
   const server = new RQServer({
     authenticate: unifiedAuthenticate,
     validOrigins: process.env.NODE_ENV === 'development' ? ['http://localhost', 'http://localhost:3000'] : undefined
@@ -26,8 +26,9 @@ async function main () {
     },
     programGroups: [],
     programs: [adopt_a_dog_program],
-    requirements: [],
-    prompts: [have_yard_prompt]
+    requirements: [have_big_yard_req, have_adequate_personal_space_req],
+    prompts: [have_yard_prompt],
+    migrations: testMigrations
   })
 }
 

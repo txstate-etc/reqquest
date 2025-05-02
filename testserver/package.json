@@ -2,6 +2,7 @@
   "name": "reqquest-demo",
   "version": "1.0.0",
   "description": "A demo service that pretends to facilitate a pet adoption process.",
+  "type": "module",
   "scripts": {
     "start:dev": "fifo=$(mktemp -u); mkfifo $fifo; cat \"$fifo\" & tsc -w --preserveWatchOutput | tee \"$fifo\" | {\ngrep -q 'Watching for file changes' && node --no-warnings --inspect=0.0.0.0:9229 --enable-source-maps --watch ./dist/index.js\ncat >/dev/null\n}",
     "start:nodemon": "nodemon",

@@ -1,7 +1,7 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
 import { clone, groupby, omit } from 'txstate-utils'
-import { ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestFilter, getConfigurations, programRegistry, promptRegistry, RequirementPrompt, requirementRegistry, RequirementStatus, RequirementType, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
+import { ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestFilter, AppRequestStatus, getConfigurations, programRegistry, promptRegistry, RequirementPrompt, requirementRegistry, RequirementStatus, RequirementType, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
 
 /**
  * This is the status of the whole appRequest as stored in the database. Each application
@@ -28,6 +28,7 @@ export interface AppRequestRow {
   periodId: number
   userId: number
   status: AppRequestStatusDB
+  computedStatus: AppRequestStatus
   submitEligible: 0 | 1
   createdAt: Date
   updatedAt: Date
@@ -39,7 +40,7 @@ export interface AppRequestRowData {
   data?: string
 }
 
-export async function getAppRequestData (ids: number[]): Promise<{ id: number, data: AppRequestData }[]> {
+export async function getAppRequestData (ids: number[], tdb: Queryable = db): Promise<{ id: number, data: AppRequestData }[]> {
   const rows = await db.getall<AppRequestRowData>(`SELECT id, data FROM app_requests WHERE id = ${db.in([], ids)}`, ids)
   return await Promise.all(rows.map(async row => ({ ...row, data: row.data ? await migrateAppRequestData(JSON.parse(row.data) as AppRequestData) : {} as AppRequestData })))
 }
@@ -64,6 +65,9 @@ function processFilters (filter?: AppRequestFilter) {
   if (filter?.ids?.length) {
     where.push(`ar.id IN (${db.in(binds, filter.ids)})`)
   }
+  if (filter?.internalIds?.length) {
+    where.push(`ar.id IN (${db.in(binds, filter.internalIds)})`)
+  }
   if (filter?.status?.length) {
     where.push(`ar.status IN (${db.in(binds, filter.status)})`)
   }
@@ -80,10 +84,10 @@ function processFilters (filter?: AppRequestFilter) {
   return { joins, where, binds }
 }
 
-export async function getAppRequests (filter?: AppRequestFilter, tdb = db) {
+export async function getAppRequests (filter?: AppRequestFilter, tdb: Queryable = db) {
   const { joins, where, binds } = processFilters(filter)
   const rows = await tdb.getall<AppRequestRow>(`
-    SELECT ar.id, ar.periodId, ar.userId, ar.status, ar.createdAt, ar.updatedAt, ar.closedAt
+    SELECT ar.id, ar.periodId, ar.userId, ar.status, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt
     FROM app_requests ar
     ${Array.from(joins.values()).join('\n')}
     WHERE (${where.join(') AND (')})
@@ -95,16 +99,24 @@ export async function appRequestEligibleForSubmit (appRequestId: number, isEligi
   await db.execute('UPDATE app_requests SET submitEligible = ? WHERE id = ?', [isEligible, appRequestId])
 }
 
+export async function createAppRequest (periodId: number, userId: number) {
+  const appRequestId = await db.insert('INSERT INTO app_requests (periodId, userId) VALUES (?, ?)', [periodId, userId])
+  await evaluateAppRequest(appRequestId)
+}
+
 export async function updateAppRequestData (appRequestId: number, data: AppRequestData) {
   await db.execute('UPDATE app_requests SET data = ? WHERE id = ?', [JSON.stringify(data), appRequestId])
+  await evaluateAppRequest(appRequestId)
 }
 
 export async function submitAppRequest (appRequestId: number) {
   await db.execute('UPDATE app_requests SET status = ?, submittedData = data WHERE id = ?', [AppRequestStatusDB.SUBMITTED, appRequestId])
+  await evaluateAppRequest(appRequestId)
 }
 
 export async function restoreAppRequest (appRequestId: number) {
   await db.execute('UPDATE app_requests SET status = ?, data = submittedData WHERE id = ?', [AppRequestStatusDB.SUBMITTED, appRequestId])
+  await evaluateAppRequest(appRequestId)
 }
 
 /**
@@ -113,7 +125,7 @@ export async function restoreAppRequest (appRequestId: number) {
  * added a requirement since the last evaluation.
  */
 export async function ensureAppRequestRecords (appRequest: AppRequest, db: Queryable) {
-  const enabled = new Set(await db.getvals<string>('SELECT key FROM period_enabled WHERE periodId = ? AND disabled = 0', [appRequest.periodId]))
+  const enabled = new Set(await db.getvals<string>('SELECT programKey FROM period_programs WHERE periodId = ? AND disabled = 0', [appRequest.periodId]))
   const programs = programRegistry.list().filter(program => enabled.has(program.key))
   const requirements = programs.flatMap(p => p.requirementKeys).filter(key => enabled.has(key)).map(key => requirementRegistry.get(key))
   const enabledKeys = new Set([...programs.map(p => p.key), ...requirements.map(r => r.key)])
@@ -145,22 +157,26 @@ const metStatusLookup = {
   [RequirementType.APPROVAL]: ApplicationStatus.APPROVED
 }
 
-export async function evaluateAppRequest (appRequest: AppRequest) {
+export async function evaluateAppRequest (appRequestInternalId: number) {
   // after an appRequest is created and each time it is modified, we will evaluate
   // requirement status and update application and appRequest status accordingly, then
   // save all those results to the database for indexing and querying
 
-  // if the appRequest is closed, we don't need to evaluate
-  if ([AppRequestStatusDB.CLOSED, AppRequestStatusDB.CANCELLED].includes(appRequest.dbStatus)) return
   return await db.transaction(async db => {
     // lock the appRequest while we evaluate
-    await db.getval('SELECT id FROM app_requests WHERE id = ? FOR UPDATE', [appRequest.internalId])
+    await db.getval('SELECT id FROM app_requests WHERE id = ? FOR UPDATE', [appRequestInternalId])
+
+    const appRequest = (await getAppRequests({ internalIds: [appRequestInternalId] }, db))[0]
+    if (!appRequest) throw new Error(`AppRequest ${appRequestInternalId} not found`)
+
+    // if the appRequest is closed, we don't need to evaluate
+    if ([AppRequestStatusDB.CLOSED, AppRequestStatusDB.CANCELLED].includes(appRequest.dbStatus)) return
 
     // let's figure out if we're in applicant mode or reviewer mode, we don't
     // need to evaluate reviewer requirements in applicant mode
     const inReview = appRequest.dbStatus === AppRequestStatusDB.SUBMITTED
 
-    const data = (await getAppRequestData([appRequest.internalId]))[0].data
+    const data = (await getAppRequestData([appRequest.internalId], db))[0].data
 
     // all of the objects we return here are considered mutable - we will be updating
     // them during this evaluation and then we will save them back to the database at
@@ -170,8 +186,8 @@ export async function evaluateAppRequest (appRequest: AppRequest) {
     const promptLookup = groupby(prompts, 'requirementId')
 
     // grab all the prompt and requirement configurations from this apprequest's period
-    const configurations = await db.getall<{ key: string, data: string }>('SELECT key, data FROM period_configurations WHERE periodId = ?', [appRequest.periodId])
-    const configLookup: Record<string, any> = configurations.map(c => ({ ...c, data: JSON.parse(c.data ?? '{}') })).reduce((acc, c) => ({ ...acc, [c.key]: c.data }), {})
+    const configurations = await db.getall<{ definitionKey: string, data: string }>('SELECT definitionKey, data FROM period_configurations WHERE periodId = ?', [appRequest.periodId])
+    const configLookup: Record<string, any> = configurations.map(c => ({ ...c, data: JSON.parse(c.data ?? '{}') })).reduce((acc, c) => ({ ...acc, [c.definitionKey]: c.data }), {})
 
     // keeping track of which prompts have been evaluated so that we can avoid evaluating them twice
     const promptEvaluations: Record<string, boolean> = {}

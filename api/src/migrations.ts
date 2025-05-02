@@ -55,7 +55,6 @@ async function ensureDbVersion (db: Queryable) {
 
 export async function initializeDb (migrations: DatabaseMigration[]) {
   const devReset = (process.env.NODE_ENV === 'development' && process.env.RESET_DB_ON_STARTUP === 'true')
-
   if (devReset) await resetDb()
   await migrateDb(migrations, devReset && process.env.SKIP_TEST_DATA !== 'true')
 }

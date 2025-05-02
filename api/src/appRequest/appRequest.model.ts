@@ -30,6 +30,7 @@ export class AppRequest {
     this.id = String(row.id)
     this.internalId = row.id
     this.dbStatus = row.status
+    this.status = row.computedStatus
     this.submitEligible = row.submitEligible === 1
     this.createdAt = DateTime.fromJSDate(row.createdAt)
     this.updatedAt = DateTime.fromJSDate(row.updatedAt)
@@ -43,6 +44,9 @@ export class AppRequest {
 
   @Field()
   submitEligible: boolean
+
+  @Field(type => AppRequestStatus)
+  status: AppRequestStatus
 
   @Field()
   createdAt: DateTime
@@ -74,11 +78,12 @@ export class AppRequestFilter {
   @Field(type => [ID], { nullable: true })
   periodIds?: string[]
 
-  @Field(type => [ID], { description: 'Only return appRequests that are owned by one the given logins.' })
+  @Field(type => [ID], { nullable: true, description: 'Only return appRequests that are owned by one the given logins.' })
   logins?: string[]
 
-  @Field({ description: 'Only return appRequests that are owned by the current user.' })
+  @Field({ nullable: true, description: 'Only return appRequests that are owned by the current user.' })
   own?: boolean
 
+  internalIds?: number[]
   userInternalIds?: number[]
 }

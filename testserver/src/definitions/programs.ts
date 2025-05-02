@@ -1,4 +1,4 @@
-import type { ProgramDefinition } from "@txstate-mws/reqquest";
+import type { ProgramDefinition } from '@txstate-mws/reqquest'
 
 export const adopt_a_dog_program: ProgramDefinition = {
   key: 'adopt_a_dog_program',

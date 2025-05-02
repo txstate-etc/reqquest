@@ -7,10 +7,11 @@ export const appRequestMigrations: DatabaseMigration[] = [
     async execute (db: Queryable) {
       await db.execute(`
         CREATE TABLE IF NOT EXISTS app_requests (
-          id INT UNSIGNED NOT NULL PRIMARY KEY,
+          id INT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
           periodId INT UNSIGNED NOT NULL,
           userId INT UNSIGNED NOT NULL,
           status VARCHAR(255) NOT NULL DEFAULT '${AppRequestStatusDB.STARTED}',
+          computedStatus VARCHAR(255) NOT NULL DEFAULT 'PREQUAL',
           submitEligible TINYINT UNSIGNED NOT NULL DEFAULT 0,
           createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

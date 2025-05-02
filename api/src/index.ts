@@ -11,7 +11,7 @@ import {
   programGroupRegistry, promptRegistry, requirementRegistry, appConfig, promptMigrations,
   requirementMigrations, appRequestMigrations, RQContextClass, ensureConfigurationRecords,
   periodMigrations, AccessGrantControlTagResolver, AccessSubjectTypeResolver,
-  AccessControlResolver
+  AccessControlResolver, AppRequestResolver
 } from './internal.js'
 
 export interface RQStartOpts extends Omit<GQLStartOpts, 'resolvers'> {
@@ -44,8 +44,6 @@ export class RQServer extends GQLServer {
    */
   // @ts-expect-error
   async start (options: RQStartOpts) {
-    await initializeDb([...periodMigrations, ...promptMigrations, ...requirementMigrations, ...accessMigrations, ...appRequestMigrations, ...applicationMigrations, ...(options?.migrations ?? [])])
-
     await this.app.register(multipartPlugin, { limits: { fileSize: 1024 * 1024 * 100, files: 5 } })
 
     const resolvers = [
@@ -58,6 +56,7 @@ export class RQServer extends GQLServer {
       ApplicationActions,
       ApplicationActionsResolver,
       ApplicationActionsResolver,
+      AppRequestResolver,
       AppRequestAccessResolver,
       ProgramGroupResolver,
       ProgramResolver,
@@ -79,6 +78,7 @@ export class RQServer extends GQLServer {
     for (const program of options.programs) programRegistry.register(program, true)
     for (const program of options.pastPrograms ?? []) programRegistry.register(program, false)
     programRegistry.finalize()
+    await initializeDb([...periodMigrations, ...promptMigrations, ...requirementMigrations, ...accessMigrations, ...appRequestMigrations, ...applicationMigrations, ...(options?.migrations ?? [])])
     await ensureConfigurationRecords()
     await super.start({ ...options, resolvers })
   }

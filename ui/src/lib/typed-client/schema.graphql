@@ -1,0 +1,412 @@
+type Access {
+  createPeriod: Boolean!
+
+  """
+  Current user is permitted to create new roles in the role management UI.
+  """
+  createRole: Boolean!
+  viewApplicantInterface: Boolean!
+  viewDefinitionManagement: Boolean!
+  viewPeriodManagement: Boolean!
+  viewReviewerInterface: Boolean!
+
+  """Current user is permitted to view the role management UI."""
+  viewRoleManagement: Boolean!
+}
+
+type AccessControl {
+  description: String!
+  name: String!
+  tagType: AccessSearchType!
+
+  """
+  A list of all possible tags for the control. Null if tagging is not supported for the control.
+  """
+  tags(search: String): [AccessTag!]
+}
+
+input AccessControlInput {
+  """The action this grant applies to, e.g. "view" or "update"."""
+  control: String!
+
+  """A list of tags to help res"""
+  tags: [AccessTagInput!]!
+}
+
+type AccessRole {
+  actions: RoleActions!
+  grants: [AccessRoleGrant!]!
+  groups: [String!]!
+  id: ID!
+  name: String!
+  scope: String
+}
+
+input AccessRoleFilter {
+  groups: [String!]
+  ids: [ID!]
+  names: [String!]
+  scopes: [String!]
+}
+
+type AccessRoleGrant {
+  "\n    If true, this grant allows the action specified by the selected controls. If false, it removes\n    the controls.\n\n    Removing a control only happens within the context of a single role. If another role grants the\n    same control, the action is allowed. This is more of an exception system than a denial\n    system. So you can do something like add the \"view\" control to the \"movie\" subject type in one\n    grant, and then in a second grant in the same role, remove it from \"The Princess Bride\". Now you\n    have a role that grants \"view\" on all movies _except_ The Princess Bride. If the user has another role\n    that grants \"view\" on The Princess Bride (or on all movies), they can view it based on that other role.\n  "
+  allow: Boolean!
+  id: ID!
+
+  "\n    The specific subject instance this grant applies to, e.g. if subjectType is \"movie\",\n    subject might be \"The Princess Bride\", and the grant applies to that movie. If null,\n    the grant applies to all movies. It's a little more complicated than that when we consider\n    the \"allow\" setting, see that description for more details.\n  "
+  subject: String
+
+  """The type of subject this grant applies to, e.g. "movie"."""
+  subjectType: String!
+}
+
+input AccessRoleGrantCreate {
+  allow: Boolean!
+  controls: [AccessControlInput!]!
+  description: String
+  subjectType: String!
+
+  """A list of subject IDs to restrict the grant."""
+  subjects: [String!]
+}
+
+input AccessRoleInput {
+  """A list of groups this role is associated with."""
+  groups: [String!]!
+  name: String!
+
+  """Attach this role to a specific authentication scope, e.g. "parent"."""
+  scope: String
+}
+
+type AccessRoleValidatedResponse {
+  accessRole: AccessRole
+  messages: [MutationMessage!]!
+
+  """
+  True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings.
+  """
+  success: Boolean!
+}
+
+"""The way that this list should be interacted with."""
+enum AccessSearchType {
+  """
+  There will never be objects in the list. Do not create a UI to interact with the list at all.
+  """
+  NONE
+
+  """
+  The list will be too large for the user to browse through, or simply not feasible to list exhaustively, so we let the user search for list items.
+  """
+  SEARCH
+
+  """
+  The list will be small enough to make the user browse the whole list and add items by selection.
+  """
+  SELECT
+}
+
+type AccessSubjectInstance {
+  id: ID!
+  name: String!
+}
+
+type AccessSubjectType {
+  """
+  A list of all possible controls for this subjectType. Use this to populate the control dropdown when creating a grant.
+  """
+  controls: [AccessControl!]!
+  name: String!
+
+  """The way that subject instances are added to the grant."""
+  subjectSearchType: AccessSearchType!
+
+  """
+  A list of all possible instances of this subjectType. Use this to populate the subject dropdown when creating a grant.
+  """
+  subjects(
+    """
+    Set this arg to filter the list based on the search. If this subjectType is not marked as searchable, this search will be ignored. If it is marked as searchable, an empty search will probably not return any instances (but it is up to the implementation of the subjectType).
+    """
+    search: String
+  ): [AccessSubjectInstance!]!
+}
+
+type AccessTag {
+  category: String
+  categoryLabel: String
+  name: String!
+  tag: String!
+}
+
+input AccessTagInput {
+  """The category this tag belongs to, e.g. "State"."""
+  category: String!
+
+  """The tag value, e.g. "TX"."""
+  tag: String!
+}
+
+"""A user that has or once had access to the system."""
+type AccessUser {
+  groups: [String!]!
+  login: ID!
+  otherIdentifiers: [AccessUserIdentifier!]!
+
+  """
+  A JSON object containing any information about the user that the implementing application wants to store. Could be useful for constructing personalized UI.
+  """
+  otherInfo: JsonData
+  roles: AccessRole!
+}
+
+input AccessUserFilter {
+  logins: [ID!]
+  otherIdentifersByLabel: [AccessUserIdentifierInput!]
+  otherIdentifiers: [String!]
+  search: String
+}
+
+"""
+A label and ID pair for an external user unique ID. For example, { label: "Student ID", id: "123456" }
+"""
+type AccessUserIdentifier {
+  """The unique ID for this identifier, e.g. "123456"."""
+  id: ID!
+
+  """The label for this identifier, e.g. "Student ID"."""
+  label: String!
+}
+
+"""
+A label and ID pair for an external user unique ID. For example, { label: "Student ID", id: "123456" }
+"""
+input AccessUserIdentifierInput {
+  id: ID!
+  label: String!
+}
+
+"""
+Represents a group of applications all being applied for at the same time. As part of the request, multiple applications will be created and either eliminated as ineligible or submitted for approval.
+"""
+type AppRequest {
+  applications: [Application!]!
+
+  """
+  Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date.
+  """
+  closedAt: DateTime
+  createdAt: DateTime!
+
+  """
+  All data that has been gathered from the user for this request. It is a Record whose properties are the prompt keys and values are the data gathered by the corresponding prompt dialog.
+  """
+  data(
+    """
+    Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh.
+    """
+    schemaVersion: String
+  ): JsonData!
+  id: ID!
+  status: AppRequestStatus!
+  submitEligible: Boolean!
+  updatedAt: DateTime!
+}
+
+input AppRequestFilter {
+  ids: [ID!]
+
+  """Only return appRequests that are owned by one the given logins."""
+  logins: [ID!]
+
+  """Only return appRequests that are owned by the current user."""
+  own: Boolean
+  periodIds: [ID!]
+  status: [AppRequestStatus!]
+}
+
+"\n    The status of an appRequest. This status is computed based on the status recorded in\n    the database and of the requirements for all applications. The possible statuses for each\n    database status are as follows:\n\n    STARTED: PREQUAL or QUALIFICATION depending on requirement statuses.\n    SUBMITTED: PREAPPROVAL or APPROVAL depending on requirement statuses.\n    CLOSED: CLOSED.\n    CANCELLED: CANCELLED.\n  "
+enum AppRequestStatus {
+  APPROVAL
+  CANCELLED
+  CLOSED
+  PREAPPROVAL
+  PREQUAL
+  QUALIFICATION
+}
+
+"""
+An application represents the applicant applying to a specific program. Each appRequest has multiple applications - one per program defined in the system. Some applications are mutually exclusive and/or will be eliminated early based on PREQUAL requirements, but they all technically exist in the data model - there is no concept of picking one application over another, just two applications where one dies and the other survives.
+"""
+type Application {
+  id: ID!
+  status: ApplicationStatus!
+
+  """
+  When one of the application's requirements is failing or throwing a warning, its reason will be copied here for convenience. If there is a warning and then later a failure, the failure reason will win.
+  """
+  statusReason: String
+}
+
+"\n    The status of an application. This is usually a computed field, not stored in the database. The status\n    is computed based on the status of the appRequest and of the requirements for the program. If\n    the appRequest is CLOSED, the status should permanently match the ApplicationStatusDB instead of being\n    computed. If the appRequest is CANCELLED, all applications should be CANCELLED as well.\n  "
+enum ApplicationStatus {
+  """
+  The application's benefit has been accepted by the applicant. This status is only possible for programs with at least one ACCEPTANCE requirement.
+  """
+  ACCEPTED
+
+  """
+  The application has been submitted, has passed preapproval, and is awaiting approval.
+  """
+  APPROVAL
+
+  """The application has been approved."""
+  APPROVED
+
+  "\n      The appRequest (and thus the application inside it) has been cancelled by the applicant. In\n      some cases, individual programs may have a requirement that the applicant agrees that they\n      desire to apply. In that case the appRequest status is not CANCELLED, and neither is the application\n      status. It will actually be FAILED_PREQUAL or FAILED_QUALIFICATION, and the statusReason of the\n      requirement will explain that the applicant did not wish to pursue the application.\n    "
+  CANCELLED
+
+  """
+  The applicant is ineligible for the program according to the pre-qual requirements. The application/program should no longer be visible in the UI for this appRequest.
+  """
+  FAILED_PREQUAL
+
+  """
+  The applicant is ineligible for the program according to the qualification requirements. The application/program should remain visible in the UI and any applicable statusReason from the associated requirements should be displayed.
+  """
+  FAILED_QUALIFICATION
+
+  """
+  The application's benefit was rejected by the applicant. This status is only possible for programs with at least one ACCEPTANCE requirement.
+  """
+  NOT_ACCEPTED
+
+  """The application has not been approved."""
+  NOT_APPROVED
+
+  """The application has been submitted and is awaiting preapproval."""
+  PREAPPROVAL
+
+  """
+  The appRequest has not finished pre-qualification yet. This application does not quite exist yet and probably should not appear in the UI.
+  """
+  PREQUAL
+
+  """
+  The application has been pre-qualified and is awaiting further input from the applicant.
+  """
+  QUALIFICATION
+
+  """
+  The appRequest (and thus the application inside it) was withdrawn after being submitted. If it is re-opened, it will re-open in submitted state.
+  """
+  WITHDRAWN
+}
+
+"""
+Date and Time in ISO 8601 string format. JSON parser should convert to javascript Date type.
+"""
+scalar DateTime
+
+"""Unstructured JSON data."""
+scalar JsonData
+
+type Mutation {
+  roleAddGrant(grant: AccessRoleGrantCreate!, roleId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!
+  roleCreate(role: AccessRoleInput!, validateOnly: Boolean): AccessRoleValidatedResponse!
+  roleDelete(roleId: ID!): ValidatedResponse!
+  roleDeleteGrant(grantId: ID!): AccessRoleValidatedResponse!
+  roleUpdate(role: AccessRoleInput!, roleId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!
+  roleUpdateGrant(grant: AccessRoleGrantCreate!, grantId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!
+}
+
+type MutationMessage {
+  """
+  The path to the arg that produced the error. Dot-separated (lodash.get compatible) if it is deep inside an input type. Null if no particular arg can be blamed for the error.
+  """
+  arg: String
+
+  """
+  An error message to be shown to the end user, with the context of the given arg.
+  """
+  message: String!
+
+  """The type of error message. See the enum descriptions for more detail."""
+  type: MutationMessageType!
+}
+
+enum MutationMessageType {
+  """This error means the mutation cannot and/or did not take place."""
+  error
+
+  """
+  This message should be shown to the end user before submission to let them know ahead of time that one of their entries passed validation (e.g. username available or password strength high).
+  """
+  success
+
+  """
+  The mutation can and/or did complete, but the user should receive the warning anyway (e.g. "Your password sucks but I'll allow it.").
+  """
+  warning
+}
+
+type Program {
+  key: ID!
+  navTitle: String!
+  title: String!
+}
+
+input ProgramFilters {
+  keys: [String!]
+}
+
+type ProgramGroup {
+  key: ID!
+
+  """
+  A human readable title for the program group in the navigation. You may want it to be shorter than the full title. If not provided, the title will be used.
+  """
+  navTitle: String!
+  programs(filter: ProgramFilters): [Program!]!
+
+  """
+  A human readable title for the program group. This will be shown to users.
+  """
+  title: String!
+}
+
+input ProgramGroupFilter {
+  keys: [ID!]
+}
+
+type Query {
+  "\n    This is the global access object. Each field represents a global permission\n    like the ability to view the role management interface.\n  "
+  access: Access!
+  accessUsers(filter: AccessUserFilter): [AccessUser!]!
+  appRequests(filter: AppRequestFilter): [AppRequest!]!
+  programGroups(filter: ProgramGroupFilter): [ProgramGroup!]!
+  programs(filter: ProgramFilters): [Program!]!
+  roles(filter: AccessRoleFilter): [AccessRole!]!
+
+  """
+  This is where you get information about the authorization system. Each grant will be associated with one of these subjectTypes and optionally a list of subject instances. The grant will also have a set of controls, and each control will have an optional set of tags. The tags are used to limit the scope of the grant.
+  """
+  subjectTypes: [AccessSubjectType!]!
+}
+
+type RoleActions {
+  delete: Boolean!
+  update: Boolean!
+  view: Boolean!
+}
+
+type ValidatedResponse {
+  messages: [MutationMessage!]!
+
+  """
+  True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings.
+  """
+  success: Boolean!
+}

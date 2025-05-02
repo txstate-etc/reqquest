@@ -9,12 +9,13 @@ services:
       - 81:80
       - 9229:9229
     environment:
+      TZ: America/Chicago
       NODE_ENV: development
       MYSQL_HOST: mysql
       MYSQL_DATABASE: default_database
       MYSQL_USER: user
       MYSQL_PASS: password
-      JWT_TRUSTED_ISSUERS: '[{ "iss": "unified-auth", "url": "http://fakeauth/jwks" }]'
+      JWT_TRUSTED_ISSUERS: '[{ "iss": "unified-auth", "url": "http://fakeauth/jwks" }, { "iss": "reqquest", "secret": "reqquest" }]'
       JWT_TRUSTED_CLIENTIDS: reqquest
       RESET_DB_ON_STARTUP: 'true'
     volumes:

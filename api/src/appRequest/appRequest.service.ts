@@ -23,21 +23,14 @@ export class AppRequestServiceInternal extends BaseService<AppRequest> {
 
   async updateData (appRequest: AppRequest, data: AppRequestData) {
     await updateAppRequestData(appRequest.internalId, data)
-    await this.evaluate(appRequest)
   }
 
   async submit (appRequest: AppRequest) {
     await submitAppRequest(appRequest.internalId)
-    await this.evaluate(appRequest)
   }
 
   async restore (appRequest: AppRequest) {
     await restoreAppRequest(appRequest.internalId)
-    await this.evaluate(appRequest)
-  }
-
-  async evaluate (appRequest: AppRequest) {
-    await evaluateAppRequest(appRequest)
   }
 }
 

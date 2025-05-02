@@ -102,15 +102,15 @@ export async function copyConfigurations (fromPeriodId: number | string | undefi
     INSERT INTO period_configurations (periodId, definitionKey, data)
     SELECT ?, definitionKey, data
     FROM period_configurations
-    WHERE periodId = ? AND key IN (${db.in(configBinds, reachableConfigKeys)})
+    WHERE periodId = ? AND definitionKey IN (${db.in(configBinds, reachableConfigKeys)})
   `, configBinds)
 
   const reachableProgramKeys = programRegistry.reachable.map(p => p.key)
-  const disabledProgramKeys = new Set(await db.getvals<string>('SELECT key FROM period_programs WHERE periodId = ? AND disabled = 1', [fromPeriodId]))
+  const disabledProgramKeys = new Set(await db.getvals<string>('SELECT programKey FROM period_programs WHERE periodId = ? AND disabled = 1', [fromPeriodId]))
   if (reachableProgramKeys.length) {
     const binds: any[] = []
     await db.insert(`
-      INSERT INTO period_programs (periodId, key, disabled)
+      INSERT INTO period_programs (periodId, programKey, disabled)
       VALUES ${db.in(binds, reachableProgramKeys.map(key => [toPeriodId, key, disabledProgramKeys.has(key) ? 1 : 0]))}
     `, binds)
   }
@@ -138,7 +138,7 @@ export async function createPeriod (period: PeriodUpdate) {
     const periodId = await db.insert(`
       INSERT INTO periods (code, name, openDate, closeDate, archiveAt)
       VALUES (?, ?, ?, ?, ?)
-    `, [code, name, openDate, closeDate, archiveAt])
+    `, [code, name ?? code, openDate?.toJSDate(), closeDate?.toJSDate(), archiveAt?.toJSDate()])
     await copyConfigurations(prevId, periodId, db)
     return periodId
   })
@@ -150,7 +150,7 @@ export async function updatePeriod (id: string, period: PeriodUpdate) {
     UPDATE periods
     SET code = ?, name = ?, openDate = ?, closeDate = ?, archiveAt = ?
     WHERE id = ?
-  `, [code, name, openDate, closeDate, archiveAt, id])
+  `, [code, name ?? code, openDate, closeDate, archiveAt, id])
 }
 
 function processConfigurationFilters (filters?: ConfigurationFilters) {

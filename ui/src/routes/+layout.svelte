@@ -2,7 +2,7 @@
   import { PUBLIC_ENVIRONMENT } from '$env/static/public'
   import { api } from '$lib'
   import { UIShell } from '@txstate-mws/carbon-svelte'
-  import { Dashboard, Settings, RuleTest } from 'carbon-icons-svelte'
+  import { Dashboard, DocumentMultiple_01, Settings, Time } from 'carbon-icons-svelte'
   import { uiRegistry } from '../local/index.js'
   import '../app.css'
 
@@ -14,34 +14,34 @@
   routeId: '/',
   children: [
     {
-      title: 'User Management',
-      group: 'Administration',
-      icon: Settings,
-      routeId: '/administration/usermanagement'
-    },
-    {
       title: 'Applicant',
       group: 'Dashboards',
       icon: Dashboard,
-      routeId: '/dashboards/applicant'
+      routeId: '/'
     },
     {
-      title: 'Administration',
+      title: 'Reviewer',
       group: 'Dashboards',
       icon: Dashboard,
-      routeId: '/dashboards/administration'
+      routeId: '/reviewdash'
     },
     {
-      title: 'File Upload',
-      group: 'Test',
-      icon: RuleTest,
-      routeId: '/test/file/upload'
+      title: 'App Requests',
+      group: 'Administration',
+      icon: DocumentMultiple_01,
+      routeId: '/requests'
     },
     {
-      title: 'File Download',
-      group: 'Test',
-      icon: RuleTest,
-      routeId: '/test/file/download'
+      title: 'Manage Roles',
+      group: 'Administration',
+      icon: Settings,
+      routeId: '/roles'
+    },
+    {
+      title: 'Manage Periods',
+      group: 'Administration',
+      icon: Time,
+      routeId: '/periods'
     },
     ...(uiRegistry.config.extraNavItems ?? [])
   ]

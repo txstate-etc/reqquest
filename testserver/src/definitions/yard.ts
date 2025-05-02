@@ -27,7 +27,7 @@ export const have_yard_prompt: PromptDefinition<YardData, YardData> = {
       }
     }
     return messages
-  },
+  }
 }
 
 export const have_big_yard_req: RequirementDefinition = {
