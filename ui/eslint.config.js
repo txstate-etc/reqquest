@@ -1,5 +1,6 @@
 import pluginSvelte, { rules } from 'eslint-plugin-svelte'
 import love from 'eslint-config-love'
+import { globalIgnores } from 'eslint/config'
 import stylistic from '@stylistic/eslint-plugin'
 import svelteParser from 'svelte-eslint-parser'
 import tsParser from '@typescript-eslint/parser'
@@ -50,6 +51,7 @@ const customConfig = {
 
 export default [
   ...pluginSvelte.configs['flat/recommended'],
+  globalIgnores(['**/typed-client/**']),
   {
     files: ['src/**/*.svelte'],
     languageOptions: {
