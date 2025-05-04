@@ -1,5 +1,5 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
-import { ApplicationRequirementRow, PeriodConfigurationRow, PeriodProgramRequirementRow, RequirementDefinitionProcessed, requirementRegistry } from '../internal.js'
+import { ApplicationRequirementRow, PeriodConfigurationRow, PeriodProgramKey, PeriodProgramRequirementRow, RequirementDefinitionProcessed, requirementRegistry } from '../internal.js'
 
 @ObjectType({ description: 'A requirement for a program. Each program has an ordered array of requirements, all of which must pass for an application to the program to succeed.' })
 export class Requirement {
@@ -116,51 +116,26 @@ export class ApplicationRequirementFilter {
 }
 
 @ObjectType()
-export class PeriodRequirement extends Requirement {
-  constructor (row: PeriodConfigurationRow) {
-    super(requirementRegistry.get(row.definitionKey))
+export class PeriodProgramRequirement extends Requirement {
+  constructor (row: PeriodProgramRequirementRow) {
+    super(requirementRegistry.get(row.requirementKey))
     this.periodId = String(row.periodId)
+    this.programKey = row.programKey
+    this.enabled = !row.disabled
   }
 
+  @Field({ description: 'Whether the requirement is enabled in this period. This is set by the system administrator.' })
+  enabled: boolean
+
   periodId: string
+  programKey: string
 }
 
 @ObjectType()
 export class PeriodRequirementAccess {}
 
 @ObjectType()
-export class PeriodRequirementFilters {
-  @Field(() => [ID], { nullable: true, description: 'Return requirements for these period IDs.' })
-  periodIds?: string[]
-
-  @Field(() => [String], { nullable: true, description: 'Return requirements for these keys.' })
-  keys?: string[]
-}
-
-@ObjectType()
-export class PeriodProgramRequirement extends PeriodRequirement {
-  programKey: string
-  constructor (row: PeriodProgramRequirementRow) {
-    super({ periodId: row.periodId, key: row.requirementKey } as any)
-    this.programKey = row.programKey
-    this.disabled = !!row.disabled
-  }
-
-  @Field({ description: 'Indicates whether this requirement has been disabled by a system administrator in this period.' })
-  disabled: boolean
-}
-
-@ObjectType()
 export class PeriodProgramRequirementAccess {}
-
-@InputType()
-export class PeriodProgramKey {
-  @Field()
-  periodId!: string
-
-  @Field()
-  programKey!: string
-}
 
 @InputType()
 export class PeriodProgramRequirementKey extends PeriodProgramKey {
@@ -168,20 +143,32 @@ export class PeriodProgramRequirementKey extends PeriodProgramKey {
   requirementKey!: string
 }
 
-@ObjectType()
+@InputType()
+export class PeriodRequirementKey {
+  @Field()
+  periodId!: string
+
+  @Field()
+  requirementKey!: string
+}
+
+@InputType()
 export class PeriodProgramRequirementFilters {
-  @Field(() => [PeriodProgramRequirementKey], { nullable: true, description: 'Return individual PeriodProgramRequirement records.' })
+  @Field(type => [PeriodProgramRequirementKey], { nullable: true, description: 'Return individual PeriodProgramRequirement records.' })
   keys?: PeriodProgramRequirementKey[]
 
-  @Field(() => [PeriodProgramKey], { nullable: true, description: 'Return requirements for these PeriodProgram keys.' })
+  @Field(type => [PeriodProgramKey], { nullable: true, description: 'Return requirements for these PeriodProgram keys.' })
   periodPrograms?: PeriodProgramKey[]
 
-  @Field(() => [ID], { nullable: true, description: 'Return requirements for these period IDs.' })
+  @Field(type => [ID], { nullable: true, description: 'Return requirements for these period IDs.' })
   periodIds?: string[]
 
-  @Field(() => [ID], { nullable: true, description: 'Return requirements for these program keys.' })
+  @Field(type => [ID], { nullable: true, description: 'Return requirements for these program keys.' })
   programKeys?: string[]
 
-  @Field(() => [String], { nullable: true, description: 'Return requirements for these requirement keys.' })
+  @Field(type => [String], { nullable: true, description: 'Return requirements for these requirement keys.' })
   requirementKeys?: string[]
+
+  @Field(type => [PeriodRequirementKey], { nullable: true, description: 'Return PeriodProgramRequirements by periodId and requirementKey.' })
+  periodRequirementKeys?: PeriodRequirementKey[]
 }

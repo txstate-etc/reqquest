@@ -1,6 +1,6 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { Application, ApplicationRequirement, ApplicationRequirementFilter, PeriodConfigurationRow, PeriodProgramRequirement, PeriodProgramRequirementFilters, PeriodProgramRequirementRow, PeriodRequirement, PeriodRequirementFilters, RequirementStatus } from '../internal.js'
+import { Application, ApplicationRequirement, ApplicationRequirementFilter, PeriodProgramRequirementFilters, PeriodProgramRequirementRow, PeriodProgramRequirement, RequirementStatus } from '../internal.js'
 
 export interface ApplicationRequirementRow {
   id: number
@@ -69,22 +69,6 @@ export async function updateRequirementComputed (requirements: ApplicationRequir
   for (const requirement of requirements) {
     await db.update('UPDATE application_requirements SET reachable = ?, status = ?, statusReason = ? WHERE id = ?', [requirement.reachable, requirement.status, requirement.statusReason ?? null, requirement.internalId])
   }
-}
-
-export async function getPeriodRequirements (filter: PeriodRequirementFilters) {
-  const where: string[] = []
-  const binds: any[] = []
-  if (filter.periodIds?.length) {
-    where.push(`pc.periodId IN (${db.in(binds, filter.periodIds)})`)
-  }
-  if (filter.keys?.length) {
-    where.push(`pc.key IN (${db.in(binds, filter.keys)})`)
-  }
-
-  return (await db.getall<PeriodConfigurationRow>(`
-    SELECT pc.* FROM period_requirements pc
-    ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
-  `, binds)).map(row => new PeriodRequirement(row))
 }
 
 export async function getPeriodProgramRequirements (filter: PeriodProgramRequirementFilters) {

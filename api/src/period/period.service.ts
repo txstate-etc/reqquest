@@ -1,7 +1,7 @@
 import type { MutationMessage } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { intersect, isBlank, keyby, pick } from 'txstate-utils'
-import { AuthService, Configuration, ConfigurationFilters, createPeriod, getConfigurationData, getConfigurations, getPeriods, Period, PeriodFilters, PeriodUpdate, PromptDefinition, promptRegistry, RequirementDefinitionProcessed, requirementRegistry, updatePeriod, upsertConfiguration, ValidatedConfigurationResponse, ValidatedPeriodResponse } from '../internal.js'
+import { AuthService, Configuration, ConfigurationFilters, createPeriod, getConfigurationData, getConfigurations, getPeriods, Period, PeriodFilters, PeriodPromptService, PeriodRequirementService, PeriodUpdate, PromptDefinition, promptRegistry, RequirementDefinitionProcessed, requirementRegistry, updatePeriod, upsertConfiguration, ValidatedConfigurationResponse, ValidatedPeriodResponse } from '../internal.js'
 
 const periodByIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -84,10 +84,10 @@ const configurationsByPeriodIdLoader = new OneToManyLoader({
 })
 
 const configurationDataByIdLoader = new PrimaryKeyLoader({
-  fetch: async (ids: { periodId: string, key: string }[]) => {
+  fetch: async (ids: { periodId: string, definitionKey: string }[]) => {
     return await getConfigurationData(ids)
   },
-  extractId: configuration => pick(configuration, 'periodId', 'key')
+  extractId: configuration => pick(configuration, 'periodId', 'definitionKey')
 })
 
 export class ConfigurationService extends AuthService<Configuration> {
@@ -106,8 +106,9 @@ export class ConfigurationService extends AuthService<Configuration> {
     return allKeys.map(key => configByKey[key] ?? new Configuration({ periodId: Number(periodId), definitionKey: key, createdAt: new Date(), updatedAt: new Date() }))
   }
 
-  async getData (periodId: string, key: string) {
-    return await this.loaders.get(configurationDataByIdLoader).load({ periodId, key })
+  async getData (periodId: string, definitionKey: string) {
+    const dataRow = await this.loaders.get(configurationDataByIdLoader).load({ periodId, definitionKey })
+    return dataRow?.data ?? {}
   }
 
   mayView (obj: Configuration) {
@@ -117,7 +118,17 @@ export class ConfigurationService extends AuthService<Configuration> {
   async mayUpdate (periodId: string, key: string) {
     // TODO: make sure there are no app requests that have been submitted in the period
     // TODO: make sure the user has permission to update the key, subjectType could be Prompt or Requirement
-    return true
+    const promptDef = promptRegistry.get(key)
+    const requirementDef = requirementRegistry.get(key)
+    if (promptDef) {
+      const periodPrompt = await this.svc(PeriodPromptService).findByPeriodIdAndPromptKey(periodId, key)
+      return periodPrompt && await this.svc(PeriodPromptService).mayConfigure(periodPrompt)
+    } else if (requirementDef) {
+      const periodProgramRequirements = await this.svc(PeriodRequirementService).findByPeriodIdAndRequirementKey(periodId, key)
+      const mayUpdates = await Promise.all(periodProgramRequirements.map(async ppr => await this.svc(PeriodRequirementService).mayConfigure(ppr)))
+      return mayUpdates.some(Boolean)
+    }
+    return false
   }
 
   async update (periodId: string, key: string, data: any, validateOnly?: boolean) {

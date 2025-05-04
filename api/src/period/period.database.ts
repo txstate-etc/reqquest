@@ -1,6 +1,7 @@
 import db from 'mysql2-async/db'
 import type { Queryable } from 'mysql2-async'
 import { Configuration, ConfigurationFilters, ensureAppRequestRecords, getAppRequests, Period, PeriodFilters, PeriodUpdate, programRegistry, promptRegistry, requirementRegistry } from '../internal.js'
+import { stringify } from 'txstate-utils'
 
 export interface PeriodRow {
   id: number
@@ -45,27 +46,27 @@ function processFilters (filters?: PeriodFilters) {
   }
   if (filters?.opensAfter) {
     where.push('p.openDate > ?')
-    binds.push(filters.opensAfter)
+    binds.push(filters.opensAfter.toJSDate())
   }
   if (filters?.opensBefore) {
     where.push('p.openDate < ?')
-    binds.push(filters.opensBefore)
+    binds.push(filters.opensBefore.toJSDate())
   }
   if (filters?.closesAfter) {
     where.push('p.closeDate > ?')
-    binds.push(filters.closesAfter)
+    binds.push(filters.closesAfter.toJSDate())
   }
   if (filters?.closesBefore) {
     where.push('p.closeDate < ?')
-    binds.push(filters.closesBefore)
+    binds.push(filters.closesBefore.toJSDate())
   }
   if (filters?.archiveAfter) {
     where.push('p.archiveAt > ?')
-    binds.push(filters.archiveAfter)
+    binds.push(filters.archiveAfter.toJSDate())
   }
   if (filters?.archiveBefore) {
     where.push('p.archiveAt < ?')
-    binds.push(filters.archiveBefore)
+    binds.push(filters.archiveBefore.toJSDate())
   }
   if (filters?.openNow != null) {
     if (filters.openNow) {
@@ -82,7 +83,8 @@ export async function getPeriods (filters?: PeriodFilters) {
   const rows = await db.getall<PeriodRow>(`
     SELECT p.*
     FROM periods p
-    WHERE (${where.join(') AND (')})
+    ${where.length ? `WHERE (${where.join(') AND (')})` : ''}
+    ORDER BY p.openDate DESC
   `, binds)
   return rows.map(row => new Period(row))
 }
@@ -140,6 +142,7 @@ export async function createPeriod (period: PeriodUpdate) {
       VALUES (?, ?, ?, ?, ?)
     `, [code, name, openDate?.toJSDate(), closeDate?.toJSDate(), archiveAt?.toJSDate()])
     await copyConfigurations(prevId, periodId, db)
+    await ensureConfigurationRecords([periodId], db)
     return periodId
   })
 }
@@ -157,7 +160,7 @@ function processConfigurationFilters (filters?: ConfigurationFilters) {
   const where: string[] = []
   const binds: any[] = []
   if (filters?.ids?.length) {
-    where.push(`(c.periodId, c.key) IN (${db.in(binds, filters.ids.map(({ periodId, key }) => [periodId, key]))})`)
+    where.push(`(c.periodId, c.definitionKey) IN (${db.in(binds, filters.ids.map(({ periodId, key }) => [periodId, key]))})`)
   }
   if (filters?.periodIds?.length) {
     where.push(`c.periodId IN (${db.in(binds, filters.periodIds)})`)
@@ -166,7 +169,7 @@ function processConfigurationFilters (filters?: ConfigurationFilters) {
     where.push(`p.code IN (${db.in(binds, filters.periodCodes)})`)
   }
   if (filters?.keys?.length) {
-    where.push(`c.key IN (${db.in(binds, filters.keys)})`)
+    where.push(`c.definitionKey IN (${db.in(binds, filters.keys)})`)
   }
   return { where, binds }
 }
@@ -174,70 +177,74 @@ function processConfigurationFilters (filters?: ConfigurationFilters) {
 export async function getConfigurations (filters?: ConfigurationFilters) {
   const { where, binds } = processConfigurationFilters(filters)
   const rows = await db.getall<PeriodConfigurationRow>(`
-    SELECT c.periodId, c.key, c.createdAt, c.updatedAt
-    INNER JOIN periods p ON p.id = c.periodId
+    SELECT c.periodId, c.definitionKey, c.updatedAt
     FROM period_configurations c
-    WHERE (${where.join(') AND (')})
+    INNER JOIN periods p ON p.id = c.periodId
+    ${where.length ? `WHERE (${where.join(') AND (')})` : ''}
   `, binds)
   return rows.map(row => new Configuration(row))
 }
 
-export async function getConfigurationData (ids: { periodId: string, key: string }[]) {
+export async function getConfigurationData (ids: { periodId: string, definitionKey: string }[]) {
   const binds: any[] = []
-  const rows = await db.getall<{ periodId: number, key: string, data: string }>(`
+  const rows = await db.getall<{ periodId: number, definitionKey: string, data: string }>(`
     SELECT periodId, definitionKey, data
     FROM period_configurations
-    WHERE (periodId, definitionKey) IN (${db.in(binds, ids.map(pair => [pair.periodId, pair.key]))})
+    WHERE (periodId, definitionKey) IN (${db.in(binds, ids.map(pair => [pair.periodId, pair.definitionKey]))})
   `, binds)
-  return rows.map(row => ({ periodId: String(row.periodId), key: row.key, data: JSON.parse(row.data || '{}') }))
+  return rows.map(row => ({ periodId: String(row.periodId), definitionKey: row.definitionKey, data: JSON.parse(row.data || '{}') }))
 }
 
 export async function upsertConfiguration (periodId: string, key: string, data: any) {
-  const dataStr = JSON.stringify(data)
+  const dataStr = stringify(data)
   await db.update(`
-    INSERT INTO period_configurations (periodId, key, data)
+    INSERT INTO period_configurations (periodId, definitionKey, data)
     VALUES (?, ?, ?)
-    ON DUPLICATE KEY UPDATE data = ?
-  `, [periodId, key, dataStr, dataStr])
+    ON DUPLICATE KEY UPDATE data = VALUES(data)
+  `, [periodId, key, dataStr])
 }
 
 /**
  * This function is run on startup and makes sure future periods have entries for all the
  * configurations, programs, and requirements that are available in the code.
  */
-export async function ensureConfigurationRecords () {
-  await db.transaction(async db => {
-    const futurePeriodIds = await db.getvals<number>('SELECT id FROM periods WHERE openDate > NOW()')
+export async function ensureConfigurationRecords (periodIds?: number[], tdb?: Queryable) {
+  const action = async (db: Queryable) => {
+    const futurePeriodIds = periodIds ?? await db.getvals<number>('SELECT id FROM periods WHERE openDate > NOW()')
     if (!futurePeriodIds.length) return
-    const configurations = await db.getall<{ periodId: number, key: string }>(`SELECT periodId, key FROM period_configurations WHERE periodId IN (${db.in([], futurePeriodIds)})`, futurePeriodIds)
+    const configurations = await db.getall<{ periodId: number, definitionKey: string }>(`SELECT periodId, definitionKey FROM period_configurations WHERE periodId IN (${db.in([], futurePeriodIds)})`, futurePeriodIds)
     const configMap: Record<string, Set<string>> = {}
-    for (const { periodId, key } of configurations) {
+    for (const { periodId, definitionKey } of configurations) {
       if (!configMap[periodId]) configMap[periodId] = new Set()
-      configMap[periodId].add(key)
+      configMap[periodId].add(definitionKey)
     }
-    const promptAndReqKeys = [...promptRegistry.reachable.map(p => p.key), ...requirementRegistry.reachable.map(r => r.key)]
+    const prompts = promptRegistry.reachable
+    const requirements = requirementRegistry.reachable
+    const promptAndReqKeys = [...prompts.map(p => p.key), ...requirements.map(r => r.key)]
     const promptAndReqKeysSet = new Set(promptAndReqKeys)
-    const configurationsToInsert = futurePeriodIds.flatMap(periodId => promptAndReqKeys.filter(key => !configMap?.[periodId]?.has(key)).map(key => ({ periodId: periodId, key })))
+    const promptConfigurationsToInsert = futurePeriodIds.flatMap(periodId => prompts.filter(p => !configMap?.[periodId]?.has(p.key)).map(p => ({ periodId: periodId, key: p.key, data: stringify(p.configurationDefault ?? {}) })))
+    const requirementConfigurationsToInsert = futurePeriodIds.flatMap(periodId => requirements.filter(r => !configMap?.[periodId]?.has(r.key)).map(r => ({ periodId: periodId, key: r.key, data: stringify(r.configurationDefault ?? {}) })))
+    const configurationsToInsert = promptConfigurationsToInsert.concat(requirementConfigurationsToInsert)
     const configurationsToDelete = futurePeriodIds.flatMap(periodId => Array.from(configMap?.[periodId] ?? []).filter(key => !promptAndReqKeysSet.has(key)).map(key => ({ periodId: periodId, key })))
     if (configurationsToInsert.length) {
       const binds: any[] = []
       await db.insert(`
-        INSERT INTO period_configurations (periodId, key, data)
-        VALUES ${db.in(binds, configurationsToInsert.map(({ periodId, key }) => [periodId, key, '']))}
+        INSERT INTO period_configurations (periodId, definitionKey, data)
+        VALUES ${db.in(binds, configurationsToInsert.map(({ periodId, key, data }) => [periodId, key, data]))}
         `, binds)
     }
     if (configurationsToDelete.length) {
       const binds: any[] = []
-      await db.query(`DELETE FROM period_configurations WHERE (periodId, key) IN (${db.in(binds, configurationsToDelete.map(({ periodId, key }) => [periodId, key]))})`, binds)
+      await db.query(`DELETE FROM period_configurations WHERE (periodId, definitionKey) IN (${db.in(binds, configurationsToDelete.map(({ periodId, key }) => [periodId, key]))})`, binds)
     }
 
-    const program_rows = await db.getall<{ periodId: number, key: string }>(`SELECT periodId, key FROM period_programs WHERE periodId IN (${db.in([], futurePeriodIds)})`, futurePeriodIds)
+    const program_rows = await db.getall<{ periodId: number, programKey: string }>(`SELECT periodId, programKey FROM period_programs WHERE periodId IN (${db.in([], futurePeriodIds)})`, futurePeriodIds)
     const programKeys = programRegistry.reachable.map(p => p.key)
     const programKeysSet = new Set(programKeys)
     const programMap: Record<string, Set<string>> = {}
-    for (const { periodId, key } of program_rows) {
+    for (const { periodId, programKey } of program_rows) {
       if (!programMap[periodId]) programMap[periodId] = new Set()
-      programMap[periodId].add(key)
+      programMap[periodId].add(programKey)
     }
 
     const programsToInsert = futurePeriodIds.flatMap(periodId => programKeys.filter(key => !programMap?.[periodId]?.has(key)).map(key => ({ periodId: periodId, key })))
@@ -245,7 +252,7 @@ export async function ensureConfigurationRecords () {
     if (programsToInsert.length) {
       const binds: any[] = []
       await db.insert(`
-        INSERT INTO period_programs (periodId, key)
+        INSERT INTO period_programs (periodId, programKey)
         VALUES ${db.in(binds, programsToInsert.map(({ periodId, key }) => [periodId, key]))}
       `, binds)
     }
@@ -253,39 +260,51 @@ export async function ensureConfigurationRecords () {
       const binds: any[] = []
       await db.query(`
         DELETE FROM period_programs
-        WHERE (periodId, key) IN (${db.in(binds, programsToDelete.map(({ periodId, key }) => [periodId, key]))})
+        WHERE (periodId, programKey) IN (${db.in(binds, programsToDelete.map(({ periodId, key }) => [periodId, key]))})
       `, binds)
     }
 
     const requirement_rows = await db.getall<{ periodId: number, programKey: string, requirementKey: string }>(`SELECT periodId, programKey, requirementKey FROM period_program_requirements WHERE periodId IN (${db.in([], futurePeriodIds)})`, futurePeriodIds)
-    const reqKeys = requirementRegistry.reachable.map(r => r.key)
-    const reqKeysSet = new Set(reqKeys)
     const requirementMap: Record<string, Record<string, Set<string>>> = {}
     for (const { periodId, programKey, requirementKey } of requirement_rows) {
       requirementMap[periodId] ??= {}
       requirementMap[periodId][programKey] ??= new Set()
       requirementMap[periodId][programKey].add(requirementKey)
     }
-    const requirementsToInsert = futurePeriodIds.flatMap(periodId => programKeys.flatMap(programKey => reqKeys.filter(requirementKey => !requirementMap?.[periodId]?.[programKey]?.has(requirementKey)).map(requirementKey => ({ periodId: periodId, programKey, requirementKey }))))
-    const requirementsToDelete = futurePeriodIds.flatMap(periodId => programKeys.flatMap(programKey => Array.from(requirementMap?.[periodId]?.[programKey] ?? []).filter(requirementKey => !reqKeysSet.has(requirementKey)).map(requirementKey => ({ periodId: periodId, programKey, requirementKey }))))
+    const reachablePairs: Record<string, Record<string, boolean>> = {}
+    const requirementsToInsert: { periodId: number, programKey: string, requirementKey: string }[] = []
+    for (const program of programRegistry.reachable) {
+      for (const requirementKey of program.requirementKeys) {
+        reachablePairs[program.key] ??= {}
+        reachablePairs[program.key][requirementKey] = true
+        for (const periodId of futurePeriodIds) {
+          if (!requirementMap[periodId]?.[program.key]?.has(requirementKey)) {
+            requirementsToInsert.push({ periodId, programKey: program.key, requirementKey })
+          }
+        }
+      }
+    }
+    const requirementsToDelete = requirement_rows.filter(row => reachablePairs[row.programKey]?.[row.requirementKey] == null).map(row => [row.periodId, row.programKey, row.requirementKey])
     if (requirementsToInsert.length) {
       const binds: any[] = []
       await db.insert(`
         INSERT INTO period_program_requirements (periodId, programKey, requirementKey)
-        VALUES ${db.in(binds, requirementsToInsert.map(({ periodId, programKey, requirementKey }) => [periodId, programKey, requirementKey]))})
+        VALUES ${db.in(binds, requirementsToInsert.map(({ periodId, programKey, requirementKey }) => [periodId, programKey, requirementKey]))}
       `, binds)
     }
     if (requirementsToDelete.length) {
       const binds: any[] = []
       await db.query(`
         DELETE FROM period_program_requirements
-        WHERE (periodId, programKey, requirementKey) IN (${db.in(binds, requirementsToDelete.map(({ periodId, programKey, requirementKey }) => [periodId, programKey, requirementKey]))})
+        WHERE (periodId, programKey, requirementKey) IN (${db.in(binds, requirementsToDelete)})
       `, binds)
     }
 
     // if we added or removed any configurations, programs, or requirements, we need to ensure that the app requests are updated
-    const periodIdsAffected = new Set([...configurationsToInsert.map(c => c.periodId), ...configurationsToDelete.map(c => c.periodId), ...programsToInsert.map(p => p.periodId), ...programsToDelete.map(p => p.periodId), ...requirementsToInsert.map(r => r.periodId), ...requirementsToDelete.map(r => r.periodId)])
-    const appRequestsAffected = periodIdsAffected.size ? await getAppRequests({ periodIds: Array.from(periodIdsAffected).map(String) }) : []
+    const periodIdsAffected = new Set([...configurationsToInsert.map(c => c.periodId), ...configurationsToDelete.map(c => c.periodId), ...programsToInsert.map(p => p.periodId), ...programsToDelete.map(p => p.periodId), ...requirementsToInsert.map(r => r.periodId), ...requirementsToDelete.map(r => r[0])])
+    const appRequestsAffected = periodIdsAffected.size ? await getAppRequests({ periodIds: Array.from(periodIdsAffected).map(String) }, db) : []
     for (const appRequest of appRequestsAffected) await ensureAppRequestRecords(appRequest, db)
-  })
+  }
+  if (tdb) return await action(tdb)
+  else return await db.transaction(action)
 }

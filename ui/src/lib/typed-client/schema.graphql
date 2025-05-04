@@ -422,6 +422,33 @@ enum ApplicationStatus {
   WITHDRAWN
 }
 
+type Configuration {
+  actions: ConfigurationAccess!
+  data: JsonData!
+
+  """The key being configured. Could be a requirement or prompt key."""
+  key: String!
+}
+
+type ConfigurationAccess {
+  update: Boolean!
+  view: Boolean!
+}
+
+input ConfigurationFilters {
+  """Return specific configurations."""
+  ids: [ID!]
+
+  """Return configurations for these keys."""
+  keys: [String!]
+
+  """Return configurations for these period codes."""
+  periodCodes: [String!]
+
+  """Return configurations for these period IDs."""
+  periodIds: [ID!]
+}
+
 """
 Date and Time in ISO 8601 string format. JSON parser should convert to javascript Date type.
 """
@@ -440,6 +467,8 @@ type Mutation {
 
   """Submit the app request."""
   submitAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
+  updateConfiguration(data: JsonData!, key: String!, periodId: String!, validateOnly: Boolean): ValidatedConfigurationResponse!
+  updatePeriod(id: String!, update: PeriodUpdate!, validateOnly: Boolean): ValidatedPeriodResponse!
 
   """Update the data for a prompt in this app request."""
   updatePrompt(data: JsonData!, promptId: ID!, validateOnly: Boolean): ValidatedAppRequestResponse!
@@ -476,6 +505,8 @@ enum MutationMessageType {
 }
 
 type Period {
+  actions: PeriodActions!
+
   """
   This is useful for filtering out periods that are no longer useful. For instance, a window might close applications after 2 weeks but the reviewers could be working.
   """
@@ -488,6 +519,7 @@ type Period {
   Unique identifier for this period that references an external system. Ideally human readable.
   """
   code: String
+  configurations(filter: ConfigurationFilters): [Configuration!]!
   id: ID!
 
   """
@@ -497,6 +529,136 @@ type Period {
 
   """Date that this period opens for applications."""
   openDate: DateTime!
+  programs: [PeriodProgram!]!
+  prompts: [PeriodPrompt!]!
+  requirements: [PeriodProgramRequirement!]!
+}
+
+type PeriodActions {
+  update: Boolean!
+  view: Boolean!
+}
+
+input PeriodFilters {
+  """Return periods that will be archived after this date."""
+  archiveAfter: DateTime
+
+  """Return periods that were archived before this date."""
+  archiveBefore: DateTime
+
+  """Return periods that are open at this date or will be open after it."""
+  closesAfter: DateTime
+
+  """
+  Return periods that closed before this date, not including that date's active period(s).
+  """
+  closesBefore: DateTime
+
+  """Return periods that have any of these codes."""
+  codes: [String!]
+
+  """Return periods that have any of these IDs."""
+  ids: [ID!]
+
+  """true -> open periods. false -> closed periods. null -> all periods."""
+  openNow: Boolean
+
+  """
+  Return periods that open after this date, not including that date's active period(s).
+  """
+  opensAfter: DateTime
+
+  """Return periods that are open at this date or have been open before it."""
+  opensBefore: DateTime
+}
+
+type PeriodProgram {
+  actions: PeriodProgramActions!
+
+  """
+  Whether the program is enabled in this period. This is set by the system administrator.
+  """
+  enabled: Boolean!
+  group: PeriodProgramActions!
+  key: ID!
+  navTitle: String!
+  period: Period!
+  requirements: [PeriodProgramRequirement!]!
+  title: String!
+}
+
+type PeriodProgramActions {
+  configure: Boolean!
+}
+
+type PeriodProgramRequirement {
+  """The configuration for this requirement in the period."""
+  configuration: Configuration!
+
+  """
+  An internal description of the requirement. Probably not shown to users.
+  """
+  description: String!
+
+  """
+  Whether the requirement is enabled in this period. This is set by the system administrator.
+  """
+  enabled: Boolean!
+
+  """
+  A human and machine readable unique and stable identifier that we can use to add javascript logic to the evaluation of whether a requirement is satisfied. For example: "gi_ch33_must_be_post911"
+  """
+  key: String!
+
+  """
+  A human readable title for the requirement in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used.
+  """
+  navTitle: String!
+  prompts: [PeriodPrompt!]!
+
+  """
+  A human readable title for the requirement. This is what will be shown to users.
+  """
+  title: String!
+
+  """
+  The type of requirement. This determines when the requirement is evaluated and who can see the requirement.
+  """
+  type: RequirementType!
+}
+
+type PeriodPrompt {
+  """The configuration for this prompt in the given period."""
+  configuration: Configuration!
+
+  """
+  A brief description of the prompt. This should be shown to administrators to help explain the full meaning of the prompt while assigning permissions or editing its configuration.
+  """
+  description: String
+
+  """
+  A human and machine readable identifier for the prompt. Will be used to match prompt data with UI and API code that handles it.
+  """
+  key: String!
+
+  """
+  A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used.
+  """
+  navTitle: String!
+  periodId: String!
+
+  """
+  A human readable title for the prompt. This is what will be shown to users.
+  """
+  title: String!
+}
+
+input PeriodUpdate {
+  archiveAt: DateTime
+  closeDate: DateTime
+  code: String
+  name: String
+  openDate: DateTime
 }
 
 type Program {
@@ -533,6 +695,7 @@ type Query {
   access: Access!
   accessUsers(filter: AccessUserFilter): [AccessUser!]!
   appRequests(filter: AppRequestFilter): [AppRequest!]!
+  periods(filter: PeriodFilters): [Period!]!
   programGroups(filter: ProgramGroupFilter): [ProgramGroup!]!
   programs(filter: ProgramFilters): [Program!]!
   roles(filter: AccessRoleFilter): [AccessRole!]!
@@ -691,6 +854,26 @@ type RoleActions {
 type ValidatedAppRequestResponse {
   appRequest: AppRequest!
   messages: [MutationMessage!]!
+
+  """
+  True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings.
+  """
+  success: Boolean!
+}
+
+type ValidatedConfigurationResponse {
+  configuration: Configuration
+  messages: [MutationMessage!]!
+
+  """
+  True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings.
+  """
+  success: Boolean!
+}
+
+type ValidatedPeriodResponse {
+  messages: [MutationMessage!]!
+  period: Period
 
   """
   True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings.

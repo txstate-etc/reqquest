@@ -1,6 +1,6 @@
 import { Ctx, FieldResolver, Query, Resolver, Root } from 'type-graphql'
 import { Context } from '@txstate-mws/graphql-server'
-import { requirementRegistry, Requirement, ApplicationRequirement, Prompt, promptRegistry, RequirementPrompt, RequirementPromptService, Application, ApplicationService, Configuration, ConfigurationService, RQContext, PeriodRequirement, PromptService, JsonData, PeriodPromptService } from '../internal.js'
+import { requirementRegistry, Requirement, ApplicationRequirement, Prompt, promptRegistry, RequirementPrompt, RequirementPromptService, Application, ApplicationService, Configuration, ConfigurationService, RQContext, PeriodProgramRequirement, PromptService, JsonData, PeriodPromptService, PeriodPrompt } from '../internal.js'
 
 @Resolver(of => Requirement)
 export class RequirementResolver {
@@ -39,15 +39,15 @@ export class ApplicationRequirementResolver {
   }
 }
 
-@Resolver(of => PeriodRequirement)
+@Resolver(of => PeriodProgramRequirement)
 export class PeriodRequirementResolver {
-  @FieldResolver(returns => [RequirementPrompt])
-  async prompts (@Ctx() ctx: Context, @Root() requirement: PeriodRequirement) {
-    return await ctx.svc(PeriodPromptService).findByPeriodId(requirement.periodId)
+  @FieldResolver(returns => [PeriodPrompt])
+  async prompts (@Ctx() ctx: Context, @Root() requirement: PeriodProgramRequirement) {
+    return await ctx.svc(PeriodPromptService).findByPeriodIdAndRequirementKey(requirement.periodId, requirement.key) // TODO: filter by requirement key
   }
 
-  @FieldResolver(type => Configuration, { nullable: true, description: 'The configuration for this requirement in the period.' })
-  async configuration (@Ctx() ctx: RQContext, @Root() periodRequirement: PeriodRequirement) {
+  @FieldResolver(type => Configuration, { description: 'The configuration for this requirement in the period.' })
+  async configuration (@Ctx() ctx: RQContext, @Root() periodRequirement: PeriodProgramRequirement) {
     return ctx.svc(ConfigurationService).findByPeriodIdAndKey(periodRequirement.periodId, periodRequirement.key)
   }
 }

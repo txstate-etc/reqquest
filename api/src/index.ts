@@ -1,10 +1,11 @@
 import multipartPlugin from '@fastify/multipart'
 import { Context, GQLServer, GQLStartOpts } from '@txstate-mws/graphql-server'
+import type { GraphQLScalarType } from 'graphql'
 import { DateTime } from 'luxon'
 import { NonEmptyArray } from 'type-graphql'
 import {
   applicationMigrations, AccessResolver, ApplicationActions, ApplicationActionsResolver,
-  AppRequestAccessResolver, ProgramGroupResolver, ProgramResolver,
+  AppRequestAccessResolver, ProgramGroupResolver, PeriodProgramResolver,
   AccessUserResolver, AccessRoleResolver, RoleActionsResolver, RequirementPromptActionsResolver, accessMigrations,
   DatabaseMigration, initializeDb, DateTimeScalar, rqContextMixin, ProgramDefinition,
   RequirementDefinition, PromptDefinition, AppDefinition, ProgramGroupDefinition, programRegistry,
@@ -14,7 +15,16 @@ import {
   AccessControlResolver, AppRequestResolver,
   ApplicationResolver,
   ApplicationRequirementResolver,
-  RequirementPromptResolver
+  RequirementPromptResolver,
+  PeriodResolver,
+  PeriodActionsResolver,
+  ConfigurationResolver,
+  ConfigurationActionsResolver,
+  UrlSafeString,
+  UrlSafeStringScalar,
+  PeriodProgramActionsResolver,
+  PeriodRequirementResolver,
+  PeriodPromptResolver
 } from './internal.js'
 
 export interface RQStartOpts extends Omit<GQLStartOpts, 'resolvers'> {
@@ -63,16 +73,29 @@ export class RQServer extends GQLServer {
       ApplicationRequirementResolver,
       AppRequestResolver,
       AppRequestAccessResolver,
+      ConfigurationResolver,
+      ConfigurationActionsResolver,
+      PeriodResolver,
+      PeriodActionsResolver,
+      PeriodProgramActionsResolver,
+      PeriodProgramResolver,
+      PeriodRequirementResolver,
+      PeriodPromptResolver,
       ProgramGroupResolver,
-      ProgramResolver,
       RequirementPromptResolver,
       RequirementPromptActionsResolver,
       RoleActionsResolver,
       ...(options?.resolvers ?? [])
     ].map(resolver => options?.overrideResolvers?.get(resolver) ?? resolver) as NonEmptyArray<Function>
 
+    const scalarsMap: { type: any, scalar: GraphQLScalarType }[] = [
+      { type: UrlSafeString, scalar: UrlSafeStringScalar },
+      { type: DateTime, scalar: DateTimeScalar }
+    ]
+    scalarsMap.push(...(options.scalarsMap ?? []))
+
     options.customContext = rqContextMixin(options.customContext ?? Context)
-    options.scalarsMap ??= [{ type: DateTime, scalar: DateTimeScalar }]
+    options.scalarsMap = scalarsMap
     options.send401 ??= true
     options.introspection ??= process.env.NODE_ENV !== 'production'
 

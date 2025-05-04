@@ -24,6 +24,10 @@ export interface RequirementDefinition {
    * in the navigation in the applicant's view.
    */
   icon?: typeof SvelteComponent<any>
+  /**
+   * A component that will be used to render the form for this prompt's configuration, if applicable.
+   */
+  configureComponent?: typeof SvelteComponent<any>
 }
 
 export interface PromptDefinition {
@@ -37,6 +41,10 @@ export interface PromptDefinition {
    * it. Should be as compact as possible, as it will be displayed in a big list of prompts.
    */
   displayComponent: typeof SvelteComponent<any>
+  /**
+   * A component that will be used to render the form for this prompt's configuration, if applicable.
+   */
+  configureComponent?: typeof SvelteComponent<any>
   /**
    * An icon for the navigation.
    */

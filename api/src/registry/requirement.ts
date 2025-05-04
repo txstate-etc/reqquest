@@ -149,6 +149,18 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    * behavior of the prompt.
    */
   configurationMigrations?: AppRequestMigration<ConfigurationDataType & { savedAtVersion: string }>[]
+
+  /**
+   * The default configuration data for this requirement. This will be used to initialize the
+   * configuration data for the requirement when it is added to a period that does not already
+   * have a configuration for it.
+   *
+   * Typically the configuration will be copied from period to period, so this is only used
+   * for the first period after the requirement is added to the system.
+   *
+   * It may also be used as a reset-to-default target.
+   */
+  configurationDefault?: ConfigurationDataType
 }
 
 export interface RequirementDefinitionProcessed extends RequirementDefinition {

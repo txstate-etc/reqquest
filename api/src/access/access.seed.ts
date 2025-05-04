@@ -57,9 +57,9 @@ export const rqAccessSeed: AccessRoleGrantDefinition = {
     grants: [
       { subjectType: 'AppRequest', controls: ['review'], allow: true },
       { subjectType: 'Period', controls: ['view', 'create', 'update', 'delete'], allow: true },
-      { subjectType: 'Program', controls: ['view', 'configure', 'disable'], allow: true },
-      { subjectType: 'Prompt', controls: ['view', 'configure'], allow: true },
-      { subjectType: 'Requirement', controls: ['view', 'configure', 'disable'], allow: true },
+      { subjectType: 'Program', controls: ['view_configuration', 'configure', 'disable'], allow: true },
+      { subjectType: 'Prompt', controls: ['view_configuration', 'configure'], allow: true },
+      { subjectType: 'Requirement', controls: ['view_configuration', 'configure', 'disable'], allow: true },
       { subjectType: 'Role', controls: ['view', 'create', 'update', 'delete'], allow: true }
     ]
   }

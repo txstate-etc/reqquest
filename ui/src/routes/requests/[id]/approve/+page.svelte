@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
-  import { Edit } from 'carbon-icons-svelte'
+  import { Edit, QuestionAnswering } from 'carbon-icons-svelte'
   import { invalidate } from '$app/navigation'
   import { api } from '$lib'
   import type { PageData } from './$types'
@@ -60,7 +60,11 @@
               }
             }
           ]}>
-            <svelte:component this={def.displayComponent} data={appRequest.data[prompt.key]}/>
+            {#if prompt.answered}
+              <svelte:component this={def.displayComponent} data={appRequest.data[prompt.key] ?? {}}/>
+            {:else}
+              Incomplete Answer
+            {/if}
           </Panel>
         {/each}
       </Panel>
@@ -81,6 +85,6 @@
     let:data
   >
     {@const def = uiRegistry.getPrompt(promptBeingEdited.key)}
-    <svelte:component this={def.formComponent} {data} fetched={{ TODO: 'TODO' }} />
+    <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} fetched={{ TODO: 'TODO' }} />
   </PanelFormDialog>
 {/if}

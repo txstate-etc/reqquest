@@ -1,6 +1,6 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { ApplicationRequirement, PeriodConfigurationRow, PeriodPrompt, PeriodPromptFilters, RequirementPrompt, RequirementPromptFilter } from '../internal.js'
+import { ApplicationRequirement, PeriodConfigurationRow, PeriodPrompt, PeriodPromptFilters, promptRegistry, RequirementPrompt, RequirementPromptFilter } from '../internal.js'
 
 export interface PromptRow {
   id: number
@@ -84,8 +84,11 @@ function processPeriodPromptFilters (filter: PeriodPromptFilters) {
   if (filter.periodIds?.length) {
     where.push(`pc.periodId IN (${db.in(binds, filter.periodIds)})`)
   }
-  if (filter.keys?.length) {
-    where.push(`pc.promptKey IN (${db.in(binds, filter.keys)})`)
+  if (filter.promptKeys?.length) {
+    where.push(`pc.definitionKey IN (${db.in(binds, filter.promptKeys)})`)
+  }
+  if (filter.periodPromptKeys?.length) {
+    where.push(`(pc.periodId, pc.definitionKey) IN (${db.in(binds, filter.periodPromptKeys.map(pk => [pk.periodId, pk.promptKey]))})`)
   }
   return { where, binds }
 }
@@ -93,7 +96,7 @@ function processPeriodPromptFilters (filter: PeriodPromptFilters) {
 export async function getPeriodPrompts (filter: PeriodPromptFilters) {
   const { where, binds } = processPeriodPromptFilters(filter)
   return (await db.getall<PeriodConfigurationRow>(`
-    SELECT pc.* FROM period_configuration pc
-    ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+    SELECT pc.* FROM period_configurations pc
+    WHERE (${where.join(' AND ')}) AND definitionKey IN (${db.in(binds, promptRegistry.list().map(d => d.key))})
   `, binds)).map(row => new PeriodPrompt(String(row.periodId), row.definitionKey))
 }

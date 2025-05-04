@@ -1,7 +1,7 @@
+import { ValidatedResponse } from '@txstate-mws/graphql-server'
+import { DateTime } from 'luxon'
 import { Field, ID, InputType, ObjectType } from 'type-graphql'
 import { PeriodConfigurationRow, PeriodRow } from '../internal.js'
-import { DateTime } from 'luxon'
-import { ValidatedResponse } from '@txstate-mws/graphql-server'
 
 @ObjectType()
 export class Period {
@@ -14,13 +14,13 @@ export class Period {
   @Field({ description: 'Name for this period. Will be displayed to applicants if they create an App Request while two periods are simultaneously open.' })
   name: string
 
-  @Field(type => DateTime, { description: 'Date that this period opens for applications.' })
+  @Field({ description: 'Date that this period opens for applications.' })
   openDate: DateTime
 
-  @Field(type => DateTime, { description: 'Date that this period closes for applications.' })
+  @Field({ description: 'Date that this period closes for applications.' })
   closeDate: DateTime
 
-  @Field(type => DateTime, { nullable: true, description: 'This is useful for filtering out periods that are no longer useful. For instance, a window might close applications after 2 weeks but the reviewers could be working.' })
+  @Field({ nullable: true, description: 'This is useful for filtering out periods that are no longer useful. For instance, a window might close applications after 2 weeks but the reviewers could be working.' })
   archiveAt?: DateTime
 
   internalId: number
@@ -39,28 +39,28 @@ export class Period {
 @ObjectType()
 export class PeriodActions {}
 
-@ObjectType()
+@InputType()
 export class PeriodFilters {
   @Field({ nullable: true, description: 'true -> open periods. false -> closed periods. null -> all periods.' })
   openNow?: boolean
 
   @Field({ nullable: true, description: 'Return periods that open after this date, not including that date\'s active period(s).' })
-  opensAfter?: Date
+  opensAfter?: DateTime
 
   @Field({ nullable: true, description: 'Return periods that are open at this date or have been open before it.' })
-  opensBefore?: Date
+  opensBefore?: DateTime
 
   @Field({ nullable: true, description: 'Return periods that are open at this date or will be open after it.' })
-  closesAfter?: Date
+  closesAfter?: DateTime
 
   @Field({ nullable: true, description: 'Return periods that closed before this date, not including that date\'s active period(s).' })
-  closesBefore?: Date
+  closesBefore?: DateTime
 
   @Field({ nullable: true, description: 'Return periods that will be archived after this date.' })
-  archiveAfter?: Date
+  archiveAfter?: DateTime
 
   @Field({ nullable: true, description: 'Return periods that were archived before this date.' })
-  archiveBefore?: Date
+  archiveBefore?: DateTime
 
   @Field(() => [String], { nullable: true, description: 'Return periods that have any of these codes.' })
   codes?: string[]
@@ -77,13 +77,13 @@ export class PeriodUpdate {
   @Field({ nullable: true })
   name?: string
 
-  @Field(type => DateTime, { nullable: true })
+  @Field({ nullable: true })
   openDate?: DateTime
 
-  @Field(type => DateTime, { nullable: true })
+  @Field({ nullable: true })
   closeDate?: DateTime
 
-  @Field(type => DateTime, { nullable: true })
+  @Field({ nullable: true })
   archiveAt?: DateTime
 }
 
@@ -108,18 +108,18 @@ export class Configuration {
   }
 }
 
-@ObjectType()
+@InputType()
 export class ConfigurationFilters {
-  @Field(() => [ID], { nullable: true, description: 'Return specific configurations.' })
+  @Field(type => [ID], { nullable: true, description: 'Return specific configurations.' })
   ids?: { periodId: string, key: string }[]
 
-  @Field(() => [ID], { nullable: true, description: 'Return configurations for these period IDs.' })
+  @Field(type => [ID], { nullable: true, description: 'Return configurations for these period IDs.' })
   periodIds?: string[]
 
-  @Field(() => [String], { nullable: true, description: 'Return configurations for these period codes.' })
+  @Field(type => [String], { nullable: true, description: 'Return configurations for these period codes.' })
   periodCodes?: string[]
 
-  @Field(() => [String], { nullable: true, description: 'Return configurations for these keys.' })
+  @Field(type => [String], { nullable: true, description: 'Return configurations for these keys.' })
   keys?: string[]
 }
 

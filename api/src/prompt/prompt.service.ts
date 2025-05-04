@@ -1,6 +1,10 @@
-import { BaseService, Context } from '@txstate-mws/graphql-server'
+import { BaseService } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { AppRequestService, ApplicationRequirement, AuthService, Prompt, RequirementPrompt, promptRegistry, getRequirementPrompts, AppRequestServiceInternal, ValidatedAppRequestResponse, getPeriodPrompts, ConfigurationService, PeriodPrompt } from '../internal.js'
+import {
+  AppRequestService, ApplicationRequirement, AuthService, Prompt, RequirementPrompt,
+  promptRegistry, getRequirementPrompts, AppRequestServiceInternal, ValidatedAppRequestResponse,
+  getPeriodPrompts, ConfigurationService, PeriodPrompt, requirementRegistry
+} from '../internal.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: number[]) => {
@@ -17,18 +21,26 @@ const byRequirementIdLoader = new OneToManyLoader({
 })
 
 const byAppRequestInternalIdLoader = new OneToManyLoader({
-  fetch: async (appRequestIds: string[], filters: undefined, ctx: Context) => {
+  fetch: async (appRequestIds: string[]) => {
     return await getRequirementPrompts({ appRequestIds })
   },
   extractKey: (row: RequirementPrompt) => row.appRequestId,
   idLoader: [byInternalIdLoader]
 })
 
+const periodPromptByPeriodIdAndPromptKeyLoader = new PrimaryKeyLoader({
+  fetch: async (periodPromptKeys: { periodId: string, promptKey: string }[]) => {
+    return await getPeriodPrompts({ periodPromptKeys })
+  },
+  extractId: row => ({ periodId: row.periodId, promptKey: row.key })
+})
+
 const periodPromptByPeroidIdLoader = new OneToManyLoader({
-  fetch: async (periodIds: string[], filters: undefined, ctx: Context) => {
+  fetch: async (periodIds: string[]) => {
     return await getPeriodPrompts({ periodIds })
   },
-  extractKey: row => row.periodId
+  extractKey: row => row.periodId,
+  idLoader: periodPromptByPeriodIdAndPromptKeyLoader
 })
 
 export class PromptServiceInternal extends BaseService<Prompt> {
@@ -118,11 +130,22 @@ export class PeriodPromptService extends AuthService<Prompt> {
     return this.removeUnauthorized(await this.loaders.get(periodPromptByPeroidIdLoader).load(periodId))
   }
 
+  async findByPeriodIdAndRequirementKey (periodId: string, requirementKey: string) {
+    const prompts = await this.findByPeriodId(periodId)
+    const reqDef = requirementRegistry.get(requirementKey)
+    return prompts.filter(prompt => reqDef.promptKeySet.has(prompt.key)).map(prompt => new PeriodPrompt(periodId, prompt.key))
+  }
+
+  async findByPeriodIdAndPromptKey (periodId: string, promptKey: string) {
+    return this.removeUnauthorized(await this.loaders.get(periodPromptByPeriodIdAndPromptKeyLoader).load({ periodId, promptKey }))
+  }
+
   mayView (prompt: PeriodPrompt) {
     return this.hasControl('Prompt', 'view_configuration', prompt.key)
   }
 
   mayConfigure (prompt: Prompt): boolean {
+    if (prompt.definition.validateConfiguration == null) return false
     return this.hasControl('Prompt', 'configure', prompt.key)
   }
 }

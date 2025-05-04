@@ -29,7 +29,18 @@
       title: 'App Requests',
       group: 'Administration',
       icon: DocumentMultiple_01,
-      routeId: '/requests'
+      routeId: '/requests',
+      children: [{
+        title: 'Application',
+        routeId: '/requests/[id]/apply',
+        children: [{
+          title: 'Review Your Submission',
+          routeId: '/requests/[id]/apply/review'
+        }]
+      }, {
+        title: 'Review Application',
+        routeId: '/requests/[id]/approve'
+      }]
     },
     {
       title: 'Manage Roles',
@@ -41,7 +52,13 @@
       title: 'Manage Periods',
       group: 'Administration',
       icon: Time,
-      routeId: '/periods'
+      routeId: '/periods',
+      children: [
+        {
+          title: 'Configure Period',
+          routeId: '/periods/[id]/configure'
+        }
+      ]
     },
     ...(uiRegistry.config.extraNavItems ?? [])
   ]

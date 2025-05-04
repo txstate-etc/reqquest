@@ -18,7 +18,7 @@
   import type { PageData } from './$types.js'
 
   export let data: PageData
-  $: ({ prompt } = data)
+  $: ({ prompt, appRequestData } = data)
   $: def = uiRegistry.getPrompt($page.params.promptKey)
 
   let store: FormStore | undefined
@@ -46,7 +46,7 @@
     if (continueAfterSave) {
       if (nextPrompt) await goto(`${base}/requests/${$page.params.id}/apply/${nextPrompt.key}`)
       else await goto(`${base}/requests/${$page.params.id}/apply/review`)
-    } else await store?.setData(prompt.data ?? {})
+    } else await store?.setData(appRequestData[prompt.key] as object)
   }
 
   // Remove the form from the DOM when navigating between prompts
@@ -61,8 +61,8 @@
 </script>
 
 {#if !hideForm}
-  <Form bind:store submitText="Save & Continue" submit={onSubmit} validate={onValidate} preload={prompt.data} on:saved={onSaved} let:data>
-    <svelte:component this={def.formComponent} {data} fetched={prompt.fetchedData} />
+  <Form bind:store submitText="Save & Continue" submit={onSubmit} validate={onValidate} preload={appRequestData[prompt.key]} on:saved={onSaved} let:data>
+    <svelte:component this={def.formComponent} {data} {appRequestData} fetched={prompt.fetchedData} />
     <svelte:fragment slot="submit" let:submitting>
       <div class='form-submit'>
         <Button icon={submitting && !continueAfterSave ? ButtonLoadingIcon : Save} type="submit" disabled={submitting} on:click={() => { continueAfterSave = false }}>Save</Button>

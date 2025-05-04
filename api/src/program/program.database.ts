@@ -5,10 +5,10 @@ function processFilters (filters?: PeriodProgramFilters) {
   const where: any[] = []
   const binds: any[] = []
   if (filters?.periodIds?.length) {
-    where.push(`pe.periodId IN (${db.in(binds, filters.periodIds)})`)
+    where.push(`pp.periodId IN (${db.in(binds, filters.periodIds)})`)
   }
   if (filters?.keys?.length) {
-    where.push(`pe.key IN (${db.in(binds, filters.keys)})`)
+    where.push(`pp.programKey IN (${db.in(binds, filters.keys)})`)
   }
   return { where, binds }
 }
@@ -16,7 +16,7 @@ function processFilters (filters?: PeriodProgramFilters) {
 export async function getPeriodPrograms (filters?: PeriodProgramFilters) {
   const { where, binds } = processFilters(filters)
   return (await db.getall<PeriodProgramRow>(`
-    SELECT pe.* FROM period_enabled pe
+    SELECT pp.* FROM period_programs pp
     ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
   `, binds)).map(row => new PeriodProgram(row))
 }

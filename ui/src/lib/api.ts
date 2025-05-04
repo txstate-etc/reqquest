@@ -2,6 +2,7 @@ import { PUBLIC_API_BASE, PUBLIC_AUTH_REDIRECT } from '$env/static/public'
 import { APIBase } from '@txstate-mws/sveltekit-utils'
 import { GET_ACCESS, type IAccessResponse, GET_APP_REQUESTS, type GetAppRequestsResponse, type AppRequestFilter } from './queries'
 import { createClient, enumRequirementType } from './typed-client/index.js'
+import { keyby } from 'txstate-utils'
 
 class API extends APIBase {
   client = createClient({
@@ -111,6 +112,7 @@ class API extends APIBase {
       __name: 'GetPromptData',
       appRequests: {
         __args: { filter: { ids: [appRequestId] } },
+        data: true,
         applications: {
           id: true,
           requirements: {
@@ -121,23 +123,22 @@ class API extends APIBase {
               id: true,
               key: true,
               reachable: true,
-              data: true,
               fetchedData: true
             }
           }
         }
       }
     })
-    if (response.appRequests.length === 0) return undefined
+    if (response.appRequests.length === 0) return {}
     const appRequest = response.appRequests[0]
     for (const application of appRequest.applications) {
       for (const requirement of application.requirements.filter(r => r.type === enumRequirementType.PREQUAL || r.type === enumRequirementType.QUALIFICATION)) {
         for (const prompt of requirement.prompts) {
-          if (prompt.key === promptKey && prompt.reachable) return prompt
+          if (prompt.key === promptKey && prompt.reachable) return { appRequestData: appRequest.data, prompt }
         }
       }
     }
-    return undefined
+    return { appRequestData: appRequest.data }
   }
 
   async updatePrompt (promptId: string, data: any, validateOnly: boolean) {
@@ -154,6 +155,22 @@ class API extends APIBase {
       }
     })
     return this.mutationForDialog(response.updatePrompt)
+  }
+
+  async updateConfiguration (periodId: string, definitionKey: string, data: any, validateOnly: boolean) {
+    const response = await this.client.mutation({
+      __name: 'UpdateConfiguration',
+      updateConfiguration: {
+        __args: { periodId, key: definitionKey, data, validateOnly },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.updateConfiguration)
   }
 
   async getAppRequestData (appRequestId: string) {
@@ -226,6 +243,66 @@ class API extends APIBase {
     if (response.appRequests.length === 0) return undefined
     const appRequest = response.appRequests[0]
     return { ...appRequest, applications: appRequest.applications.map(a => ({ ...a, requirements: a.requirements.filter(r => r.reachable).map(r => ({ ...r, prompts: r.prompts.filter(p => p.reachable) })) })) }
+  }
+
+  async getPeriodList () {
+    const response = await this.client.query({
+      __name: 'GetPeriodList',
+      periods: {
+        id: true,
+        name: true,
+        openDate: true,
+        closeDate: true,
+        archiveAt: true
+      }
+    })
+    return response.periods
+  }
+
+  async getPeriodConfigurations (periodId: string) {
+    const response = await this.client.query({
+      __name: 'GetPeriodConfigurations',
+      periods: {
+        __args: { filter: { ids: [periodId] } },
+        id: true,
+        name: true,
+        code: true,
+        openDate: true,
+        closeDate: true,
+        archiveAt: true,
+        programs: {
+          key: true,
+          title: true,
+          enabled: true,
+          requirements: {
+            key: true,
+            title: true,
+            description: true,
+            enabled: true,
+            configuration: {
+              data: true,
+              actions: {
+                update: true
+              }
+            },
+            prompts: {
+              key: true,
+              title: true,
+              description: true,
+              configuration: {
+                data: true,
+                actions: {
+                  update: true
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+    if (!response.periods.length) return { period: undefined, programs: [] }
+    const period = response.periods[0]
+    return { programs: period.programs, period }
   }
 }
 

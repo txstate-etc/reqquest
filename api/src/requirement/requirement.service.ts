@@ -1,6 +1,5 @@
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { Application, AuthService, getApplicationRequirements, ApplicationRequirement, ApplicationRequirementFilter, PeriodRequirement, getPeriodRequirements, getPeriodProgramRequirements, PeriodProgramKey } from '../internal.js'
-import { BaseService } from '@txstate-mws/graphql-server'
+import { Application, AuthService, getApplicationRequirements, ApplicationRequirement, ApplicationRequirementFilter, PeriodProgramRequirement, getPeriodProgramRequirements, PeriodProgramKey, PeriodProgramRequirementKey, PeriodRequirementKey } from '../internal.js'
 
 const byIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -43,11 +42,27 @@ export class ApplicationRequirementService extends AuthService<ApplicationRequir
   }
 }
 
+const periodRequirementByFullKeyLoader = new PrimaryKeyLoader({
+  fetch: async (keys: PeriodProgramRequirementKey[]) => {
+    return await getPeriodProgramRequirements({ keys })
+  },
+  extractId: row => ({ periodId: row.periodId, programKey: row.programKey, requirementKey: row.key })
+})
+
 const periodRequirementsByPeriodIdLoader = new OneToManyLoader({
   fetch: async (periodIds: string[]) => {
-    return await getPeriodRequirements({ periodIds })
+    return await getPeriodProgramRequirements({ periodIds })
   },
-  extractKey: row => row.periodId
+  extractKey: row => row.periodId,
+  idLoader: periodRequirementByFullKeyLoader
+})
+
+const periodRequirementsByPeriodIdAndRequirementKeyLoader = new OneToManyLoader({
+  fetch: async (periodRequirementKeys: PeriodRequirementKey[]) => {
+    return await getPeriodProgramRequirements({ periodRequirementKeys })
+  },
+  extractKey: row => ({ periodId: row.periodId, requirementKey: row.key }),
+  idLoader: periodRequirementByFullKeyLoader
 })
 
 const periodProgramRequirementsByPeriodIdAndProgramKeyLoader = new OneToManyLoader({
@@ -57,16 +72,25 @@ const periodProgramRequirementsByPeriodIdAndProgramKeyLoader = new OneToManyLoad
   extractKey: row => ({ periodId: row.periodId, programKey: row.programKey })
 })
 
-export class PeriodRequirementService extends BaseService<PeriodRequirement> {
+export class PeriodRequirementService extends AuthService<PeriodProgramRequirement> {
   async findByPeriodId (periodId: string) {
     return await this.loaders.get(periodRequirementsByPeriodIdLoader).load(periodId)
   }
 
-  async findByPeriodProgramKey (periodId: string, programKey: string) {
-
+  async findByPeriodIdAndProgramKey (periodId: string, programKey: string) {
+    return await this.loaders.get(periodProgramRequirementsByPeriodIdAndProgramKeyLoader).load({ periodId, programKey })
   }
 
-  mayConfigure (requirement: PeriodRequirement) {
-    return true // TODO
+  async findByPeriodIdAndRequirementKey (periodId: string, requirementKey: string) {
+    return await this.loaders.get(periodRequirementsByPeriodIdAndRequirementKeyLoader).load({ periodId, requirementKey })
+  }
+
+  async findByKey (periodId: string, programKey: string, requirementKey: string) {
+    return await this.loaders.get(periodRequirementByFullKeyLoader).load({ periodId, programKey, requirementKey })
+  }
+
+  mayConfigure (requirement: PeriodProgramRequirement) {
+    if (requirement.definition.validateConfiguration == null) return false
+    return this.hasControl('Requirement', 'configure', requirement.key)
   }
 }

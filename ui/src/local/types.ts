@@ -16,3 +16,11 @@ export interface CatTowerData {
 export interface NiceData {
   seemsNice: boolean
 }
+
+export interface ExerciseData {
+  exerciseHours: number
+}
+
+export interface ExerciseConfig {
+  minExerciseHours: number
+}

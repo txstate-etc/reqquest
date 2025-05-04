@@ -219,6 +219,20 @@ export interface ApplicationRequirement {
  */
 export type ApplicationStatus = 'ACCEPTED' | 'APPROVAL' | 'APPROVED' | 'CANCELLED' | 'FAILED_PREQUAL' | 'FAILED_QUALIFICATION' | 'NOT_ACCEPTED' | 'NOT_APPROVED' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION' | 'READY_TO_SUBMIT' | 'WITHDRAWN'
 
+export interface Configuration {
+    actions: ConfigurationAccess
+    data: Scalars['JsonData']
+    /** The key being configured. Could be a requirement or prompt key. */
+    key: Scalars['String']
+    __typename: 'Configuration'
+}
+
+export interface ConfigurationAccess {
+    update: Scalars['Boolean']
+    view: Scalars['Boolean']
+    __typename: 'ConfigurationAccess'
+}
+
 export interface Mutation {
     roleAddGrant: AccessRoleValidatedResponse
     roleCreate: AccessRoleValidatedResponse
@@ -228,6 +242,8 @@ export interface Mutation {
     roleUpdateGrant: AccessRoleValidatedResponse
     /** Submit the app request. */
     submitAppRequest: ValidatedAppRequestResponse
+    updateConfiguration: ValidatedConfigurationResponse
+    updatePeriod: ValidatedPeriodResponse
     /** Update the data for a prompt in this app request. */
     updatePrompt: ValidatedAppRequestResponse
     __typename: 'Mutation'
@@ -246,18 +262,81 @@ export interface MutationMessage {
 export type MutationMessageType = 'error' | 'success' | 'warning'
 
 export interface Period {
+    actions: PeriodActions
     /** This is useful for filtering out periods that are no longer useful. For instance, a window might close applications after 2 weeks but the reviewers could be working. */
     archiveAt: (Scalars['DateTime'] | null)
     /** Date that this period closes for applications. */
     closeDate: Scalars['DateTime']
     /** Unique identifier for this period that references an external system. Ideally human readable. */
     code: (Scalars['String'] | null)
+    configurations: Configuration[]
     id: Scalars['ID']
     /** Name for this period. Will be displayed to applicants if they create an App Request while two periods are simultaneously open. */
     name: Scalars['String']
     /** Date that this period opens for applications. */
     openDate: Scalars['DateTime']
+    programs: PeriodProgram[]
+    prompts: PeriodPrompt[]
+    requirements: PeriodProgramRequirement[]
     __typename: 'Period'
+}
+
+export interface PeriodActions {
+    update: Scalars['Boolean']
+    view: Scalars['Boolean']
+    __typename: 'PeriodActions'
+}
+
+export interface PeriodProgram {
+    actions: PeriodProgramActions
+    /** Whether the program is enabled in this period. This is set by the system administrator. */
+    enabled: Scalars['Boolean']
+    group: PeriodProgramActions
+    key: Scalars['ID']
+    navTitle: Scalars['String']
+    period: Period
+    requirements: PeriodProgramRequirement[]
+    title: Scalars['String']
+    __typename: 'PeriodProgram'
+}
+
+export interface PeriodProgramActions {
+    configure: Scalars['Boolean']
+    __typename: 'PeriodProgramActions'
+}
+
+export interface PeriodProgramRequirement {
+    /** The configuration for this requirement in the period. */
+    configuration: Configuration
+    /** An internal description of the requirement. Probably not shown to users. */
+    description: Scalars['String']
+    /** Whether the requirement is enabled in this period. This is set by the system administrator. */
+    enabled: Scalars['Boolean']
+    /** A human and machine readable unique and stable identifier that we can use to add javascript logic to the evaluation of whether a requirement is satisfied. For example: "gi_ch33_must_be_post911" */
+    key: Scalars['String']
+    /** A human readable title for the requirement in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
+    navTitle: Scalars['String']
+    prompts: PeriodPrompt[]
+    /** A human readable title for the requirement. This is what will be shown to users. */
+    title: Scalars['String']
+    /** The type of requirement. This determines when the requirement is evaluated and who can see the requirement. */
+    type: RequirementType
+    __typename: 'PeriodProgramRequirement'
+}
+
+export interface PeriodPrompt {
+    /** The configuration for this prompt in the given period. */
+    configuration: Configuration
+    /** A brief description of the prompt. This should be shown to administrators to help explain the full meaning of the prompt while assigning permissions or editing its configuration. */
+    description: (Scalars['String'] | null)
+    /** A human and machine readable identifier for the prompt. Will be used to match prompt data with UI and API code that handles it. */
+    key: Scalars['String']
+    /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
+    navTitle: Scalars['String']
+    periodId: Scalars['String']
+    /** A human readable title for the prompt. This is what will be shown to users. */
+    title: Scalars['String']
+    __typename: 'PeriodPrompt'
 }
 
 export interface Program {
@@ -287,6 +366,7 @@ export interface Query {
     access: Access
     accessUsers: AccessUser[]
     appRequests: AppRequest[]
+    periods: Period[]
     programGroups: ProgramGroup[]
     programs: Program[]
     roles: AccessRole[]
@@ -349,6 +429,22 @@ export interface ValidatedAppRequestResponse {
     /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
     success: Scalars['Boolean']
     __typename: 'ValidatedAppRequestResponse'
+}
+
+export interface ValidatedConfigurationResponse {
+    configuration: (Configuration | null)
+    messages: MutationMessage[]
+    /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
+    success: Scalars['Boolean']
+    __typename: 'ValidatedConfigurationResponse'
+}
+
+export interface ValidatedPeriodResponse {
+    messages: MutationMessage[]
+    period: (Period | null)
+    /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
+    success: Scalars['Boolean']
+    __typename: 'ValidatedPeriodResponse'
 }
 
 export interface ValidatedResponse {
@@ -596,6 +692,32 @@ export interface ApplicationRequirementGenqlSelection{
     __scalar?: boolean | number
 }
 
+export interface ConfigurationGenqlSelection{
+    actions?: ConfigurationAccessGenqlSelection
+    data?: boolean | number
+    /** The key being configured. Could be a requirement or prompt key. */
+    key?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ConfigurationAccessGenqlSelection{
+    update?: boolean | number
+    view?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ConfigurationFilters {
+/** Return specific configurations. */
+ids?: (Scalars['ID'][] | null),
+/** Return configurations for these keys. */
+keys?: (Scalars['String'][] | null),
+/** Return configurations for these period codes. */
+periodCodes?: (Scalars['String'][] | null),
+/** Return configurations for these period IDs. */
+periodIds?: (Scalars['ID'][] | null)}
+
 export interface MutationGenqlSelection{
     roleAddGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grant: AccessRoleGrantCreate, roleId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     roleCreate?: (AccessRoleValidatedResponseGenqlSelection & { __args: {role: AccessRoleInput, validateOnly?: (Scalars['Boolean'] | null)} })
@@ -605,6 +727,8 @@ export interface MutationGenqlSelection{
     roleUpdateGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grant: AccessRoleGrantCreate, grantId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     /** Submit the app request. */
     submitAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
+    updateConfiguration?: (ValidatedConfigurationResponseGenqlSelection & { __args: {data: Scalars['JsonData'], key: Scalars['String'], periodId: Scalars['String'], validateOnly?: (Scalars['Boolean'] | null)} })
+    updatePeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {id: Scalars['String'], update: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
     /** Update the data for a prompt in this app request. */
     updatePrompt?: (ValidatedAppRequestResponseGenqlSelection & { __args: {data: Scalars['JsonData'], promptId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     __typename?: boolean | number
@@ -623,20 +747,110 @@ export interface MutationMessageGenqlSelection{
 }
 
 export interface PeriodGenqlSelection{
+    actions?: PeriodActionsGenqlSelection
     /** This is useful for filtering out periods that are no longer useful. For instance, a window might close applications after 2 weeks but the reviewers could be working. */
     archiveAt?: boolean | number
     /** Date that this period closes for applications. */
     closeDate?: boolean | number
     /** Unique identifier for this period that references an external system. Ideally human readable. */
     code?: boolean | number
+    configurations?: (ConfigurationGenqlSelection & { __args?: {filter?: (ConfigurationFilters | null)} })
     id?: boolean | number
     /** Name for this period. Will be displayed to applicants if they create an App Request while two periods are simultaneously open. */
     name?: boolean | number
     /** Date that this period opens for applications. */
     openDate?: boolean | number
+    programs?: PeriodProgramGenqlSelection
+    prompts?: PeriodPromptGenqlSelection
+    requirements?: PeriodProgramRequirementGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
+
+export interface PeriodActionsGenqlSelection{
+    update?: boolean | number
+    view?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PeriodFilters {
+/** Return periods that will be archived after this date. */
+archiveAfter?: (Scalars['DateTime'] | null),
+/** Return periods that were archived before this date. */
+archiveBefore?: (Scalars['DateTime'] | null),
+/** Return periods that are open at this date or will be open after it. */
+closesAfter?: (Scalars['DateTime'] | null),
+/** Return periods that closed before this date, not including that date's active period(s). */
+closesBefore?: (Scalars['DateTime'] | null),
+/** Return periods that have any of these codes. */
+codes?: (Scalars['String'][] | null),
+/** Return periods that have any of these IDs. */
+ids?: (Scalars['ID'][] | null),
+/** true -> open periods. false -> closed periods. null -> all periods. */
+openNow?: (Scalars['Boolean'] | null),
+/** Return periods that open after this date, not including that date's active period(s). */
+opensAfter?: (Scalars['DateTime'] | null),
+/** Return periods that are open at this date or have been open before it. */
+opensBefore?: (Scalars['DateTime'] | null)}
+
+export interface PeriodProgramGenqlSelection{
+    actions?: PeriodProgramActionsGenqlSelection
+    /** Whether the program is enabled in this period. This is set by the system administrator. */
+    enabled?: boolean | number
+    group?: PeriodProgramActionsGenqlSelection
+    key?: boolean | number
+    navTitle?: boolean | number
+    period?: PeriodGenqlSelection
+    requirements?: PeriodProgramRequirementGenqlSelection
+    title?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PeriodProgramActionsGenqlSelection{
+    configure?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PeriodProgramRequirementGenqlSelection{
+    /** The configuration for this requirement in the period. */
+    configuration?: ConfigurationGenqlSelection
+    /** An internal description of the requirement. Probably not shown to users. */
+    description?: boolean | number
+    /** Whether the requirement is enabled in this period. This is set by the system administrator. */
+    enabled?: boolean | number
+    /** A human and machine readable unique and stable identifier that we can use to add javascript logic to the evaluation of whether a requirement is satisfied. For example: "gi_ch33_must_be_post911" */
+    key?: boolean | number
+    /** A human readable title for the requirement in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
+    navTitle?: boolean | number
+    prompts?: PeriodPromptGenqlSelection
+    /** A human readable title for the requirement. This is what will be shown to users. */
+    title?: boolean | number
+    /** The type of requirement. This determines when the requirement is evaluated and who can see the requirement. */
+    type?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PeriodPromptGenqlSelection{
+    /** The configuration for this prompt in the given period. */
+    configuration?: ConfigurationGenqlSelection
+    /** A brief description of the prompt. This should be shown to administrators to help explain the full meaning of the prompt while assigning permissions or editing its configuration. */
+    description?: boolean | number
+    /** A human and machine readable identifier for the prompt. Will be used to match prompt data with UI and API code that handles it. */
+    key?: boolean | number
+    /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
+    navTitle?: boolean | number
+    periodId?: boolean | number
+    /** A human readable title for the prompt. This is what will be shown to users. */
+    title?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PeriodUpdate {archiveAt?: (Scalars['DateTime'] | null),closeDate?: (Scalars['DateTime'] | null),code?: (Scalars['String'] | null),name?: (Scalars['String'] | null),openDate?: (Scalars['DateTime'] | null)}
 
 export interface ProgramGenqlSelection{
     key?: boolean | number
@@ -671,6 +885,7 @@ export interface QueryGenqlSelection{
     access?: AccessGenqlSelection
     accessUsers?: (AccessUserGenqlSelection & { __args?: {filter?: (AccessUserFilter | null)} })
     appRequests?: (AppRequestGenqlSelection & { __args?: {filter?: (AppRequestFilter | null)} })
+    periods?: (PeriodGenqlSelection & { __args?: {filter?: (PeriodFilters | null)} })
     programGroups?: (ProgramGroupGenqlSelection & { __args?: {filter?: (ProgramGroupFilter | null)} })
     programs?: (ProgramGenqlSelection & { __args?: {filter?: (ProgramFilters | null)} })
     roles?: (AccessRoleGenqlSelection & { __args?: {filter?: (AccessRoleFilter | null)} })
@@ -735,6 +950,24 @@ export interface RoleActionsGenqlSelection{
 export interface ValidatedAppRequestResponseGenqlSelection{
     appRequest?: AppRequestGenqlSelection
     messages?: MutationMessageGenqlSelection
+    /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
+    success?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ValidatedConfigurationResponseGenqlSelection{
+    configuration?: ConfigurationGenqlSelection
+    messages?: MutationMessageGenqlSelection
+    /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
+    success?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ValidatedPeriodResponseGenqlSelection{
+    messages?: MutationMessageGenqlSelection
+    period?: PeriodGenqlSelection
     /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
     success?: boolean | number
     __typename?: boolean | number
@@ -862,6 +1095,22 @@ export interface ValidatedResponseGenqlSelection{
     
 
 
+    const Configuration_possibleTypes: string[] = ['Configuration']
+    export const isConfiguration = (obj?: { __typename?: any } | null): obj is Configuration => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isConfiguration"')
+      return Configuration_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ConfigurationAccess_possibleTypes: string[] = ['ConfigurationAccess']
+    export const isConfigurationAccess = (obj?: { __typename?: any } | null): obj is ConfigurationAccess => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isConfigurationAccess"')
+      return ConfigurationAccess_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const Mutation_possibleTypes: string[] = ['Mutation']
     export const isMutation = (obj?: { __typename?: any } | null): obj is Mutation => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isMutation"')
@@ -882,6 +1131,46 @@ export interface ValidatedResponseGenqlSelection{
     export const isPeriod = (obj?: { __typename?: any } | null): obj is Period => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isPeriod"')
       return Period_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PeriodActions_possibleTypes: string[] = ['PeriodActions']
+    export const isPeriodActions = (obj?: { __typename?: any } | null): obj is PeriodActions => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPeriodActions"')
+      return PeriodActions_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PeriodProgram_possibleTypes: string[] = ['PeriodProgram']
+    export const isPeriodProgram = (obj?: { __typename?: any } | null): obj is PeriodProgram => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPeriodProgram"')
+      return PeriodProgram_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PeriodProgramActions_possibleTypes: string[] = ['PeriodProgramActions']
+    export const isPeriodProgramActions = (obj?: { __typename?: any } | null): obj is PeriodProgramActions => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPeriodProgramActions"')
+      return PeriodProgramActions_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PeriodProgramRequirement_possibleTypes: string[] = ['PeriodProgramRequirement']
+    export const isPeriodProgramRequirement = (obj?: { __typename?: any } | null): obj is PeriodProgramRequirement => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPeriodProgramRequirement"')
+      return PeriodProgramRequirement_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PeriodPrompt_possibleTypes: string[] = ['PeriodPrompt']
+    export const isPeriodPrompt = (obj?: { __typename?: any } | null): obj is PeriodPrompt => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPeriodPrompt"')
+      return PeriodPrompt_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -930,6 +1219,22 @@ export interface ValidatedResponseGenqlSelection{
     export const isValidatedAppRequestResponse = (obj?: { __typename?: any } | null): obj is ValidatedAppRequestResponse => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isValidatedAppRequestResponse"')
       return ValidatedAppRequestResponse_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ValidatedConfigurationResponse_possibleTypes: string[] = ['ValidatedConfigurationResponse']
+    export const isValidatedConfigurationResponse = (obj?: { __typename?: any } | null): obj is ValidatedConfigurationResponse => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isValidatedConfigurationResponse"')
+      return ValidatedConfigurationResponse_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ValidatedPeriodResponse_possibleTypes: string[] = ['ValidatedPeriodResponse']
+    export const isValidatedPeriodResponse = (obj?: { __typename?: any } | null): obj is ValidatedPeriodResponse => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isValidatedPeriodResponse"')
+      return ValidatedPeriodResponse_possibleTypes.includes(obj.__typename)
     }
     
 

@@ -19,6 +19,15 @@ export class Program {
   navTitle: string
 }
 
+@InputType({ description: 'Identifies a single PeriodProgram.' })
+export class PeriodProgramKey {
+  @Field()
+  periodId!: string
+
+  @Field()
+  programKey!: string
+}
+
 @InputType()
 export class ProgramFilters {
   @Field(() => [String], { nullable: true })
@@ -29,12 +38,12 @@ export class ProgramFilters {
 export class PeriodProgram extends Program {
   constructor (row: PeriodProgramRow) {
     super(programRegistry.get(row.programKey))
-    this.disabled = !!row.disabled
+    this.enabled = !row.disabled
     this.periodId = String(row.periodId)
   }
 
-  @Field()
-  disabled: boolean
+  @Field({ description: 'Whether the program is enabled in this period. This is set by the system administrator.' })
+  enabled: boolean
 
   periodId: string
 }

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { base } from '$app/paths'
-  import { enumRequirementType } from '$lib/typed-client/index.js'
+  import { page } from '$app/stores'
+  import { enumApplicationStatus } from '$lib/typed-client'
   import type { LayoutData } from './$types'
 
   export let data: LayoutData
@@ -9,9 +10,10 @@
 
 <div class="leftcol">
 {#each prequalPrompts as prompt (prompt.id)}
+  {#if $page.params.promptKey === prompt.key}--&gt;{/if}
   <a href="{base}/requests/{appRequestForNavigation.id}/apply/{prompt.key}">{prompt.navTitle}</a>
 {/each}
-{#if appRequestForNavigation.applications.length}
+{#if appRequestForNavigation.applications.length && !appRequestForNavigation.applications.some(a => a.status === enumApplicationStatus.PREQUAL)}
   <ul>
     {#each appRequestForNavigation.applications as application (application.id)}
       <li style:font-weight="bold">{application.navTitle}</li>
@@ -20,7 +22,10 @@
         <ul>
           {#each qualRequirements as requirement (requirement.id)}
             {#each requirement.prompts as prompt (prompt.id)}
-              <li><a href="{base}/requests/{appRequestForNavigation.id}/apply/{prompt.key}">{prompt.navTitle}</a></li>
+              <li>
+                {#if $page.params.promptKey === prompt.key}--&gt;{/if}
+                <a href="{base}/requests/{appRequestForNavigation.id}/apply/{prompt.key}">{prompt.navTitle}</a>
+              </li>
             {/each}
           {/each}
         </ul>

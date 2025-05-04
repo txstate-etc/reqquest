@@ -1,15 +1,15 @@
 import { Arg, Ctx, FieldResolver, Mutation, Query, Resolver, Root } from 'type-graphql'
-import { Configuration, ConfigurationAccess, ConfigurationFilters, ConfigurationService, JsonData, Period, PeriodActions, PeriodFilters, PeriodProgram, PeriodPrompt, PeriodPromptService, PeriodRequirement, PeriodRequirementService, PeriodService, PeriodUpdate, ProgramService, PromptService, RQContext } from '../internal.js'
+import { Configuration, ConfigurationAccess as ConfigurationActions, ConfigurationFilters, ConfigurationService, JsonData, Period, PeriodActions, PeriodFilters, PeriodProgram, PeriodPrompt, PeriodPromptService, PeriodProgramRequirement, PeriodRequirementService, PeriodService, PeriodUpdate, ProgramService, RQContext, ValidatedPeriodResponse, ValidatedConfigurationResponse } from '../internal.js'
 
 @Resolver(of => Period)
 export class PeriodResolver {
   @Query(returns => [Period])
-  async periods (@Ctx() ctx: RQContext, @Arg('filter', { nullable: true }) filter?: PeriodFilters) {
+  async periods (@Ctx() ctx: RQContext, @Arg('filter', type => PeriodFilters, { nullable: true }) filter?: PeriodFilters) {
     return await ctx.svc(PeriodService).find(filter)
   }
 
   @FieldResolver(type => [Configuration])
-  async configurations (@Ctx() ctx: RQContext, @Root() period: Period, @Arg('filter', { nullable: true }) filter?: ConfigurationFilters) {
+  async configurations (@Ctx() ctx: RQContext, @Root() period: Period, @Arg('filter', type => ConfigurationFilters, { nullable: true }) filter?: ConfigurationFilters) {
     return await ctx.svc(ConfigurationService).findByPeriodId(period.id, filter)
   }
 
@@ -18,7 +18,7 @@ export class PeriodResolver {
     return await ctx.svc(ProgramService).findByPeriodId(period.id)
   }
 
-  @FieldResolver(type => [PeriodRequirement])
+  @FieldResolver(type => [PeriodProgramRequirement])
   async requirements (@Ctx() ctx: RQContext, @Root() period: Period) {
     return await ctx.svc(PeriodRequirementService).findByPeriodId(period.id)
   }
@@ -28,9 +28,14 @@ export class PeriodResolver {
     return await ctx.svc(PeriodPromptService).findByPeriodId(period.id)
   }
 
-  @Mutation(returns => Period)
-  async updatePeriod (@Ctx() ctx: RQContext, @Arg('id') id: string, @Arg('update') update: PeriodUpdate, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
+  @Mutation(returns => ValidatedPeriodResponse)
+  async updatePeriod (@Ctx() ctx: RQContext, @Arg('id') id: string, @Arg('update', type => PeriodUpdate) update: PeriodUpdate, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
     return await ctx.svc(PeriodService).update(id, update, validateOnly)
+  }
+
+  @Mutation(returns => ValidatedConfigurationResponse)
+  async updateConfiguration (@Ctx() ctx: RQContext, @Arg('periodId') periodId: string, @Arg('key') key: string, @Arg('data', type => JsonData) data: any, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
+    return await ctx.svc(ConfigurationService).update(periodId, key, data, validateOnly)
   }
 
   @FieldResolver(type => PeriodActions)
@@ -59,14 +64,14 @@ export class ConfigurationResolver {
     return await ctx.svc(ConfigurationService).getData(configuration.periodId, configuration.key)
   }
 
-  @FieldResolver(type => ConfigurationAccess)
+  @FieldResolver(type => ConfigurationActions)
   actions (@Root() configuration: Configuration) {
     return configuration
   }
 }
 
-@Resolver(of => ConfigurationAccess)
-export class ConfigurationAccessResolver {
+@Resolver(of => ConfigurationActions)
+export class ConfigurationActionsResolver {
   @FieldResolver(returns => Boolean)
   view (@Ctx() ctx: RQContext, @Root() configuration: Configuration) {
     return ctx.svc(ConfigurationService).mayView(configuration)

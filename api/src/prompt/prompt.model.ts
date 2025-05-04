@@ -122,13 +122,25 @@ export class PeriodPrompt extends Prompt {
   periodId: string
 }
 
-@ObjectType()
+@InputType()
+export class PeriodPromptKey {
+  @Field()
+  periodId!: string
+
+  @Field()
+  promptKey!: string
+}
+
+@InputType()
 export class PeriodPromptFilters {
-  @Field(() => [ID], { nullable: true, description: 'Return prompts for these period IDs.' })
+  @Field(type => [ID], { nullable: true, description: 'Return PeriodPrompts for these period IDs.' })
   periodIds?: string[]
 
-  @Field(() => [String], { nullable: true, description: 'Return prompts for these keys.' })
-  keys?: string[]
+  @Field(type => [String], { nullable: true, description: 'Return PeriodPrompts for these keys.' })
+  promptKeys?: string[]
+
+  @Field(type => [PeriodPromptKey], { nullable: true, description: 'Return PeriodPrompts by periodId and promptKey.' })
+  periodPromptKeys?: PeriodPromptKey[]
 }
 
 @ObjectType()

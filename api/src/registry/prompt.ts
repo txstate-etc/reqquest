@@ -90,6 +90,17 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    */
   configurationMigrations?: AppRequestMigration<ConfigurationDataType & { savedAtVersion: string }>[]
   /**
+   * The default configuration data for this prompt. This will be used to initialize the
+   * configuration data for the prompt when it is added to a period that does not already
+   * have a configuration for it.
+   *
+   * Typically the configuration will be copied from period to period, so this is only used
+   * for the first period after the prompt is added to the system.
+   *
+   * It may also be used as a reset-to-default target.
+   */
+  configurationDefault?: ConfigurationDataType
+  /**
    * A function that can be used to preload data for the prompt. This is useful for
    * prompts that depend on data from the database or other sources. Data provided by
    * this function will only be used to preload form fields in the UI. It will never

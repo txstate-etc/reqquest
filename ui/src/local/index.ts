@@ -8,6 +8,9 @@ import TunaAllergyPromptDisplay from './TunaAllergyPromptDisplay.svelte'
 import TunaAllergyPrompt from './TunaAllergyPrompt.svelte'
 import SeemsNicePrompt from './SeemsNicePrompt.svelte'
 import SeemsNicePromptDisplay from './SeemsNicePromptDisplay.svelte'
+import ExerciseConfigure from './ExerciseConfigure.svelte'
+import ExercisePrompt from './ExercisePrompt.svelte'
+import ExercisePromptDisplay from './ExercisePromptDisplay.svelte'
 
 export const uiRegistry = new UIRegistry({
   appName: 'Adopt a Critter',
@@ -18,9 +21,10 @@ export const uiRegistry = new UIRegistry({
   requirements: [
     { key: 'have_big_yard_req' },
     { key: 'have_adequate_personal_space_req' },
-    { key: 'cat_tower_req' },
+    { key: 'have_a_cat_tower_req' },
     { key: 'not_allergic_to_tuna_req' },
-    { key: 'applicant_seems_nice_req' }
+    { key: 'applicant_seems_nice_req' },
+    { key: 'must_exercise_your_dog_req', configureComponent: ExerciseConfigure }
   ],
   prompts: [{
     key: 'have_yard_prompt',
@@ -38,5 +42,9 @@ export const uiRegistry = new UIRegistry({
     key: 'applicant_seems_nice_prompt',
     formComponent: SeemsNicePrompt,
     displayComponent: SeemsNicePromptDisplay
+  }, {
+    key: 'must_exercise_your_dog_prompt',
+    formComponent: ExercisePrompt,
+    displayComponent: ExercisePromptDisplay
   }]
 })
