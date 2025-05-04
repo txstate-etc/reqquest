@@ -11,7 +11,10 @@ import {
   programGroupRegistry, promptRegistry, requirementRegistry, appConfig, promptMigrations,
   requirementMigrations, appRequestMigrations, RQContextClass, ensureConfigurationRecords,
   periodMigrations, AccessGrantControlTagResolver, AccessSubjectTypeResolver,
-  AccessControlResolver, AppRequestResolver
+  AccessControlResolver, AppRequestResolver,
+  ApplicationResolver,
+  ApplicationRequirementResolver,
+  RequirementPromptResolver
 } from './internal.js'
 
 export interface RQStartOpts extends Omit<GQLStartOpts, 'resolvers'> {
@@ -56,10 +59,13 @@ export class RQServer extends GQLServer {
       ApplicationActions,
       ApplicationActionsResolver,
       ApplicationActionsResolver,
+      ApplicationResolver,
+      ApplicationRequirementResolver,
       AppRequestResolver,
       AppRequestAccessResolver,
       ProgramGroupResolver,
       ProgramResolver,
+      RequirementPromptResolver,
       RequirementPromptActionsResolver,
       RoleActionsResolver,
       ...(options?.resolvers ?? [])

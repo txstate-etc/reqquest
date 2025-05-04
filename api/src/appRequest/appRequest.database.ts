@@ -1,7 +1,7 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
 import { clone, groupby, omit } from 'txstate-utils'
-import { ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestFilter, AppRequestStatus, getConfigurations, programRegistry, promptRegistry, RequirementPrompt, requirementRegistry, RequirementStatus, RequirementType, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
+import { ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestFilter, AppRequestStatus, programRegistry, promptRegistry, RequirementPrompt, requirementRegistry, RequirementStatus, RequirementType, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
 
 /**
  * This is the status of the whole appRequest as stored in the database. Each application
@@ -29,7 +29,6 @@ export interface AppRequestRow {
   userId: number
   status: AppRequestStatusDB
   computedStatus: AppRequestStatus
-  submitEligible: 0 | 1
   createdAt: Date
   updatedAt: Date
   closedAt: Date
@@ -95,13 +94,14 @@ export async function getAppRequests (filter?: AppRequestFilter, tdb: Queryable 
   return rows.map(row => new AppRequest(row))
 }
 
-export async function appRequestEligibleForSubmit (appRequestId: number, isEligible: boolean, db: Queryable) {
-  await db.execute('UPDATE app_requests SET submitEligible = ? WHERE id = ?', [isEligible, appRequestId])
+export async function updateAppRequestComputed (appRequest: AppRequest, db: Queryable) {
+  await db.execute('UPDATE app_requests SET computedStatus = ? WHERE id = ?', [appRequest.status, appRequest.internalId])
 }
 
 export async function createAppRequest (periodId: number, userId: number) {
   const appRequestId = await db.insert('INSERT INTO app_requests (periodId, userId) VALUES (?, ?)', [periodId, userId])
   await evaluateAppRequest(appRequestId)
+  return appRequestId
 }
 
 export async function updateAppRequestData (appRequestId: number, data: AppRequestData) {
@@ -119,20 +119,52 @@ export async function restoreAppRequest (appRequestId: number) {
   await evaluateAppRequest(appRequestId)
 }
 
+export async function closeAppRequest (appRequestId: number) {
+  await db.transaction(async db => {
+    const computedStatus = await db.getval<AppRequestStatus>('SELECT computedStatus FROM app_requests WHERE id = ? FOR UPDATE', [appRequestId])
+    await db.update('UPDATE app_requests SET status = ?, computedStatus = ?, closedAt = NOW() WHERE id = ?', [
+      AppRequestStatusDB.CLOSED,
+      computedStatus === AppRequestStatus.APPROVED ? AppRequestStatus.APPROVED_CLOSED : AppRequestStatus.DISQUALIFIED_CLOSED
+    ])
+  })
+}
+
+export async function cancelAppRequest (appRequestId: number) {
+  await db.transaction(async db => {
+    const dbStatus = await db.getval<AppRequestStatusDB>('SELECT status FROM app_requests WHERE id = ? FOR UPDATE', [appRequestId])
+    const withdrawn = dbStatus === AppRequestStatusDB.SUBMITTED
+    await db.update('UPDATE app_requests SET status = ?, computedStatus = ? WHERE id = ?', [
+      withdrawn ? AppRequestStatusDB.WITHDRAWN : AppRequestStatusDB.CANCELLED,
+      withdrawn ? AppRequestStatus.WITHDRAWN : AppRequestStatus.CANCELLED,
+      appRequestId
+    ])
+  })
+}
+
 /**
  * This method will fill in any missing application, requirement, or prompt records for the appRequest.
  * It will be called upon creation of an appRequest and each time it is evaluated, in case the system has
  * added a requirement since the last evaluation.
  */
 export async function ensureAppRequestRecords (appRequest: AppRequest, db: Queryable) {
-  const enabled = new Set(await db.getvals<string>('SELECT programKey FROM period_programs WHERE periodId = ? AND disabled = 0', [appRequest.periodId]))
-  const programs = programRegistry.list().filter(program => enabled.has(program.key))
-  const requirements = programs.flatMap(p => p.requirementKeys).filter(key => enabled.has(key)).map(key => requirementRegistry.get(key))
-  const enabledKeys = new Set([...programs.map(p => p.key), ...requirements.map(r => r.key)])
-  const applications = await syncApplications(appRequest.internalId, enabledKeys, db)
+  const disabledPrograms = new Set(await db.getvals<string>('SELECT programKey FROM period_programs WHERE periodId = ? AND disabled = 1', [appRequest.periodId]))
+  const disabledRequirements = await db.getall<{ programKey: string, requirementKey: string }>('SELECT programKey, requirementKey FROM period_program_requirements WHERE periodId = ? AND disabled = 1', [appRequest.periodId])
+  const disabledRequirementLookup = disabledRequirements.reduce((acc, { programKey, requirementKey }) => ({ ...acc, [programKey]: { [requirementKey]: true } }), {} as Record<string, Record<string, boolean>>)
+  const programs = programRegistry.list().filter(program => !disabledPrograms.has(program.key))
+  const reqKeyLookup: Record<string, Set<string>> = {}
+  for (const program of programs) {
+    reqKeyLookup[program.key] ??= new Set()
+    for (const rkey of program.requirementKeys) {
+      if (!disabledRequirementLookup[program.key]?.[rkey]) {
+        reqKeyLookup[program.key].add(rkey)
+      }
+    }
+  }
+  const applications = await syncApplications(appRequest.internalId, new Set(programs.map(p => p.key)), db)
   const allRequirements: ApplicationRequirement[] = []
   const allPrompts: RequirementPrompt[] = []
   for (const application of applications) {
+    const enabledKeys = reqKeyLookup[application.programKey] ?? new Set()
     const requirements = await syncRequirementRecords(application, enabledKeys, db)
     allRequirements.push(...requirements)
     for (const requirement of requirements) {
@@ -170,7 +202,7 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
     if (!appRequest) throw new Error(`AppRequest ${appRequestInternalId} not found`)
 
     // if the appRequest is closed, we don't need to evaluate
-    if ([AppRequestStatusDB.CLOSED, AppRequestStatusDB.CANCELLED].includes(appRequest.dbStatus)) return
+    if ([AppRequestStatusDB.CLOSED, AppRequestStatusDB.CANCELLED, AppRequestStatusDB.WITHDRAWN].includes(appRequest.dbStatus)) return
 
     // let's figure out if we're in applicant mode or reviewer mode, we don't
     // need to evaluate reviewer requirements in applicant mode
@@ -272,7 +304,7 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
           prompt.askedInEarlierApplication = promptEvaluations[prompt.key] != null
           if (promptEvaluations[prompt.key] == null) {
             const promptConfig = configLookup[prompt.key] ?? {}
-            promptEvaluations[prompt.key] = prompt.invalidated ? false : prompt.definition.answered?.(data[prompt.key], promptConfig) ?? true
+            promptEvaluations[prompt.key] = prompt.invalidated ? false : prompt.definition.answered?.(data[prompt.key] ?? {}, promptConfig) ?? true
           }
           prompt.answered = promptEvaluations[prompt.key]
           if (!prompt.answered) allPromptsAnswered = false
@@ -350,11 +382,27 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
         application.status = ApplicationStatus.APPROVED
         application.statusReason = undefined
       }
-      if (hasPending) notReadyToSubmit = true
+      if (application.status === ApplicationStatus.QUALIFICATION && !hasPending && !hasIneligible) {
+        application.status = ApplicationStatus.READY_TO_SUBMIT
+        application.statusReason = undefined
+      }
     }
 
+    // determine appRequest status based on the application statuses
+    // no need to check for closed status, we don't evaluate closed appRequests
+    if (appRequest.dbStatus === AppRequestStatusDB.STARTED) appRequest.status = AppRequestStatus.STARTED
+    else if (applications.some(a => a.status === ApplicationStatus.PREAPPROVAL)) appRequest.status = AppRequestStatus.PREAPPROVAL
+    else if (applications.some(a => a.status === ApplicationStatus.APPROVAL)) appRequest.status = AppRequestStatus.APPROVAL
+    else if (applications.some(a => a.status === ApplicationStatus.APPROVED)) appRequest.status = AppRequestStatus.APPROVED
+    else appRequest.status = AppRequestStatus.DISQUALIFIED
+
+    if (appRequest.dbStatus === AppRequestStatusDB.STARTED && applications
+      .some(a => a.status === ApplicationStatus.READY_TO_SUBMIT) && applications
+      .every(a => [ApplicationStatus.READY_TO_SUBMIT, ApplicationStatus.FAILED_PREQUAL, ApplicationStatus.FAILED_QUALIFICATION].includes(a.status))
+    ) appRequest.status = AppRequestStatus.READY_TO_SUBMIT
+
     // save the results of the evaluation to the database
-    await appRequestEligibleForSubmit(appRequest.internalId, !notReadyToSubmit && !inReview, db)
+    await updateAppRequestComputed(appRequest, db)
     await updateApplicationsComputed(applications, db)
     await updateRequirementComputed(requirements, db)
     await updatePromptComputed(prompts, db)

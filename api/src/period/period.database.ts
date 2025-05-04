@@ -138,7 +138,7 @@ export async function createPeriod (period: PeriodUpdate) {
     const periodId = await db.insert(`
       INSERT INTO periods (code, name, openDate, closeDate, archiveAt)
       VALUES (?, ?, ?, ?, ?)
-    `, [code, name ?? code, openDate?.toJSDate(), closeDate?.toJSDate(), archiveAt?.toJSDate()])
+    `, [code, name, openDate?.toJSDate(), closeDate?.toJSDate(), archiveAt?.toJSDate()])
     await copyConfigurations(prevId, periodId, db)
     return periodId
   })
@@ -150,7 +150,7 @@ export async function updatePeriod (id: string, period: PeriodUpdate) {
     UPDATE periods
     SET code = ?, name = ?, openDate = ?, closeDate = ?, archiveAt = ?
     WHERE id = ?
-  `, [code, name ?? code, openDate, closeDate, archiveAt, id])
+  `, [code, name, openDate, closeDate, archiveAt, id])
 }
 
 function processConfigurationFilters (filters?: ConfigurationFilters) {
@@ -185,9 +185,9 @@ export async function getConfigurations (filters?: ConfigurationFilters) {
 export async function getConfigurationData (ids: { periodId: string, key: string }[]) {
   const binds: any[] = []
   const rows = await db.getall<{ periodId: number, key: string, data: string }>(`
-    SELECT periodId, key, data
+    SELECT periodId, definitionKey, data
     FROM period_configurations
-    WHERE (periodId, key) IN (${db.in(binds, ids)})
+    WHERE (periodId, definitionKey) IN (${db.in(binds, ids.map(pair => [pair.periodId, pair.key]))})
   `, binds)
   return rows.map(row => ({ periodId: String(row.periodId), key: row.key, data: JSON.parse(row.data || '{}') }))
 }

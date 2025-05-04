@@ -69,12 +69,12 @@ export async function syncPromptRecords (requirement: ApplicationRequirement, db
     const promptKey = requirement.definition.allPromptKeys[i]
     await db.update('UPDATE requirement_prompts SET evaluationOrder = ? WHERE requirementId = ? AND promptKey = ?', [i, requirement.internalId, promptKey])
   }
-  return await getRequirementPrompts({ requirementIds: [requirement.id] })
+  return await getRequirementPrompts({ requirementIds: [requirement.id] }, db)
 }
 
 export async function updatePromptComputed (prompts: RequirementPrompt[], db: Queryable) {
   for (const prompt of prompts) {
-    await db.update('UPDATE requirement_prompts SET reachable = ?, answered = ?, askedInEarlierRequirement = ?, askedInEarlierApplication = ?, WHERE id = ?', [prompt.reachable, prompt.answered, prompt.askedInEarlierRequirement, prompt.askedInEarlierApplication, prompt.internalId])
+    await db.update('UPDATE requirement_prompts SET reachable = ?, answered = ?, askedInEarlierRequirement = ?, askedInEarlierApplication = ? WHERE id = ?', [prompt.reachable, prompt.answered, prompt.askedInEarlierRequirement, prompt.askedInEarlierApplication, prompt.internalId])
   }
 }
 

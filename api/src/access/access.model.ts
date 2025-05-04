@@ -1,6 +1,7 @@
 import { Context, ValidatedResponse, ValidatedResponseArgs } from '@txstate-mws/graphql-server'
 import { ObjectType, InputType, Field, ID, registerEnumType } from 'type-graphql'
 import { AccessRoleGrantControlRow, AccessRoleGrantControlTagRow, AccessRoleGrantRow, AccessRoleGrantSubjectRow, AccessRoleService, AccessRoleServiceInternal, AccessUserIdentifierRow, AccessUserRow, ControlDefinition, JsonData, safeParse, SubjectDefinition, subjectTypes, TagDefinition } from '../internal.js'
+import { isBlank } from 'txstate-utils'
 
 @ObjectType()
 export class Access {}
@@ -253,6 +254,7 @@ export class AccessRoleGrant {
       ctx.svc(AccessRoleService).getControlsByGrantId(this.id),
       ctx.svc(AccessRoleService).getSubjectsByGrantId(this.id)
     ]))
+    if (!this.loadedSubjects.length) this.loadedSubjects = [{ id: 'all', subjectType: this.subjectType, grantId: this.id, roleId: this.roleId }]
     await Promise.all(this.loadedControls.map(control => control.loadTags(ctx)))
   }
 }
@@ -267,6 +269,7 @@ export class AccessGrantControl {
     this.grantId = String(row.grantId)
     this.roleInternalId = row.roleId
     this.roleId = String(row.roleId)
+    this.subjectType = row.subjectType
   }
 
   internalId: number
@@ -274,6 +277,7 @@ export class AccessGrantControl {
   roleId: string
   grantInternalId: number
   grantId: string
+  subjectType: string
 
   @Field()
   name: string
@@ -285,13 +289,14 @@ export class AccessGrantControl {
   async loadTags (ctx: Context) {
     if (this.loadedTags) return
     this.loadedTags = await ctx.svc(AccessRoleService).getTagsByControlId(this.internalId)
+    if (!this.loadedTags.length) this.loadedTags = [{ tag: 'all', category: undefined, controlId: this.internalId, subjectType: this.subjectType, control: this.name, grantId: this.grantInternalId, roleId: this.roleInternalId }]
   }
 }
 
 @ObjectType()
 export class AccessGrantControlTag {
   constructor (row: AccessRoleGrantControlTagRow) {
-    this.category = row.category || undefined
+    this.category = isBlank(row.category) ? undefined : row.category
     this.tag = row.tag
     this.controlId = row.controlId
     this.subjectType = row.subjectType

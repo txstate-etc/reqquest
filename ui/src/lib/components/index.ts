@@ -1,1 +1,1 @@
-export { default as PromptForm } from './PromptForm.svelte'
+export { default as ButtonLoadingIcon } from './ButtonLoadingIcon.svelte'

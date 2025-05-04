@@ -34,9 +34,9 @@ services:
       PUBLIC_ENVIRONMENT: 'DEV'
     volumes:
       - ./ui/src:/usr/app/src
-      - ./ui/.svelte-kit/types:/usr/app/ui/.svelte-kit/types
-      - ./ui/svelte.config.js:/usr/app/ui/svelte.config.js
-      - ./ui/vite.config.ts:/usr/app/ui/vite.config.ts
+      - ./ui/.svelte-kit/types:/usr/app/.svelte-kit/types
+      - ./ui/svelte.config.js:/usr/app/svelte.config.js
+      - ./ui/vite.config.ts:/usr/app/vite.config.ts
   fakeauth:
     image: registry.its.txstate.edu/unified-auth-stub:dev
     ports:

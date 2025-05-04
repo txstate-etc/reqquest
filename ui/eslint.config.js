@@ -32,6 +32,7 @@ const customConfig = {
     '@typescript-eslint/no-unsafe-member-access': 'off', // this makes it hard to use 'any', especially in svelte where you can't assert types in template expressions
     '@typescript-eslint/no-unsafe-return': 'off', // this makes it hard to use 'any', especially in svelte where you can't assert types in template expressions
     '@typescript-eslint/no-unused-vars': 'off', // typescript does this better
+    '@typescript-eslint/only-throw-error': 'off', // svekitkit error() function does not return an Error :/
     '@typescript-eslint/prefer-destructuring': 'off', // no reason to force destructuring
     '@typescript-eslint/prefer-nullish-coalescing': ['error', { ignoreConditionalTests: true }], // this is supposed to be the default but apparently eslint-config-love overrode it to something stupid
     '@typescript-eslint/prefer-readonly': 'off',
@@ -51,7 +52,6 @@ const customConfig = {
 
 export default [
   ...pluginSvelte.configs['flat/recommended'],
-  globalIgnores(['**/typed-client/**']),
   {
     files: ['src/**/*.svelte'],
     languageOptions: {

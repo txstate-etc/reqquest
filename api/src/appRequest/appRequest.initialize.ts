@@ -12,7 +12,6 @@ export const appRequestMigrations: DatabaseMigration[] = [
           userId INT UNSIGNED NOT NULL,
           status VARCHAR(255) NOT NULL DEFAULT '${AppRequestStatusDB.STARTED}',
           computedStatus VARCHAR(255) NOT NULL DEFAULT 'PREQUAL',
-          submitEligible TINYINT UNSIGNED NOT NULL DEFAULT 0,
           createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           closedAt DATETIME,

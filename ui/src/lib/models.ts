@@ -3,13 +3,6 @@ export interface AppRequestData {
   savedAtVersion: string
 }
 
-export enum RequirementType {
-  PREQUAL = 'PREQUAL',
-  QUALIFICATION = 'QUALIFICATION',
-  PREAPPROVAL = 'PREAPPROVAL',
-  APPROVAL = 'APPROVAL'
-}
-
 export enum RequirementStatus {
   MET = 'MET',
   DISQUALIFYING = 'DISQUALIFYING',

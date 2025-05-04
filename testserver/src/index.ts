@@ -1,6 +1,6 @@
 import { RQServer } from '@txstate-mws/reqquest'
 import { analyticsPlugin, unifiedAuthenticate } from 'fastify-txstate'
-import { have_yard_prompt, adopt_a_dog_program, have_big_yard_req, have_adequate_personal_space_req } from './definitions/index.js'
+import { have_yard_prompt, adopt_a_dog_program, have_big_yard_req, have_adequate_personal_space_req, adopt_a_cat_program, cat_tower_req, not_allergic_to_tuna_req, have_a_cat_tower_prompt, not_allergic_to_tuna_prompt, applicant_seems_nice_req, applicant_seems_nice_prompt } from './definitions/index.js'
 import { testMigrations } from './testdata.js'
 
 async function main () {
@@ -25,9 +25,9 @@ async function main () {
       }
     },
     programGroups: [],
-    programs: [adopt_a_dog_program],
-    requirements: [have_big_yard_req, have_adequate_personal_space_req],
-    prompts: [have_yard_prompt],
+    programs: [adopt_a_dog_program, adopt_a_cat_program],
+    requirements: [have_big_yard_req, have_adequate_personal_space_req, cat_tower_req, not_allergic_to_tuna_req, applicant_seems_nice_req],
+    prompts: [have_yard_prompt, have_a_cat_tower_prompt, not_allergic_to_tuna_prompt, applicant_seems_nice_prompt],
     migrations: testMigrations
   })
 }

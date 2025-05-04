@@ -5,9 +5,9 @@
 
 export type Scalars = {
     Boolean: boolean,
-    DateTime: any,
+    DateTime: string,
     ID: string,
-    JsonData: any,
+    JsonData: Record<string, any>,
     String: string,
 }
 
@@ -142,8 +142,9 @@ export interface AppRequest {
     /** All data that has been gathered from the user for this request. It is a Record whose properties are the prompt keys and values are the data gathered by the corresponding prompt dialog. */
     data: Scalars['JsonData']
     id: Scalars['ID']
+    /** The period this appRequest is associated with. */
+    period: Period
     status: AppRequestStatus
-    submitEligible: Scalars['Boolean']
     updatedAt: Scalars['DateTime']
     __typename: 'AppRequest'
 }
@@ -151,26 +152,60 @@ export interface AppRequest {
 
 /**
  * 
- *     The status of an appRequest. This status is computed based on the status recorded in
- *     the database and of the requirements for all applications. The possible statuses for each
- *     database status are as follows:
- * 
- *     STARTED: PREQUAL or QUALIFICATION depending on requirement statuses.
- *     SUBMITTED: PREAPPROVAL or APPROVAL depending on requirement statuses.
- *     CLOSED: CLOSED.
- *     CANCELLED: CANCELLED.
+ *     The status of an appRequest. This status is computed based on the "dbStatus" recorded in
+ *     the database and the status of each application.
  *   
  */
-export type AppRequestStatus = 'APPROVAL' | 'CANCELLED' | 'CLOSED' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION'
+export type AppRequestStatus = 'APPROVAL' | 'APPROVED' | 'APPROVED_CLOSED' | 'CANCELLED' | 'DISQUALIFIED' | 'DISQUALIFIED_CLOSED' | 'PREAPPROVAL' | 'READY_TO_SUBMIT' | 'STARTED' | 'WITHDRAWN'
 
 
 /** An application represents the applicant applying to a specific program. Each appRequest has multiple applications - one per program defined in the system. Some applications are mutually exclusive and/or will be eliminated early based on PREQUAL requirements, but they all technically exist in the data model - there is no concept of picking one application over another, just two applications where one dies and the other survives. */
 export interface Application {
+    actions: ApplicationActions
     id: Scalars['ID']
+    /** The navigation title of the program this application is for. */
+    navTitle: Scalars['String']
+    requirements: ApplicationRequirement[]
     status: ApplicationStatus
     /** When one of the application's requirements is failing or throwing a warning, its reason will be copied here for convenience. If there is a warning and then later a failure, the failure reason will win. */
     statusReason: (Scalars['String'] | null)
+    /** The title of the program this application is for. */
+    title: Scalars['String']
     __typename: 'Application'
+}
+
+export interface ApplicationActions {
+    viewAsReviewer: Scalars['Boolean']
+    __typename: 'ApplicationActions'
+}
+
+
+/** The specific instance of a requirement on a particular application. Stores the status of the requirement, e.g. being satisfied or not. */
+export interface ApplicationRequirement {
+    application: Application
+    /** The configuration data for this requirement in the app request's period. */
+    configurationData: (Scalars['JsonData'] | null)
+    /** An internal description of the requirement. Probably not shown to users. */
+    description: Scalars['String']
+    id: Scalars['ID']
+    /** A human and machine readable unique and stable identifier that we can use to add javascript logic to the evaluation of whether a requirement is satisfied. For example: "gi_ch33_must_be_post911" */
+    key: Scalars['String']
+    /** A human readable title for the requirement in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
+    navTitle: Scalars['String']
+    prompts: RequirementPrompt[]
+    /** When true, means that the requirement has not been made moot by an earlier requirement failing. It may still need to be hidden from navigation based on evaluatedInEarlierApplication. */
+    reachable: Scalars['Boolean']
+    /** The smart title for this requirement in the app request's period. For instance, might be "Applicant must have GPA over 3.4" instead of the regular title "Applicant must meet GPA requirement". Will fall back to the regular title for any requirement that does not provide a smart title. */
+    smartTitle: Scalars['String']
+    /** The status of the requirement. This is what will be shown to users. */
+    status: RequirementStatus
+    /** The reason why the requirement is in the status it is in. This will be shown to the applicant. */
+    statusReason: (Scalars['String'] | null)
+    /** A human readable title for the requirement. This is what will be shown to users. */
+    title: Scalars['String']
+    /** The type of requirement. This determines when the requirement is evaluated and who can see the requirement. */
+    type: RequirementType
+    __typename: 'ApplicationRequirement'
 }
 
 
@@ -182,7 +217,7 @@ export interface Application {
  *     computed. If the appRequest is CANCELLED, all applications should be CANCELLED as well.
  *   
  */
-export type ApplicationStatus = 'ACCEPTED' | 'APPROVAL' | 'APPROVED' | 'CANCELLED' | 'FAILED_PREQUAL' | 'FAILED_QUALIFICATION' | 'NOT_ACCEPTED' | 'NOT_APPROVED' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION' | 'WITHDRAWN'
+export type ApplicationStatus = 'ACCEPTED' | 'APPROVAL' | 'APPROVED' | 'CANCELLED' | 'FAILED_PREQUAL' | 'FAILED_QUALIFICATION' | 'NOT_ACCEPTED' | 'NOT_APPROVED' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION' | 'READY_TO_SUBMIT' | 'WITHDRAWN'
 
 export interface Mutation {
     roleAddGrant: AccessRoleValidatedResponse
@@ -191,6 +226,10 @@ export interface Mutation {
     roleDeleteGrant: AccessRoleValidatedResponse
     roleUpdate: AccessRoleValidatedResponse
     roleUpdateGrant: AccessRoleValidatedResponse
+    /** Submit the app request. */
+    submitAppRequest: ValidatedAppRequestResponse
+    /** Update the data for a prompt in this app request. */
+    updatePrompt: ValidatedAppRequestResponse
     __typename: 'Mutation'
 }
 
@@ -205,6 +244,21 @@ export interface MutationMessage {
 }
 
 export type MutationMessageType = 'error' | 'success' | 'warning'
+
+export interface Period {
+    /** This is useful for filtering out periods that are no longer useful. For instance, a window might close applications after 2 weeks but the reviewers could be working. */
+    archiveAt: (Scalars['DateTime'] | null)
+    /** Date that this period closes for applications. */
+    closeDate: Scalars['DateTime']
+    /** Unique identifier for this period that references an external system. Ideally human readable. */
+    code: (Scalars['String'] | null)
+    id: Scalars['ID']
+    /** Name for this period. Will be displayed to applicants if they create an App Request while two periods are simultaneously open. */
+    name: Scalars['String']
+    /** Date that this period opens for applications. */
+    openDate: Scalars['DateTime']
+    __typename: 'Period'
+}
 
 export interface Program {
     key: Scalars['ID']
@@ -241,11 +295,60 @@ export interface Query {
     __typename: 'Query'
 }
 
+
+/** A RequestPrompt is an instance of a Prompt on a particular request. Once the user has answered the prompt, it contains the answer and the prompt status on that request. */
+export interface RequirementPrompt {
+    /** Whether the prompt has been answered on this request. */
+    answered: Scalars['Boolean']
+    /** For convenience, this is true if either askedInEarlierRequirement or askedInEarlierApplication is true. */
+    askedEarlier: Scalars['Boolean']
+    /** When true, means that this prompt should be hidden from navigation due to being asked in an earlier application. If a screen were reviewing the details of a single application, this prompt's information might re-appear in that context. */
+    askedInEarlierApplication: Scalars['Boolean']
+    /** When true, means that this prompt should be hidden from navigation due to being asked in an earlier requirement in the same application. If a screen were reviewing the details of a single requirement, this prompt's information might re-appear in that context. */
+    askedInEarlierRequirement: Scalars['Boolean']
+    /** The configuration data for this prompt in the app request's period. */
+    configurationData: Scalars['JsonData']
+    /** The data that has been gathered from the user in response to this prompt. The schema is controlled by the question's implementation. */
+    data: (Scalars['JsonData'] | null)
+    /** A brief description of the prompt. This should be shown to administrators to help explain the full meaning of the prompt while assigning permissions or editing its configuration. */
+    description: (Scalars['String'] | null)
+    /** Any data that the API needs to provide to the UI to display the prompt properly. For instance, if the prompt text is in the database and able to be modified by admins, the UI can't hardcode the prompt text and needs it from the API. Could also be used to pull reference information from an external system, e.g. a student's course schedule, for display in the prompt dialog. */
+    fetchedData: (Scalars['JsonData'] | null)
+    /** For convenience, this is true if the prompt is not reachable or has been asked earlier. */
+    hiddenInNavigation: Scalars['Boolean']
+    id: Scalars['ID']
+    /** When true, this prompt has been invalidated by the answer to another prompt. The `answered` field should remain false until the user specifically answers this prompt again, regardless of the output of the definition's `complete` method. */
+    invalidated: Scalars['Boolean']
+    /** A human and machine readable identifier for the prompt. Will be used to match prompt data with UI and API code that handles it. */
+    key: Scalars['String']
+    /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
+    navTitle: Scalars['String']
+    /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
+    preloadData: (Scalars['JsonData'] | null)
+    /** When true, means that the prompt has not been made moot by an earlier requirement failing. It may still need to be hidden from navigation based on askedInEarlierRequirement or askedInEarlierApplication. */
+    reachable: Scalars['Boolean']
+    /** A human readable title for the prompt. This is what will be shown to users. */
+    title: Scalars['String']
+    __typename: 'RequirementPrompt'
+}
+
+export type RequirementStatus = 'DISQUALIFYING' | 'MET' | 'NOT_APPLICABLE' | 'PENDING' | 'WARNING'
+
+export type RequirementType = 'APPROVAL' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION'
+
 export interface RoleActions {
     delete: Scalars['Boolean']
     update: Scalars['Boolean']
     view: Scalars['Boolean']
     __typename: 'RoleActions'
+}
+
+export interface ValidatedAppRequestResponse {
+    appRequest: AppRequest
+    messages: MutationMessage[]
+    /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
+    success: Scalars['Boolean']
+    __typename: 'ValidatedAppRequestResponse'
 }
 
 export interface ValidatedResponse {
@@ -426,8 +529,9 @@ export interface AppRequestGenqlSelection{
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
     id?: boolean | number
+    /** The period this appRequest is associated with. */
+    period?: PeriodGenqlSelection
     status?: boolean | number
-    submitEligible?: boolean | number
     updatedAt?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
@@ -442,10 +546,52 @@ own?: (Scalars['Boolean'] | null),periodIds?: (Scalars['ID'][] | null),status?: 
 
 /** An application represents the applicant applying to a specific program. Each appRequest has multiple applications - one per program defined in the system. Some applications are mutually exclusive and/or will be eliminated early based on PREQUAL requirements, but they all technically exist in the data model - there is no concept of picking one application over another, just two applications where one dies and the other survives. */
 export interface ApplicationGenqlSelection{
+    actions?: ApplicationActionsGenqlSelection
     id?: boolean | number
+    /** The navigation title of the program this application is for. */
+    navTitle?: boolean | number
+    requirements?: ApplicationRequirementGenqlSelection
     status?: boolean | number
     /** When one of the application's requirements is failing or throwing a warning, its reason will be copied here for convenience. If there is a warning and then later a failure, the failure reason will win. */
     statusReason?: boolean | number
+    /** The title of the program this application is for. */
+    title?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ApplicationActionsGenqlSelection{
+    viewAsReviewer?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** The specific instance of a requirement on a particular application. Stores the status of the requirement, e.g. being satisfied or not. */
+export interface ApplicationRequirementGenqlSelection{
+    application?: ApplicationGenqlSelection
+    /** The configuration data for this requirement in the app request's period. */
+    configurationData?: boolean | number
+    /** An internal description of the requirement. Probably not shown to users. */
+    description?: boolean | number
+    id?: boolean | number
+    /** A human and machine readable unique and stable identifier that we can use to add javascript logic to the evaluation of whether a requirement is satisfied. For example: "gi_ch33_must_be_post911" */
+    key?: boolean | number
+    /** A human readable title for the requirement in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
+    navTitle?: boolean | number
+    prompts?: RequirementPromptGenqlSelection
+    /** When true, means that the requirement has not been made moot by an earlier requirement failing. It may still need to be hidden from navigation based on evaluatedInEarlierApplication. */
+    reachable?: boolean | number
+    /** The smart title for this requirement in the app request's period. For instance, might be "Applicant must have GPA over 3.4" instead of the regular title "Applicant must meet GPA requirement". Will fall back to the regular title for any requirement that does not provide a smart title. */
+    smartTitle?: boolean | number
+    /** The status of the requirement. This is what will be shown to users. */
+    status?: boolean | number
+    /** The reason why the requirement is in the status it is in. This will be shown to the applicant. */
+    statusReason?: boolean | number
+    /** A human readable title for the requirement. This is what will be shown to users. */
+    title?: boolean | number
+    /** The type of requirement. This determines when the requirement is evaluated and who can see the requirement. */
+    type?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -457,6 +603,10 @@ export interface MutationGenqlSelection{
     roleDeleteGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grantId: Scalars['ID']} })
     roleUpdate?: (AccessRoleValidatedResponseGenqlSelection & { __args: {role: AccessRoleInput, roleId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     roleUpdateGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grant: AccessRoleGrantCreate, grantId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
+    /** Submit the app request. */
+    submitAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
+    /** Update the data for a prompt in this app request. */
+    updatePrompt?: (ValidatedAppRequestResponseGenqlSelection & { __args: {data: Scalars['JsonData'], promptId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -468,6 +618,22 @@ export interface MutationMessageGenqlSelection{
     message?: boolean | number
     /** The type of error message. See the enum descriptions for more detail. */
     type?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PeriodGenqlSelection{
+    /** This is useful for filtering out periods that are no longer useful. For instance, a window might close applications after 2 weeks but the reviewers could be working. */
+    archiveAt?: boolean | number
+    /** Date that this period closes for applications. */
+    closeDate?: boolean | number
+    /** Unique identifier for this period that references an external system. Ideally human readable. */
+    code?: boolean | number
+    id?: boolean | number
+    /** Name for this period. Will be displayed to applicants if they create an App Request while two periods are simultaneously open. */
+    name?: boolean | number
+    /** Date that this period opens for applications. */
+    openDate?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -514,10 +680,63 @@ export interface QueryGenqlSelection{
     __scalar?: boolean | number
 }
 
+
+/** A RequestPrompt is an instance of a Prompt on a particular request. Once the user has answered the prompt, it contains the answer and the prompt status on that request. */
+export interface RequirementPromptGenqlSelection{
+    /** Whether the prompt has been answered on this request. */
+    answered?: boolean | number
+    /** For convenience, this is true if either askedInEarlierRequirement or askedInEarlierApplication is true. */
+    askedEarlier?: boolean | number
+    /** When true, means that this prompt should be hidden from navigation due to being asked in an earlier application. If a screen were reviewing the details of a single application, this prompt's information might re-appear in that context. */
+    askedInEarlierApplication?: boolean | number
+    /** When true, means that this prompt should be hidden from navigation due to being asked in an earlier requirement in the same application. If a screen were reviewing the details of a single requirement, this prompt's information might re-appear in that context. */
+    askedInEarlierRequirement?: boolean | number
+    /** The configuration data for this prompt in the app request's period. */
+    configurationData?: boolean | number
+    /** The data that has been gathered from the user in response to this prompt. The schema is controlled by the question's implementation. */
+    data?: { __args: {
+    /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
+    schemaVersion?: (Scalars['String'] | null)} } | boolean | number
+    /** A brief description of the prompt. This should be shown to administrators to help explain the full meaning of the prompt while assigning permissions or editing its configuration. */
+    description?: boolean | number
+    /** Any data that the API needs to provide to the UI to display the prompt properly. For instance, if the prompt text is in the database and able to be modified by admins, the UI can't hardcode the prompt text and needs it from the API. Could also be used to pull reference information from an external system, e.g. a student's course schedule, for display in the prompt dialog. */
+    fetchedData?: { __args: {
+    /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
+    schemaVersion?: (Scalars['String'] | null)} } | boolean | number
+    /** For convenience, this is true if the prompt is not reachable or has been asked earlier. */
+    hiddenInNavigation?: boolean | number
+    id?: boolean | number
+    /** When true, this prompt has been invalidated by the answer to another prompt. The `answered` field should remain false until the user specifically answers this prompt again, regardless of the output of the definition's `complete` method. */
+    invalidated?: boolean | number
+    /** A human and machine readable identifier for the prompt. Will be used to match prompt data with UI and API code that handles it. */
+    key?: boolean | number
+    /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
+    navTitle?: boolean | number
+    /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
+    preloadData?: { __args: {
+    /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
+    schemaVersion?: (Scalars['String'] | null)} } | boolean | number
+    /** When true, means that the prompt has not been made moot by an earlier requirement failing. It may still need to be hidden from navigation based on askedInEarlierRequirement or askedInEarlierApplication. */
+    reachable?: boolean | number
+    /** A human readable title for the prompt. This is what will be shown to users. */
+    title?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
 export interface RoleActionsGenqlSelection{
     delete?: boolean | number
     update?: boolean | number
     view?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ValidatedAppRequestResponseGenqlSelection{
+    appRequest?: AppRequestGenqlSelection
+    messages?: MutationMessageGenqlSelection
+    /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
+    success?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -627,6 +846,22 @@ export interface ValidatedResponseGenqlSelection{
     
 
 
+    const ApplicationActions_possibleTypes: string[] = ['ApplicationActions']
+    export const isApplicationActions = (obj?: { __typename?: any } | null): obj is ApplicationActions => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isApplicationActions"')
+      return ApplicationActions_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ApplicationRequirement_possibleTypes: string[] = ['ApplicationRequirement']
+    export const isApplicationRequirement = (obj?: { __typename?: any } | null): obj is ApplicationRequirement => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isApplicationRequirement"')
+      return ApplicationRequirement_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const Mutation_possibleTypes: string[] = ['Mutation']
     export const isMutation = (obj?: { __typename?: any } | null): obj is Mutation => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isMutation"')
@@ -639,6 +874,14 @@ export interface ValidatedResponseGenqlSelection{
     export const isMutationMessage = (obj?: { __typename?: any } | null): obj is MutationMessage => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isMutationMessage"')
       return MutationMessage_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const Period_possibleTypes: string[] = ['Period']
+    export const isPeriod = (obj?: { __typename?: any } | null): obj is Period => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPeriod"')
+      return Period_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -667,10 +910,26 @@ export interface ValidatedResponseGenqlSelection{
     
 
 
+    const RequirementPrompt_possibleTypes: string[] = ['RequirementPrompt']
+    export const isRequirementPrompt = (obj?: { __typename?: any } | null): obj is RequirementPrompt => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRequirementPrompt"')
+      return RequirementPrompt_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const RoleActions_possibleTypes: string[] = ['RoleActions']
     export const isRoleActions = (obj?: { __typename?: any } | null): obj is RoleActions => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isRoleActions"')
       return RoleActions_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ValidatedAppRequestResponse_possibleTypes: string[] = ['ValidatedAppRequestResponse']
+    export const isValidatedAppRequestResponse = (obj?: { __typename?: any } | null): obj is ValidatedAppRequestResponse => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isValidatedAppRequestResponse"')
+      return ValidatedAppRequestResponse_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -690,11 +949,15 @@ export const enumAccessSearchType = {
 
 export const enumAppRequestStatus = {
    APPROVAL: 'APPROVAL' as const,
+   APPROVED: 'APPROVED' as const,
+   APPROVED_CLOSED: 'APPROVED_CLOSED' as const,
    CANCELLED: 'CANCELLED' as const,
-   CLOSED: 'CLOSED' as const,
+   DISQUALIFIED: 'DISQUALIFIED' as const,
+   DISQUALIFIED_CLOSED: 'DISQUALIFIED_CLOSED' as const,
    PREAPPROVAL: 'PREAPPROVAL' as const,
-   PREQUAL: 'PREQUAL' as const,
-   QUALIFICATION: 'QUALIFICATION' as const
+   READY_TO_SUBMIT: 'READY_TO_SUBMIT' as const,
+   STARTED: 'STARTED' as const,
+   WITHDRAWN: 'WITHDRAWN' as const
 }
 
 export const enumApplicationStatus = {
@@ -709,6 +972,7 @@ export const enumApplicationStatus = {
    PREAPPROVAL: 'PREAPPROVAL' as const,
    PREQUAL: 'PREQUAL' as const,
    QUALIFICATION: 'QUALIFICATION' as const,
+   READY_TO_SUBMIT: 'READY_TO_SUBMIT' as const,
    WITHDRAWN: 'WITHDRAWN' as const
 }
 
@@ -716,4 +980,19 @@ export const enumMutationMessageType = {
    error: 'error' as const,
    success: 'success' as const,
    warning: 'warning' as const
+}
+
+export const enumRequirementStatus = {
+   DISQUALIFYING: 'DISQUALIFYING' as const,
+   MET: 'MET' as const,
+   NOT_APPLICABLE: 'NOT_APPLICABLE' as const,
+   PENDING: 'PENDING' as const,
+   WARNING: 'WARNING' as const
+}
+
+export const enumRequirementType = {
+   APPROVAL: 'APPROVAL' as const,
+   PREAPPROVAL: 'PREAPPROVAL' as const,
+   PREQUAL: 'PREQUAL' as const,
+   QUALIFICATION: 'QUALIFICATION' as const
 }

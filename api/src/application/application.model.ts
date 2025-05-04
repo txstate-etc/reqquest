@@ -6,6 +6,7 @@ export enum ApplicationStatus {
   FAILED_PREQUAL = 'FAILED_PREQUAL',
   QUALIFICATION = 'QUALIFICATION',
   FAILED_QUALIFICATION = 'FAILED_QUALIFICATION',
+  READY_TO_SUBMIT = 'READY_TO_SUBMIT',
   PREAPPROVAL = 'PREAPPROVAL',
   APPROVAL = 'APPROVAL',
   APPROVED = 'APPROVED',
@@ -26,6 +27,7 @@ registerEnumType(ApplicationStatus, {
   valuesConfig: {
     PREQUAL: { description: 'The appRequest has not finished pre-qualification yet. This application does not quite exist yet and probably should not appear in the UI.' },
     QUALIFICATION: { description: 'The application has been pre-qualified and is awaiting further input from the applicant.' },
+    READY_TO_SUBMIT: { description: 'All requirements have been evaluated as MET or NOT_APPLICABLE. The application is ready to be submitted.' },
     PREAPPROVAL: { description: 'The application has been submitted and is awaiting preapproval.' },
     APPROVAL: { description: 'The application has been submitted, has passed preapproval, and is awaiting approval.' },
     APPROVED: { description: 'The application has been approved.' },
@@ -47,8 +49,8 @@ registerEnumType(ApplicationStatus, {
 
 @ObjectType({ description: 'An application represents the applicant applying to a specific program. Each appRequest has multiple applications - one per program defined in the system. Some applications are mutually exclusive and/or will be eliminated early based on PREQUAL requirements, but they all technically exist in the data model - there is no concept of picking one application over another, just two applications where one dies and the other survives.' })
 export class Application {
-  program: ProgramDefinition
   constructor (row: ApplicationRow) {
+    this.program = programRegistry.get(row.programKey)
     this.internalId = row.id
     this.id = String(row.id)
     this.appRequestInternalId = row.appRequestId
@@ -58,7 +60,8 @@ export class Application {
     this.programKey = row.programKey
     this.status = row.computedStatus
     this.statusReason = row.computedStatusReason
-    this.program = programRegistry.get(row.programKey)
+    this.title = this.program.title
+    this.navTitle = this.program.title ?? this.program.title
   }
 
   @Field(() => ID)
@@ -70,12 +73,19 @@ export class Application {
   @Field({ nullable: true, description: 'When one of the application\'s requirements is failing or throwing a warning, its reason will be copied here for convenience. If there is a warning and then later a failure, the failure reason will win.' })
   statusReason?: string
 
+  @Field({ description: 'The title of the program this application is for.' })
+  title: string
+
+  @Field({ description: 'The navigation title of the program this application is for.' })
+  navTitle: string
+
   internalId: number
   appRequestInternalId: number
   appRequestId: string
   userInternalId: number
   periodId: string
   programKey: string
+  program: ProgramDefinition
 }
 
 @ObjectType()

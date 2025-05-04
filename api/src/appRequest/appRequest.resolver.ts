@@ -1,5 +1,5 @@
-import { Arg, Ctx, FieldResolver, Query, Resolver, Root } from 'type-graphql'
-import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions } from '../internal.js'
+import { Arg, Ctx, FieldResolver, ID, Mutation, Query, Resolver, Root } from 'type-graphql'
+import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse } from '../internal.js'
 
 @Resolver(of => AppRequest)
 export class AppRequestResolver {
@@ -10,13 +10,34 @@ export class AppRequestResolver {
 
   @FieldResolver(type => [Application])
   async applications (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
-    await ctx.svc(ApplicationService).findByAppRequestId(appRequest.id)
+    return await ctx.svc(ApplicationService).findByAppRequestId(appRequest.id)
   }
 
   @FieldResolver(type => JsonData, { description: 'All data that has been gathered from the user for this request. It is a Record whose properties are the prompt keys and values are the data gathered by the corresponding prompt dialog.' })
   async data (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest, @Arg('schemaVersion', { nullable: true, description: 'Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh.' }) savedAtVersion?: string) {
     if (savedAtVersion && savedAtVersion < promptRegistry.latestMigration()) throw new Error('Client is out of date. Please refresh.')
-    return ctx.svc(AppRequestService).getData(appRequest.internalId)
+    return await ctx.svc(AppRequestService).getData(appRequest.internalId)
+  }
+
+  @FieldResolver(type => Period, { description: 'The period this appRequest is associated with.' })
+  async period (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    const period = await ctx.svc(PeriodService).findById(appRequest.periodId)
+    if (!period) throw new Error('Somehow the period is missing for this appRequest.')
+    return period
+  }
+
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Update the data for a prompt in this app request.' })
+  async updatePrompt (@Ctx() ctx: RQContext, @Arg('promptId', type => ID) promptId: string, @Arg('data', type => JsonData) data: any, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
+    const prompt = await ctx.svc(RequirementPromptService).findById(promptId)
+    if (!prompt) throw new Error('Prompt not found.')
+    return await ctx.svc(RequirementPromptService).update(prompt, data, validateOnly)
+  }
+
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Submit the app request.' })
+  async submitAppRequest (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
+    const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
+    if (!appRequest) throw new Error('App request not found.')
+    return await ctx.svc(AppRequestService).submit(appRequest)
   }
 }
 

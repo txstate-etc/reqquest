@@ -286,10 +286,10 @@ export namespace AccessDatabase {
     const params: any[] = []
     const rows = await db.getall<AccessRoleGrantSubjectRow>(`
       SELECT s.*, g.subjectType, g.roleId
-      FROM accessRoleGrantSubjects s
-      INNER JOIN accessRoleGrants g ON g.id = s.grantId
-      WHERE s.grantId IN (${db.in(params, grantIds)})
-      ORDER BY s.grantId, s.subject
+      FROM accessRoleGrants g
+      INNER JOIN accessRoleGrantSubjects s ON g.id = s.grantId
+      WHERE g.id IN (${db.in(params, grantIds)})
+      ORDER BY g.id, s.subject
     `, params)
     return rows.map(row => new AccessGrantSubject(row))
   }
@@ -298,11 +298,11 @@ export namespace AccessDatabase {
     const params: any[] = []
     const rows = await db.getall<AccessRoleGrantControlTagRow>(`
       SELECT t.*, c.control, c.grantId, g.roleId, g.subjectType
-      FROM accessRoleGrantControlTags t
-      INNER JOIN accessRoleGrantControls c ON c.id = t.controlId
-      INNER JOIN accessRoleGrants g ON g.id = c.grantId
-      WHERE controlId IN (${db.in(params, controlIds)})
-      ORDER BY controlId, category, tag
+      FROM accessRoleGrants g
+      INNER JOIN accessRoleGrantControls c ON g.id = c.grantId
+      INNER JOIN accessRoleGrantControlTags t ON c.id = t.controlId
+      WHERE c.id IN (${db.in(params, controlIds)})
+      ORDER BY c.id, t.category, t.tag
     `, params)
     return rows.map(row => new AccessGrantControlTag(row))
   }

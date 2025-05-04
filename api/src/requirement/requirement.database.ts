@@ -62,12 +62,12 @@ export async function syncRequirementRecords (application: Application, enabledK
     const requirementKey = activeRequirementKeys[i]
     await db.update('UPDATE application_requirements SET evaluationOrder = ? WHERE applicationId = ? AND requirementKey = ?', [i, application.internalId, requirementKey])
   }
-  return await getApplicationRequirements({ applicationIds: [application.id] })
+  return await getApplicationRequirements({ applicationIds: [application.id] }, db)
 }
 
 export async function updateRequirementComputed (requirements: ApplicationRequirement[], db: Queryable) {
   for (const requirement of requirements) {
-    await db.update('UPDATE application_requirements SET reachable = ?, computedStatus = ?, computedStatusReason = ? WHERE id = ?', [requirement.reachable, requirement.status, requirement.statusReason ?? null, requirement.internalId])
+    await db.update('UPDATE application_requirements SET reachable = ?, status = ?, statusReason = ? WHERE id = ?', [requirement.reachable, requirement.status, requirement.statusReason ?? null, requirement.internalId])
   }
 }
 

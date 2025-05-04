@@ -1,8 +1,8 @@
-import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, evaluateAppRequest, AppRequestStatusDB } from '../internal.js'
+import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, evaluateAppRequest, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus } from '../internal.js'
 import { PrimaryKeyLoader } from 'dataloader-factory'
 import { BaseService } from '@txstate-mws/graphql-server'
 
-const appReqByInternalIdLoader = new PrimaryKeyLoader({
+const appReqByIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
     return await getAppRequests({ ids })
   }
@@ -18,15 +18,11 @@ export class AppRequestServiceInternal extends BaseService<AppRequest> {
   async getData (appRequestInternalId: number) {
     const row = await this.loaders.get(appReqDataLoader).load(appRequestInternalId)
     if (!row) throw new Error('AppRequest not found')
-    return row.data as AppRequestData
+    return row.data as AppRequestData ?? {}
   }
 
   async updateData (appRequest: AppRequest, data: AppRequestData) {
     await updateAppRequestData(appRequest.internalId, data)
-  }
-
-  async submit (appRequest: AppRequest) {
-    await submitAppRequest(appRequest.internalId)
   }
 
   async restore (appRequest: AppRequest) {
@@ -48,8 +44,12 @@ export class AppRequestService extends AuthService<AppRequest> {
     return this.removeUnauthorized(await getAppRequests(filter))
   }
 
+  async findById (id: string) {
+    return await this.loaders.get(appReqByIdLoader).load(id)
+  }
+
   async findByInternalId (internalId: number) {
-    return await this.loaders.get(appReqByInternalIdLoader).load(String(internalId))
+    return await this.findById(String(internalId))
   }
 
   async getData (appRequestInternalId: number) {
@@ -97,7 +97,7 @@ export class AppRequestService extends AuthService<AppRequest> {
   }
 
   maySubmit (appRequest: AppRequest) {
-    if (!appRequest.submitEligible || appRequest.dbStatus !== AppRequestStatusDB.STARTED) return false
+    if (appRequest.status !== AppRequestStatus.READY_TO_SUBMIT) return false
     return (
       this.isOwn(appRequest) && this.hasControl('AppRequest', 'submit_own', appRequest.id, appRequest.tags)
     ) || this.hasControl('AppRequest', 'submit', appRequest.id, appRequest.tags)
@@ -108,5 +108,15 @@ export class AppRequestService extends AuthService<AppRequest> {
     return (
       this.isOwn(appRequest) && this.hasControl('AppRequest', 'return_own', appRequest.id, appRequest.tags)
     ) || this.hasControl('AppRequest', 'return', appRequest.id, appRequest.tags)
+  }
+
+  async submit (appRequest: AppRequest) {
+    if (!this.maySubmit(appRequest)) throw new Error('You may not submit this app request.')
+    const response = new ValidatedAppRequestResponse()
+    if (response.hasErrors()) return response
+    await submitAppRequest(appRequest.internalId)
+    this.loaders.clear()
+    response.appRequest = (await this.findById(appRequest.id))!
+    return response
   }
 }

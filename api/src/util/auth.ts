@@ -32,6 +32,7 @@ export abstract class AuthService<ObjType, RedactedType = ObjType> extends Autho
   hasControl (subjectType: string, control: string, subject?: string, tags?: AccessTag[]) {
     const tagsList = tags?.map(t => JSON.stringify([t.category, t.tag]))
     for (const roleLookup of this.ctx.authInfo.roleLookups) {
+      console.log('roleLookup', roleLookup)
       // if role has a deny, this role does not permit the control, go to the next role
       if (this.roleMatches(roleLookup, false, subjectType, control, subject ?? 'all', tagsList)) continue
       // if role has an allow, this role permits the control, since roles are OR'd, we can stop looking
@@ -95,10 +96,11 @@ const authCache = new Cache(async (login: string, ctx: Context) => {
       mergedPerRole[grant.subjectType] ??= {}
       for (const control of grant.loadedControls) {
         mergedPerRole[grant.subjectType][control.name] ??= {}
-        for (const subject of grant.loadedSubjects ?? [{ id: 'all' }]) {
+        for (const subject of grant.loadedSubjects) {
           mergedPerRole[grant.subjectType][control.name][subject.id] ??= {}
-          for (const tag of control.loadedTags ?? [{ tag: 'all' }]) {
+          for (const tag of control.loadedTags) {
             const tagid = tag.tag === 'all' ? 'all' : JSON.stringify([tag.category, tag.tag])
+            mergedPerRole[grant.subjectType][control.name][subject.id][tagid] ??= grant.allow
             mergedPerRole[grant.subjectType][control.name][subject.id][tagid] &&= grant.allow
           }
         }

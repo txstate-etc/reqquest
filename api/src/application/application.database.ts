@@ -12,20 +12,20 @@ export interface ApplicationRow {
   computedStatusReason?: string
 }
 
-async function processFilters (filter: ApplicationFilter) {
+function processFilters (filter: ApplicationFilter) {
   const where: string[] = []
   const binds: any[] = []
   if (filter.ids?.length) {
-    where.push(`id IN (${db.in(binds, filter.ids)})`)
+    where.push(`a.id IN (${db.in(binds, filter.ids)})`)
   }
   if (filter.appRequestIds?.length) {
-    where.push(`appRequestId IN (${db.in(binds, filter.appRequestIds)})`)
+    where.push(`a.appRequestId IN (${db.in(binds, filter.appRequestIds)})`)
   }
   return { where, binds }
 }
 
 export async function getApplications (filter: ApplicationFilter, tdb: Queryable = db) {
-  const { where, binds } = await processFilters(filter)
+  const { where, binds } = processFilters(filter)
   const rows = await tdb.getall<ApplicationRow>(`
     SELECT a.id, a.appRequestId, ar.periodId, a.programKey, ar.userId, a.computedStatus, a.computedStatusReason
     FROM applications a
@@ -36,9 +36,8 @@ export async function getApplications (filter: ApplicationFilter, tdb: Queryable
   return rows.map(row => new Application(row))
 }
 
-export async function syncApplications (appRequestId: number, enabledKeys: Set<string>, db: Queryable) {
-  const activePrograms = programRegistry.list().filter(program => enabledKeys.has(program.key))
-  const activeProgramKeySet = new Set(activePrograms.map(program => program.key))
+export async function syncApplications (appRequestId: number, activeProgramKeySet: Set<string>, db: Queryable) {
+  const activePrograms = programRegistry.list().filter(program => activeProgramKeySet.has(program.key))
   const existingApplications = await db.getall<ApplicationRow>('SELECT * FROM applications WHERE appRequestId = ?', [appRequestId])
   const existingProgramKeys = new Set(existingApplications.map(row => row.programKey))
   const programsToInsert = activePrograms.filter(program => !existingProgramKeys.has(program.key))
@@ -58,7 +57,7 @@ export async function syncApplications (appRequestId: number, enabledKeys: Set<s
     const program = activePrograms[i]
     await db.update('UPDATE applications SET evaluationOrder = ? WHERE appRequestId = ? AND programKey = ?', [i, appRequestId, program.key])
   }
-  return await getApplications({ appRequestIds: [String(appRequestId)] })
+  return await getApplications({ appRequestIds: [String(appRequestId)] }, db)
 }
 
 export async function updateApplicationsComputed (applications: Application[], db: Queryable) {

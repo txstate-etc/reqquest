@@ -210,7 +210,7 @@ class PromptRegistry {
   }
 
   latestMigration () {
-    return this.migrations().slice(-1)[0].id
+    return this.migrations().slice(-1)[0]?.id ?? '20240101000000'
   }
 }
 

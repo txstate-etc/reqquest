@@ -31,7 +31,7 @@ export const have_yard_prompt: PromptDefinition<YardData, YardData> = {
 }
 
 export const have_big_yard_req: RequirementDefinition = {
-  type: RequirementType.PREAPPROVAL,
+  type: RequirementType.PREQUAL,
   key: 'have_big_yard_req',
   title: 'Have a big yard',
   navTitle: 'Big Yard',
@@ -48,7 +48,7 @@ export const have_big_yard_req: RequirementDefinition = {
 }
 
 export const have_adequate_personal_space_req: RequirementDefinition = {
-  type: RequirementType.PREAPPROVAL,
+  type: RequirementType.QUALIFICATION,
   key: 'have_adequate_personal_space_req',
   title: 'Have enough space per pet',
   navTitle: 'Yard Per Pet',

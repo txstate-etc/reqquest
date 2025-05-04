@@ -8,21 +8,20 @@ const byInternalIdLoader = new PrimaryKeyLoader({
   },
   extractId: (row: RequirementPrompt) => row.internalId
 })
-const byRequirementKeyLoader = new PrimaryKeyLoader({
-  fetch: async (keys: { appRequestInternalId: number, promptKey: string }[]) => {
-    return await getRequirementPrompts({ appRequestIds: keys.map(k => k.appRequestInternalId).map(String), promptKeys: keys.map(k => k.promptKey) })
+const byRequirementIdLoader = new OneToManyLoader({
+  fetch: async (requirementIds: string[]) => {
+    return await getRequirementPrompts({ requirementIds })
   },
-  extractId: (row: RequirementPrompt) => ({ appRequestInternalId: row.appRequestInternalId, promptKey: row.definition.key }),
+  extractKey: row => row.requirementId,
   idLoader: byInternalIdLoader
 })
-byInternalIdLoader.addIdLoader(byRequirementKeyLoader)
 
 const byAppRequestInternalIdLoader = new OneToManyLoader({
   fetch: async (appRequestIds: string[], filters: undefined, ctx: Context) => {
     return await getRequirementPrompts({ appRequestIds })
   },
   extractKey: (row: RequirementPrompt) => row.appRequestId,
-  idLoader: [byInternalIdLoader, byRequirementKeyLoader]
+  idLoader: [byInternalIdLoader]
 })
 
 const periodPromptByPeroidIdLoader = new OneToManyLoader({
@@ -62,7 +61,12 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
   }
 
   async findByApplicationRequirement (requirement: ApplicationRequirement) {
-    return await this.loaders.loadMany(byRequirementKeyLoader, requirement.definition.promptKeys?.map(promptKey => ({ appRequestInternalId: requirement.appRequestInternalId, promptKey })) ?? [])
+    return await this.loaders.get(byRequirementIdLoader).load(requirement.id)
+  }
+
+  async findByAppRequestAndKey (appRequestId: string, key: string) {
+    const prompts = await this.findByAppRequestId(appRequestId)
+    return prompts.filter(prompt => prompt.key === key)
   }
 
   async getPreloadData (requirementPrompt: RequirementPrompt) {

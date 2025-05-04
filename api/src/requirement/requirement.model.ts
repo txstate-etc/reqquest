@@ -25,7 +25,7 @@ export class Requirement {
   @Field({ description: 'A human readable title for the requirement in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used.' })
   navTitle: string
 
-  @Field({ description: 'The type of requirement. This determines when the requirement is evaluated and who can see the requirement.' })
+  @Field(type => RequirementType, { description: 'The type of requirement. This determines when the requirement is evaluated and who can see the requirement.' })
   type: RequirementType
 }
 
