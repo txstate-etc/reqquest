@@ -2,7 +2,10 @@
   import { PUBLIC_ENVIRONMENT } from '$env/static/public'
   import { api } from '$lib'
   import { UIShell } from '@txstate-mws/carbon-svelte'
-  import { Dashboard, DocumentMultiple_01, Settings, Time } from 'carbon-icons-svelte'
+  import Dashboard from 'carbon-icons-svelte/lib/Dashboard.svelte'
+  import DocumentMultiple_01 from 'carbon-icons-svelte/lib/DocumentMultiple_01.svelte'
+  import Settings from 'carbon-icons-svelte/lib/Settings.svelte'
+  import Time from 'carbon-icons-svelte/lib/Time.svelte'
   import { uiRegistry } from '../local/index.js'
   import '../app.css'
 

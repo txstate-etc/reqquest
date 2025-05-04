@@ -1,5 +1,5 @@
 import { UIRegistry } from '$lib/registry'
-import { DogWalker } from 'carbon-icons-svelte'
+import DogWalker from 'carbon-icons-svelte/lib/DogWalker.svelte'
 import YardPromptDisplay from './YardPromptDisplay.svelte'
 import YardPrompt from './YardPrompt.svelte'
 import CatTowerPromptDisplay from './CatTowerPromptDisplay.svelte'

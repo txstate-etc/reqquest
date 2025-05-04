@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
-  import { Edit, QuestionAnswering } from 'carbon-icons-svelte'
+  import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import { invalidate } from '$app/navigation'
   import { api } from '$lib'
   import type { PageData } from './$types'

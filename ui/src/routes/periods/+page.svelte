@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ColumnList } from '@txstate-mws/carbon-svelte'
-  import { SettingsEdit } from 'carbon-icons-svelte'
+  import SettingsEdit from 'carbon-icons-svelte/lib/SettingsEdit.svelte'
   import { isBlank } from 'txstate-utils'
   import { base } from '$app/paths'
   import type { PageData } from './$types'

@@ -3,7 +3,7 @@
 
     import { FileUploader, FileUploaderItem, Button, TextInput, PasswordInput } from 'carbon-components-svelte'
     import Upload from 'carbon-icons-svelte/lib/Upload.svelte'
-        import { api } from '$lib/api'
+    import { api } from '$lib/api'
     import { CarbonForSalesforce, Download } from 'carbon-icons-svelte'
 
     let docId = '14311'

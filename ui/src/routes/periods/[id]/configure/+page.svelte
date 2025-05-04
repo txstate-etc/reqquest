@@ -1,7 +1,7 @@
 <script lang="ts">
   import { PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { Button } from 'carbon-components-svelte'
-  import { SettingsEdit } from 'carbon-icons-svelte'
+  import SettingsEdit from 'carbon-icons-svelte/lib/SettingsEdit.svelte'
   import { invalidate } from '$app/navigation'
   import { page } from '$app/stores'
   import { api } from '$lib'

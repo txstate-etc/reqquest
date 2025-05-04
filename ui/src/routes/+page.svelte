@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ColumnList } from '@txstate-mws/carbon-svelte'
-  import { View } from 'carbon-icons-svelte'
+  import View from 'carbon-icons-svelte/lib/View.svelte'
   import { base } from '$app/paths'
   import type { PageData } from './$types'
 

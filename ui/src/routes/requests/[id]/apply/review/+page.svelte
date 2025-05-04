@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from 'carbon-components-svelte'
-  import { Touch_1 } from 'carbon-icons-svelte'
+  import Touch_1 from 'carbon-icons-svelte/lib/Touch_1.svelte'
   import { invalidate } from '$app/navigation'
   import { api } from '$lib'
   import { enumAppRequestStatus } from '$lib/typed-client'
