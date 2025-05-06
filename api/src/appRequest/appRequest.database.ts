@@ -89,7 +89,7 @@ export async function getAppRequests (filter?: AppRequestFilter, tdb: Queryable 
     SELECT ar.id, ar.periodId, ar.userId, ar.status, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt
     FROM app_requests ar
     ${Array.from(joins.values()).join('\n')}
-    WHERE (${where.join(') AND (')})
+    ${where.length === 0 ? '' : `WHERE (${where.join(') AND (')})`}
   `, binds)
   return rows.map(row => new AppRequest(row))
 }

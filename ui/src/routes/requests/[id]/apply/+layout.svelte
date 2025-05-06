@@ -31,6 +31,10 @@
         </ul>
       {/if}
     {/each}
+    <li>
+      {#if $page.route.id === '/requests/[id]/apply/review'}--&gt;{/if}
+      <a href="{base}/requests/{appRequestForNavigation.id}/apply/review">Review Submission</a>
+    </li>
   </ul>
 {/if}
 </div>

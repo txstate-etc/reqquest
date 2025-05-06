@@ -162,6 +162,7 @@ export const subjectTypes: Record<string, SubjectTypeDefinition> = {
       view: { description: 'View the prompt data for this prompt as a reviewer in an AppRequest.' },
       view_configuration: { description: 'View the configuration management interface and see prompt configuration data.' },
       update: { description: 'Update any individual appRequest\'s prompt data.' },
+      update_anytime: { description: 'Update this prompt as a reviewer even if the appRequest is in the applicant or pre-review phase.' },
       configure: { description: 'Configure the way that a prompt works for all appRequests.' }
     }
   },

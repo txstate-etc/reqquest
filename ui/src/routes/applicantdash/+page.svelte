@@ -8,9 +8,8 @@
   $: ({ appRequests } = data)
 </script>
 
-<pre>{JSON.stringify(appRequests, null, 2)}</pre>
 <ColumnList
-  columns={[{ id: 'period', label: 'Period', render: r => r.period.name }, { id: 'Status', label: 'Status' }]}
+  columns={[{ id: 'period', label: 'Period', render: r => r.period.name }, { id: 'Status', label: 'Status', get: 'status' }]}
   rows={appRequests}
   title="App Requests"
   actions={r => [

@@ -10,7 +10,6 @@
 
   export let data: PageData
   $: ({ programs, period } = data)
-  $: console.log('programs', programs)
 
   type Requirement = PageData['programs'][number]['requirements'][number]
   type Prompt = PageData['programs'][number]['requirements'][number]['prompts'][number]
@@ -27,7 +26,6 @@
 
   function onClick (type: 'prompt' | 'requirement', def: Requirement | Prompt) {
     return () => {
-      console.log('onClick', type, def)
       editingConfiguration = true
       editingConfigurationType = type
       editingConfigurationDef = def

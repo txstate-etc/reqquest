@@ -1,7 +1,6 @@
-import { api } from '$lib'
+import { redirect } from '@sveltejs/kit'
 import type { PageLoad } from './$types'
 
 export const load: PageLoad = async () => {
-  const appRequests = await api.getApplicantRequests()
-  return { appRequests }
+  throw redirect(303, '/applicantdash')
 }

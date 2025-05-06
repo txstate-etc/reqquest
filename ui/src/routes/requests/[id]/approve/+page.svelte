@@ -13,7 +13,6 @@
    */
   export let data: PageData
   $: ({ appRequest } = data)
-  $: console.log('appRequest', appRequest)
 
   type Prompt = PageData['appRequest']['applications'][0]['requirements'][0]['prompts'][0]
 

@@ -13,14 +13,16 @@
 </script>
 
 <UIShell appName={uiRegistry.config.appName} reverseWeights={!!PUBLIC_ENVIRONMENT} companyName={PUBLIC_ENVIRONMENT || 'TXST'} overlayText={PUBLIC_ENVIRONMENT} navRoot={{
-  title: uiRegistry.config.applicantDashboardTitle ?? 'Applicant Dashboard',
+  title: uiRegistry.config.appName,
+  hideFromSideNav: true,
   routeId: '/',
   children: [
     {
-      title: 'Applicant',
+      title: uiRegistry.config.applicantDashboardTitle ?? 'Applicant Dashboard',
+      navTitle: uiRegistry.config.applicantDashboardNavTitle ?? uiRegistry.config.applicantDashboardTitle ?? 'Applicant',
       group: 'Dashboards',
       icon: Dashboard,
-      routeId: '/'
+      routeId: '/applicantdash'
     },
     {
       title: 'Reviewer',

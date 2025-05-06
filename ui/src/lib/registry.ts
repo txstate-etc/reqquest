@@ -61,6 +61,7 @@ export interface UIConfig {
   prompts: PromptDefinition[]
   appName: string
   applicantDashboardTitle?: string
+  applicantDashboardNavTitle?: string
   extraNavItems?: LayoutStructureNodeRoot<LayoutStructureNode>[]
 }
 
