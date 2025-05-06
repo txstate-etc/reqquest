@@ -39,6 +39,13 @@ export class AppRequestResolver {
     if (!appRequest) throw new Error('App request not found.')
     return await ctx.svc(AppRequestService).submit(appRequest)
   }
+
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Make an offer on the app request.' })
+  async offerAppRequest (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
+    const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
+    if (!appRequest) throw new Error('App request not found.')
+    return await ctx.svc(AppRequestService).offer(appRequest)
+  }
 }
 
 @Resolver(of => AppRequestActions)

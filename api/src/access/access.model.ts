@@ -1,6 +1,6 @@
 import { Context, ValidatedResponse, ValidatedResponseArgs } from '@txstate-mws/graphql-server'
 import { ObjectType, InputType, Field, ID, registerEnumType } from 'type-graphql'
-import { AccessRoleGrantControlRow, AccessRoleGrantControlTagRow, AccessRoleGrantRow, AccessRoleGrantSubjectRow, AccessRoleService, AccessRoleServiceInternal, AccessUserIdentifierRow, AccessUserRow, ControlDefinition, JsonData, safeParse, SubjectDefinition, subjectTypes, TagDefinition } from '../internal.js'
+import { AccessRoleGrantControlRow, AccessRoleGrantControlTagRow, AccessRoleGrantRow, AccessRoleGrantSubjectRow, AccessRoleRow, AccessRoleService, AccessRoleServiceInternal, AccessUserIdentifierRow, AccessUserRow, ControlDefinition, JsonData, safeParse, SubjectDefinition, subjectTypes, TagDefinition } from '../internal.js'
 import { isBlank } from 'txstate-utils'
 
 @ObjectType()
@@ -69,10 +69,11 @@ export class AccessUserFilter {
 /** Role models */
 @ObjectType()
 export class AccessRole {
-  constructor (row: any) {
+  constructor (row: AccessRoleRow) {
     this.id = String(row.id)
     this.name = row.name
     this.scope = row.scope
+    this.description = row.description
   }
 
   @Field(type => ID)
@@ -80,6 +81,9 @@ export class AccessRole {
 
   @Field()
   name: string
+
+  @Field({ nullable: true, description: 'A description of the grant. This is not used for anything, but can be useful for admins to understand what the grant was trying to do.' })
+  description?: string
 
   @Field({ nullable: true })
   scope?: string
@@ -101,6 +105,9 @@ export class AccessRoleInput {
 
   @Field({ nullable: true, description: 'Attach this role to a specific authentication scope, e.g. "parent".' })
   scope?: string
+
+  @Field({ nullable: true, description: 'A description of the role. This is not used for anything, but can be useful for admins to understand what the role is trying to do.' })
+  description?: string
 
   @Field(type => [String], { description: 'A list of groups this role is associated with.' })
   groups?: string[]
@@ -336,7 +343,7 @@ export class AccessControlInput {
   @Field({ description: 'The action this grant applies to, e.g. "view" or "update".' })
   control!: string
 
-  @Field(type => [AccessTagInput], { description: 'A list of tags to help res' })
+  @Field(type => [AccessTagInput], { description: 'A list of tags to help restrict a grant to a subset of objects of some other subjectType. For instance, if this is added to a grant on Prompt-update, each tag refers to a subset of App Requests.' })
   tags?: AccessTagInput[]
 }
 
@@ -350,9 +357,6 @@ export class AccessRoleGrantCreate {
 
   @Field(type => [AccessControlInput])
   controls!: AccessControlInput[]
-
-  @Field({ nullable: true })
-  description?: string
 
   @Field()
   allow!: boolean

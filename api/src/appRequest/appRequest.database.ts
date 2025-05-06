@@ -188,14 +188,16 @@ const failureStatusLookup = {
   [RequirementType.PREQUAL]: ApplicationStatus.FAILED_PREQUAL,
   [RequirementType.QUALIFICATION]: ApplicationStatus.FAILED_QUALIFICATION,
   [RequirementType.PREAPPROVAL]: ApplicationStatus.NOT_APPROVED,
-  [RequirementType.APPROVAL]: ApplicationStatus.NOT_APPROVED
+  [RequirementType.APPROVAL]: ApplicationStatus.NOT_APPROVED,
+  [RequirementType.ACCEPTANCE]: ApplicationStatus.NOT_ACCEPTED
 }
 
 const metStatusLookup = {
   [RequirementType.PREQUAL]: ApplicationStatus.PREQUAL,
   [RequirementType.QUALIFICATION]: ApplicationStatus.QUALIFICATION,
   [RequirementType.PREAPPROVAL]: ApplicationStatus.PREAPPROVAL,
-  [RequirementType.APPROVAL]: ApplicationStatus.APPROVED
+  [RequirementType.APPROVAL]: ApplicationStatus.APPROVED,
+  [RequirementType.ACCEPTANCE]: ApplicationStatus.ACCEPTED
 }
 
 export async function evaluateAppRequest (appRequestInternalId: number) {

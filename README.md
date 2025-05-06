@@ -30,10 +30,13 @@ other requirements in the system and the information they have already collected
 
 # Actors
 * Applicant
+
   Submits an App Request stating eligibility to receive one or more benefits.
 * Reviewer
+
   Reviews submitted applications and eventually gets them to approved status.
 * Administrator
+
   Creates new application windows, manages roles, manages configurations.
 
 These are conceptual actors that we will use for the purposes of this document, but
@@ -151,7 +154,7 @@ their state, and you could create a role that only has final approval rights for
 * App Requests
   * Programs / Applications
     * Requirements / ApplicationRequirements
-      * Prompts / RequirementPrompts
+      * Prompts / PromptAnswers
 * Roles
   * Grants
     * SubjectType, Subject, (Proposed) Category, Permission
@@ -171,26 +174,71 @@ example, if the Program represents an "In-State Tuition Grant" program, the Appl
 represents the information Jennifer gave us to prove she's eligible for the grant, and the
 status of her request.
 
-Applications are not submitted independently for review. App Requests are submitted as a
-whole in one action. ReqQuest's support for multiple programs is intended to help applicants
-narrow a set of related benefit programs down to the ones they're eligible for. If those
-programs are only loosely related or have drastically different application deadlines/cadence,
-we should probably split them into separate ReqQuest projects. However, we should be able to
-accommodate slight deadline differences in various ways (like creating a "deadline has not
-passed" requirement on any programs that have earlier deadlines).
-
 ### Application Statuses
 * PREQUAL
-* FAILED_PREQUAL
+
+  The appRequest has not finished pre-qualification yet. Since pre-qualification determines which applications
+  are relevant, this application is not yet relevant and should not appear in the applicant UI. This status is only
+  possible if there is at least one PREQUAL requirement.
+
 * QUALIFICATION
-* FAILED_QUALIFICATION
+
+  The application has been pre-qualified and is awaiting further input from the applicant.
+
+* READY_TO_SUBMIT
+
+  All pre-submission requirements have been evaluated as MET or NOT_APPLICABLE. The application is ready to be submitted.
+
 * PREAPPROVAL
+
+  The application has been submitted and at least one PREAPPROVAL requirement exists and is PENDING.
+
 * APPROVAL
+
+  The application has been submitted, has passed preapproval, and is awaiting approval.
+
 * APPROVED
+
+  The application has passed all requirements.
+
+* FAILED_PREQUAL
+
+  The applicant is ineligible for the program according to the pre-qual requirements. The application/program should no longer be visible in the navigation for this appRequest, but may still be visible on the PreQual Review screen.
+
+* FAILED_QUALIFICATION
+
+  The applicant is ineligible for the program according to the qualification requirements. The application/program should remain visible in the UI and any applicable statusReason from the associated requirements should be displayed.
+
 * NOT_APPROVED
-* CANCELLED
+
+  The applicant will not be receiving the benefit because they failed a requirement in the pre-review or review phase. We
+  should be careful not to use strong language like DENIED or DISQUALIFIED because it's possible they simply did not
+  make the cut in a competitive pool of applicants. The statusReason can provide more information.
+
+* ACCEPTANCE
+
+  The application has been approved and an offer has been submitted for applicant acceptance.
+  This status is only possible for programs with at least one ACCEPTANCE requirement.
+
 * ACCEPTED
+
+  The application\'s benefit has been accepted by the applicant. This status is only possible for programs with at least one ACCEPTANCE requirement.
+
 * NOT_ACCEPTED
+
+  The application\'s benefit was rejected by the applicant. This status is only possible for programs with at least one ACCEPTANCE requirement.
+
+* CANCELLED
+
+  The App Request (and thus all applications inside it) has been cancelled by the applicant. Individual
+  applications cannot be cancelled. If you want applicants to be able to opt out of individual programs,
+  you should add a requirement to each program to the effect of "applicant must not opt-out". In this
+  case, the application status would be FAILED_QUALIFICATION instead of CANCELLED. The statusReason can
+  explain in sentence form that the applicant opted out.
+
+* WITHDRAWN
+
+  The App Request (and thus all applications inside it) was withdrawn after being submitted. If it is re-opened, it will re-open in submitted state.
 
 ## Requirements and ApplicationRequirements
 Requirements are business rules that govern whether an applicant will be eligible for
@@ -206,24 +254,26 @@ Furthermore, we probably want a similar requirement on the review side like "rev
 must affirm that proof of income is valid and indicates less than $50k/year". One logical
 requirement becomes two procedural requirements.
 
-To collect the necessary information, each Requirement depends on a list of Prompts. The
-Prompts will be presented to the user in a specific order. After each one is answered,
-the requirement will analyze the information gathered and come up with a status (see
-ApplicationRequirement Statuses below). The developer is responsible for writing javascript
+To collect the necessary information, each Requirement depends on a list of Prompts. After
+each prompt is answered, the requirement will analyze the information gathered and come up
+with a status (see ApplicationRequirement Statuses below) and a statusReason (a brief sentence
+or two describing why the requirement was marked the way that it was, especially when it
+is marked as disqualifying). The developer is responsible for writing javascript
 code that implements a Requirement's logic.
 
-Once a requirement is resolved as anything other than PENDING, further prompts will be
-unnecessary and they will not appear beneath this requirement.
-
 Requirements are allowed to share Prompts. The Prompt will appear in navigation under
-the first applicable Requirement that depends on it.
+the first applicable Requirement that depends on it. For example, you might not do it
+this way, but you could create an "applicant is under 6 feet tall" requirement and a second
+"applicant is over 5 feet tall" requirement, and both requirements could share a "how tall
+are you" prompt.
 
-Within the context of an individual's Application, what we are dealing with is known as an
-ApplicationRequirement. This object represents the status of the Requirement within the Application.
+Within the context of an individual Application, we have an ApplicationRequirement. The
+ApplicationRequirement represents the current status of a Requirement within a particular
+applicant's Application.
 
 ### Requirement Types
-Each requirement belongs to a certain phase of the application process. These phases will
-be discussed in detail later, but the general idea is that some requirements are intended
+Each requirement belongs to a certain phase of the application process. These phases were
+discussed in detail above, but the general idea is that some requirements are intended
 for the applicant to resolve, and some the reviewer(s).
 * PREQUAL
 * QUALIFICATION
@@ -232,18 +282,24 @@ for the applicant to resolve, and some the reviewer(s).
 * ACCEPTANCE
 
 ### ApplicationRequirement Statuses
-Status is updated each time we collect new Prompt data.
-* PENDING - The applicant has not yet answered enough of our Prompts to determine their
-eligibility for the program.
-* MET - The requirement is met based on the data collected so far in the process.
-* DISQUALIFYING - The applicant fails this requirement and is not eligible for the program.
-* WARNING - The applicant has answered our Prompts, but there is insufficient evidence that
-they are eligible. They will be allowed to proceed as if they are eligible, and the reviewer
-will sort it out. The applicant will be shown a custom message describing the problem.
-* NOT_APPLICABLE - Based on the data collected so far, this requirement does not apply to the
-applicant. They will proceed as if the requirement has been met.
+Status is updated on each requirement, each time we collect new Prompt data. The status
+should be PENDING until we are confident about one of the other statuses. Collecting data
+from future prompts should not change the status, but of course changing answers in past
+prompts could change the status.
+
+* PENDING
+* MET
+* DISQUALIFYING
+* WARNING - This status gives us a little bit of wiggle room in our process. It's meant to
+communicate to the user that they _probably_ do not qualify, but they can continue to enter
+information, and another requirement will allow a reviewer to make the final decision on their
+eligibility. The applicant will be shown a custom message describing the problem.
+* NOT_APPLICABLE - This requirement does not apply to the applicant. They will be allowed to
+proceed as if the requirement has been met.
 
 ### Never-Disqualifying Requirements
+_This is an advanced topic, feel free to skip it until you're more comfortable with ReqQuest._
+
 Generally, the applicant (and reviewers) must proceed through requirements in strict order,
 as one requirement returning DISQUALIFYING renders the rest of the application moot, and we
 don't want to waste time asking further questions.
@@ -263,7 +319,7 @@ application, save, and return later after acquiring more information or document
 In situations with minimal branching logic, the user could complete the application in any
 order.
 
-## Prompts and RequirementPrompts
+## Prompts and PromptAnswers
 Prompts represent the collection of data from our users (both applicants and reviewers). Each
 prompt defines a webform which fits on a single screen (though it could use a tabbed UI to feel
 like multiple screens). It could be as simple as a yes-or-no question, or as complicated as
@@ -274,40 +330,23 @@ a yes-or-no question and based on the answer the Prompt asks you a followup ques
 logic can also be handled with additional Requirements. It will be up to the developers and
 designers to decide what's most appropriate.
 
-Within the context of an ApplicationRequirement, we will store a RequirementPrompt.
+Within the context of an individual application, we will store a PromptAnswer.
 This represents the information collected from users, and has a status of "answered" or not.
 
 The Requirement is not given the information from the Prompt until it has been
 fully answered. We don't want requirements making decisions based on incomplete or invalid
 data. It is the responsibility of the developer to write javascript code determining whether the
-prompt has been sufficiently answered or is still incomplete. Note: the user is allowed to
-save invalid data and come back later to make it valid.
+prompt has been sufficiently answered or is still incomplete. Note: generally the user is allowed to
+save incomplete data and come back later. The developer has discretion to disallow saving certain
+data, like a large invalid upload, since that could have consequences.
 
 ## Roles
-Roles represent a set of access privileges in the system. Each Role is linked to one or more
-ActiveDirectory groups. Membership in the groups is managed outside the system, but which groups
-go with which Roles is managed within the system. If the Role lists multiple groups, the
-group memberships are merged and everyone has the Role.
+Roles represent a set of access privileges that can be assigned to a group of users. Each
+Role is linked to one or more ActiveDirectory groups. Membership in the groups is managed
+outside the system, but which groups go with which Roles is managed within the system. If
+the Role lists multiple groups, the group memberships are merged and everyone has the Role.
 
 Each Role has a list of Grants and Exceptions.
-
-## Grants and Exceptions
-Each Grant bestows one permission, pertaining to one subject from the list below. The UI
-may make creation of multiple grants more convenient/friendly.
-
-In the case of Prompts, it is possible to grant a permission on ALL Prompts or a single
-prompt. If you choose ALL Prompts, you may then add Exceptions that remove a permission from
-a single Prompt.
-
-Each Role _adds_ permissions to the user after removing exceptions. For instance, consider
-a system with two reviewer roles: one that grants Update on all Prompts except reviewing
-driver's licenses, and another granting the review of driver's licenses. A user could be
-granted both roles and now they are able to review everything including driver's licenses.
-
-Note: If a user has both applicant and reviewer roles, the actions available to them will
-be based on which screen they are on. For instance, there is an applicant dashboard and a
-reviewer dashboard - separate screens. In addition, there are a set of screens for submitting
-as an applicant and a separate set of screens for reviewing an application.
 
 ### SubjectTypes and Subjects
 A SubjectType represents a certain type of data, many of which we've already discussed,
@@ -318,17 +357,33 @@ one of the Subjects might be the "Upload your Driver's License" Prompt.
 
 When you create a Grant, you'll always choose a SubjectType for the Grant. If that SubjectType
 also has Subjects, you'll either choose one or leave it blank to make the Grant affect ALL Subjects.
-I explained this above in the "Grants and Exceptions" section in terms of Prompts, but generically
-speaking, it's possible for other SubjectTypes to have Subjects (none are planned at present).
 
-Other SubjectTypes do theoretically have Subjects, but too many to add them individually to Roles.
+Some SubjectTypes do theoretically have Subjects, but too many to add them individually to Roles.
 For example the SubjectType "AppRequest" will eventually number in the tens of thousands in the
 database, but creating a role to allow access to a single applicant's request would be
-ridiculous, so the system doesn't allow it. Roles are similar, there could eventually be dozens
-or hundreds of Roles in the system, so making _another_ role to grant access to manipulate another
-specific Role is a little silly. Maybe we'll find a reason to allow it in the future.
+ridiculous, so the system doesn't allow it.
 
-### (Proposed) Tags
+## Grants and Exceptions
+Each Grant bestows permission on one SubjectType. You may then select one or more Subjects
+of that SubjectType, or leave it blank to make the grant apply to everything.
+
+If you choose ALL subjects, you may save your Grant and then add an Exception that removes
+the same permission from a single subject.
+
+Once the role has all of its grants and exceptions, it only _adds_ permissions to the user,
+after removing exceptions.
+
+For instance, consider a system with two reviewer roles: one that grants update on all Prompts
+except reviewing driver's licenses, and another granting the review of driver's licenses. A
+user could be placed in both roles and now they are able to review everything including
+driver's licenses.
+
+Note: If a user has both applicant and reviewer roles, the actions available to them will
+be based on which screen they are on. For instance, there is an applicant dashboard and a
+reviewer dashboard - separate screens. In addition, there are a set of screens for submitting
+as an applicant and a separate set of screens for reviewing an application.
+
+### Tags
 There are two cases where being able to choose individual subjects is not enough. One is when the
 subject list is theoretically infinite. We're absolutely not going to create a role that can only
 update a single App Request. Two is when we want to restrict on two things at once. For instance, if
@@ -391,18 +446,25 @@ keep this section up to date so we have a simplified view for quicker understand
 * Applicant creates new App Request
 * Applicant updates Prompts
 * Applicant does final review of entered data prior to submission
+* Applicant cancels request before submitting it
+* Applicant un-cancels request
 * Applicant submits App Request for review
 * Applicant views prior App Requests on a dashboard
 * Applicant views status of current App Request on a dashboard
 * Applicant reviews their submitted App Request and sees all entered data
+* Applicant withdraws request after submitting it
+* (phase 2) Applicant accepts an approved offer
 * Reviewer views list of App Requests with various filters
 * Reviewer views a dashboard highlighting App Requests that need their attention
 * Reviewer updates Prompts
 * Reviewer sends App Request back to applicant for edits
 * Reviewer closes App Request
+* Reviewer re-opens App Request
+* (phase 2) Reviewer sends App Request to applicant with an offer to be accepted
+* Administrator creates/updates Periods
 * Administrator creates/updates Roles
-* Administrator creates/updates Grants within Roles
-* Administrator updates Prompt configurations
-* Administrator updates Requirement configurations
-* (phase 2) Applicant accepts an approved offer
-* (proposed) Administrator disables/re-enables Requirements
+* Administrator creates/updates Grants and Exceptions within Roles
+* Administrator updates Prompt configurations within an upcoming period
+* Administrator updates Requirement configurations within an upcoming period
+* (phase 2) Administrator disables/re-enables a Requirement in a period
+* (phase 2) Administrator disables/re-enables a Program in a period

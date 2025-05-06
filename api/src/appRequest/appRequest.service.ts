@@ -1,4 +1,4 @@
-import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, evaluateAppRequest, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus } from '../internal.js'
+import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, evaluateAppRequest, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer } from '../internal.js'
 import { PrimaryKeyLoader } from 'dataloader-factory'
 import { BaseService } from '@txstate-mws/graphql-server'
 
@@ -110,11 +110,29 @@ export class AppRequestService extends AuthService<AppRequest> {
     ) || this.hasControl('AppRequest', 'return', appRequest.id, appRequest.tags)
   }
 
+  mayOffer (appRequest: AppRequest) {
+    if (appRequest.dbStatus !== AppRequestStatusDB.SUBMITTED) return false
+    // TODO: check if there are any ACCEPTANCE requirements
+    return (
+      this.isOwn(appRequest) && this.hasControl('AppRequest', 'offer_own', appRequest.id, appRequest.tags)
+    ) || this.hasControl('AppRequest', 'offer', appRequest.id, appRequest.tags)
+  }
+
   async submit (appRequest: AppRequest) {
     if (!this.maySubmit(appRequest)) throw new Error('You may not submit this app request.')
     const response = new ValidatedAppRequestResponse()
     if (response.hasErrors()) return response
     await submitAppRequest(appRequest.internalId)
+    this.loaders.clear()
+    response.appRequest = (await this.findById(appRequest.id))!
+    return response
+  }
+
+  async offer (appRequest: AppRequest) {
+    if (!this.mayOffer(appRequest)) throw new Error('You may not make an offer on this app request.')
+    const response = new ValidatedAppRequestResponse()
+    if (response.hasErrors()) return response
+    await appRequestMakeOffer(appRequest.internalId)
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
     return response

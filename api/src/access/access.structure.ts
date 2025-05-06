@@ -130,7 +130,9 @@ export const subjectTypes: Record<string, SubjectTypeDefinition> = {
       create: { description: 'Create an appRequest for anyone.' },
       create_own: { description: 'Create an appRequest for oneself.' },
       review: { description: 'See appRequests in the reviewer interface.' },
-      review_own: { description: 'Must have review_own to see your own appRequests in the reviewer UI and/or update ANY reviewer-only prompt data, in addition to having appropriate permission on the Prompt subjectType.' }
+      review_own: { description: 'Must have review_own to see your own appRequests in the reviewer UI and/or update ANY reviewer-only prompt data, in addition to having appropriate permission on the Prompt subjectType.' },
+      offer: { description: 'Close out a review and make an offer to the applicant. This only applies when there is at least one ACCEPTANCE requirement in the period.' },
+      offer_own: { description: 'Close out the review on one\'s own appRequest and make an offer to oneself. This only applies when there is at least one ACCEPTANCE requirement in the period.' }
     }
   },
   Period: {

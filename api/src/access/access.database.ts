@@ -17,6 +17,7 @@ export interface AccessUserIdentifierRow {
 export interface AccessRoleRow {
   id: number
   name: string
+  description: string
   scope: string
 }
 

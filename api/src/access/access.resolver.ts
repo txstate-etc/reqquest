@@ -29,28 +29,28 @@ export class AccessResolver {
     throw new UnimplementedError()
   }
 
-  @FieldResolver(returns => Boolean)
-  async viewDefinitionManagement (@Ctx() ctx: RQContext) {
-    throw new UnimplementedError()
-  }
-
-  @FieldResolver(returns => Boolean)
+  @FieldResolver(returns => Boolean, { description: 'Current user is permitted to view the period management UI.' })
   async viewPeriodManagement (@Ctx() ctx: RQContext) {
     throw new UnimplementedError()
   }
 
-  @FieldResolver(returns => Boolean)
+  @FieldResolver(returns => Boolean, { description: 'Current user is permitted to create new periods in the period management UI.' })
   async createPeriod (@Ctx() ctx: RQContext) {
     throw new UnimplementedError()
   }
 
-  @FieldResolver(returns => Boolean)
+  @FieldResolver(returns => Boolean, { description: 'Current user is permitted to view the reviewer dashboard.' })
   async viewReviewerInterface (@Ctx() ctx: RQContext) {
     throw new UnimplementedError()
   }
 
-  @FieldResolver(returns => Boolean)
-  async viewApplicantInterface (@Ctx() ctx: RQContext) {
+  @FieldResolver(returns => Boolean, { description: 'Current user is permitted to view the applicant dashboard.' })
+  async viewApplicantDashboard (@Ctx() ctx: RQContext) {
+    throw new UnimplementedError()
+  }
+
+  @FieldResolver(returns => Boolean, { description: 'Current user is permitted to view the app request list.' })
+  async viewAppRequestList (@Ctx() ctx: RQContext) {
     throw new UnimplementedError()
   }
 }

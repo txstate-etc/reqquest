@@ -9,6 +9,7 @@ export const accessMigrations: DatabaseMigration[] = [{
     await db.execute(`CREATE TABLE IF NOT EXISTS accessRoles (
       id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
       name VARCHAR(128) NOT NULL,
+      description TEXT NULL,
       scope VARCHAR(64) NULL,
       UNIQUE (name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
