@@ -28,10 +28,6 @@ own set of review requirements.
 Ideally, each requirement can be considered individually, without worrying too much about
 other requirements in the system and the information they have already collected.
 
-It's hard to predict how best to read this document. It starts out with a lot of
-definitions that are pretty important, but some readers may benefit from skipping
-to [the application process](#the-application-process).
-
 # Actors
 * Applicant
   Submits an App Request stating eligibility to receive one or more benefits.
