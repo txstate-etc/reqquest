@@ -4,13 +4,15 @@ import { AccessTag, AppRequestRow, AppRequestStatusDB } from '../internal.js'
 
 export enum AppRequestStatus {
   STARTED = 'STARTED',
+  DISQUALIFIED = 'DISQUALIFIED',
   READY_TO_SUBMIT = 'READY_TO_SUBMIT',
   PREAPPROVAL = 'PREAPPROVAL',
   APPROVAL = 'APPROVAL',
-  DISQUALIFIED = 'DISQUALIFIED',
+  ACCEPTANCE = 'ACCEPTANCE',
+  NOT_APPROVED = 'NOT_APPROVED',
   APPROVED = 'APPROVED',
-  DISQUALIFIED_CLOSED = 'DISQUALIFIED_CLOSED',
-  APPROVED_CLOSED = 'APPROVED_CLOSED',
+  ACCEPTED = 'ACCEPTED',
+  NOT_ACCEPTED = 'NOT_ACCEPTED',
   WITHDRAWN = 'WITHDRAWN',
   CANCELLED = 'CANCELLED'
 }
@@ -22,13 +24,14 @@ registerEnumType(AppRequestStatus, {
   `,
   valuesConfig: {
     [AppRequestStatus.STARTED]: { description: 'Applicant has begun the process and has not yet submitted.' },
-    [AppRequestStatus.READY_TO_SUBMIT]: { description: 'Applicant has completed the process and is ready to submit. At least one application is eligible to proceed.' },
-    [AppRequestStatus.PREAPPROVAL]: { description: 'Applicant has submitted and we are waiting for pre-approval requirements to resolve (usually these are automations like waiting for data to show up in an external system).' },
+    [AppRequestStatus.DISQUALIFIED]: { description: 'Applicant has not yet submitted but ALL applications have been disqualified. Applicant may continue editing prompts until the App Request is closed.' },
+    [AppRequestStatus.READY_TO_SUBMIT]: { description: 'Applicant has completed all prompts and is ready to submit. At least one application is eligible to proceed.' },
+    [AppRequestStatus.PREAPPROVAL]: { description: 'Applicant has submitted and we are waiting for pre-approval requirements to resolve (these are automations like waiting for data to show up in an external system).' },
     [AppRequestStatus.APPROVAL]: { description: 'Applicant has submitted and any pre-approval requirements have been met. We are waiting for a reviewer to do their part.' },
-    [AppRequestStatus.DISQUALIFIED]: { description: 'Applicant has submitted and ALL applications have been disqualified. The request is not closed, so the status can still be changed. The reviewer should close out the request when ready, or the system will do it after the period ends.' },
-    [AppRequestStatus.APPROVED]: { description: 'Applicant has submitted and at least one application is in an approved non-pending state. The request is not closed, so the status can still be changed. The reviewer should close out the request when ready, or the system will do it after the period ends.' },
-    [AppRequestStatus.DISQUALIFIED_CLOSED]: { description: 'The request has been closed and all applications were disqualified. The request must be re-opened (if eligible) to be edited again.' },
-    [AppRequestStatus.APPROVED_CLOSED]: { description: 'The request has been closed and at least one application was approved. The request must be re-opened (if eligible) to be edited again.' },
+    [AppRequestStatus.ACCEPTANCE]: { description: 'Reviewer has approved an offer and we are waiting for the applicant to accept. This status is unreachable if the period has no ACCEPTANCE requirements.' },
+    [AppRequestStatus.APPROVED]: { description: 'Applicant has submitted, at least one application is in an approved state, and no applications are pending.' },
+    [AppRequestStatus.NOT_APPROVED]: { description: 'Applicant has submitted, and ALL applications have been disqualified, no applications are pending.' },
+    [AppRequestStatus.ACCEPTED]: { description: 'Applicant has accepted an offer on at least one application and no applications are still pending acceptance.' },
     [AppRequestStatus.WITHDRAWN]: { description: 'Applicant withdrew the request after submitting. The request must be re-opened (if eligible) to be edited again.' },
     [AppRequestStatus.CANCELLED]: { description: 'Applicant cancelled the request before submitting. The applicant may be permitted to uncancel and continue, if the period is still open.' }
   }
@@ -89,6 +92,9 @@ export class AppRequestFilter {
 
   @Field({ nullable: true, description: 'Only return appRequests that are owned by the current user.' })
   own?: boolean
+
+  @Field({ nullable: true, description: 'true -> only return appRequests that are closed. false -> only return appRequests that are open. null -> return all appRequests.' })
+  closed?: boolean
 
   internalIds?: number[]
   userInternalIds?: number[]

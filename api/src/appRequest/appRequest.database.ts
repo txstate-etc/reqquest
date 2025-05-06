@@ -13,6 +13,9 @@ export enum AppRequestStatusDB {
   STARTED = 'STARTED',
   // The request has been submitted for review.
   SUBMITTED = 'SUBMITTED',
+  // At least one application has been approved by the reviewer and the reviewer
+  // moved it to this state where we are waiting for the applicant to accept the offer(s).
+  ACCEPTANCE = 'ACCEPTANCE',
   // The request has been closed.
   CLOSED = 'CLOSED',
   // The request has been cancelled.
@@ -80,6 +83,11 @@ function processFilters (filter?: AppRequestFilter) {
     joins.set('u', 'INNER JOIN accessUsers u ON u.id = ar.userId')
     where.push(`u.login IN (${db.in(binds, filter.logins)})`)
   }
+  if (filter?.closed === true) {
+    where.push('ar.closedAt IS NOT NULL')
+  } else if (filter?.closed === false) {
+    where.push('ar.closedAt IS NULL')
+  }
   return { joins, where, binds }
 }
 
@@ -120,13 +128,9 @@ export async function restoreAppRequest (appRequestId: number) {
 }
 
 export async function closeAppRequest (appRequestId: number) {
-  await db.transaction(async db => {
-    const computedStatus = await db.getval<AppRequestStatus>('SELECT computedStatus FROM app_requests WHERE id = ? FOR UPDATE', [appRequestId])
-    await db.update('UPDATE app_requests SET status = ?, computedStatus = ?, closedAt = NOW() WHERE id = ?', [
-      AppRequestStatusDB.CLOSED,
-      computedStatus === AppRequestStatus.APPROVED ? AppRequestStatus.APPROVED_CLOSED : AppRequestStatus.DISQUALIFIED_CLOSED
-    ])
-  })
+  await db.update('UPDATE app_requests SET status = ?, closedAt = NOW() WHERE id = ?', [
+    AppRequestStatusDB.CLOSED, appRequestId
+  ])
 }
 
 export async function cancelAppRequest (appRequestId: number) {
@@ -139,6 +143,11 @@ export async function cancelAppRequest (appRequestId: number) {
       appRequestId
     ])
   })
+}
+
+export async function appRequestMakeOffer (appRequestId: number) {
+  await db.execute('UPDATE app_requests SET status = ? WHERE id = ?', [AppRequestStatusDB.ACCEPTANCE, appRequestId])
+  await evaluateAppRequest(appRequestId)
 }
 
 /**
