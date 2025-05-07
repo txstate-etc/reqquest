@@ -12,12 +12,17 @@ export type Scalars = {
 }
 
 export interface Access {
+    /** Current user is permitted to create new periods in the period management UI. */
     createPeriod: Scalars['Boolean']
     /** Current user is permitted to create new roles in the role management UI. */
     createRole: Scalars['Boolean']
-    viewApplicantInterface: Scalars['Boolean']
-    viewDefinitionManagement: Scalars['Boolean']
+    /** Current user is permitted to view the app request list. */
+    viewAppRequestList: Scalars['Boolean']
+    /** Current user is permitted to view the applicant dashboard. */
+    viewApplicantDashboard: Scalars['Boolean']
+    /** Current user is permitted to view the period management UI. */
     viewPeriodManagement: Scalars['Boolean']
+    /** Current user is permitted to view the reviewer dashboard. */
     viewReviewerInterface: Scalars['Boolean']
     /** Current user is permitted to view the role management UI. */
     viewRoleManagement: Scalars['Boolean']
@@ -35,6 +40,8 @@ export interface AccessControl {
 
 export interface AccessRole {
     actions: RoleActions
+    /** A description of the grant. This is not used for anything, but can be useful for admins to understand what the grant was trying to do. */
+    description: (Scalars['String'] | null)
     grants: AccessRoleGrant[]
     groups: Scalars['String'][]
     id: Scalars['ID']
@@ -156,7 +163,7 @@ export interface AppRequest {
  *     the database and the status of each application.
  *   
  */
-export type AppRequestStatus = 'APPROVAL' | 'APPROVED' | 'APPROVED_CLOSED' | 'CANCELLED' | 'DISQUALIFIED' | 'DISQUALIFIED_CLOSED' | 'PREAPPROVAL' | 'READY_TO_SUBMIT' | 'STARTED' | 'WITHDRAWN'
+export type AppRequestStatus = 'ACCEPTANCE' | 'ACCEPTED' | 'APPROVAL' | 'APPROVED' | 'CANCELLED' | 'DISQUALIFIED' | 'NOT_ACCEPTED' | 'NOT_APPROVED' | 'PREAPPROVAL' | 'READY_TO_SUBMIT' | 'STARTED' | 'WITHDRAWN'
 
 
 /** An application represents the applicant applying to a specific program. Each appRequest has multiple applications - one per program defined in the system. Some applications are mutually exclusive and/or will be eliminated early based on PREQUAL requirements, but they all technically exist in the data model - there is no concept of picking one application over another, just two applications where one dies and the other survives. */
@@ -217,7 +224,7 @@ export interface ApplicationRequirement {
  *     computed. If the appRequest is CANCELLED, all applications should be CANCELLED as well.
  *   
  */
-export type ApplicationStatus = 'ACCEPTED' | 'APPROVAL' | 'APPROVED' | 'CANCELLED' | 'FAILED_PREQUAL' | 'FAILED_QUALIFICATION' | 'NOT_ACCEPTED' | 'NOT_APPROVED' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION' | 'READY_TO_SUBMIT' | 'WITHDRAWN'
+export type ApplicationStatus = 'ACCEPTANCE' | 'ACCEPTED' | 'APPROVAL' | 'APPROVED' | 'CANCELLED' | 'FAILED_PREQUAL' | 'FAILED_QUALIFICATION' | 'NOT_ACCEPTED' | 'NOT_APPROVED' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION' | 'READY_TO_SUBMIT' | 'WITHDRAWN'
 
 export interface Configuration {
     actions: ConfigurationAccess
@@ -234,6 +241,8 @@ export interface ConfigurationAccess {
 }
 
 export interface Mutation {
+    /** Make an offer on the app request. */
+    offerAppRequest: ValidatedAppRequestResponse
     roleAddGrant: AccessRoleValidatedResponse
     roleCreate: AccessRoleValidatedResponse
     roleDelete: ValidatedResponse
@@ -414,7 +423,7 @@ export interface RequirementPrompt {
 
 export type RequirementStatus = 'DISQUALIFYING' | 'MET' | 'NOT_APPLICABLE' | 'PENDING' | 'WARNING'
 
-export type RequirementType = 'APPROVAL' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION'
+export type RequirementType = 'ACCEPTANCE' | 'APPROVAL' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION'
 
 export interface RoleActions {
     delete: Scalars['Boolean']
@@ -455,12 +464,17 @@ export interface ValidatedResponse {
 }
 
 export interface AccessGenqlSelection{
+    /** Current user is permitted to create new periods in the period management UI. */
     createPeriod?: boolean | number
     /** Current user is permitted to create new roles in the role management UI. */
     createRole?: boolean | number
-    viewApplicantInterface?: boolean | number
-    viewDefinitionManagement?: boolean | number
+    /** Current user is permitted to view the app request list. */
+    viewAppRequestList?: boolean | number
+    /** Current user is permitted to view the applicant dashboard. */
+    viewApplicantDashboard?: boolean | number
+    /** Current user is permitted to view the period management UI. */
     viewPeriodManagement?: boolean | number
+    /** Current user is permitted to view the reviewer dashboard. */
     viewReviewerInterface?: boolean | number
     /** Current user is permitted to view the role management UI. */
     viewRoleManagement?: boolean | number
@@ -481,11 +495,13 @@ export interface AccessControlGenqlSelection{
 export interface AccessControlInput {
 /** The action this grant applies to, e.g. "view" or "update". */
 control: Scalars['String'],
-/** A list of tags to help res */
+/** A list of tags to help restrict a grant to a subset of objects of some other subjectType. For instance, if this is added to a grant on Prompt-update, each tag refers to a subset of App Requests. */
 tags: AccessTagInput[]}
 
 export interface AccessRoleGenqlSelection{
     actions?: RoleActionsGenqlSelection
+    /** A description of the grant. This is not used for anything, but can be useful for admins to understand what the grant was trying to do. */
+    description?: boolean | number
     grants?: AccessRoleGrantGenqlSelection
     groups?: boolean | number
     id?: boolean | number
@@ -528,11 +544,13 @@ export interface AccessRoleGrantGenqlSelection{
     __scalar?: boolean | number
 }
 
-export interface AccessRoleGrantCreate {allow: Scalars['Boolean'],controls: AccessControlInput[],description?: (Scalars['String'] | null),subjectType: Scalars['String'],
+export interface AccessRoleGrantCreate {allow: Scalars['Boolean'],controls: AccessControlInput[],subjectType: Scalars['String'],
 /** A list of subject IDs to restrict the grant. */
 subjects?: (Scalars['String'][] | null)}
 
 export interface AccessRoleInput {
+/** A description of the role. This is not used for anything, but can be useful for admins to understand what the role is trying to do. */
+description?: (Scalars['String'] | null),
 /** A list of groups this role is associated with. */
 groups: Scalars['String'][],name: Scalars['String'],
 /** Attach this role to a specific authentication scope, e.g. "parent". */
@@ -633,7 +651,9 @@ export interface AppRequestGenqlSelection{
     __scalar?: boolean | number
 }
 
-export interface AppRequestFilter {ids?: (Scalars['ID'][] | null),
+export interface AppRequestFilter {
+/** true -> only return appRequests that are closed. false -> only return appRequests that are open. null -> return all appRequests. */
+closed?: (Scalars['Boolean'] | null),ids?: (Scalars['ID'][] | null),
 /** Only return appRequests that are owned by one the given logins. */
 logins?: (Scalars['ID'][] | null),
 /** Only return appRequests that are owned by the current user. */
@@ -719,6 +739,8 @@ periodCodes?: (Scalars['String'][] | null),
 periodIds?: (Scalars['ID'][] | null)}
 
 export interface MutationGenqlSelection{
+    /** Make an offer on the app request. */
+    offerAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     roleAddGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grant: AccessRoleGrantCreate, roleId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     roleCreate?: (AccessRoleValidatedResponseGenqlSelection & { __args: {role: AccessRoleInput, validateOnly?: (Scalars['Boolean'] | null)} })
     roleDelete?: (ValidatedResponseGenqlSelection & { __args: {roleId: Scalars['ID']} })
@@ -1253,12 +1275,14 @@ export const enumAccessSearchType = {
 }
 
 export const enumAppRequestStatus = {
+   ACCEPTANCE: 'ACCEPTANCE' as const,
+   ACCEPTED: 'ACCEPTED' as const,
    APPROVAL: 'APPROVAL' as const,
    APPROVED: 'APPROVED' as const,
-   APPROVED_CLOSED: 'APPROVED_CLOSED' as const,
    CANCELLED: 'CANCELLED' as const,
    DISQUALIFIED: 'DISQUALIFIED' as const,
-   DISQUALIFIED_CLOSED: 'DISQUALIFIED_CLOSED' as const,
+   NOT_ACCEPTED: 'NOT_ACCEPTED' as const,
+   NOT_APPROVED: 'NOT_APPROVED' as const,
    PREAPPROVAL: 'PREAPPROVAL' as const,
    READY_TO_SUBMIT: 'READY_TO_SUBMIT' as const,
    STARTED: 'STARTED' as const,
@@ -1266,6 +1290,7 @@ export const enumAppRequestStatus = {
 }
 
 export const enumApplicationStatus = {
+   ACCEPTANCE: 'ACCEPTANCE' as const,
    ACCEPTED: 'ACCEPTED' as const,
    APPROVAL: 'APPROVAL' as const,
    APPROVED: 'APPROVED' as const,
@@ -1296,6 +1321,7 @@ export const enumRequirementStatus = {
 }
 
 export const enumRequirementType = {
+   ACCEPTANCE: 'ACCEPTANCE' as const,
    APPROVAL: 'APPROVAL' as const,
    PREAPPROVAL: 'PREAPPROVAL' as const,
    PREQUAL: 'PREQUAL' as const,

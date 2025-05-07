@@ -20,10 +20,10 @@ export default {
             "createRole": [
                 25
             ],
-            "viewApplicantInterface": [
+            "viewAppRequestList": [
                 25
             ],
-            "viewDefinitionManagement": [
+            "viewApplicantDashboard": [
                 25
             ],
             "viewPeriodManagement": [
@@ -75,6 +75,9 @@ export default {
         "AccessRole": {
             "actions": [
                 51
+            ],
+            "description": [
+                52
             ],
             "grants": [
                 5
@@ -136,9 +139,6 @@ export default {
             "controls": [
                 2
             ],
-            "description": [
-                52
-            ],
             "subjectType": [
                 52
             ],
@@ -150,6 +150,9 @@ export default {
             ]
         },
         "AccessRoleInput": {
+            "description": [
+                52
+            ],
             "groups": [
                 52
             ],
@@ -333,6 +336,9 @@ export default {
             ]
         },
         "AppRequestFilter": {
+            "closed": [
+                25
+            ],
             "ids": [
                 30
             ],
@@ -479,6 +485,15 @@ export default {
         "ID": {},
         "JsonData": {},
         "Mutation": {
+            "offerAppRequest": [
+                53,
+                {
+                    "appRequestId": [
+                        30,
+                        "ID!"
+                    ]
+                }
+            ],
             "roleAddGrant": [
                 8,
                 {

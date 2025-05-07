@@ -1,13 +1,24 @@
 type Access {
+  """
+  Current user is permitted to create new periods in the period management UI.
+  """
   createPeriod: Boolean!
 
   """
   Current user is permitted to create new roles in the role management UI.
   """
   createRole: Boolean!
-  viewApplicantInterface: Boolean!
-  viewDefinitionManagement: Boolean!
+
+  """Current user is permitted to view the app request list."""
+  viewAppRequestList: Boolean!
+
+  """Current user is permitted to view the applicant dashboard."""
+  viewApplicantDashboard: Boolean!
+
+  """Current user is permitted to view the period management UI."""
   viewPeriodManagement: Boolean!
+
+  """Current user is permitted to view the reviewer dashboard."""
   viewReviewerInterface: Boolean!
 
   """Current user is permitted to view the role management UI."""
@@ -29,12 +40,19 @@ input AccessControlInput {
   """The action this grant applies to, e.g. "view" or "update"."""
   control: String!
 
-  """A list of tags to help res"""
+  """
+  A list of tags to help restrict a grant to a subset of objects of some other subjectType. For instance, if this is added to a grant on Prompt-update, each tag refers to a subset of App Requests.
+  """
   tags: [AccessTagInput!]!
 }
 
 type AccessRole {
   actions: RoleActions!
+
+  """
+  A description of the grant. This is not used for anything, but can be useful for admins to understand what the grant was trying to do.
+  """
+  description: String
   grants: [AccessRoleGrant!]!
   groups: [String!]!
   id: ID!
@@ -64,7 +82,6 @@ type AccessRoleGrant {
 input AccessRoleGrantCreate {
   allow: Boolean!
   controls: [AccessControlInput!]!
-  description: String
   subjectType: String!
 
   """A list of subject IDs to restrict the grant."""
@@ -72,6 +89,11 @@ input AccessRoleGrantCreate {
 }
 
 input AccessRoleInput {
+  """
+  A description of the role. This is not used for anything, but can be useful for admins to understand what the role is trying to do.
+  """
+  description: String
+
   """A list of groups this role is associated with."""
   groups: [String!]!
   name: String!
@@ -218,6 +240,10 @@ type AppRequest {
 }
 
 input AppRequestFilter {
+  """
+  true -> only return appRequests that are closed. false -> only return appRequests that are open. null -> return all appRequests.
+  """
+  closed: Boolean
   ids: [ID!]
 
   """Only return appRequests that are owned by one the given logins."""
@@ -232,19 +258,24 @@ input AppRequestFilter {
 "\n    The status of an appRequest. This status is computed based on the \"dbStatus\" recorded in\n    the database and the status of each application.\n  "
 enum AppRequestStatus {
   """
+  Reviewer has approved an offer and we are waiting for the applicant to accept. This status is unreachable if the period has no ACCEPTANCE requirements.
+  """
+  ACCEPTANCE
+
+  """
+  Applicant has accepted an offer on at least one application and no applications are still pending acceptance.
+  """
+  ACCEPTED
+
+  """
   Applicant has submitted and any pre-approval requirements have been met. We are waiting for a reviewer to do their part.
   """
   APPROVAL
 
   """
-  Applicant has submitted and at least one application is in an approved non-pending state. The request is not closed, so the status can still be changed. The reviewer should close out the request when ready, or the system will do it after the period ends.
+  Applicant has submitted, at least one application is in an approved state, and no applications are pending.
   """
   APPROVED
-
-  """
-  The request has been closed and at least one application was approved. The request must be re-opened (if eligible) to be edited again.
-  """
-  APPROVED_CLOSED
 
   """
   Applicant cancelled the request before submitting. The applicant may be permitted to uncancel and continue, if the period is still open.
@@ -252,22 +283,23 @@ enum AppRequestStatus {
   CANCELLED
 
   """
-  Applicant has submitted and ALL applications have been disqualified. The request is not closed, so the status can still be changed. The reviewer should close out the request when ready, or the system will do it after the period ends.
+  Applicant has not yet submitted but ALL applications have been disqualified. Applicant may continue editing prompts until the App Request is closed.
   """
   DISQUALIFIED
+  NOT_ACCEPTED
 
   """
-  The request has been closed and all applications were disqualified. The request must be re-opened (if eligible) to be edited again.
+  Applicant has submitted, and ALL applications have been disqualified, no applications are pending.
   """
-  DISQUALIFIED_CLOSED
+  NOT_APPROVED
 
   """
-  Applicant has submitted and we are waiting for pre-approval requirements to resolve (usually these are automations like waiting for data to show up in an external system).
+  Applicant has submitted and we are waiting for pre-approval requirements to resolve (these are automations like waiting for data to show up in an external system).
   """
   PREAPPROVAL
 
   """
-  Applicant has completed the process and is ready to submit. At least one application is eligible to proceed.
+  Applicant has completed all prompts and is ready to submit. At least one application is eligible to proceed.
   """
   READY_TO_SUBMIT
 
@@ -365,6 +397,11 @@ type ApplicationRequirement {
 "\n    The status of an application. This is usually a computed field, not stored in the database. The status\n    is computed based on the status of the appRequest and of the requirements for the program. If\n    the appRequest is CLOSED, the status should permanently match the ApplicationStatusDB instead of being\n    computed. If the appRequest is CANCELLED, all applications should be CANCELLED as well.\n  "
 enum ApplicationStatus {
   """
+  The application has been approved and an offer has been submitted for applicant acceptance. This status is only possible for programs with at least one ACCEPTANCE requirement.
+  """
+  ACCEPTANCE
+
+  """
   The application's benefit has been accepted by the applicant. This status is only possible for programs with at least one ACCEPTANCE requirement.
   """
   ACCEPTED
@@ -458,6 +495,8 @@ scalar DateTime
 scalar JsonData
 
 type Mutation {
+  """Make an offer on the app request."""
+  offerAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
   roleAddGrant(grant: AccessRoleGrantCreate!, roleId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!
   roleCreate(role: AccessRoleInput!, validateOnly: Boolean): AccessRoleValidatedResponse!
   roleDelete(roleId: ID!): ValidatedResponse!
@@ -824,6 +863,11 @@ enum RequirementStatus {
 }
 
 enum RequirementType {
+  """
+  A requirement that should only be shown to applicants after the application has been through review and an offer has been made. The applicant can come back and fill out the requirement's prompts to accept the offer.
+  """
+  ACCEPTANCE
+
   """
   A requirement that should only be shown to agents/reviewers and must have a non-pending status before an application is closed.
   """
