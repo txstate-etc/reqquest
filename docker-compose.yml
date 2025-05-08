@@ -51,6 +51,7 @@ services:
       MYSQL_USER: user
       MYSQL_PASSWORD: password
     volumes:
+      - ./healthcheck.sh:/healthcheck.sh
       - reqquestdb:/var/lib/mysql
 volumes:
   reqquestdb: {}

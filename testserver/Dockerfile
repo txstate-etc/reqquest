@@ -19,5 +19,6 @@ WORKDIR /usr/app/testserver
 COPY testserver/package.json testserver/package-lock.json ./
 RUN npm ci --omit=dev --omit=optional
 COPY --from=build /usr/app/testserver/dist dist
+COPY --from=build /usr/app/api /usr/app/api
 
 CMD [ "npm", "start" ]

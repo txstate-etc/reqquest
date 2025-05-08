@@ -5,7 +5,7 @@ services:
         condition: service_healthy
     build:
       context: .
-      dockerfile: api/Dockerfile
+      dockerfile: testserver/Dockerfile
     environment:
       TZ: America/Chicago
       NODE_ENV: development
@@ -34,17 +34,17 @@ services:
       - ./test/test-results:/test-results
   fakeauth:
     image: registry.its.txstate.edu/unified-auth-stub:dev
-  motion-mock:
-    image: registry.its.txstate.edu/motion-mock
   mysql:
-    image: mariadb
+    image: percona/percona-server:8.4
     environment:
       MYSQL_ROOT_PASSWORD: secret
       MYSQL_DATABASE: default_database
       MYSQL_USER: user
       MYSQL_PASSWORD: password
+    volumes:
+      - ./healthcheck.sh:/healthcheck.sh
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 5s
-      timeout: 5s
-      retries: 6
+      test: ["CMD", "sh", "/healthcheck.sh"]
+      interval: 1s
+      timeout: 0.5s
+      retries: 500
