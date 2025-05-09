@@ -14,18 +14,12 @@ export const accessMigrations: DatabaseMigration[] = [{
       UNIQUE (name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
 
-    await db.execute(`CREATE TABLE IF NOT EXISTS accessGroups (
-      id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-      name VARCHAR(128) NOT NULL,
-      UNIQUE (name)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
-
     await db.execute(`CREATE TABLE IF NOT EXISTS accessRoleGroups (
       roleId INT UNSIGNED NOT NULL,
-      groupId INT UNSIGNED NOT NULL,
-      PRIMARY KEY (roleId, groupId),
-      FOREIGN KEY (roleId) REFERENCES accessRoles(id) ON DELETE CASCADE,
-      FOREIGN KEY (groupId) REFERENCES accessGroups(id) ON DELETE CASCADE
+      groupName VARCHAR(128) NOT NULL,
+      PRIMARY KEY (roleId, groupName),
+      INDEX (groupName),
+      FOREIGN KEY (roleId) REFERENCES accessRoles(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
 
     await db.execute(`CREATE TABLE IF NOT EXISTS accessRoleGrants (
@@ -36,10 +30,11 @@ export const accessMigrations: DatabaseMigration[] = [{
       FOREIGN KEY (roleId) REFERENCES accessRoles(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
 
-    await db.execute(`CREATE TABLE IF NOT EXISTS accessRoleGrantSubjects (
+    await db.execute(`CREATE TABLE IF NOT EXISTS accessRoleGrantTags (
       grantId INT UNSIGNED NOT NULL,
-      subject VARCHAR(128) NOT NULL,
-      PRIMARY KEY (grantId, subject),
+      category VARCHAR(128) NOT NULL,
+      tag VARCHAR(128) NOT NULL,
+      PRIMARY KEY (grantId, category, tag),
       FOREIGN KEY (grantId) REFERENCES accessRoleGrants(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
 
@@ -49,14 +44,6 @@ export const accessMigrations: DatabaseMigration[] = [{
       control VARCHAR(64) NOT NULL,
       UNIQUE (grantId, control),
       FOREIGN KEY (grantId) REFERENCES accessRoleGrants(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
-
-    await db.execute(`CREATE TABLE IF NOT EXISTS accessRoleGrantControlTags (
-      controlId INT UNSIGNED NOT NULL,
-      category VARCHAR(128) NOT NULL DEFAULT '',
-      tag VARCHAR(128) NOT NULL,
-      PRIMARY KEY (controlId, category, tag),
-      FOREIGN KEY (controlId) REFERENCES accessRoleGrantControls(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
 
     /** Seed Data */
@@ -86,10 +73,9 @@ export const accessMigrations: DatabaseMigration[] = [{
 
     await db.execute(`CREATE TABLE IF NOT EXISTS accessUserGroups (
       userId INT UNSIGNED NOT NULL,
-      groupId INT UNSIGNED NOT NULL,
-      PRIMARY KEY (userId, groupId),
-      FOREIGN KEY (userId) REFERENCES accessUsers(id) ON DELETE CASCADE,
-      FOREIGN KEY (groupId) REFERENCES accessGroups(id) ON DELETE CASCADE
+      groupName VARCHAR(128) NOT NULL,
+      PRIMARY KEY (userId, groupName),
+      FOREIGN KEY (userId) REFERENCES accessUsers(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
   }
 }]

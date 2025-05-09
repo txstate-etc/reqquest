@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start:nodemon": "nodemon",
-    "build": "tsc",
+    "build": "rm -rf dist && tsc",
     "start": "node --no-warnings --enable-source-maps ./dist/index.js"
   },
   "dependencies": {
@@ -22,7 +22,7 @@
     "typescript": "^5.1.6"
   },
   "nodemonConfig": {
-    "exec": "cd ../api && npm run build && cd ../testserver && tsc && node --no-warnings --enable-source-maps ./dist/index.js",
+    "exec": "cd ../api && npm run build && cd ../testserver && npm run build && node --no-warnings --enable-source-maps ./dist/index.js",
     "ext": "js,ts",
     "watch": ["/usr/app/testserver/src", "/usr/app/api/src"]
   }

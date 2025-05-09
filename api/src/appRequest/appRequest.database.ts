@@ -99,7 +99,26 @@ export async function getAppRequests (filter?: AppRequestFilter, tdb: Queryable 
     ${Array.from(joins.values()).join('\n')}
     ${where.length === 0 ? '' : `WHERE (${where.join(') AND (')})`}
   `, binds)
-  return rows.map(row => new AppRequest(row))
+  const tagLookup = await getAppRequestTags(rows.map(row => String(row.id)), tdb)
+  return rows.map(row => new AppRequest(row, tagLookup[row.id]))
+}
+
+export async function getAppRequestTags (appRequestIds: string[], tdb: Queryable = db) {
+  if (appRequestIds.length === 0) return {}
+  const rows = await tdb.getall<{ id: number, category: string, tag: string }>(`
+    SELECT ar.id, t.category, t.tag
+    FROM app_requests ar
+    INNER JOIN app_request_tags t ON t.appRequestId = ar.id
+    WHERE ar.id IN (${db.in([], appRequestIds)})
+  `, appRequestIds)
+  const tagLookup: Record<string, Record<string, string[]>> = {}
+  for (const appRequestId of appRequestIds) tagLookup[appRequestId] = {}
+  for (const tag of rows) {
+    const appRequestId = String(tag.id)
+    tagLookup[appRequestId][tag.category] ??= []
+    tagLookup[appRequestId][tag.category].push(tag.tag)
+  }
+  return tagLookup
 }
 
 export async function updateAppRequestComputed (appRequest: AppRequest, db: Queryable) {

@@ -1,5 +1,5 @@
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { Application, AuthService, getApplicationRequirements, ApplicationRequirement, ApplicationRequirementFilter, PeriodProgramRequirement, getPeriodProgramRequirements, PeriodProgramKey, PeriodProgramRequirementKey, PeriodRequirementKey } from '../internal.js'
+import { Application, AuthService, getApplicationRequirements, ApplicationRequirement, ApplicationRequirementFilter, PeriodProgramRequirement, getPeriodProgramRequirements, PeriodProgramKey, PeriodProgramRequirementKey, PeriodRequirementKey, AppRequest, AppRequestService, Program } from '../internal.js'
 
 const byIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -7,38 +7,38 @@ const byIdLoader = new PrimaryKeyLoader({
   }
 })
 
-const byRequirementKeyLoader = new PrimaryKeyLoader({
-  fetch: async (keys: { appRequestId: string, requirementKey: string }[]) => {
-    return await getApplicationRequirements({ appRequestIds: keys.map(k => k.appRequestId), requirementKeys: keys.map(k => k.requirementKey) })
+const byApplicationIdLoader = new OneToManyLoader({
+  fetch: async (applicationIds: string[]) => {
+    return await getApplicationRequirements({ applicationIds })
   },
-  extractId: (requirement: ApplicationRequirement) => ({ appRequestId: requirement.appRequestId, requirementKey: requirement.key }),
+  extractKey: requirement => requirement.applicationId,
   idLoader: byIdLoader
 })
-byIdLoader.addIdLoader(byRequirementKeyLoader)
 
 const byAppRequestIdLoader = new OneToManyLoader({
   fetch: async (appRequestIds: string[], filters: ApplicationRequirementFilter) => {
     return await getApplicationRequirements({ ...filters, appRequestIds })
   },
   extractKey: (requirement: ApplicationRequirement) => requirement.appRequestId,
-  idLoader: [byIdLoader, byRequirementKeyLoader]
+  idLoader: [byIdLoader]
 })
 
 export class ApplicationRequirementService extends AuthService<ApplicationRequirement> {
-  async findById (id: string) {
-    return await this.loaders.get(byIdLoader).load(id)
+  async findById (id: string, appRequestTags?: Record<string, string[]>) {
+    const req = await this.loaders.get(byIdLoader).load(id)
+    req!.appRequestTags = appRequestTags ?? await this.svc(AppRequestService).getTags(req!.appRequestId)
+    return req
   }
 
-  async findByInternalId (internalId: number) {
-    return await this.findById(String(internalId))
-  }
-
-  async findByAppRequestId (appRequestId: string) {
-    return await this.loaders.get(byAppRequestIdLoader).load(appRequestId)
+  async findByAppRequest (appRequest: AppRequest) {
+    const reqs = await this.loaders.get(byAppRequestIdLoader).load(appRequest.id)
+    for (const req of reqs) req.appRequestTags = appRequest.tags
   }
 
   async findByApplication (application: Application) {
-    return await this.loaders.loadMany(byRequirementKeyLoader, application.program.requirementKeys.map(requirementKey => ({ appRequestId: application.appRequestId, requirementKey })))
+    const reqs = await this.loaders.get(byApplicationIdLoader).load(application.id)
+    for (const req of reqs) req.appRequestTags = application.appRequestTags
+    return reqs
   }
 }
 
@@ -91,6 +91,6 @@ export class PeriodRequirementService extends AuthService<PeriodProgramRequireme
 
   mayConfigure (requirement: PeriodProgramRequirement) {
     if (requirement.definition.validateConfiguration == null) return false
-    return this.hasControl('Requirement', 'configure', requirement.key)
+    return this.hasControl('Requirement', 'configure', { Requirement: [requirement.key], Program: [requirement.programKey] })
   }
 }

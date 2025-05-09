@@ -56,10 +56,10 @@ export const rqAccessSeed: AccessRoleGrantDefinition = {
     groups: [process.env.RQ_ADMIN_GROUP ?? 'administrators'],
     grants: [
       { subjectType: 'AppRequest', controls: ['review'], allow: true },
-      { subjectType: 'Period', controls: ['view', 'create', 'update', 'delete'], allow: true },
-      { subjectType: 'Program', controls: ['view_configuration', 'configure', 'disable'], allow: true },
-      { subjectType: 'Prompt', controls: ['view_configuration', 'configure'], allow: true },
-      { subjectType: 'Requirement', controls: ['view_configuration', 'configure', 'disable'], allow: true },
+      { subjectType: 'Period', controls: ['view', 'view_configuration', 'create', 'update', 'delete'], allow: true },
+      { subjectType: 'Program', controls: ['view', 'configure', 'disable'], allow: true },
+      { subjectType: 'Prompt', controls: ['view', 'configure'], allow: true },
+      { subjectType: 'Requirement', controls: ['view', 'configure', 'disable'], allow: true },
       { subjectType: 'Role', controls: ['view', 'create', 'update', 'delete'], allow: true }
     ]
   }
@@ -68,29 +68,20 @@ export const rqAccessSeed: AccessRoleGrantDefinition = {
 export async function seedAccessRoles (appDef: AccessRoleGrantDefinition): Promise<void> {
   for (const [name, roleDef] of Object.entries(appDef)) {
     const roleId = await db.insert('INSERT INTO accessRoles (name, scope) VALUES (?, ?)', [name, roleDef.scope])
-    for (const group of roleDef.groups) {
-      const groupId = await db.insert('INSERT INTO accessGroups (name) VALUES (?)', [group])
-      await db.insert('INSERT INTO accessRoleGroups (roleId, groupId) VALUES (?, ?)', [roleId, groupId])
-    }
+    const ibinds: any[] = []
+    await db.insert(`INSERT INTO accessRoleGroups (roleId, groupName) VALUES ${db.in(ibinds, roleDef.groups.map(g => [roleId, g]))}`, ibinds)
+
     for (const grant of roleDef.grants) {
       const grantId = await db.insert('INSERT INTO accessRoleGrants (roleId, subjectType, allow) VALUES (?, ?, ?)', [
         roleId,
         grant.subjectType,
         grant.allow
       ])
-      if (grant.subjects?.length) {
-        const binds: any[] = []
-        await db.insert(`
-          INSERT INTO accessRoleGrantSubjects (grantId, subject)
-          VALUES ${db.in(binds, grant.subjects.map(s => [grantId, s]))}
-        `, binds)
-      }
       for (const control of grant.controls) {
         const controlId = await db.insert('INSERT INTO accessRoleGrantControls (grantId, control) VALUES (?, ?)', [
           grantId,
           control
         ])
-        // TODO: add tags
       }
     }
   }

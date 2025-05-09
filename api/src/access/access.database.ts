@@ -1,5 +1,9 @@
 import db from 'mysql2-async/db'
-import { AccessRole, AccessUser, type AccessUserFilter, AccessRoleFilter, AccessRoleGrant, ReqquestUser, AccessUserIdentifier, AccessGrantControl, AccessRoleInput, AccessRoleGrantCreate, AccessSubjectInstance, AccessGrantSubject, AccessGrantControlTag } from '../internal.js'
+import {
+  AccessRole, AccessUser, type AccessUserFilter, AccessRoleFilter, AccessRoleGrant, ReqquestUser,
+  AccessUserIdentifier, AccessGrantControl, AccessRoleInput, AccessRoleGrantCreate,
+  AccessGrantTag
+} from '../internal.js'
 
 export interface AccessUserRow {
   id: number
@@ -37,9 +41,10 @@ export interface AccessRoleGrantRow {
   allow: 0 | 1
 }
 
-export interface AccessRoleGrantSubjectRow {
+export interface AccessRoleGrantTagRow {
   grantId: number
-  subject: string
+  category: string
+  tag: string
   subjectType: string
   roleId: number
 }
@@ -50,16 +55,6 @@ export interface AccessRoleGrantControlRow {
   control: string
   subjectType: string
   roleId: number
-}
-
-export interface AccessRoleGrantControlTagRow {
-  controlId: number
-  category: string
-  tag: string
-  subjectType: string
-  control: string
-  roleId: number
-  grantId: number
 }
 
 export namespace AccessDatabase {
@@ -132,47 +127,36 @@ export namespace AccessDatabase {
     await db.transaction(async db => {
       const userId = await db.getval('SELECT id FROM accessUsers WHERE login = ? FOR UPDATE', [user.login])
 
-      const otherIdentifiers = await db.getall<AccessUserIdentifierRow>('SELECT * FROM accessUserIdentifiers WHERE userId = ?', [userId])
-      const otherIdentifiersExisting = new Set<string>(otherIdentifiers.map((r: any) => r.label + r.id))
-      const otherIdentifiersCurrent = new Set<string>(user.otherIdentifiers?.map((r: any) => r.label + r.identifier))
-      const otherIdentifiersToInsert = user.otherIdentifiers?.filter((r: any) => !otherIdentifiersExisting.has(r.label + r.identifier)) ?? []
-      const otherIdentifiersToDelete = otherIdentifiers.filter((r: any) => !otherIdentifiersCurrent.has(r.label + r.id))
-      if (otherIdentifiersToInsert.length > 0) {
-        const binds: any[] = []
+      if (user.otherIdentifiers?.length) {
+        const ibinds: any[] = []
         await db.insert(`
           INSERT INTO accessUserIdentifiers (userId, label, id)
-          VALUES ${db.in(binds, otherIdentifiersToInsert.map((r: any) => [userId, r.label, r.identifier]))}
+          VALUES ${db.in(ibinds, user.otherIdentifiers.map((r: any) => [userId, r.label, r.identifier]))}
           ON DUPLICATE KEY UPDATE userId = userId
-        `, binds)
-      }
-      if (otherIdentifiersToDelete.length > 0) {
-        const binds: any[] = [userId]
+        `, ibinds)
+        const dbinds: any[] = [userId]
         await db.delete(`
           DELETE FROM accessUserIdentifiers
-          WHERE userId = ? AND (label, id) IN (${db.in(binds, otherIdentifiersToDelete.map((r: any) => [r.label, r.id]))})
-        `, binds)
+          WHERE userId = ? AND (label, id) NOT IN (${db.in(dbinds, user.otherIdentifiers.map((r: any) => [r.label, r.id]))})
+        `, dbinds)
+      } else {
+        await db.delete('DELETE FROM accessUserIdentifiers WHERE userId = ?', [userId])
       }
 
-      const groups = await db.getvals<string>('SELECT g.name FROM accessGroups g INNER JOIN accessUserGroups ug ON g.id = ug.groupId WHERE ug.userId = ?', [userId])
-      const groupsExisting = new Set<string>(groups)
-      const groupsCurrent = new Set<string>(user.groups)
-      const groupsToInsert = user.groups.filter((g: any) => !groupsExisting.has(g))
-      const groupsToDelete = groups.filter((g: any) => !groupsCurrent.has(g))
-      if (groupsToInsert.length > 0) {
-        const binds: any[] = [userId]
+      if (user.groups?.length) {
+        const ibinds: any[] = []
         await db.insert(`
-          INSERT INTO accessUserGroups (userId, groupId)
-          SELECT ?, g.id FROM accessGroups g
-          WHERE g.name IN (${db.in(binds, groupsToInsert)})
+          INSERT INTO accessUserGroups (userId, groupName)
+          VALUES ${db.in(ibinds, user.groups.map((g: any) => [userId, g]))}
           ON DUPLICATE KEY UPDATE userId = userId
-        `, binds)
-      }
-      if (groupsToDelete.length > 0) {
-        const binds: any[] = [userId]
+        `, ibinds)
+        const dbinds: any[] = [userId]
         await db.delete(`
           DELETE FROM accessUserGroups
-          WHERE userId = ? AND groupId IN (${db.in(binds, groupsToDelete)})
-        `, binds)
+          WHERE userId = ? AND groupName NOT IN (${db.in(dbinds, user.groups)})
+        `, dbinds)
+      } else {
+        await db.delete('DELETE FROM accessUserGroups WHERE userId = ?', [userId])
       }
     })
     return (await getAccessUsers({ logins: [user.login] }))[0]
@@ -200,11 +184,10 @@ export namespace AccessDatabase {
     }
     if (filter?.groups?.length) {
       joins.set('arg', 'INNER JOIN accessRoleGroups arg ON ar.id = arg.roleId')
-      joins.set('ag', 'INNER JOIN accessGroups ag ON arg.groupId = ag.id')
-      where.push(`ag.name IN (${db.in(params, filter.groups)})`)
+      where.push(`arg.groupName IN (${db.in(params, filter.groups)})`)
     }
     if (filter?.scopes?.length) {
-      where.push(`scope IN (${db.in(params, filter.scopes)})`)
+      where.push(`ar.scope IN (${db.in(params, filter.scopes)})`)
     }
     return { where, joins, params }
   }
@@ -227,17 +210,20 @@ export namespace AccessDatabase {
       SELECT DISTINCT ar.id as roleId, aug.userId
       FROM accessRoles ar
       INNER JOIN accessRoleGroups arg ON ar.id = arg.roleId
-      INNER JOIN accessUserGroups aug ON arg.groupId = aug.groupId
+      INNER JOIN accessUserGroups aug ON arg.groupName = aug.groupName
       WHERE aug.userId IN (${db.in(binds, ids)})
     `, binds)
+  }
+
+  export async function getAllGroups () {
+    return await db.getvals<string>('SELECT DISTINCT groupName FROM accessRoleGroups')
   }
 
   export async function getGroupsByRoleIds (roleIds: string[]) {
     const params: any[] = []
     const rows = await db.getall<{ roleId: number, groupName: string }>(`
-      SELECT arg.roleId, ag.name AS groupName
-      FROM accessGroups ag
-      INNER JOIN accessRoleGroups arg ON ag.id = arg.groupId
+      SELECT arg.roleId, arg.groupName
+      FROM accessRoleGroups arg
       WHERE arg.roleId IN (${db.in(params, roleIds)})
     `, params)
     return rows.map(row => ({ key: String(row.roleId), value: row.groupName }))
@@ -246,9 +232,8 @@ export namespace AccessDatabase {
   export async function getGroupsByUserIds (userInternalIds: number[]) {
     const params: any[] = []
     const rows = await db.getall<{ userId: number, groupName: string }>(`
-      SELECT aug.userId, ag.name AS groupName
-      FROM accessGroups ag
-      INNER JOIN accessUserGroups aug ON ag.id = aug.groupId
+      SELECT aug.userId, ag.groupName
+      FROM accessUserGroups aug
       WHERE aug.userId IN (${db.in(params, userInternalIds)})
     `, params)
     return rows.map(row => ({ key: row.userId, value: row.groupName }))
@@ -283,29 +268,16 @@ export namespace AccessDatabase {
     return rows.map(row => new AccessGrantControl(row))
   }
 
-  export async function getSubjectsByGrantIds (grantIds: string[]) {
+  export async function getTagsByGrantIds (grantIds: number[]) {
     const params: any[] = []
-    const rows = await db.getall<AccessRoleGrantSubjectRow>(`
-      SELECT s.*, g.subjectType, g.roleId
-      FROM accessRoleGrants g
-      INNER JOIN accessRoleGrantSubjects s ON g.id = s.grantId
-      WHERE g.id IN (${db.in(params, grantIds)})
-      ORDER BY g.id, s.subject
+    const rows = await db.getall<AccessRoleGrantTagRow>(`
+      SELECT t.*, g.subjectType, g.roleId
+      FROM accessRoleGrantTags t
+      INNER JOIN accessRoleGrants g ON g.id = t.grantId
+      WHERE t.grantId IN (${db.in(params, grantIds)})
+      ORDER BY t.grantId, t.category, t.tag
     `, params)
-    return rows.map(row => new AccessGrantSubject(row))
-  }
-
-  export async function getTagsByControlIds (controlIds: number[]) {
-    const params: any[] = []
-    const rows = await db.getall<AccessRoleGrantControlTagRow>(`
-      SELECT t.*, c.control, c.grantId, g.roleId, g.subjectType
-      FROM accessRoleGrants g
-      INNER JOIN accessRoleGrantControls c ON g.id = c.grantId
-      INNER JOIN accessRoleGrantControlTags t ON c.id = t.controlId
-      WHERE c.id IN (${db.in(params, controlIds)})
-      ORDER BY c.id, t.category, t.tag
-    `, params)
-    return rows.map(row => new AccessGrantControlTag(row))
+    return rows.map(row => new AccessGrantTag(row))
   }
 
   export async function createAccessRole (role: AccessRoleInput) {
@@ -315,11 +287,10 @@ export namespace AccessDatabase {
         VALUES (?, ?)
       `, [role.name, role.scope])
       if (role.groups?.length) {
-        const binds: any[] = [roleId]
+        const binds: any[] = []
         await db.insert(`
-          INSERT INTO accessRoleGroups (roleId, groupId)
-          SELECT ?, g.id FROM accessGroups g
-          WHERE g.name IN (${db.in(binds, role.groups)})
+          INSERT INTO accessRoleGroups (roleId, groupName)
+          VALUES ${db.in(binds, role.groups.map((g: any) => [roleId, g]))}
           ON DUPLICATE KEY UPDATE roleId = roleId
         `, binds)
       }
@@ -329,32 +300,22 @@ export namespace AccessDatabase {
 
   export async function updateAccessRole (id: string, role: AccessRoleInput) {
     return await db.transaction(async db => {
-      await db.update(`
-        UPDATE accessRoles
-        SET name = ?, scope = ?
-        WHERE id = ?
-      `, [role.name, role.scope, id])
-      const dbinds: any[] = [id]
+      await db.update('UPDATE accessRoles SET name = ?, scope = ? WHERE id = ?', [role.name, role.scope, id])
       if (role.groups?.length) {
-        await db.delete(`
-          DELETE arg FROM accessRoleGroups arg
-          INNER JOIN accessGroups g ON arg.groupId = g.id
-          WHERE arg.roleId = ?
-          AND g.name NOT IN (${db.in(dbinds, role.groups ?? [])})
-        `, dbinds)
-        const ibinds: any[] = [id]
+        const ibinds: any[] = []
         await db.insert(`
-          INSERT INTO accessRoleGroups (roleId, groupId)
-          SELECT ?, g.id FROM accessGroups g
-          WHERE g.name IN (${db.in(ibinds, role.groups ?? [])})
+          INSERT INTO accessRoleGroups (roleId, groupName)
+          VALUES ${db.in(ibinds, role.groups.map((g: any) => [id, g]))}
           ON DUPLICATE KEY UPDATE roleId = roleId
         `, ibinds)
-      } else {
+        const dbinds: any[] = [id]
         await db.delete(`
-          DELETE arg FROM accessRoleGroups arg
-          INNER JOIN accessGroups g ON arg.groupId = g.id
+          DELETE FROM accessRoleGroups arg
           WHERE arg.roleId = ?
+          AND arg.groupName NOT IN (${db.in(dbinds, role.groups)})
         `, dbinds)
+      } else {
+        await db.delete('DELETE FROM accessRoleGroups WHERE arg.roleId = ?', [id])
       }
     })
   }
@@ -370,27 +331,28 @@ export namespace AccessDatabase {
         INSERT INTO accessRoleGrants (roleId, subjectType, allow)
         VALUES (?, ?, ?)
       `, [roleId, grantInput.subjectType, grantInput.allow])
-      const binds: any[] = [grantId]
-      if (grantInput.subjects?.length) {
-        await db.insert(`
-          INSERT INTO accessRoleGrantSubjects (grantId, subject)
-          VALUES ${db.in(binds, grantInput.subjects)}
-          ON DUPLICATE KEY UPDATE grantId = grantId
-        `, binds)
-      }
       for (const control of grantInput.controls) {
         const controlId = await db.insert(`
           INSERT INTO accessRoleGrantControls (grantId, control)
           VALUES (?, ?)
         `, [grantId, control.control])
         const binds: any[] = [controlId]
-        if (control.tags?.length) {
-          await db.insert(`
-            INSERT INTO accessRoleGrantControlTags (controlId, category, tag)
-            VALUES ${db.in(binds, control.tags.map((r: any) => [controlId, r.category, r.tag]))}
-            ON DUPLICATE KEY UPDATE controlId = controlId
-          `, binds)
-        }
+      }
+      if (grantInput.controls?.length) {
+        const binds: any[] = []
+        await db.insert(`
+          INSERT INTO accessRoleGrantControls (grantId, control)
+          VALUES ${db.in(binds, grantInput.controls.map((r: any) => [grantId, r.control]))}
+          ON DUPLICATE KEY UPDATE grantId = grantId
+        `, binds)
+      }
+      if (grantInput.tags?.length) {
+        const binds: any[] = []
+        await db.insert(`
+          INSERT INTO accessRoleGrantTags (grantId, category, tag)
+          VALUES ${db.in(binds, grantInput.tags.map((r: any) => [grantId, r.category, r.tag]))}
+          ON DUPLICATE KEY UPDATE grantId = grantId
+        `, binds)
       }
       return grantId
     })
@@ -403,60 +365,42 @@ export namespace AccessDatabase {
         SET subjectType = ?, allow = ?
         WHERE id = ?
       `, [grantInput.subjectType, grantInput.allow, grantId])
-      const binds: any[] = [grantId]
 
-      if (grantInput.subjects?.length) {
-        const dsbinds: any[] = [grantId]
+      if (grantInput.controls?.length) {
+        const dbinds: any[] = [grantId]
         await db.delete(`
-          DELETE FROM accessRoleGrantSubjects
-          WHERE grantId = ? AND subject NOT IN (${db.in(dsbinds, grantInput.subjects)})
-        `, dsbinds)
+          DELETE FROM accessRoleGrantControls
+          WHERE grantId = ? AND control NOT IN (${db.in(dbinds, grantInput.controls.map((r: any) => r.control))})
+        `, dbinds)
+        const binds: any[] = []
         await db.insert(`
-          INSERT INTO accessRoleGrantSubjects (grantId, subject)
-          VALUES ${db.in(binds, grantInput.subjects)}
+          INSERT INTO accessRoleGrantControls (grantId, control)
+          VALUES ${db.in(binds, grantInput.controls.map((r: any) => [grantId, r.control]))}
           ON DUPLICATE KEY UPDATE grantId = grantId
         `, binds)
       } else {
         await db.delete(`
-          DELETE FROM accessRoleGrantSubjects
+          DELETE FROM accessRoleGrantControls
           WHERE grantId = ?
-        `, binds)
+        `, [grantId])
       }
-
-      const dcbinds: any[] = [grantId]
-
-      // delete controls that are not in the new list
-      // associated tags will be deleted due to foreign key constraint ON DELETE CASCADE
-      await db.delete(`
-        DELETE FROM accessRoleGrantControls c
-        WHERE c.grantId = ? AND c.control NOT IN (${db.in(dcbinds, grantInput.controls.map((r: any) => r.control))})
-      `, dcbinds)
-      await db.insert(`
-        INSERT INTO accessRoleGrantControls (grantId, control)
-        VALUES ${db.in(binds, grantInput.controls.map((r: any) => [grantId, r.control]))}
-        ON DUPLICATE KEY UPDATE grantId = grantId
-      `, binds)
-
-      for (const control of grantInput.controls) {
-        if (control.tags?.length) {
-          const dtbinds: any[] = [grantId, control.control]
-          await db.delete(`
-            DELETE t FROM accessRoleGrantControlTags t
-            INNER JOIN accessRoleGrantControls arg ON t.controlId = arg.id
-            WHERE arg.grantId = ? AND arg.control = ? AND (t.category, t.tag) NOT IN (${db.in(dtbinds, grantInput.controls.flatMap(c => c.tags?.map(t => [t.category, t.tag])))})
-          `, dtbinds)
-          await db.insert(`
-            INSERT INTO accessRoleGrantControlTags (controlId, category, tag)
-            VALUES ${db.in(dtbinds, control.tags.map((r: any) => [control.control, r.category, r.tag]))}
-            ON DUPLICATE KEY UPDATE controlId = controlId
-          `, dtbinds)
-        } else {
-          await db.delete(`
-            DELETE t FROM accessRoleGrantControlTags t
-            INNER JOIN accessRoleGrantControls arg ON t.controlId = arg.id
-            WHERE arg.grantId = ? AND arg.control = ?
-          `, [grantId, control.control])
-        }
+      if (grantInput.tags?.length) {
+        const dbinds: any[] = [grantId]
+        await db.delete(`
+          DELETE FROM accessRoleGrantTags
+          WHERE grantId = ? AND (category, tag) NOT IN (${db.in(dbinds, grantInput.tags.map((r: any) => [r.category, r.tag]))})
+        `, dbinds)
+        const binds: any[] = []
+        await db.insert(`
+          INSERT INTO accessRoleGrantTags (grantId, category, tag)
+          VALUES ${db.in(binds, grantInput.tags.map((r: any) => [grantId, r.category, r.tag]))}
+          ON DUPLICATE KEY UPDATE grantId = grantId
+        `, binds)
+      } else {
+        await db.delete(`
+          DELETE FROM accessRoleGrantTags
+          WHERE grantId = ?
+        `, [grantId])
       }
     })
   }

@@ -1,9 +1,14 @@
 import { AuthorizedServiceSync, Context, MockContext } from '@txstate-mws/graphql-server'
 import { FastifyRequest } from 'fastify'
-import { Cache, isNotBlank, unique } from 'txstate-utils'
-import { AccessUser, appConfig, AccessDatabase, AccessTag, AccessRoleServiceInternal } from '../internal.js'
+import { Cache, isNotBlank } from 'txstate-utils'
+import { AccessUser, appConfig, AccessDatabase, AccessRoleServiceInternal } from '../internal.js'
 
-type RoleLookup = Record<string, Record<string, Record<string, Record<string, boolean>>>>
+interface GrantCategoryRecord {
+  allow: boolean
+  tags: Set<string>
+}
+
+type RoleLookup = Record<string, Record<string, Record<number, Record<string, Set<string>>>>>
 
 export abstract class AuthService<ObjType, RedactedType = ObjType> extends AuthorizedServiceSync<{ sub?: string, client_id?: string }, ObjType, RedactedType> {
   declare ctx: RQContext
@@ -20,22 +25,39 @@ export abstract class AuthService<ObjType, RedactedType = ObjType> extends Autho
     return this.ctx.authInfo.user
   }
 
-  private roleMatches (roleLookup: RoleLookup, allow: boolean, subjectType: string, control: string, subject: string, tags?: string[]) {
-    const controlLookup = roleLookup[subjectType]?.[control]
+  private roleMatches (roleLookup: RoleLookup, allow: boolean, subjectType: string, control: string, tags?: Record<string, string[]>) {
+    const controlLookup = roleLookup[subjectType]?.[control]?.[Number(allow)]
     if (!controlLookup) return false
-    if (tags?.length && tags.some(t => controlLookup[subject]?.[t] === allow || controlLookup['all'][t] === allow)) return true
-    if (controlLookup[subject]?.['all'] === allow) return true
-    if (controlLookup['all']?.['all'] === allow) return true
+    for (const tagCategory of Object.keys(controlLookup)) {
+      const tagSet = controlLookup[tagCategory]
+      if (tagSet?.size && !tags?.[tagCategory]?.some(t => tagSet.has(t))) return false
+    }
+    return true
+  }
+
+  /**
+   * Primary function to check if the user has a specific control on a subject type.
+   */
+  hasControl (subjectType: string, control: string, tags?: Record<string, string[]>) {
+    for (const roleLookup of this.ctx.authInfo.roleLookups) {
+      // if role has a deny, this role does not permit the control, go to the next role
+      if (this.roleMatches(roleLookup, false, subjectType, control, tags)) continue
+      // if role has an allow, this role permits the control, since roles are OR'd, we can stop looking
+      if (this.roleMatches(roleLookup, true, subjectType, control, tags)) return true
+    }
     return false
   }
 
-  hasControl (subjectType: string, control: string, subject?: string, tags?: AccessTag[]) {
-    const tagsList = tags?.map(t => JSON.stringify([t.category, t.tag]))
+  /**
+   * Returns true if the user has any role that grants the control on any set of tags. Has
+   * a slight weakness in that if a role grants on some tags and then denies all the same
+   * tags, it will still return true.
+   */
+  hasAnyControl (subjectType: string, control: string) {
     for (const roleLookup of this.ctx.authInfo.roleLookups) {
-      // if role has a deny, this role does not permit the control, go to the next role
-      if (this.roleMatches(roleLookup, false, subjectType, control, subject ?? 'all', tagsList)) continue
-      // if role has an allow, this role permits the control, since roles are OR'd, we can stop looking
-      if (this.roleMatches(roleLookup, true, subjectType, control, subject ?? 'all', tagsList)) return true
+      const controlLookup = roleLookup[subjectType]?.[control]
+      // if we have any allow, and we don't have a global deny, we have the control
+      if (controlLookup?.[1] && (controlLookup?.[0] == null || Object.keys(controlLookup[0]).length)) return true
     }
     return false
   }
@@ -47,8 +69,7 @@ export interface AuthInfo {
 }
 
 const allGroupCache = new Cache(async () => {
-  const roles = await AccessDatabase.getAccessRoles()
-  return unique((await AccessDatabase.getGroupsByRoleIds(roles.map(r => r.id))).map(g => g.value)) // get all groups
+  return await AccessDatabase.getAllGroups()
 }, { freshseconds: 30, staleseconds: 28800 }) // 30 seconds, 8 hours
 
 const userCache = new Cache(async (login: string, ctx: Context) => {
@@ -68,26 +89,6 @@ const authCache = new Cache(async (login: string, ctx: Context) => {
   // load up all the roles with their grants, grants with their controls, etc
   await Promise.all(roles.map(role => role.load(ctx)))
 
-  /**
-   * {
-   *   Prompt: {
-   *     all: {
-   *       all: {
-   *         view: true
-   *       }
-   *     },
-   *     have_yard_prompt: {
-   *       all: {
-   *         view: true
-   *       },
-   *       texas: {
-   *         view: false
-   *       }
-   *     }
-   *   }
-   * }
-   */
-
   const roleLookups: RoleLookup[] = []
   for (const role of roles) {
     const mergedPerRole: RoleLookup = {}
@@ -95,13 +96,10 @@ const authCache = new Cache(async (login: string, ctx: Context) => {
       mergedPerRole[grant.subjectType] ??= {}
       for (const control of grant.loadedControls) {
         mergedPerRole[grant.subjectType][control.name] ??= {}
-        for (const subject of grant.loadedSubjects) {
-          mergedPerRole[grant.subjectType][control.name][subject.id] ??= {}
-          for (const tag of control.loadedTags) {
-            const tagid = tag.tag === 'all' ? 'all' : JSON.stringify([tag.category, tag.tag])
-            mergedPerRole[grant.subjectType][control.name][subject.id][tagid] ??= grant.allow
-            mergedPerRole[grant.subjectType][control.name][subject.id][tagid] &&= grant.allow
-          }
+        mergedPerRole[grant.subjectType][control.name][Number(grant.allow)] ??= {}
+        for (const tag of grant.loadedTags) {
+          mergedPerRole[grant.subjectType][control.name][Number(grant.allow)][tag.category] ??= new Set()
+          mergedPerRole[grant.subjectType][control.name][Number(grant.allow)][tag.category].add(tag.tag)
         }
       }
     }

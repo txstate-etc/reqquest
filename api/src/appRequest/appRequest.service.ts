@@ -1,5 +1,5 @@
-import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, evaluateAppRequest, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer } from '../internal.js'
-import { PrimaryKeyLoader } from 'dataloader-factory'
+import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, evaluateAppRequest, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer, getAppRequestTags } from '../internal.js'
+import { ManyJoinedLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { BaseService } from '@txstate-mws/graphql-server'
 
 const appReqByIdLoader = new PrimaryKeyLoader({
@@ -14,7 +14,25 @@ const appReqDataLoader = new PrimaryKeyLoader({
   }
 })
 
+const appReqTagsLoader = new PrimaryKeyLoader({
+  fetch: async (appRequestIds: string[]) => {
+    const tagLookup = await getAppRequestTags(appRequestIds)
+    return appRequestIds.map(id => ({ id, tags: tagLookup[id] }))
+  }
+})
+
 export class AppRequestServiceInternal extends BaseService<AppRequest> {
+  async find (filter?: AppRequestFilter) {
+    const appRequests = await getAppRequests(filter)
+    const reqLoader = this.loaders.get(appReqByIdLoader)
+    const tagLoader = this.loaders.get(appReqTagsLoader)
+    for (const appRequest of appRequests) {
+      reqLoader.prime(appRequest.id, appRequest)
+      tagLoader.prime(appRequest.id, { id: appRequest.id, tags: appRequest.tags! })
+    }
+    return appRequests
+  }
+
   async getData (appRequestInternalId: number) {
     const row = await this.loaders.get(appReqDataLoader).load(appRequestInternalId)
     if (!row) throw new Error('AppRequest not found')
@@ -41,7 +59,7 @@ export class AppRequestService extends AuthService<AppRequest> {
 
   async find (filter?: AppRequestFilter) {
     filter = this.preprocessFilter(filter)
-    return this.removeUnauthorized(await getAppRequests(filter))
+    return this.removeUnauthorized(await this.raw.find(filter))
   }
 
   async findById (id: string) {
@@ -50,6 +68,11 @@ export class AppRequestService extends AuthService<AppRequest> {
 
   async findByInternalId (internalId: number) {
     return await this.findById(String(internalId))
+  }
+
+  async getTags (appRequestId: string) {
+    const { tags } = (await this.loaders.get(appReqTagsLoader).load(appRequestId))!
+    return tags
   }
 
   async getData (appRequestInternalId: number) {
@@ -66,16 +89,16 @@ export class AppRequestService extends AuthService<AppRequest> {
   }
 
   mayViewAsReviewer (appRequest: AppRequest) {
-    if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own')) return false
-    return this.hasControl('AppRequest', 'review', appRequest.id, appRequest.tags)
+    if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false
+    return this.hasControl('AppRequest', 'review', appRequest.tags)
   }
 
   mayCreate () {
-    return this.hasControl('AppRequest', 'create') || this.hasControl('AppRequest', 'create_own')
+    return this.hasAnyControl('AppRequest', 'create') || this.hasAnyControl('AppRequest', 'create_own')
   }
 
   mayClose (appRequest: AppRequest) {
-    return this.hasControl('AppRequest', 'close', appRequest.id, []) || this.hasControl('AppRequest', 'close_own')
+    return this.hasControl('AppRequest', 'close', appRequest.tags) || this.hasControl('AppRequest', 'close_own')
   }
 
   mayCancel (appRequest: AppRequest) {
@@ -88,10 +111,10 @@ export class AppRequestService extends AuthService<AppRequest> {
   mayReopen (appRequest: AppRequest) {
     // TODO: check if the appRequest is in a valid period
     if ([AppRequestStatusDB.CANCELLED, AppRequestStatusDB.WITHDRAWN].includes(appRequest.dbStatus)) {
-      return (this.isOwn(appRequest) && this.hasControl('AppRequest', 'reopen_own', appRequest.id, appRequest.tags)) || this.hasControl('AppRequest', 'reopen', appRequest.id, appRequest.tags)
+      return (this.isOwn(appRequest) && this.hasControl('AppRequest', 'reopen_own', appRequest.tags)) || this.hasControl('AppRequest', 'reopen', appRequest.tags)
     }
     if (appRequest.dbStatus === AppRequestStatusDB.CLOSED) {
-      return this.hasControl('AppRequest', 'reopen', appRequest.id, appRequest.tags)
+      return this.hasControl('AppRequest', 'reopen', appRequest.tags)
     }
     return false
   }
@@ -99,23 +122,23 @@ export class AppRequestService extends AuthService<AppRequest> {
   maySubmit (appRequest: AppRequest) {
     if (appRequest.status !== AppRequestStatus.READY_TO_SUBMIT) return false
     return (
-      this.isOwn(appRequest) && this.hasControl('AppRequest', 'submit_own', appRequest.id, appRequest.tags)
-    ) || this.hasControl('AppRequest', 'submit', appRequest.id, appRequest.tags)
+      this.isOwn(appRequest) && this.hasControl('AppRequest', 'submit_own', appRequest.tags)
+    ) || this.hasControl('AppRequest', 'submit', appRequest.tags)
   }
 
   mayReturn (appRequest: AppRequest) {
     if (appRequest.dbStatus !== AppRequestStatusDB.SUBMITTED) return false
     return (
-      this.isOwn(appRequest) && this.hasControl('AppRequest', 'return_own', appRequest.id, appRequest.tags)
-    ) || this.hasControl('AppRequest', 'return', appRequest.id, appRequest.tags)
+      this.isOwn(appRequest) && this.hasControl('AppRequest', 'return_own', appRequest.tags)
+    ) || this.hasControl('AppRequest', 'return', appRequest.tags)
   }
 
   mayOffer (appRequest: AppRequest) {
     if (appRequest.dbStatus !== AppRequestStatusDB.SUBMITTED) return false
     // TODO: check if there are any ACCEPTANCE requirements
     return (
-      this.isOwn(appRequest) && this.hasControl('AppRequest', 'offer_own', appRequest.id, appRequest.tags)
-    ) || this.hasControl('AppRequest', 'offer', appRequest.id, appRequest.tags)
+      this.isOwn(appRequest) && this.hasControl('AppRequest', 'offer_own', appRequest.tags)
+    ) || this.hasControl('AppRequest', 'offer', appRequest.tags)
   }
 
   async submit (appRequest: AppRequest) {

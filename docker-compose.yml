@@ -1,7 +1,8 @@
 services:
   api:
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     build:
       context: .
       dockerfile: testserver/Dockerfile.dev
@@ -20,7 +21,6 @@ services:
       RESET_DB_ON_STARTUP: 'true'
     volumes:
       - ./api/src:/usr/app/api/src
-      - ./api/build:/usr/app/api/build
       - ./testserver/src:/usr/app/testserver/src
   ui:
     build:
@@ -50,6 +50,12 @@ services:
       MYSQL_DATABASE: default_database
       MYSQL_USER: user
       MYSQL_PASSWORD: password
+    attach: false
+    healthcheck:
+      test: ["CMD", "sh", "/healthcheck.sh"]
+      interval: 1s
+      timeout: 0.5s
+      retries: 50
     volumes:
       - ./healthcheck.sh:/healthcheck.sh
       - reqquestdb:/var/lib/mysql

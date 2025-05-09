@@ -72,6 +72,7 @@ export class ApplicationRequirement extends Requirement {
   applicationInternalId: number
   applicationId: string
   periodId: string
+  appRequestTags?: Record<string, string[]>
 
   constructor (row: ApplicationRequirementRow) {
     const definition = requirementRegistry.get(row.requirementKey)

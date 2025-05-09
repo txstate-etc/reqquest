@@ -7,6 +7,5 @@ export default defineConfig({
   css: { devSourcemap: true },
   optimizeDeps: {
     noDiscovery: true
-  },
-  appType: 'spa'
+  }
 })

@@ -24,7 +24,7 @@ export class ApplicationRequirementResolver {
 
   @FieldResolver(returns => Application)
   async application (@Ctx() ctx: Context, @Root() requirement: ApplicationRequirement) {
-    return await ctx.svc(ApplicationService).findByInternalId(requirement.applicationInternalId)
+    return await ctx.svc(ApplicationService).findByInternalId(requirement.applicationInternalId, requirement.appRequestTags)
   }
 
   @FieldResolver(type => JsonData, { nullable: true, description: 'The configuration data for this requirement in the app request\'s period.' })

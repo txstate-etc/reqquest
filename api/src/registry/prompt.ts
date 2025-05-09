@@ -1,6 +1,6 @@
 import { MutationMessage } from '@txstate-mws/graphql-server'
 import { sortby } from 'txstate-utils'
-import { AppRequest, requirementRegistry, RQContext, type AppRequestData } from '../internal.js'
+import { AppRequest, Prompt, requirementRegistry, RQContext, TagDefinition, type AppRequestData } from '../internal.js'
 
 export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVersion'>> {
   /**
@@ -13,23 +13,72 @@ export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVer
   up: (data: DataType) => DataType | Promise<DataType>
 }
 
-export interface PromptIndex {
+export interface PromptIndex<PromptKey extends string = string, DataType = any> {
   /**
-   * A name for the index. Use lowercase snake_case, alphanumeric and underscore only., e.g.
-   * "parent_name". This need not be unique as it will be prefixed with the prompt key,
-   * e.g. "family_info.parent_name".
+   * A unique, case-insensitive, stable key for the index. This will be used to namespace
+   * individual index values.
+   */
+  category: string
+  /**
+   * A human readable name for the index that will be shown to the admin when creating a grant.
+   * Does not need to be stable, but should be unique among all the AppRequest indexes/tags.
+   */
+  categoryLabel?: string
+  /**
+   * Set this to a number to indicate that this index should be displayed in the
+   * AppRequest list view. This number indicates the priority of the column. Lower priority
+   * numbers will be the first to disappear when the screen gets too small. Probably a good
+   * idea to stay between 1 and 100 for sanity.
+   */
+  useInAppRequestList?: number
+  /**
+   * Set this to a number to indicate that this index should be displayed for App Requests in the
+   * applicant dashboard. This number indicates the priority of the column. Lower priority
+   * numbers will be the first to disappear when the screen gets too small. Probably a good
+   * idea to stay between 1 and 100 for sanity.
+   */
+  useInApplicantDashboard?: number
+  /**
+   * Set this to a number to indicate that this index should be displayed for App Requests in the
+   * reviewer dashboard. This number indicates the priority of the column. Lower priority
+   * numbers will be the first to disappear when the screen gets too small. Probably a good
+   * idea to stay between 1 and 100 for sanity.
+   */
+  useInReviewerDashboard?: number
+  /**
+   * Provide a function that will take the data from the AppRequest and return any index
+   * values that are associated.
+   */
+  extract: (data: AppRequestData & Record<PromptKey, DataType>) => string[]
+}
+
+export interface PromptTagDefinition<PromptKey extends string = string, DataType = any> extends PromptIndex<PromptKey, DataType> {
+  /**
+   * This controls whether the tag category is a small or large list of possible tags.
+   * If notListable is false, we assume there are a finite number of tags, and the admin will be
+   * able to select from a dropdown.
    *
-   * It is recommended to use the same name as the property in the data object, but not required
-   * as the indexed value could be a computed value rather than something directly in the data.
+   * If notListable is true, we assume there are too many tags to list, and the admin will be
+   * able to search for them instead.
    */
-  name: string
+  notListable?: boolean
   /**
-   * The value to be indexed. The index type will be automatically determined based on the
-   * javascript type. Date and number indexes will sort appropriately. Dates will be stored
-   * with precision to the second. If you want a date with less precision, you should stringify
-   * it yourself to a format that still sorts correctly, e.g. '20250210'.
+   * This function should return a list of all possible tags in this category, so that the admin
+   * can select from them. If notListable is true, this function should accept the search parameter
+   * and return a list of tags that match the search. If notListable is false, this function should
+   * return all tags in the category.
    */
-  value: boolean | number | string | Date
+  getTags: (search?: string) => Promise<TagDefinition[]> | TagDefinition[]
+  /**
+   * This function should return a tag label for the given value in this category. This is used to
+   * display the tags on a saved grant or generated from the AppRequest.
+   *
+   * It may be called many times in parallel so it should be dataloaded or cached if possible.
+   *
+   * ReqQuest will cache these results in its database in case values disappear from the available
+   * list but appeared in the past.
+   */
+  getTagLabel?: (tag: string) => Promise<string> | string
 }
 
 export interface PromptDefinition<DataType = any, InputDataType = DataType, ConfigurationDataType = any, FetchType = any, KeyLiteral extends string = string> {
@@ -159,12 +208,18 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * from this individual prompt so that we can perform merges and splits.
    */
   migrations?: AppRequestMigration<Omit<AppRequestData, 'savedAtVersion'> & { [K in KeyLiteral]: DataType }>[]
+
   /**
-   * Optionally provide a function that can identify data from this prompt that should be
-   * indexed and made available for searching. If you have an array of values for a single
-   * index name, you can just flatten it out and provide multiple PromptIndex objects.
+   * Optionally provide index types that can be calculated based on the data from this prompt. The indexes
+   * can be used to filter AppRequests, and optionally can be displayed in tables listing AppRequests.
    */
-  indexes?: PromptIndex[]
+  indexes?: PromptIndex<KeyLiteral, DataType>[]
+  /**
+   * Optionally provide tag types that can be calculated based on the data from this prompt. These
+   * tags will be made available for limiting the scope of roles that relate to AppRequests. Tags
+   * are also indexes, you don't need to provide them in both places.
+   */
+  tags?: PromptTagDefinition<KeyLiteral, DataType>[]
 
   /**
    * Optionally provide a function that can preprocess the data from this prompt before it is

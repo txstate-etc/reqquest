@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon'
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
 import { AccessTag, AppRequestRow, AppRequestStatusDB } from '../internal.js'
+import { ValidatedResponse } from '@txstate-mws/graphql-server'
 
 export enum AppRequestStatus {
   STARTED = 'STARTED',
@@ -39,7 +40,7 @@ registerEnumType(AppRequestStatus, {
 
 @ObjectType({ description: 'Represents a group of applications all being applied for at the same time. As part of the request, multiple applications will be created and either eliminated as ineligible or submitted for approval.' })
 export class AppRequest {
-  constructor (row: AppRequestRow) {
+  constructor (row: AppRequestRow, tags?: Record<string, string[]>) {
     this.id = String(row.id)
     this.internalId = row.id
     this.dbStatus = row.status
@@ -70,7 +71,7 @@ export class AppRequest {
   internalId: number
   userInternalId: number
   periodId: string
-  tags?: AccessTag[]
+  tags?: Record<string, string[]>
 }
 
 @ObjectType()
@@ -98,4 +99,10 @@ export class AppRequestFilter {
 
   internalIds?: number[]
   userInternalIds?: number[]
+}
+
+@ObjectType()
+export class ValidatedAppRequestResponse extends ValidatedResponse {
+  @Field(type => AppRequest)
+  appRequest!: AppRequest
 }

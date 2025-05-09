@@ -31,6 +31,8 @@ export class RequirementPrompt extends Prompt {
     this.id = String(row.id)
     this.requirementInternalId = row.requirementId
     this.requirementId = String(row.requirementId)
+    this.requirementKey = row.requirementKey
+    this.programKey = row.programKey
     this.applicationInternalId = row.applicationId
     this.applicationId = String(row.applicationId)
     this.appRequestInternalId = row.appRequestId
@@ -73,11 +75,14 @@ export class RequirementPrompt extends Prompt {
   internalId: number
   appRequestInternalId: number
   appRequestId: string
+  appRequestTags?: Record<string, string[]>
   userInternalId: number
   applicationInternalId: number
   applicationId: string
   requirementInternalId: number
   requirementId: string
+  requirementKey: string
+  programKey: string
   periodId: string
 }
 
@@ -103,12 +108,6 @@ export class RequirementPromptFilter {
 
   @Field({ nullable: true, description: 'When true, only returns reachable prompts.' })
   reachable?: boolean
-}
-
-@ObjectType()
-export class ValidatedAppRequestResponse extends ValidatedResponse {
-  @Field(type => AppRequest)
-  appRequest!: AppRequest
 }
 
 @ObjectType()

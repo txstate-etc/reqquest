@@ -25,6 +25,20 @@ export const appRequestMigrations: DatabaseMigration[] = [
           INDEX (closedAt)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `)
+      await db.execute(`CREATE TABLE IF NOT EXISTS tag_labels (
+        category VARCHAR(128) NOT NULL,
+        tag VARCHAR(128) NOT NULL,
+        label VARCHAR(255) NOT NULL,
+        PRIMARY KEY (category, tag)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
+      await db.execute(`CREATE TABLE IF NOT EXISTS app_request_tags (
+        appRequestId INT UNSIGNED NOT NULL,
+        category VARCHAR(128) NOT NULL,
+        tag VARCHAR(128) NOT NULL,
+        PRIMARY KEY (appRequestId, category, tag),
+        FOREIGN KEY (appRequestId) REFERENCES app_requests (id) ON DELETE CASCADE,
+        FOREIGN KEY (category, tag) REFERENCES tag_labels (category, tag) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
     }
   }
 ]

@@ -1,6 +1,6 @@
 import { Context, ValidatedResponse, ValidatedResponseArgs } from '@txstate-mws/graphql-server'
 import { ObjectType, InputType, Field, ID, registerEnumType } from 'type-graphql'
-import { AccessRoleGrantControlRow, AccessRoleGrantControlTagRow, AccessRoleGrantRow, AccessRoleGrantSubjectRow, AccessRoleRow, AccessRoleService, AccessRoleServiceInternal, AccessUserIdentifierRow, AccessUserRow, ControlDefinition, JsonData, safeParse, SubjectDefinition, subjectTypes, TagDefinition } from '../internal.js'
+import { AccessRoleGrantControlRow, AccessRoleGrantRow, AccessRoleGrantTagRow, AccessRoleRow, AccessRoleService, AccessUserIdentifierRow, AccessUserRow, ControlDefinition, JsonData, safeParse, subjectTypes, TagCategoryDefinition, TagDefinition } from '../internal.js'
 import { isBlank } from 'txstate-utils'
 
 @ObjectType()
@@ -89,7 +89,6 @@ export class AccessRole {
   scope?: string
 
   loadedGrants!: AccessRoleGrant[]
-  loadedSubjects!: AccessSubjectInstance[]
 
   async load (ctx: Context) {
     if (this.loadedGrants) return
@@ -118,59 +117,50 @@ export class AccessSubjectType {
   constructor (name: string) {
     this.name = name
     const def = subjectTypes[name]
-    this.subjectSearchType = !('searchable' in def) || def.searchable == null ? AccessSearchType.NONE : (def.searchable ? AccessSearchType.SEARCH : AccessSearchType.SELECT)
+    this.tags = def.tags?.map(category => new AccessTagCategory(category, category.category, category.label ?? category.category)) ?? []
   }
 
   @Field()
   name: string
 
-  @Field(type => AccessSearchType, { description: 'The way that subject instances are added to the grant.' })
-  subjectSearchType: AccessSearchType
+  @Field(type => [AccessTagCategory])
+  tags: AccessTagCategory[]
 }
 
 @ObjectType()
-export class AccessSubjectInstance {
-  constructor (subjDef: SubjectDefinition) {
-    this.id = subjDef.id
-    this.name = subjDef.name ?? subjDef.id
+export class AccessTagCategory {
+  constructor (public def: TagCategoryDefinition, value: string, label: string) {
+    this.value = value
+    this.label = label
+    this.listable = !def.notListable
   }
-
-  @Field(type => ID)
-  id: string
 
   @Field()
-  name: string
+  value: string
+
+  @Field()
+  label: string
+
+  @Field({ nullable: true })
+  description?: string
+
+  @Field()
+  listable: boolean
 }
 
 @ObjectType()
-export class AccessGrantSubject {
-  constructor (row: AccessRoleGrantSubjectRow) {
-    this.subjectType = row.subjectType
-    this.id = row.subject
-    this.grantId = String(row.grantId)
-    this.roleId = String(row.roleId)
+export class AccessTag {
+  constructor (value: string, label: string) {
+    this.value = value
+    this.label = label
   }
 
-  subjectType: string
-  id: string
-  grantId: string
-  roleId: string
-}
+  @Field()
+  value: string
 
-export enum AccessSearchType {
-  NONE = 'NONE',
-  SELECT = 'SELECT',
-  SEARCH = 'SEARCH'
+  @Field()
+  label: string
 }
-registerEnumType(AccessSearchType, {
-  name: 'AccessSearchType',
-  description: 'The way that this list should be interacted with.',
-  valuesConfig: {
-    NONE: { description: 'There will never be objects in the list. Do not create a UI to interact with the list at all.' },
-    SELECT: { description: 'The list will be small enough to make the user browse the whole list and add items by selection.' },
-    SEARCH: { description: 'The list will be too large for the user to browse through, or simply not feasible to list exhaustively, so we let the user search for list items.' }
-  }
-})
 
 @ObjectType()
 export class AccessControl {
@@ -178,7 +168,6 @@ export class AccessControl {
     this.subjectType = subjectType
     this.name = name
     this.description = def.description
-    this.tagType = def.searchable == null ? AccessSearchType.NONE : (def.searchable ? AccessSearchType.SEARCH : AccessSearchType.SELECT)
   }
 
   subjectType: string
@@ -188,31 +177,6 @@ export class AccessControl {
 
   @Field()
   description: string
-
-  @Field(type => AccessSearchType)
-  tagType: AccessSearchType
-}
-
-@ObjectType()
-export class AccessTag {
-  constructor (definition: TagDefinition) {
-    this.tag = definition.tag
-    this.name = definition.name
-    this.category = definition.category
-    this.categoryLabel = definition.categoryLabel
-  }
-
-  @Field()
-  tag: string
-
-  @Field()
-  name: string
-
-  @Field({ nullable: true })
-  category?: string
-
-  @Field({ nullable: true })
-  categoryLabel?: string
 }
 
 @ObjectType()
@@ -221,9 +185,11 @@ export class AccessRoleGrant {
     this.subjectType = row.subjectType
     this.allow = !!row.allow
     this.roleId = String(row.roleId)
+    this.internalId = row.id
     this.id = String(row.id)
   }
 
+  internalId: number
   roleId: string
 
   @Field(type => ID)
@@ -254,15 +220,14 @@ export class AccessRoleGrant {
   allow: boolean
 
   loadedControls!: AccessGrantControl[]
-  loadedSubjects!: AccessGrantSubject[]
+  loadedTags!: AccessGrantTag[]
+
   async load (ctx: Context) {
     if (this.loadedControls) return
-    ([this.loadedControls, this.loadedSubjects] = await Promise.all([
+    ([this.loadedControls, this.loadedTags] = await Promise.all([
       ctx.svc(AccessRoleService).getControlsByGrantId(this.id),
-      ctx.svc(AccessRoleService).getSubjectsByGrantId(this.id)
+      ctx.svc(AccessRoleService).getTagsByGrantId(this.internalId)
     ]))
-    if (!this.loadedSubjects.length) this.loadedSubjects = [{ id: 'all', subjectType: this.subjectType, grantId: this.id, roleId: this.roleId }]
-    await Promise.all(this.loadedControls.map(control => control.loadTags(ctx)))
   }
 }
 
@@ -271,6 +236,7 @@ export class AccessGrantControl {
   constructor (row: AccessRoleGrantControlRow) {
     this.internalId = row.id
     this.name = row.control
+    console.log(row.subjectType, row.control, subjectTypes[row.subjectType])
     this.description = subjectTypes[row.subjectType].controls[row.control].description
     this.grantInternalId = row.grantId
     this.grantId = String(row.grantId)
@@ -291,39 +257,27 @@ export class AccessGrantControl {
 
   @Field()
   description: string
-
-  loadedTags!: AccessGrantControlTag[]
-  async loadTags (ctx: Context) {
-    if (this.loadedTags) return
-    this.loadedTags = await ctx.svc(AccessRoleService).getTagsByControlId(this.internalId)
-    if (!this.loadedTags.length) this.loadedTags = [{ tag: 'all', category: undefined, controlId: this.internalId, subjectType: this.subjectType, control: this.name, grantId: this.grantInternalId, roleId: this.roleInternalId }]
-  }
 }
 
 @ObjectType()
-export class AccessGrantControlTag {
-  constructor (row: AccessRoleGrantControlTagRow) {
-    this.category = isBlank(row.category) ? undefined : row.category
+export class AccessGrantTag {
+  constructor (row: AccessRoleGrantTagRow) {
+    this.category = row.category
     this.tag = row.tag
-    this.controlId = row.controlId
     this.subjectType = row.subjectType
-    this.control = row.control
-    this.controlId = row.controlId
     this.grantId = row.grantId
     this.roleId = row.roleId
   }
 
-  controlId: number
   grantId: number
   roleId: number
   subjectType: string
-  control: string
 
   @Field()
   tag: string
 
-  @Field({ nullable: true })
-  category?: string
+  @Field({})
+  category: string
 
   @Field({ nullable: true })
   categoryLabel?: string
@@ -335,16 +289,13 @@ export class AccessTagInput {
   tag!: string
 
   @Field({ description: 'The category this tag belongs to, e.g. "State".' })
-  category?: string
+  category!: string
 }
 
 @InputType()
 export class AccessControlInput {
   @Field({ description: 'The action this grant applies to, e.g. "view" or "update".' })
   control!: string
-
-  @Field(type => [AccessTagInput], { description: 'A list of tags to help restrict a grant to a subset of objects of some other subjectType. For instance, if this is added to a grant on Prompt-update, each tag refers to a subset of App Requests.' })
-  tags?: AccessTagInput[]
 }
 
 @InputType()
@@ -352,10 +303,10 @@ export class AccessRoleGrantCreate {
   @Field()
   subjectType!: string
 
-  @Field(type => [String], { nullable: true, description: 'A list of subject IDs to restrict the grant.' })
-  subjects?: string[]
+  @Field(type => [AccessTagInput], { nullable: true, description: 'A list of tags to restrict a grant. For instance, if this is added to a grant on PromptAnswer-update, each tag refers to a subset of App Requests.' })
+  tags?: AccessTagInput[]
 
-  @Field(type => [AccessControlInput])
+  @Field(type => [AccessControlInput], { description: 'A list of controls that are allowed or denied by this grant. Each subjectType has a list of available controls, available under Query.subjectTypes.' })
   controls!: AccessControlInput[]
 
   @Field()

@@ -34,14 +34,9 @@ const accessRoleGrantControlsByGrantIdLoader = new OneToManyLoader({
   extractKey: control => control.grantId
 })
 
-const accessRoleGrantSubjectsByGrantIdLoader = new OneToManyLoader({
-  fetch: async (grantIds: string[]) => await database.getSubjectsByGrantIds(grantIds),
-  extractKey: subject => String(subject.grantId)
-})
-
-const accessTagsByControlIdLoader = new OneToManyLoader({
-  fetch: async (controlIds: number[]) => await database.getTagsByControlIds(controlIds),
-  extractKey: tag => tag.controlId
+const accessTagsByGrantIdLoader = new OneToManyLoader({
+  fetch: async (grantIds: number[]) => await database.getTagsByGrantIds(grantIds),
+  extractKey: tag => tag.grantId
 })
 
 const groupsByRoleIdLoader = new ManyJoinedLoader({
@@ -98,32 +93,28 @@ export class AccessRoleService extends AuthService<AccessRole> {
     return await this.loaders.get(accessRoleGrantControlsByGrantIdLoader).load(grantId)
   }
 
-  async getSubjectsByGrantId (grantId: string) {
-    return await this.loaders.get(accessRoleGrantSubjectsByGrantIdLoader).load(grantId)
-  }
-
-  async getTagsByControlId (controlId: number) {
-    return await this.loaders.get(accessTagsByControlIdLoader).load(controlId)
+  async getTagsByGrantId (grantId: number) {
+    return await this.loaders.get(accessTagsByGrantIdLoader).load(grantId)
   }
 
   mayView (role: AccessRole) {
-    return this.hasControl('Role', 'view', role.id)
-  }
-
-  mayViewRoleManagement () {
     return this.hasControl('Role', 'view')
   }
 
+  mayViewRoleManagement () {
+    return this.hasAnyControl('Role', 'view')
+  }
+
   mayCreate () {
-    return this.hasControl('Role', 'create')
+    return this.hasAnyControl('Role', 'create')
   }
 
   mayUpdate (role: AccessRole) {
-    return this.hasControl('Role', 'update', role.id)
+    return this.hasControl('Role', 'update')
   }
 
   mayDelete (role: AccessRole) {
-    return this.hasControl('Role', 'delete', role.id)
+    return this.hasControl('Role', 'delete')
   }
 
   async createAccessRole (roleInput: AccessRoleInput, validateOnly?: boolean) {

@@ -102,7 +102,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     if (prompt.userInternalId === this.user?.internalId && promptRegistry.isUserPrompt(prompt.key)) return true
     // TODO: support tags on AppRequest, have to load them before this function is called
     // so we can keep it synchronous
-    return this.hasControl('Prompt', 'update', prompt.key)
+    return this.hasControl('PromptAnswer', 'update', { Prompt: [prompt.key], Requirement: [prompt.requirementKey], Program: [prompt.programKey], ...prompt.appRequestTags })
   }
 
   async update (prompt: RequirementPrompt, data: any, validateOnly = false) {
@@ -141,11 +141,11 @@ export class PeriodPromptService extends AuthService<Prompt> {
   }
 
   mayView (prompt: PeriodPrompt) {
-    return this.hasControl('Prompt', 'view_configuration', prompt.key)
+    return this.hasControl('Prompt', 'view', { Prompt: [prompt.key] }) // TODO: add requirementKeys and programKeys that include this prompt
   }
 
   mayConfigure (prompt: Prompt): boolean {
     if (prompt.definition.validateConfiguration == null) return false
-    return this.hasControl('Prompt', 'configure', prompt.key)
+    return this.hasControl('Prompt', 'configure', { Prompt: [prompt.key] }) // TODO: add requirementKeys and programKeys that include this prompt
   }
 }

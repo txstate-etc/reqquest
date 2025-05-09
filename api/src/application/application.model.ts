@@ -1,5 +1,5 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
-import { ApplicationRow, ProgramDefinition, programRegistry } from '../internal.js'
+import { ApplicationRow, AppRequest, ProgramDefinition, programRegistry } from '../internal.js'
 
 export enum ApplicationStatus {
   PREQUAL = 'PREQUAL',
@@ -84,6 +84,7 @@ export class Application {
   internalId: number
   appRequestInternalId: number
   appRequestId: string
+  appRequestTags?: Record<string, string[]>
   userInternalId: number
   periodId: string
   programKey: string

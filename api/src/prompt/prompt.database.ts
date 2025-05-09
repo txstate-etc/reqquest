@@ -8,6 +8,8 @@ export interface PromptRow {
   periodId: number
   applicationId: number
   requirementId: number
+  requirementKey: string
+  programKey: string
   userId: number
   promptKey: string
   answered: 0 | 1
@@ -44,7 +46,15 @@ function processFilters (filter: RequirementPromptFilter) {
 
 export async function getRequirementPrompts (filter: RequirementPromptFilter, tdb: Queryable = db) {
   const { where, binds } = processFilters(filter)
-  const rows = await tdb.getall<PromptRow>(`SELECT p.*, r.userId, r.periodId FROM requirement_prompts p INNER JOIN app_requests r ON r.id=p.appRequestId WHERE (${where.join(') AND (')}) ORDER BY evaluationOrder`, binds)
+  const rows = await tdb.getall<PromptRow>(`
+    SELECT p.*, ar.userId, ar.periodId, r.requirementKey, a.programKey
+    FROM requirement_prompts p
+    INNER JOIN application_requirements r ON r.id=p.requirementId
+    INNER JOIN applications a ON a.id=r.applicationId
+    INNER JOIN app_requests ar ON ar.id=p.appRequestId
+    WHERE (${where.join(') AND (')})
+    ORDER BY evaluationOrder
+  `, binds)
   return rows.map(row => new RequirementPrompt(row))
 }
 

@@ -10,7 +10,7 @@ export class AppRequestResolver {
 
   @FieldResolver(type => [Application])
   async applications (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
-    return await ctx.svc(ApplicationService).findByAppRequestId(appRequest.id)
+    return await ctx.svc(ApplicationService).findByAppRequest(appRequest)
   }
 
   @FieldResolver(type => JsonData, { description: 'All data that has been gathered from the user for this request. It is a Record whose properties are the prompt keys and values are the data gathered by the corresponding prompt dialog.' })
