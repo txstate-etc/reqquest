@@ -91,6 +91,7 @@ export const applicant_seems_nice_req: RequirementDefinition = {
 export interface NiceData {
   seemsNice: boolean
 }
+
 export const applicant_seems_nice_prompt: PromptDefinition<NiceData> = {
   key: 'applicant_seems_nice_prompt',
   title: 'Assess Applicant\'s Niceness',
@@ -103,5 +104,14 @@ export const applicant_seems_nice_prompt: PromptDefinition<NiceData> = {
       messages.push({ type: MutationMessageType.warning, message: 'Please indicate whether the applicant seems nice.', arg: 'seemsNice' })
     }
     return messages
-  }
+  },
+  tags: [{
+    category: 'nice',
+    extract: data => {
+      const niceData = data.applicant_seems_nice_prompt as NiceData | undefined
+      return niceData == null ? [] : niceData.seemsNice ? ['yes'] : ['no']
+    },
+    getTags: () => [{ value: 'yes' }, { value: 'no', label: 'No' }],
+    getLabel: tag => { return { yes: 'yes', no: 'No' }[tag] ?? tag }
+  }]
 }

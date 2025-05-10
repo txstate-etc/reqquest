@@ -3,7 +3,7 @@ import {
   Access, AccessUser, AccessUserFilter, AccessRole, AccessRoleFilter, AccessRoleValidatedResponse,
   RoleActions, AccessUserService, AccessRoleService, AccessRoleGrantCreate, AccessRoleGrant,
   AccessUserIdentifier, AccessRoleInput, AccessControl, AccessSubjectType, subjectTypes,
-  AccessRoleGrantUpdate
+  AccessRoleGrantUpdate, appConfig
 } from '../internal.js'
 import { Context, UnimplementedError, ValidatedResponse } from '@txstate-mws/graphql-server'
 
@@ -58,6 +58,11 @@ export class AccessRoleResolver {
   @Query(returns => [AccessRole])
   async roles (@Ctx() ctx: Context, @Arg('filter', { nullable: true }) filter?: AccessRoleFilter) {
     return await ctx.svc(AccessRoleService).findAccessRole(filter)
+  }
+
+  @Query(returns => [String], { description: 'A list of all possible scopes. Scopes are used to limit users when they are accessing the system through an alternate UI or login method. For instance, if you generate an authentication token to give to a third party, it may have a scope identifying that third party and limiting their access even though they are acting as you. Roles must match the token scope in order to apply permissions.' })
+  scopes (@Ctx() ctx: Context) {
+    return appConfig.scopes ?? []
   }
 
   @FieldResolver(returns => [String])

@@ -15,7 +15,7 @@ import {
   RequirementPromptResolver, PeriodResolver, PeriodActionsResolver, ConfigurationResolver,
   ConfigurationActionsResolver, SnakeCaseString, SnakeCaseStringScalar, PeriodProgramActionsResolver,
   PeriodRequirementResolver, PeriodPromptResolver,
-  initAccess
+  initAccess, AppRequestIndexCategoryResolver
 } from './internal.js'
 
 export interface RQStartOpts extends Omit<GQLStartOpts, 'resolvers'> {
@@ -60,8 +60,9 @@ export class RQServer extends GQLServer {
       ApplicationActionsResolver,
       ApplicationResolver,
       ApplicationRequirementResolver,
-      AppRequestResolver,
       AppRequestAccessResolver,
+      AppRequestResolver,
+      AppRequestIndexCategoryResolver,
       ConfigurationResolver,
       ConfigurationActionsResolver,
       PeriodResolver,

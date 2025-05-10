@@ -80,7 +80,19 @@ export interface SubjectTypeDefinition {
 }
 
 export function initAccess () {
-  const appRequestTags: TagCategoryDefinition[] = []
+  const appRequestTags: TagCategoryDefinition[] = promptRegistry.tagCategories.map(category => ({
+    category: category.category,
+    label: category.categoryLabel ?? category.category,
+    description: category.description,
+    notListable: category.notListable,
+    getTags: async (search?: string) => {
+      const tags = await category.getTags(search)
+      return tags.map(t => ({ value: t.value, label: t.label ?? t.value }))
+    },
+    getLabel: async (value: string) => {
+      return await promptRegistry.getTagLabel(category.category, value)
+    }
+  }))
 
   const programTags = (description?: string) => ({
     category: 'program',

@@ -36,17 +36,17 @@ export const rqAccessSeed: AccessRoleGrantDefinition = {
         allow: true
       },
       {
-        subjectType: 'Prompt',
+        subjectType: 'PromptAnswer',
         controls: ['view', 'update'],
         allow: true
       },
       {
-        subjectType: 'Requirement',
+        subjectType: 'ApplicationRequirement',
         controls: ['view'],
         allow: true
       },
       {
-        subjectType: 'Program',
+        subjectType: 'Application',
         controls: ['view'],
         allow: true
       }

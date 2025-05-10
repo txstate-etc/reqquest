@@ -1,6 +1,7 @@
-import { MutationMessage } from '@txstate-mws/graphql-server'
-import { sortby } from 'txstate-utils'
-import { AppRequest, Prompt, requirementRegistry, RQContext, TagDefinition, type AppRequestData } from '../internal.js'
+import type { MutationMessage } from '@txstate-mws/graphql-server'
+import { Cache, sortby } from 'txstate-utils'
+import { AppRequest, requirementRegistry, RQContext, TagDefinition, type AppRequestData } from '../internal.js'
+import db from 'mysql2-async/db'
 
 export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVersion'>> {
   /**
@@ -13,7 +14,7 @@ export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVer
   up: (data: DataType) => DataType | Promise<DataType>
 }
 
-export interface PromptIndex<PromptKey extends string = string, DataType = any> {
+export interface PromptIndexDefinition<PromptKey extends string = string, DataType = any> {
   /**
    * A unique, case-insensitive, stable key for the index. This will be used to namespace
    * individual index values.
@@ -25,21 +26,28 @@ export interface PromptIndex<PromptKey extends string = string, DataType = any> 
    */
   categoryLabel?: string
   /**
-   * Set this to a number to indicate that this index should be displayed in the
-   * AppRequest list view. This number indicates the priority of the column. Lower priority
+   * Set this to a non-zero positive integer to indicate that this index should be displayed
+   * in the AppRequest list view. This number indicates the priority of the column. Lower priority
    * numbers will be the first to disappear when the screen gets too small. Probably a good
    * idea to stay between 1 and 100 for sanity.
    */
   useInAppRequestList?: number
   /**
-   * Set this to a number to indicate that this index should be displayed for App Requests in the
-   * applicant dashboard. This number indicates the priority of the column. Lower priority
-   * numbers will be the first to disappear when the screen gets too small. Probably a good
-   * idea to stay between 1 and 100 for sanity.
+   * Set this to a non-zero positive integer to indicate that this index should be used for
+   * filtering the main AppRequest list view. This number indicates the priority of the column.
+   * The two or three highest priority filters will be used as quick filters, the rest will be
+   * in the filter UI popout. Probably a good idea to stay between 1 and 100 for sanity.
+   */
+  useInListFilters?: number
+  /**
+   * Set this to a non-zero positive integer to indicate that this index should be displayed
+   * for App Requests in the applicant dashboard. This number indicates the priority of the
+   * column. Lower priority numbers will be the first to disappear when the screen gets too
+   * small. Probably a good idea to stay between 1 and 100 for sanity.
    */
   useInApplicantDashboard?: number
   /**
-   * Set this to a number to indicate that this index should be displayed for App Requests in the
+   * Set this to a non-zero positive integer to indicate that this index should be displayed for App Requests in the
    * reviewer dashboard. This number indicates the priority of the column. Lower priority
    * numbers will be the first to disappear when the screen gets too small. Probably a good
    * idea to stay between 1 and 100 for sanity.
@@ -50,9 +58,24 @@ export interface PromptIndex<PromptKey extends string = string, DataType = any> 
    * values that are associated.
    */
   extract: (data: AppRequestData & Record<PromptKey, DataType>) => string[]
+  /**
+   * This function should return a tag label for the given value in this category. This is used to
+   * display the tags on a saved grant or generated from the AppRequest.
+   *
+   * It may be called many times in parallel so it should be dataloaded or cached if possible.
+   *
+   * ReqQuest will cache these results in its database in case values disappear from the available
+   * list but appeared in the past.
+   */
+  getLabel?: (tag: string) => Promise<string> | string
 }
 
-export interface PromptTagDefinition<PromptKey extends string = string, DataType = any> extends PromptIndex<PromptKey, DataType> {
+export interface PromptTagDefinition<PromptKey extends string = string, DataType = any> extends PromptIndexDefinition<PromptKey, DataType> {
+  /**
+   * A brief sentence or two describing the tag category. This will be shown to administrators to help
+   * explain the full meaning of the tag category as they are assigning permissions.
+   */
+  description?: string
   /**
    * This controls whether the tag category is a small or large list of possible tags.
    * If notListable is false, we assume there are a finite number of tags, and the admin will be
@@ -69,16 +92,6 @@ export interface PromptTagDefinition<PromptKey extends string = string, DataType
    * return all tags in the category.
    */
   getTags: (search?: string) => Promise<TagDefinition[]> | TagDefinition[]
-  /**
-   * This function should return a tag label for the given value in this category. This is used to
-   * display the tags on a saved grant or generated from the AppRequest.
-   *
-   * It may be called many times in parallel so it should be dataloaded or cached if possible.
-   *
-   * ReqQuest will cache these results in its database in case values disappear from the available
-   * list but appeared in the past.
-   */
-  getTagLabel?: (tag: string) => Promise<string> | string
 }
 
 export interface PromptDefinition<DataType = any, InputDataType = DataType, ConfigurationDataType = any, FetchType = any, KeyLiteral extends string = string> {
@@ -213,7 +226,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * Optionally provide index types that can be calculated based on the data from this prompt. The indexes
    * can be used to filter AppRequests, and optionally can be displayed in tables listing AppRequests.
    */
-  indexes?: PromptIndex<KeyLiteral, DataType>[]
+  indexes?: PromptIndexDefinition<KeyLiteral, DataType>[]
   /**
    * Optionally provide tag types that can be calculated based on the data from this prompt. These
    * tags will be made available for limiting the scope of roles that relate to AppRequests. Tags
@@ -229,12 +242,19 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
   preProcessData?: (appRequest: AppRequest, data: InputDataType, ctx: RQContext) => Promise<DataType> | DataType
 }
 
+const labelLookupCache = new Cache(async (tag: { category: string, value: string }) => {
+  return await (promptRegistry as any).tagLookups[tag.category]?.(tag.value)
+}, { freshseconds: 600 })
+
 class PromptRegistry {
   protected prompts: Record<string, PromptDefinition> = {}
   protected promptsList: PromptDefinition[] = []
   protected userPrompts: Set<string> = new Set()
   protected unsortedMigrations: AppRequestMigration[] = []
   protected sortedMigrations: AppRequestMigration[] = []
+  protected indexLookups: Record<string, (tag: string) => Promise<string> | string> = {}
+  public indexCategories: PromptIndexDefinition[] = []
+  public tagCategories: PromptTagDefinition[] = []
   public reachable: PromptDefinition[] = []
 
   register (prompt: PromptDefinition) {
@@ -258,6 +278,23 @@ class PromptRegistry {
   finalize () {
     const reachableKeys = new Set(requirementRegistry.reachable.flatMap(req => req.allPromptKeys))
     this.reachable = this.promptsList.filter(prompt => reachableKeys.has(prompt.key))
+    for (const prompt of this.reachable) {
+      for (const tag of [...(prompt.tags ?? []), ...(prompt.indexes ?? [])]) {
+        if ('getTags' in tag) this.tagCategories.push(tag as PromptTagDefinition)
+        this.indexCategories.push(tag)
+        this.indexLookups[tag.category] = async (t: string) => {
+          let label = await tag.getLabel?.(t)
+          if (label) await db.insert('INSERT INTO tag_labels (category, tag, label) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE label = VALUES(label)', [tag.category, t, label])
+          label ??= await db.getval<string>('SELECT label FROM tag_labels WHERE category = ? AND tag = ?', [tag.category, t])
+          label ??= t
+          return label
+        }
+      }
+    }
+  }
+
+  async getTagLabel (category: string, tag: string) {
+    return await labelLookupCache.get({ category, value: tag })
   }
 
   setUserPrompt (key: string) {

@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon'
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
-import { AccessTag, AppRequestRow, AppRequestStatusDB } from '../internal.js'
+import { AppRequestRow, AppRequestStatusDB, PromptTagDefinition } from '../internal.js'
 import { ValidatedResponse } from '@txstate-mws/graphql-server'
 
 export enum AppRequestStatus {
@@ -72,6 +72,78 @@ export class AppRequest {
   userInternalId: number
   periodId: string
   tags?: Record<string, string[]>
+}
+
+export enum AppRequestIndexDestination {
+  APPLICANT_DASHBOARD = 'APPLICANT_DASHBOARD',
+  REVIEWER_DASHBOARD = 'REVIEWER_DASHBOARD',
+  APP_REQUEST_LIST = 'APP_REQUEST_LIST',
+  LIST_FILTERS = 'LIST_FILTERS'
+}
+registerEnumType(AppRequestIndexDestination, {
+  name: 'AppRequestIndexDestination',
+  description: 'This is used to indicate where the index values should be displayed.',
+  valuesConfig: {
+    [AppRequestIndexDestination.APPLICANT_DASHBOARD]: { description: 'Show these index values when listing App Requests on the applicant dashboard.' },
+    [AppRequestIndexDestination.REVIEWER_DASHBOARD]: { description: 'Show these index values when listing App Requests on the reviewer dashboard.' },
+    [AppRequestIndexDestination.APP_REQUEST_LIST]: { description: 'Show these index values when listing App Requests in the main list page.' },
+    [AppRequestIndexDestination.LIST_FILTERS]: { description: 'Allow the user to filter on these index values on the main list page.' }
+  }
+})
+
+@ObjectType()
+export class AppRequestIndexValue {
+  constructor (tag: string, label: string | undefined) {
+    this.value = tag
+    this.label = label ?? tag
+  }
+
+  @Field()
+  value: string
+
+  @Field()
+  label: string
+}
+
+@ObjectType()
+export class AppRequestIndexCategory {
+  constructor (def: PromptTagDefinition, tags: string[]) {
+    this.category = def.category
+    this.categoryLabel = def.categoryLabel ?? def.category
+    this.tagStrings = tags
+    this[AppRequestIndexDestination.APPLICANT_DASHBOARD] = def.useInApplicantDashboard ?? 0
+    this[AppRequestIndexDestination.REVIEWER_DASHBOARD] = def.useInReviewerDashboard ?? 0
+    this[AppRequestIndexDestination.APP_REQUEST_LIST] = def.useInAppRequestList ?? 0
+    this[AppRequestIndexDestination.LIST_FILTERS] = def.useInListFilters ?? 0
+    this.applicantDashboardPriority = this[AppRequestIndexDestination.APPLICANT_DASHBOARD]
+    this.reviewerDashboardPriority = this[AppRequestIndexDestination.REVIEWER_DASHBOARD]
+    this.appRequestListPriority = this[AppRequestIndexDestination.APP_REQUEST_LIST]
+    this.listFiltersPriority = this[AppRequestIndexDestination.LIST_FILTERS]
+  }
+
+  @Field()
+  category: string
+
+  @Field()
+  categoryLabel: string
+
+  @Field({ nullable: true, description: 'If this is > 0, the index values should be shown on the applicant dashboard, sorted by this priority in descending order.' })
+  applicantDashboardPriority?: number
+
+  @Field({ nullable: true, description: 'If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order.' })
+  reviewerDashboardPriority?: number
+
+  @Field({ nullable: true, description: 'If this is > 0, the index values should be shown on the main app request list page, sorted by this priority in descending order.' })
+  appRequestListPriority?: number
+
+  @Field({ nullable: true, description: 'If this is > 0, the index values should be shown on the list filters, sorted by this priority in descending order.' })
+  listFiltersPriority?: number
+
+  [AppRequestIndexDestination.APPLICANT_DASHBOARD]: number
+  [AppRequestIndexDestination.REVIEWER_DASHBOARD]: number
+  [AppRequestIndexDestination.APP_REQUEST_LIST]: number
+  [AppRequestIndexDestination.LIST_FILTERS]: number
+  tagStrings: string[]
 }
 
 @ObjectType()

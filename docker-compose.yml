@@ -21,6 +21,7 @@ services:
       RESET_DB_ON_STARTUP: 'true'
     volumes:
       - ./api/src:/usr/app/api/src
+      - ./api/dist:/usr/app/api/dist
       - ./testserver/src:/usr/app/testserver/src
   ui:
     build:

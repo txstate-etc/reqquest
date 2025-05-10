@@ -1,7 +1,6 @@
 import { Context, ValidatedResponse, ValidatedResponseArgs } from '@txstate-mws/graphql-server'
-import { ObjectType, InputType, Field, ID, registerEnumType } from 'type-graphql'
-import { AccessRoleGrantControlRow, AccessRoleGrantRow, AccessRoleGrantTagRow, AccessRoleRow, AccessRoleService, AccessUserIdentifierRow, AccessUserRow, ControlDefinition, JsonData, safeParse, subjectTypes, TagCategoryDefinition, TagDefinition } from '../internal.js'
-import { isBlank } from 'txstate-utils'
+import { ObjectType, InputType, Field, ID } from 'type-graphql'
+import { AccessRoleGrantControlRow, AccessRoleGrantRow, AccessRoleGrantTagRow, AccessRoleRow, AccessRoleService, AccessUserIdentifierRow, AccessUserRow, ControlDefinition, JsonData, safeParse, subjectTypes, TagCategoryDefinition } from '../internal.js'
 
 @ObjectType()
 export class Access {}
@@ -236,7 +235,6 @@ export class AccessGrantControl {
   constructor (row: AccessRoleGrantControlRow) {
     this.internalId = row.id
     this.name = row.control
-    console.log(row.subjectType, row.control, subjectTypes[row.subjectType])
     this.description = subjectTypes[row.subjectType].controls[row.control].description
     this.grantInternalId = row.grantId
     this.grantId = String(row.grantId)

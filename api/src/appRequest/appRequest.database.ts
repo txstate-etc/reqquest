@@ -1,7 +1,7 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
 import { clone, groupby, omit } from 'txstate-utils'
-import { ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestFilter, AppRequestStatus, programRegistry, promptRegistry, RequirementPrompt, requirementRegistry, RequirementStatus, RequirementType, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
+import { ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestFilter, AppRequestStatus, programRegistry, promptRegistry, RequirementPrompt, RequirementStatus, RequirementType, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
 
 /**
  * This is the status of the whole appRequest as stored in the database. Each application
@@ -247,13 +247,41 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
     const reqLookup = groupby(requirements, 'applicationId')
     const promptLookup = groupby(prompts, 'requirementId')
 
+    const tagRows = []
+    const seenPrompts = new Set<string>()
+    for (const prompt of prompts) {
+      if (seenPrompts.has(prompt.key)) continue
+      seenPrompts.add(prompt.key)
+      for (const category of prompt.definition.tags ?? []) {
+        for (const tag of category.extract(data)) tagRows.push({ category: category.category, tag: tag, indexOnly: 0 })
+      }
+      for (const index of prompt.definition.indexes ?? []) {
+        for (const idx of index.extract(data)) tagRows.push({ category: index.category, tag: idx, indexOnly: 1 })
+      }
+    }
+
+    if (tagRows.length > 0) {
+      const ibinds: any[] = []
+      await db.insert(`
+        INSERT INTO app_request_tags (appRequestId, indexOnly, category, tag)
+        VALUES ${db.in(ibinds, tagRows.map(r => [appRequestInternalId, r.indexOnly, r.category, r.tag]))}
+        ON DUPLICATE KEY UPDATE appRequestId = appRequestId
+      `, ibinds)
+      const dbinds: any[] = [appRequestInternalId]
+      await db.delete(`
+        DELETE FROM app_request_tags
+        WHERE appRequestId = ? AND (category, tag) NOT IN (${db.in(dbinds, tagRows.map(r => [r.category, r.tag]))})
+      `, dbinds)
+    } else {
+      await db.delete('DELETE FROM app_request_tags WHERE appRequestId = ?', [appRequestInternalId])
+    }
+
     // grab all the prompt and requirement configurations from this apprequest's period
     const configurations = await db.getall<{ definitionKey: string, data: string }>('SELECT definitionKey, data FROM period_configurations WHERE periodId = ?', [appRequest.periodId])
     const configLookup: Record<string, any> = configurations.map(c => ({ ...c, data: JSON.parse(c.data ?? '{}') })).reduce((acc, c) => ({ ...acc, [c.definitionKey]: c.data }), {})
 
     // keeping track of which prompts have been evaluated so that we can avoid evaluating them twice
     const promptEvaluations: Record<string, boolean> = {}
-    let notReadyToSubmit = false
 
     for (const application of applications) {
       const requirements = reqLookup[application.id] ?? []

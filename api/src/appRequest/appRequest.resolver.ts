@@ -1,5 +1,6 @@
+import { sortby } from 'txstate-utils'
 import { Arg, Ctx, FieldResolver, ID, Mutation, Query, Resolver, Root } from 'type-graphql'
-import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse } from '../internal.js'
+import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse, AppRequestIndexCategory, AppRequestIndexValue, AppRequestIndexDestination } from '../internal.js'
 
 @Resolver(of => AppRequest)
 export class AppRequestResolver {
@@ -17,6 +18,14 @@ export class AppRequestResolver {
   async data (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest, @Arg('schemaVersion', { nullable: true, description: 'Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh.' }) savedAtVersion?: string) {
     if (savedAtVersion && savedAtVersion < promptRegistry.latestMigration()) throw new Error('Client is out of date. Please refresh.')
     return await ctx.svc(AppRequestService).getData(appRequest.internalId)
+  }
+
+  @FieldResolver(type => AppRequestIndexCategory, { description: 'Indexes associated with the App Request. These are pieces of data extracted from the App Request by individual prompts in the ReqQuest project. They have several uses such as filtering App Requests and enriching list views.' })
+  async indexCategories (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest, @Arg('for', type => AppRequestIndexDestination, { nullable: true, description: 'Returns indexes that are flagged to appear in this destination. Also sorts for this destination.' }) forDestination?: AppRequestIndexDestination) {
+    const cats = promptRegistry.tagCategories.map(category => new AppRequestIndexCategory(category, appRequest.tags?.[category.category] ?? []))
+    return forDestination
+      ? sortby(cats.filter(cat => cat[forDestination] > 0), forDestination, true)
+      : cats
   }
 
   @FieldResolver(type => Period, { description: 'The period this appRequest is associated with.' })
@@ -45,6 +54,14 @@ export class AppRequestResolver {
     const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
     if (!appRequest) throw new Error('App request not found.')
     return await ctx.svc(AppRequestService).offer(appRequest)
+  }
+}
+
+@Resolver(of => AppRequestIndexCategory)
+export class AppRequestIndexCategoryResolver {
+  @FieldResolver(type => [AppRequestIndexValue])
+  async values (@Ctx() ctx: RQContext, @Root() tagCategory: AppRequestIndexCategory) {
+    return await Promise.all(tagCategory.tagStrings.map(async tag => new AppRequestIndexValue(tag, await promptRegistry.getTagLabel(tagCategory.category, tag))))
   }
 }
 
