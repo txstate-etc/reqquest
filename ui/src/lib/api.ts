@@ -1,8 +1,6 @@
 import { PUBLIC_API_BASE, PUBLIC_AUTH_REDIRECT } from '$env/static/public'
 import { APIBase } from '@txstate-mws/sveltekit-utils'
-import { GET_ACCESS, type IAccessResponse, GET_APP_REQUESTS, type GetAppRequestsResponse, type AppRequestFilter } from './queries'
-import { createClient, enumRequirementType } from './typed-client/index.js'
-import { keyby } from 'txstate-utils'
+import { createClient, enumAppRequestIndexDestination, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AppRequestFilter } from './typed-client/index.js'
 
 class API extends APIBase {
   client = createClient({
@@ -15,7 +13,19 @@ class API extends APIBase {
   })
 
   async getAccess () {
-    return (await this.graphql<IAccessResponse>(GET_ACCESS))
+    const response = await this.client.query({
+      __name: 'GetAccess',
+      access: {
+        createPeriod: true,
+        createRole: true,
+        viewRoleManagement: true,
+        viewPeriodManagement: true,
+        viewReviewerInterface: true,
+        viewApplicantDashboard: true,
+        viewAppRequestList: true
+      }
+    })
+    return response.access
   }
 
   async getApplicantRequests () {
@@ -203,8 +213,33 @@ class API extends APIBase {
     return this.mutationForDialog(response.submitAppRequest)
   }
 
-  async getAppRequests (filter: AppRequestFilter) {
-    return (await this.graphql<GetAppRequestsResponse>(GET_APP_REQUESTS, { filter })).appRequests
+  async getAppRequests (filter: AppRequestFilter, dest = enumAppRequestIndexDestination.APP_REQUEST_LIST) {
+    const response = await this.client.query({
+      __name: 'GetAppRequests',
+      appRequests: {
+        __args: { filter },
+        id: true,
+        status: true,
+        statusReason: true,
+        period: {
+          id: true,
+          name: true
+        },
+        indexCategories: {
+          __args: { for: dest }
+        },
+        actions: {
+          cancel: true,
+          close: true,
+          reopen: true,
+          return: true,
+          review: true,
+          offer: true,
+          submit: true
+        }
+      }
+    })
+    return response.appRequests
   }
 
   async getReviewData (appRequestId: string) {
@@ -303,6 +338,115 @@ class API extends APIBase {
     if (!response.periods.length) return { period: undefined, programs: [] }
     const period = response.periods[0]
     return { programs: period.programs, period }
+  }
+
+  async getRoleList () {
+    const response = await this.client.query({
+      __name: 'GetRoleList',
+      roles: {
+        id: true,
+        name: true,
+        description: true,
+        groups: true,
+        actions: {
+          update: true,
+          delete: true
+        }
+      }
+    })
+    return response.roles
+  }
+
+  async getRoleDetails (roleId: string) {
+    const response = await this.client.query({
+      __name: 'GetRoleDetails',
+      roles: {
+        __args: { filter: { ids: [roleId] } },
+        id: true,
+        name: true,
+        description: true,
+        groups: true,
+        grants: {
+          id: true,
+          subjectType: true,
+          allow: true,
+          controls: true,
+          tags: {
+            category: true,
+            categoryLabel: true,
+            tag: true,
+            label: true
+          },
+          actions: {
+            update: true,
+            delete: true
+          }
+        },
+        actions: {
+          update: true,
+          delete: true
+        }
+      }
+    })
+    if (!response.roles.length) return undefined
+    const role = response.roles[0]
+    return role
+  }
+
+  async getAuthorizationInfo () {
+    const response = await this.client.query({
+      __name: 'GetAuthorizationInfo',
+      subjectTypes: {
+        name: true,
+        tags: {
+          category: true,
+          label: true,
+          description: true,
+          listable: true,
+          tags: {
+            value: true,
+            label: true
+          }
+        },
+        controls: {
+          name: true,
+          description: true
+        }
+      }
+    })
+    return response.subjectTypes
+  }
+
+  async updateGrant (grantId: string, grant: AccessRoleGrantUpdate, validateOnly: boolean) {
+    const response = await this.client.mutation({
+      __name: 'UpdateGrant',
+      roleUpdateGrant: {
+        __args: { grantId, grant, validateOnly },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.roleUpdateGrant)
+  }
+
+  async createGrant (roleId: string, grant: AccessRoleGrantCreate, validateOnly: boolean) {
+    const response = await this.client.mutation({
+      __name: 'CreateGrant',
+      roleAddGrant: {
+        __args: { roleId, grant, validateOnly },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.roleAddGrant)
   }
 }
 

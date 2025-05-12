@@ -112,6 +112,8 @@ export const applicant_seems_nice_prompt: PromptDefinition<NiceData> = {
       return niceData == null ? [] : niceData.seemsNice ? ['yes'] : ['no']
     },
     getTags: () => [{ value: 'yes' }, { value: 'no', label: 'No' }],
-    getLabel: tag => { return { yes: 'yes', no: 'No' }[tag] ?? tag }
+    getLabel: tag => { return { yes: 'yes', no: 'No' }[tag] ?? tag },
+    useInAppRequestList: 1,
+    useInListFilters: 1
   }]
 }

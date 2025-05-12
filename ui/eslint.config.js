@@ -28,7 +28,9 @@ const customConfig = {
     '@typescript-eslint/no-magic-numbers': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off', // this is silly, it disallows using ! to mark something as non-null
     '@typescript-eslint/no-throw-literal': 'off', // sveltekit error() function does not return an Error :/
+    '@typescript-eslint/no-unsafe-argument': 'off', // this makes it hard to use 'any', especially in svelte where you can't assert types in template expressions
     '@typescript-eslint/no-unsafe-assignment': 'off', // this makes it hard to use 'any', especially in svelte where you can't assert types in template expressions
+    '@typescript-eslint/no-unsafe-call': 'off', // this makes it hard to use 'any', especially in svelte where you can't assert types in template expressions
     '@typescript-eslint/no-unsafe-member-access': 'off', // this makes it hard to use 'any', especially in svelte where you can't assert types in template expressions
     '@typescript-eslint/no-unsafe-return': 'off', // this makes it hard to use 'any', especially in svelte where you can't assert types in template expressions
     '@typescript-eslint/no-unused-vars': 'off', // typescript does this better

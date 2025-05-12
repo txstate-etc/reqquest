@@ -6,6 +6,7 @@
 export type Scalars = {
     Boolean: boolean,
     DateTime: string,
+    Float: number,
     ID: string,
     JsonData: Record<string, any>,
     String: string,
@@ -32,10 +33,15 @@ export interface Access {
 export interface AccessControl {
     description: Scalars['String']
     name: Scalars['String']
-    tagType: AccessSearchType
-    /** A list of all possible tags for the control. Null if tagging is not supported for the control. */
-    tags: (AccessTag[] | null)
     __typename: 'AccessControl'
+}
+
+export interface AccessGrantTag {
+    category: Scalars['String']
+    categoryLabel: Scalars['String']
+    label: Scalars['String']
+    tag: Scalars['String']
+    __typename: 'AccessGrantTag'
 }
 
 export interface AccessRole {
@@ -51,6 +57,7 @@ export interface AccessRole {
 }
 
 export interface AccessRoleGrant {
+    actions: AccessRoleGrantActions
     /**
      * 
      *     If true, this grant allows the action specified by the selected controls. If false, it removes
@@ -65,19 +72,18 @@ export interface AccessRoleGrant {
      *   
      */
     allow: Scalars['Boolean']
+    controls: Scalars['String'][]
     id: Scalars['ID']
-    /**
-     * 
-     *     The specific subject instance this grant applies to, e.g. if subjectType is "movie",
-     *     subject might be "The Princess Bride", and the grant applies to that movie. If null,
-     *     the grant applies to all movies. It's a little more complicated than that when we consider
-     *     the "allow" setting, see that description for more details.
-     *   
-     */
-    subject: (Scalars['String'] | null)
     /** The type of subject this grant applies to, e.g. "movie". */
     subjectType: Scalars['String']
+    tags: AccessGrantTag[]
     __typename: 'AccessRoleGrant'
+}
+
+export interface AccessRoleGrantActions {
+    delete: Scalars['Boolean']
+    update: Scalars['Boolean']
+    __typename: 'AccessRoleGrantActions'
 }
 
 export interface AccessRoleValidatedResponse {
@@ -88,33 +94,28 @@ export interface AccessRoleValidatedResponse {
     __typename: 'AccessRoleValidatedResponse'
 }
 
-
-/** The way that this list should be interacted with. */
-export type AccessSearchType = 'NONE' | 'SEARCH' | 'SELECT'
-
-export interface AccessSubjectInstance {
-    id: Scalars['ID']
-    name: Scalars['String']
-    __typename: 'AccessSubjectInstance'
-}
-
 export interface AccessSubjectType {
     /** A list of all possible controls for this subjectType. Use this to populate the control dropdown when creating a grant. */
     controls: AccessControl[]
     name: Scalars['String']
-    /** The way that subject instances are added to the grant. */
-    subjectSearchType: AccessSearchType
-    /** A list of all possible instances of this subjectType. Use this to populate the subject dropdown when creating a grant. */
-    subjects: AccessSubjectInstance[]
+    tags: AccessTagCategory[]
     __typename: 'AccessSubjectType'
 }
 
 export interface AccessTag {
-    category: (Scalars['String'] | null)
-    categoryLabel: (Scalars['String'] | null)
-    name: Scalars['String']
-    tag: Scalars['String']
+    label: Scalars['String']
+    value: Scalars['String']
     __typename: 'AccessTag'
+}
+
+export interface AccessTagCategory {
+    category: Scalars['String']
+    description: (Scalars['String'] | null)
+    label: Scalars['String']
+    listable: Scalars['Boolean']
+    /** A list of all possible tags for this category. Use this to populate the tag dropdown when creating a grant. */
+    tags: AccessTag[]
+    __typename: 'AccessTagCategory'
 }
 
 
@@ -142,6 +143,8 @@ export interface AccessUserIdentifier {
 
 /** Represents a group of applications all being applied for at the same time. As part of the request, multiple applications will be created and either eliminated as ineligible or submitted for approval. */
 export interface AppRequest {
+    /** Actions the user can take on this app request. */
+    actions: AppRequestActions
     applications: Application[]
     /** Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date. */
     closedAt: (Scalars['DateTime'] | null)
@@ -149,11 +152,66 @@ export interface AppRequest {
     /** All data that has been gathered from the user for this request. It is a Record whose properties are the prompt keys and values are the data gathered by the corresponding prompt dialog. */
     data: Scalars['JsonData']
     id: Scalars['ID']
+    /** Indexes associated with the App Request. These are pieces of data extracted from the App Request by individual prompts in the ReqQuest project. They have several uses such as filtering App Requests and enriching list views. */
+    indexCategories: AppRequestIndexCategory[]
     /** The period this appRequest is associated with. */
     period: Period
     status: AppRequestStatus
     updatedAt: Scalars['DateTime']
     __typename: 'AppRequest'
+}
+
+export interface AppRequestActions {
+    /** User may cancel this app request as the owner. Separate from closing as a reviewer/admin. */
+    cancel: Scalars['Boolean']
+    /** User may close this app request as a reviewer/admin. Separate from cancelling as the app request owner. */
+    close: Scalars['Boolean']
+    /** User may make an offer on this app request. */
+    offer: Scalars['Boolean']
+    /** User may reopen this app request, whether as the owner or as a reviewer/admin. */
+    reopen: Scalars['Boolean']
+    /** User may return this app request to the applicant phase. */
+    return: Scalars['Boolean']
+    /** Whether the user can view this app request as a reviewer. */
+    review: Scalars['Boolean']
+    /** User may submit this app request either as or on behalf of the owner. */
+    submit: Scalars['Boolean']
+    __typename: 'AppRequestActions'
+}
+
+export interface AppRequestIndexCategory {
+    /** If this is > 0, the index values should be shown on the main app request list page, sorted by this priority in descending order. */
+    appRequestListPriority: (Scalars['Float'] | null)
+    /** If this is > 0, the index values should be shown on the applicant dashboard, sorted by this priority in descending order. */
+    applicantDashboardPriority: (Scalars['Float'] | null)
+    category: Scalars['String']
+    categoryLabel: Scalars['String']
+    /** If this is > 0, the index values should be shown on the list filters, sorted by this priority in descending order. */
+    listFiltersPriority: (Scalars['Float'] | null)
+    /** If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order. */
+    reviewerDashboardPriority: (Scalars['Float'] | null)
+    values: AppRequestIndexValue[]
+    __typename: 'AppRequestIndexCategory'
+}
+
+
+/** This is used to indicate where the index values should be displayed. */
+export type AppRequestIndexDestination = 'APPLICANT_DASHBOARD' | 'APP_REQUEST_LIST' | 'LIST_FILTERS' | 'REVIEWER_DASHBOARD'
+
+
+/** This is used to list all the available filters for the app request list. */
+export interface AppRequestIndexFilter {
+    category: Scalars['String']
+    categoryLabel: Scalars['String']
+    listable: Scalars['Boolean']
+    values: AppRequestIndexValue[]
+    __typename: 'AppRequestIndexFilter'
+}
+
+export interface AppRequestIndexValue {
+    label: Scalars['String']
+    value: Scalars['String']
+    __typename: 'AppRequestIndexValue'
 }
 
 
@@ -374,11 +432,14 @@ export interface Query {
      */
     access: Access
     accessUsers: AccessUser[]
+    appRequestFilters: AppRequestIndexFilter[]
     appRequests: AppRequest[]
     periods: Period[]
     programGroups: ProgramGroup[]
     programs: Program[]
     roles: AccessRole[]
+    /** A list of all possible scopes. Scopes are used to limit users when they are accessing the system through an alternate UI or login method. For instance, if you generate an authentication token to give to a third party, it may have a scope identifying that third party and limiting their access even though they are acting as you. Roles must match the token scope in order to apply permissions. */
+    scopes: Scalars['String'][]
     /** This is where you get information about the authorization system. Each grant will be associated with one of these subjectTypes and optionally a list of subject instances. The grant will also have a set of controls, and each control will have an optional set of tags. The tags are used to limit the scope of the grant. */
     subjectTypes: AccessSubjectType[]
     __typename: 'Query'
@@ -428,7 +489,6 @@ export type RequirementType = 'ACCEPTANCE' | 'APPROVAL' | 'PREAPPROVAL' | 'PREQU
 export interface RoleActions {
     delete: Scalars['Boolean']
     update: Scalars['Boolean']
-    view: Scalars['Boolean']
     __typename: 'RoleActions'
 }
 
@@ -485,18 +545,18 @@ export interface AccessGenqlSelection{
 export interface AccessControlGenqlSelection{
     description?: boolean | number
     name?: boolean | number
-    tagType?: boolean | number
-    /** A list of all possible tags for the control. Null if tagging is not supported for the control. */
-    tags?: (AccessTagGenqlSelection & { __args?: {search?: (Scalars['String'] | null)} })
     __typename?: boolean | number
     __scalar?: boolean | number
 }
 
-export interface AccessControlInput {
-/** The action this grant applies to, e.g. "view" or "update". */
-control: Scalars['String'],
-/** A list of tags to help restrict a grant to a subset of objects of some other subjectType. For instance, if this is added to a grant on Prompt-update, each tag refers to a subset of App Requests. */
-tags: AccessTagInput[]}
+export interface AccessGrantTagGenqlSelection{
+    category?: boolean | number
+    categoryLabel?: boolean | number
+    label?: boolean | number
+    tag?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
 
 export interface AccessRoleGenqlSelection{
     actions?: RoleActionsGenqlSelection
@@ -514,6 +574,7 @@ export interface AccessRoleGenqlSelection{
 export interface AccessRoleFilter {groups?: (Scalars['String'][] | null),ids?: (Scalars['ID'][] | null),names?: (Scalars['String'][] | null),scopes?: (Scalars['String'][] | null)}
 
 export interface AccessRoleGrantGenqlSelection{
+    actions?: AccessRoleGrantActionsGenqlSelection
     /**
      * 
      *     If true, this grant allows the action specified by the selected controls. If false, it removes
@@ -528,25 +589,33 @@ export interface AccessRoleGrantGenqlSelection{
      *   
      */
     allow?: boolean | number
+    controls?: boolean | number
     id?: boolean | number
-    /**
-     * 
-     *     The specific subject instance this grant applies to, e.g. if subjectType is "movie",
-     *     subject might be "The Princess Bride", and the grant applies to that movie. If null,
-     *     the grant applies to all movies. It's a little more complicated than that when we consider
-     *     the "allow" setting, see that description for more details.
-     *   
-     */
-    subject?: boolean | number
     /** The type of subject this grant applies to, e.g. "movie". */
     subjectType?: boolean | number
+    tags?: AccessGrantTagGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
 
-export interface AccessRoleGrantCreate {allow: Scalars['Boolean'],controls: AccessControlInput[],subjectType: Scalars['String'],
-/** A list of subject IDs to restrict the grant. */
-subjects?: (Scalars['String'][] | null)}
+export interface AccessRoleGrantActionsGenqlSelection{
+    delete?: boolean | number
+    update?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface AccessRoleGrantCreate {allow: Scalars['Boolean'],
+/** A list of controls that are allowed or denied by this grant. Each subjectType has a list of available controls, available under Query.subjectTypes. */
+controls: Scalars['String'][],subjectType: Scalars['String'],
+/** A list of tags to restrict a grant. For instance, if this is added to a grant on PromptAnswer-update, each tag refers to a subset of App Requests. */
+tags?: (AccessTagInput[] | null)}
+
+export interface AccessRoleGrantUpdate {allow: Scalars['Boolean'],
+/** A list of controls that are allowed or denied by this grant. Each subjectType has a list of available controls, available under Query.subjectTypes. */
+controls: Scalars['String'][],subjectType: Scalars['String'],
+/** A list of tags to restrict a grant. For instance, if this is added to a grant on PromptAnswer-update, each tag refers to a subset of App Requests. */
+tags?: (AccessTagInput[] | null)}
 
 export interface AccessRoleInput {
 /** A description of the role. This is not used for anything, but can be useful for admins to understand what the role is trying to do. */
@@ -565,32 +634,29 @@ export interface AccessRoleValidatedResponseGenqlSelection{
     __scalar?: boolean | number
 }
 
-export interface AccessSubjectInstanceGenqlSelection{
-    id?: boolean | number
-    name?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
 export interface AccessSubjectTypeGenqlSelection{
     /** A list of all possible controls for this subjectType. Use this to populate the control dropdown when creating a grant. */
     controls?: AccessControlGenqlSelection
     name?: boolean | number
-    /** The way that subject instances are added to the grant. */
-    subjectSearchType?: boolean | number
-    /** A list of all possible instances of this subjectType. Use this to populate the subject dropdown when creating a grant. */
-    subjects?: (AccessSubjectInstanceGenqlSelection & { __args?: {
-    /** Set this arg to filter the list based on the search. If this subjectType is not marked as searchable, this search will be ignored. If it is marked as searchable, an empty search will probably not return any instances (but it is up to the implementation of the subjectType). */
-    search?: (Scalars['String'] | null)} })
+    tags?: AccessTagCategoryGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
 
 export interface AccessTagGenqlSelection{
+    label?: boolean | number
+    value?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface AccessTagCategoryGenqlSelection{
     category?: boolean | number
-    categoryLabel?: boolean | number
-    name?: boolean | number
-    tag?: boolean | number
+    description?: boolean | number
+    label?: boolean | number
+    listable?: boolean | number
+    /** A list of all possible tags for this category. Use this to populate the tag dropdown when creating a grant. */
+    tags?: AccessTagGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -634,6 +700,8 @@ export interface AccessUserIdentifierInput {id: Scalars['ID'],label: Scalars['St
 
 /** Represents a group of applications all being applied for at the same time. As part of the request, multiple applications will be created and either eliminated as ineligible or submitted for approval. */
 export interface AppRequestGenqlSelection{
+    /** Actions the user can take on this app request. */
+    actions?: AppRequestActionsGenqlSelection
     applications?: ApplicationGenqlSelection
     /** Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date. */
     closedAt?: boolean | number
@@ -643,10 +711,33 @@ export interface AppRequestGenqlSelection{
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
     id?: boolean | number
+    /** Indexes associated with the App Request. These are pieces of data extracted from the App Request by individual prompts in the ReqQuest project. They have several uses such as filtering App Requests and enriching list views. */
+    indexCategories?: (AppRequestIndexCategoryGenqlSelection & { __args?: {
+    /** Returns indexes that are flagged to appear in this destination. Also sorts for this destination. */
+    for?: (AppRequestIndexDestination | null)} })
     /** The period this appRequest is associated with. */
     period?: PeriodGenqlSelection
     status?: boolean | number
     updatedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface AppRequestActionsGenqlSelection{
+    /** User may cancel this app request as the owner. Separate from closing as a reviewer/admin. */
+    cancel?: boolean | number
+    /** User may close this app request as a reviewer/admin. Separate from cancelling as the app request owner. */
+    close?: boolean | number
+    /** User may make an offer on this app request. */
+    offer?: boolean | number
+    /** User may reopen this app request, whether as the owner or as a reviewer/admin. */
+    reopen?: boolean | number
+    /** User may return this app request to the applicant phase. */
+    return?: boolean | number
+    /** Whether the user can view this app request as a reviewer. */
+    review?: boolean | number
+    /** User may submit this app request either as or on behalf of the owner. */
+    submit?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -658,6 +749,40 @@ closed?: (Scalars['Boolean'] | null),ids?: (Scalars['ID'][] | null),
 logins?: (Scalars['ID'][] | null),
 /** Only return appRequests that are owned by the current user. */
 own?: (Scalars['Boolean'] | null),periodIds?: (Scalars['ID'][] | null),status?: (AppRequestStatus[] | null)}
+
+export interface AppRequestIndexCategoryGenqlSelection{
+    /** If this is > 0, the index values should be shown on the main app request list page, sorted by this priority in descending order. */
+    appRequestListPriority?: boolean | number
+    /** If this is > 0, the index values should be shown on the applicant dashboard, sorted by this priority in descending order. */
+    applicantDashboardPriority?: boolean | number
+    category?: boolean | number
+    categoryLabel?: boolean | number
+    /** If this is > 0, the index values should be shown on the list filters, sorted by this priority in descending order. */
+    listFiltersPriority?: boolean | number
+    /** If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order. */
+    reviewerDashboardPriority?: boolean | number
+    values?: AppRequestIndexValueGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** This is used to list all the available filters for the app request list. */
+export interface AppRequestIndexFilterGenqlSelection{
+    category?: boolean | number
+    categoryLabel?: boolean | number
+    listable?: boolean | number
+    values?: (AppRequestIndexValueGenqlSelection & { __args?: {search?: (Scalars['String'] | null)} })
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface AppRequestIndexValueGenqlSelection{
+    label?: boolean | number
+    value?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
 
 
 /** An application represents the applicant applying to a specific program. Each appRequest has multiple applications - one per program defined in the system. Some applications are mutually exclusive and/or will be eliminated early based on PREQUAL requirements, but they all technically exist in the data model - there is no concept of picking one application over another, just two applications where one dies and the other survives. */
@@ -746,7 +871,7 @@ export interface MutationGenqlSelection{
     roleDelete?: (ValidatedResponseGenqlSelection & { __args: {roleId: Scalars['ID']} })
     roleDeleteGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grantId: Scalars['ID']} })
     roleUpdate?: (AccessRoleValidatedResponseGenqlSelection & { __args: {role: AccessRoleInput, roleId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
-    roleUpdateGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grant: AccessRoleGrantCreate, grantId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
+    roleUpdateGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grant: AccessRoleGrantUpdate, grantId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     /** Submit the app request. */
     submitAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     updateConfiguration?: (ValidatedConfigurationResponseGenqlSelection & { __args: {data: Scalars['JsonData'], key: Scalars['String'], periodId: Scalars['String'], validateOnly?: (Scalars['Boolean'] | null)} })
@@ -906,11 +1031,14 @@ export interface QueryGenqlSelection{
      */
     access?: AccessGenqlSelection
     accessUsers?: (AccessUserGenqlSelection & { __args?: {filter?: (AccessUserFilter | null)} })
+    appRequestFilters?: AppRequestIndexFilterGenqlSelection
     appRequests?: (AppRequestGenqlSelection & { __args?: {filter?: (AppRequestFilter | null)} })
     periods?: (PeriodGenqlSelection & { __args?: {filter?: (PeriodFilters | null)} })
     programGroups?: (ProgramGroupGenqlSelection & { __args?: {filter?: (ProgramGroupFilter | null)} })
     programs?: (ProgramGenqlSelection & { __args?: {filter?: (ProgramFilters | null)} })
     roles?: (AccessRoleGenqlSelection & { __args?: {filter?: (AccessRoleFilter | null)} })
+    /** A list of all possible scopes. Scopes are used to limit users when they are accessing the system through an alternate UI or login method. For instance, if you generate an authentication token to give to a third party, it may have a scope identifying that third party and limiting their access even though they are acting as you. Roles must match the token scope in order to apply permissions. */
+    scopes?: boolean | number
     /** This is where you get information about the authorization system. Each grant will be associated with one of these subjectTypes and optionally a list of subject instances. The grant will also have a set of controls, and each control will have an optional set of tags. The tags are used to limit the scope of the grant. */
     subjectTypes?: AccessSubjectTypeGenqlSelection
     __typename?: boolean | number
@@ -964,7 +1092,6 @@ export interface RequirementPromptGenqlSelection{
 export interface RoleActionsGenqlSelection{
     delete?: boolean | number
     update?: boolean | number
-    view?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -1021,6 +1148,14 @@ export interface ValidatedResponseGenqlSelection{
     
 
 
+    const AccessGrantTag_possibleTypes: string[] = ['AccessGrantTag']
+    export const isAccessGrantTag = (obj?: { __typename?: any } | null): obj is AccessGrantTag => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAccessGrantTag"')
+      return AccessGrantTag_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const AccessRole_possibleTypes: string[] = ['AccessRole']
     export const isAccessRole = (obj?: { __typename?: any } | null): obj is AccessRole => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isAccessRole"')
@@ -1037,18 +1172,18 @@ export interface ValidatedResponseGenqlSelection{
     
 
 
-    const AccessRoleValidatedResponse_possibleTypes: string[] = ['AccessRoleValidatedResponse']
-    export const isAccessRoleValidatedResponse = (obj?: { __typename?: any } | null): obj is AccessRoleValidatedResponse => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isAccessRoleValidatedResponse"')
-      return AccessRoleValidatedResponse_possibleTypes.includes(obj.__typename)
+    const AccessRoleGrantActions_possibleTypes: string[] = ['AccessRoleGrantActions']
+    export const isAccessRoleGrantActions = (obj?: { __typename?: any } | null): obj is AccessRoleGrantActions => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAccessRoleGrantActions"')
+      return AccessRoleGrantActions_possibleTypes.includes(obj.__typename)
     }
     
 
 
-    const AccessSubjectInstance_possibleTypes: string[] = ['AccessSubjectInstance']
-    export const isAccessSubjectInstance = (obj?: { __typename?: any } | null): obj is AccessSubjectInstance => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isAccessSubjectInstance"')
-      return AccessSubjectInstance_possibleTypes.includes(obj.__typename)
+    const AccessRoleValidatedResponse_possibleTypes: string[] = ['AccessRoleValidatedResponse']
+    export const isAccessRoleValidatedResponse = (obj?: { __typename?: any } | null): obj is AccessRoleValidatedResponse => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAccessRoleValidatedResponse"')
+      return AccessRoleValidatedResponse_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -1065,6 +1200,14 @@ export interface ValidatedResponseGenqlSelection{
     export const isAccessTag = (obj?: { __typename?: any } | null): obj is AccessTag => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isAccessTag"')
       return AccessTag_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AccessTagCategory_possibleTypes: string[] = ['AccessTagCategory']
+    export const isAccessTagCategory = (obj?: { __typename?: any } | null): obj is AccessTagCategory => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAccessTagCategory"')
+      return AccessTagCategory_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -1089,6 +1232,38 @@ export interface ValidatedResponseGenqlSelection{
     export const isAppRequest = (obj?: { __typename?: any } | null): obj is AppRequest => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isAppRequest"')
       return AppRequest_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppRequestActions_possibleTypes: string[] = ['AppRequestActions']
+    export const isAppRequestActions = (obj?: { __typename?: any } | null): obj is AppRequestActions => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppRequestActions"')
+      return AppRequestActions_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppRequestIndexCategory_possibleTypes: string[] = ['AppRequestIndexCategory']
+    export const isAppRequestIndexCategory = (obj?: { __typename?: any } | null): obj is AppRequestIndexCategory => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppRequestIndexCategory"')
+      return AppRequestIndexCategory_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppRequestIndexFilter_possibleTypes: string[] = ['AppRequestIndexFilter']
+    export const isAppRequestIndexFilter = (obj?: { __typename?: any } | null): obj is AppRequestIndexFilter => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppRequestIndexFilter"')
+      return AppRequestIndexFilter_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppRequestIndexValue_possibleTypes: string[] = ['AppRequestIndexValue']
+    export const isAppRequestIndexValue = (obj?: { __typename?: any } | null): obj is AppRequestIndexValue => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppRequestIndexValue"')
+      return AppRequestIndexValue_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -1268,10 +1443,11 @@ export interface ValidatedResponseGenqlSelection{
     }
     
 
-export const enumAccessSearchType = {
-   NONE: 'NONE' as const,
-   SEARCH: 'SEARCH' as const,
-   SELECT: 'SELECT' as const
+export const enumAppRequestIndexDestination = {
+   APPLICANT_DASHBOARD: 'APPLICANT_DASHBOARD' as const,
+   APP_REQUEST_LIST: 'APP_REQUEST_LIST' as const,
+   LIST_FILTERS: 'LIST_FILTERS' as const,
+   REVIEWER_DASHBOARD: 'REVIEWER_DASHBOARD' as const
 }
 
 export const enumAppRequestStatus = {

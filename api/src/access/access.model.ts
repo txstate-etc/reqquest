@@ -1,6 +1,6 @@
 import { Context, ValidatedResponse, ValidatedResponseArgs } from '@txstate-mws/graphql-server'
 import { ObjectType, InputType, Field, ID } from 'type-graphql'
-import { AccessRoleGrantControlRow, AccessRoleGrantRow, AccessRoleGrantTagRow, AccessRoleRow, AccessRoleService, AccessUserIdentifierRow, AccessUserRow, ControlDefinition, JsonData, safeParse, subjectTypes, TagCategoryDefinition } from '../internal.js'
+import { AccessRoleGrantControlRow, AccessRoleGrantRow, AccessRoleGrantTagRow, AccessRoleRow, AccessRoleService, AccessUserIdentifierRow, AccessUserRow, ControlDefinition, JsonData, promptRegistry, safeParse, subjectTypes, TagCategoryDefinition } from '../internal.js'
 
 @ObjectType()
 export class Access {}
@@ -116,7 +116,7 @@ export class AccessSubjectType {
   constructor (name: string) {
     this.name = name
     const def = subjectTypes[name]
-    this.tags = def.tags?.map(category => new AccessTagCategory(category, category.category, category.label ?? category.category)) ?? []
+    this.tags = def.tags?.map(category => new AccessTagCategory(category)) ?? []
   }
 
   @Field()
@@ -128,14 +128,15 @@ export class AccessSubjectType {
 
 @ObjectType()
 export class AccessTagCategory {
-  constructor (public def: TagCategoryDefinition, value: string, label: string) {
-    this.value = value
-    this.label = label
+  constructor (public def: TagCategoryDefinition) {
+    this.category = def.category
+    this.label = def.label ?? def.category
+    this.description = def.description
     this.listable = !def.notListable
   }
 
   @Field()
-  value: string
+  category: string
 
   @Field()
   label: string
@@ -149,9 +150,9 @@ export class AccessTagCategory {
 
 @ObjectType()
 export class AccessTag {
-  constructor (value: string, label: string) {
+  constructor (value: string, label?: string) {
     this.value = value
-    this.label = label
+    this.label = label ?? value
   }
 
   @Field()
@@ -197,14 +198,6 @@ export class AccessRoleGrant {
   @Field({ description: 'The type of subject this grant applies to, e.g. "movie".' })
   subjectType: string
 
-  @Field({ nullable: true, description: `
-    The specific subject instance this grant applies to, e.g. if subjectType is "movie",
-    subject might be "The Princess Bride", and the grant applies to that movie. If null,
-    the grant applies to all movies. It's a little more complicated than that when we consider
-    the "allow" setting, see that description for more details.
-  ` })
-  subject?: string
-
   @Field({ description: `
     If true, this grant allows the action specified by the selected controls. If false, it removes
     the controls.
@@ -218,7 +211,7 @@ export class AccessRoleGrant {
   ` })
   allow: boolean
 
-  loadedControls!: AccessGrantControl[]
+  loadedControls!: string[]
   loadedTags!: AccessGrantTag[]
 
   async load (ctx: Context) {
@@ -230,37 +223,14 @@ export class AccessRoleGrant {
   }
 }
 
-@ObjectType({ description: 'This is a control record on a specific grant on a specific role, whereas AccessControl represents the control as a global concept.' })
-export class AccessGrantControl {
-  constructor (row: AccessRoleGrantControlRow) {
-    this.internalId = row.id
-    this.name = row.control
-    this.description = subjectTypes[row.subjectType].controls[row.control].description
-    this.grantInternalId = row.grantId
-    this.grantId = String(row.grantId)
-    this.roleInternalId = row.roleId
-    this.roleId = String(row.roleId)
-    this.subjectType = row.subjectType
-  }
-
-  internalId: number
-  roleInternalId: number
-  roleId: string
-  grantInternalId: number
-  grantId: string
-  subjectType: string
-
-  @Field()
-  name: string
-
-  @Field()
-  description: string
-}
+@ObjectType()
+export class AccessRoleGrantActions {}
 
 @ObjectType()
 export class AccessGrantTag {
   constructor (row: AccessRoleGrantTagRow) {
     this.category = row.category
+    this.categoryLabel = promptRegistry.getCategoryLabel(row.category)
     this.tag = row.tag
     this.subjectType = row.subjectType
     this.grantId = row.grantId
@@ -274,11 +244,11 @@ export class AccessGrantTag {
   @Field()
   tag: string
 
-  @Field({})
+  @Field()
   category: string
 
-  @Field({ nullable: true })
-  categoryLabel?: string
+  @Field()
+  categoryLabel: string
 }
 
 @InputType()
@@ -291,12 +261,6 @@ export class AccessTagInput {
 }
 
 @InputType()
-export class AccessControlInput {
-  @Field({ description: 'The action this grant applies to, e.g. "view" or "update".' })
-  control!: string
-}
-
-@InputType()
 export class AccessRoleGrantCreate {
   @Field()
   subjectType!: string
@@ -304,8 +268,8 @@ export class AccessRoleGrantCreate {
   @Field(type => [AccessTagInput], { nullable: true, description: 'A list of tags to restrict a grant. For instance, if this is added to a grant on PromptAnswer-update, each tag refers to a subset of App Requests.' })
   tags?: AccessTagInput[]
 
-  @Field(type => [AccessControlInput], { description: 'A list of controls that are allowed or denied by this grant. Each subjectType has a list of available controls, available under Query.subjectTypes.' })
-  controls!: AccessControlInput[]
+  @Field(type => [String], { description: 'A list of controls that are allowed or denied by this grant. Each subjectType has a list of available controls, available under Query.subjectTypes.' })
+  controls!: string[]
 
   @Field()
   allow!: boolean

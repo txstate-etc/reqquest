@@ -146,6 +146,24 @@ export class AppRequestIndexCategory {
   tagStrings: string[]
 }
 
+@ObjectType({ description: 'This is used to list all the available filters for the app request list.' })
+export class AppRequestIndexFilter {
+  constructor (def: PromptTagDefinition) {
+    this.category = def.category
+    this.categoryLabel = def.categoryLabel ?? def.category
+    this.listable = !def.notListable
+  }
+
+  @Field()
+  category: string
+
+  @Field()
+  categoryLabel: string
+
+  @Field()
+  listable: boolean
+}
+
 @ObjectType()
 export class AppRequestActions {}
 

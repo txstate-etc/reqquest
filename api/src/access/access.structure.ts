@@ -85,31 +85,26 @@ export function initAccess () {
     label: category.categoryLabel ?? category.category,
     description: category.description,
     notListable: category.notListable,
-    getTags: async (search?: string) => {
-      const tags = await category.getTags(search)
-      return tags.map(t => ({ value: t.value, label: t.label ?? t.value }))
-    },
-    getLabel: async (value: string) => {
-      return await promptRegistry.getTagLabel(category.category, value)
-    }
+    getTags: async (search?: string) => await promptRegistry.getAllTags(category.category, search),
+    getLabel: async (value: string) => await promptRegistry.getTagLabel(category.category, value)
   }))
 
   const programTags = (description?: string) => ({
     category: 'program',
     label: 'Program',
-    description: description ?? 'Limit this grant to the following programs.',
+    description: description ?? 'Limit this grant to specific programs.',
     getTags: () => programRegistry.list().map(program => ({ value: program.key, label: program.title }))
   })
   const requirementTags = (description?: string) => ({
     category: 'requirement',
     label: 'Requirement',
-    description: description ?? 'Limit this grant to the following requirements.',
+    description: description ?? 'Limit this grant to specific requirements.',
     getTags: () => requirementRegistry.list().map(requirement => ({ value: requirement.key, label: requirement.title }))
   })
   const promptTags = (description?: string) => ({
     category: 'prompt',
     label: 'Prompt',
-    description: description ?? 'Limit this grant to the following prompts.',
+    description: description ?? 'Limit this grant to specific prompts.',
     getTags: () => promptRegistry.list().map(prompt => ({ value: prompt.key, label: prompt.title }))
   })
   subjectTypes.Application = {

@@ -28,22 +28,13 @@ type Access {
 type AccessControl {
   description: String!
   name: String!
-  tagType: AccessSearchType!
-
-  """
-  A list of all possible tags for the control. Null if tagging is not supported for the control.
-  """
-  tags(search: String): [AccessTag!]
 }
 
-input AccessControlInput {
-  """The action this grant applies to, e.g. "view" or "update"."""
-  control: String!
-
-  """
-  A list of tags to help restrict a grant to a subset of objects of some other subjectType. For instance, if this is added to a grant on Prompt-update, each tag refers to a subset of App Requests.
-  """
-  tags: [AccessTagInput!]!
+type AccessGrantTag {
+  category: String!
+  categoryLabel: String!
+  label: String!
+  tag: String!
 }
 
 type AccessRole {
@@ -68,24 +59,51 @@ input AccessRoleFilter {
 }
 
 type AccessRoleGrant {
+  actions: AccessRoleGrantActions!
+
   "\n    If true, this grant allows the action specified by the selected controls. If false, it removes\n    the controls.\n\n    Removing a control only happens within the context of a single role. If another role grants the\n    same control, the action is allowed. This is more of an exception system than a denial\n    system. So you can do something like add the \"view\" control to the \"movie\" subject type in one\n    grant, and then in a second grant in the same role, remove it from \"The Princess Bride\". Now you\n    have a role that grants \"view\" on all movies _except_ The Princess Bride. If the user has another role\n    that grants \"view\" on The Princess Bride (or on all movies), they can view it based on that other role.\n  "
   allow: Boolean!
+  controls: [String!]!
   id: ID!
-
-  "\n    The specific subject instance this grant applies to, e.g. if subjectType is \"movie\",\n    subject might be \"The Princess Bride\", and the grant applies to that movie. If null,\n    the grant applies to all movies. It's a little more complicated than that when we consider\n    the \"allow\" setting, see that description for more details.\n  "
-  subject: String
 
   """The type of subject this grant applies to, e.g. "movie"."""
   subjectType: String!
+  tags: [AccessGrantTag!]!
+}
+
+type AccessRoleGrantActions {
+  delete: Boolean!
+  update: Boolean!
 }
 
 input AccessRoleGrantCreate {
   allow: Boolean!
-  controls: [AccessControlInput!]!
+
+  """
+  A list of controls that are allowed or denied by this grant. Each subjectType has a list of available controls, available under Query.subjectTypes.
+  """
+  controls: [String!]!
   subjectType: String!
 
-  """A list of subject IDs to restrict the grant."""
-  subjects: [String!]
+  """
+  A list of tags to restrict a grant. For instance, if this is added to a grant on PromptAnswer-update, each tag refers to a subset of App Requests.
+  """
+  tags: [AccessTagInput!]
+}
+
+input AccessRoleGrantUpdate {
+  allow: Boolean!
+
+  """
+  A list of controls that are allowed or denied by this grant. Each subjectType has a list of available controls, available under Query.subjectTypes.
+  """
+  controls: [String!]!
+  subjectType: String!
+
+  """
+  A list of tags to restrict a grant. For instance, if this is added to a grant on PromptAnswer-update, each tag refers to a subset of App Requests.
+  """
+  tags: [AccessTagInput!]
 }
 
 input AccessRoleInput {
@@ -112,55 +130,30 @@ type AccessRoleValidatedResponse {
   success: Boolean!
 }
 
-"""The way that this list should be interacted with."""
-enum AccessSearchType {
-  """
-  There will never be objects in the list. Do not create a UI to interact with the list at all.
-  """
-  NONE
-
-  """
-  The list will be too large for the user to browse through, or simply not feasible to list exhaustively, so we let the user search for list items.
-  """
-  SEARCH
-
-  """
-  The list will be small enough to make the user browse the whole list and add items by selection.
-  """
-  SELECT
-}
-
-type AccessSubjectInstance {
-  id: ID!
-  name: String!
-}
-
 type AccessSubjectType {
   """
   A list of all possible controls for this subjectType. Use this to populate the control dropdown when creating a grant.
   """
   controls: [AccessControl!]!
   name: String!
-
-  """The way that subject instances are added to the grant."""
-  subjectSearchType: AccessSearchType!
-
-  """
-  A list of all possible instances of this subjectType. Use this to populate the subject dropdown when creating a grant.
-  """
-  subjects(
-    """
-    Set this arg to filter the list based on the search. If this subjectType is not marked as searchable, this search will be ignored. If it is marked as searchable, an empty search will probably not return any instances (but it is up to the implementation of the subjectType).
-    """
-    search: String
-  ): [AccessSubjectInstance!]!
+  tags: [AccessTagCategory!]!
 }
 
 type AccessTag {
-  category: String
-  categoryLabel: String
-  name: String!
-  tag: String!
+  label: String!
+  value: String!
+}
+
+type AccessTagCategory {
+  category: String!
+  description: String
+  label: String!
+  listable: Boolean!
+
+  """
+  A list of all possible tags for this category. Use this to populate the tag dropdown when creating a grant.
+  """
+  tags: [AccessTag!]!
 }
 
 input AccessTagInput {
@@ -214,6 +207,8 @@ input AccessUserIdentifierInput {
 Represents a group of applications all being applied for at the same time. As part of the request, multiple applications will be created and either eliminated as ineligible or submitted for approval.
 """
 type AppRequest {
+  """Actions the user can take on this app request."""
+  actions: AppRequestActions!
   applications: [Application!]!
 
   """
@@ -233,10 +228,49 @@ type AppRequest {
   ): JsonData!
   id: ID!
 
+  """
+  Indexes associated with the App Request. These are pieces of data extracted from the App Request by individual prompts in the ReqQuest project. They have several uses such as filtering App Requests and enriching list views.
+  """
+  indexCategories(
+    """
+    Returns indexes that are flagged to appear in this destination. Also sorts for this destination.
+    """
+    for: AppRequestIndexDestination
+  ): [AppRequestIndexCategory!]!
+
   """The period this appRequest is associated with."""
   period: Period!
   status: AppRequestStatus!
   updatedAt: DateTime!
+}
+
+type AppRequestActions {
+  """
+  User may cancel this app request as the owner. Separate from closing as a reviewer/admin.
+  """
+  cancel: Boolean!
+
+  """
+  User may close this app request as a reviewer/admin. Separate from cancelling as the app request owner.
+  """
+  close: Boolean!
+
+  """User may make an offer on this app request."""
+  offer: Boolean!
+
+  """
+  User may reopen this app request, whether as the owner or as a reviewer/admin.
+  """
+  reopen: Boolean!
+
+  """User may return this app request to the applicant phase."""
+  return: Boolean!
+
+  """Whether the user can view this app request as a reviewer."""
+  review: Boolean!
+
+  """User may submit this app request either as or on behalf of the owner."""
+  submit: Boolean!
 }
 
 input AppRequestFilter {
@@ -253,6 +287,67 @@ input AppRequestFilter {
   own: Boolean
   periodIds: [ID!]
   status: [AppRequestStatus!]
+}
+
+type AppRequestIndexCategory {
+  """
+  If this is > 0, the index values should be shown on the main app request list page, sorted by this priority in descending order.
+  """
+  appRequestListPriority: Float
+
+  """
+  If this is > 0, the index values should be shown on the applicant dashboard, sorted by this priority in descending order.
+  """
+  applicantDashboardPriority: Float
+  category: String!
+  categoryLabel: String!
+
+  """
+  If this is > 0, the index values should be shown on the list filters, sorted by this priority in descending order.
+  """
+  listFiltersPriority: Float
+
+  """
+  If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order.
+  """
+  reviewerDashboardPriority: Float
+  values: [AppRequestIndexValue!]!
+}
+
+"""This is used to indicate where the index values should be displayed."""
+enum AppRequestIndexDestination {
+  """
+  Show these index values when listing App Requests on the applicant dashboard.
+  """
+  APPLICANT_DASHBOARD
+
+  """
+  Show these index values when listing App Requests in the main list page.
+  """
+  APP_REQUEST_LIST
+
+  """Allow the user to filter on these index values on the main list page."""
+  LIST_FILTERS
+
+  """
+  Show these index values when listing App Requests on the reviewer dashboard.
+  """
+  REVIEWER_DASHBOARD
+}
+
+"""
+This is used to list all the available filters for the app request list.
+"""
+type AppRequestIndexFilter {
+  category: String!
+  categoryLabel: String!
+  listable: Boolean!
+  values(search: String): [AppRequestIndexValue!]!
+}
+
+type AppRequestIndexValue {
+  label: String!
+  value: String!
 }
 
 "\n    The status of an appRequest. This status is computed based on the \"dbStatus\" recorded in\n    the database and the status of each application.\n  "
@@ -502,7 +597,7 @@ type Mutation {
   roleDelete(roleId: ID!): ValidatedResponse!
   roleDeleteGrant(grantId: ID!): AccessRoleValidatedResponse!
   roleUpdate(role: AccessRoleInput!, roleId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!
-  roleUpdateGrant(grant: AccessRoleGrantCreate!, grantId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!
+  roleUpdateGrant(grant: AccessRoleGrantUpdate!, grantId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!
 
   """Submit the app request."""
   submitAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
@@ -733,11 +828,17 @@ type Query {
   "\n    This is the global access object. Each field represents a global permission\n    like the ability to view the role management interface.\n  "
   access: Access!
   accessUsers(filter: AccessUserFilter): [AccessUser!]!
+  appRequestFilters: [AppRequestIndexFilter!]!
   appRequests(filter: AppRequestFilter): [AppRequest!]!
   periods(filter: PeriodFilters): [Period!]!
   programGroups(filter: ProgramGroupFilter): [ProgramGroup!]!
   programs(filter: ProgramFilters): [Program!]!
   roles(filter: AccessRoleFilter): [AccessRole!]!
+
+  """
+  A list of all possible scopes. Scopes are used to limit users when they are accessing the system through an alternate UI or login method. For instance, if you generate an authentication token to give to a third party, it may have a scope identifying that third party and limiting their access even though they are acting as you. Roles must match the token scope in order to apply permissions.
+  """
+  scopes: [String!]!
 
   """
   This is where you get information about the authorization system. Each grant will be associated with one of these subjectTypes and optionally a list of subject instances. The grant will also have a set of controls, and each control will have an optional set of tags. The tags are used to limit the scope of the grant.
@@ -892,7 +993,6 @@ enum RequirementType {
 type RoleActions {
   delete: Boolean!
   update: Boolean!
-  view: Boolean!
 }
 
 type ValidatedAppRequestResponse {

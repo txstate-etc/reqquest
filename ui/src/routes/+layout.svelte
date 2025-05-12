@@ -2,6 +2,7 @@
   import { PUBLIC_ENVIRONMENT } from '$env/static/public'
   import { api } from '$lib'
   import { UIShell } from '@txstate-mws/carbon-svelte'
+  import { unifiedAuth } from '@txstate-mws/sveltekit-utils'
   import Dashboard from 'carbon-icons-svelte/lib/Dashboard.svelte'
   import DocumentMultiple_01 from 'carbon-icons-svelte/lib/DocumentMultiple_01.svelte'
   import Settings from 'carbon-icons-svelte/lib/Settings.svelte'
@@ -22,13 +23,13 @@
       navTitle: uiRegistry.config.applicantDashboardNavTitle ?? uiRegistry.config.applicantDashboardTitle ?? 'Applicant',
       group: 'Dashboards',
       icon: Dashboard,
-      routeId: '/applicantdash'
+      routeId: '/dashboards/applicant'
     },
     {
       title: 'Reviewer',
       group: 'Dashboards',
       icon: Dashboard,
-      routeId: '/reviewdash'
+      routeId: '/dashboards/reviewer'
     },
     {
       title: 'App Requests',
@@ -51,7 +52,13 @@
       title: 'Manage Roles',
       group: 'Administration',
       icon: Settings,
-      routeId: '/roles'
+      routeId: '/roles',
+      children: [
+        {
+          title: $page => `Role: ${$page.data.role.name}`,
+          routeId: '/roles/[id]'
+        }
+      ]
     },
     {
       title: 'Manage Periods',
@@ -67,6 +74,6 @@
     },
     ...(uiRegistry.config.extraNavItems ?? [])
   ]
-}} profilelinks={[{ label: 'Logout', href: '/logout' }]}>
+}} profilelinks={[{ label: 'Logout', onClick: () => unifiedAuth.logout(api) }]}>
     <slot />
 </UIShell>

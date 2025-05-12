@@ -2,6 +2,7 @@ import type { MutationMessage } from '@txstate-mws/graphql-server'
 import { Cache, sortby } from 'txstate-utils'
 import { AppRequest, requirementRegistry, RQContext, TagDefinition, type AppRequestData } from '../internal.js'
 import db from 'mysql2-async/db'
+import { get } from 'http'
 
 export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVersion'>> {
   /**
@@ -91,7 +92,7 @@ export interface PromptTagDefinition<PromptKey extends string = string, DataType
    * and return a list of tags that match the search. If notListable is false, this function should
    * return all tags in the category.
    */
-  getTags: (search?: string) => Promise<TagDefinition[]> | TagDefinition[]
+  getTags?: (search?: string) => Promise<TagDefinition[]> | TagDefinition[]
 }
 
 export interface PromptDefinition<DataType = any, InputDataType = DataType, ConfigurationDataType = any, FetchType = any, KeyLiteral extends string = string> {
@@ -243,8 +244,27 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
 }
 
 const labelLookupCache = new Cache(async (tag: { category: string, value: string }) => {
-  return await (promptRegistry as any).tagLookups[tag.category]?.(tag.value)
+  return await (promptRegistry as any).indexLookups[tag.category]?.(tag.value) ?? tag.value
 }, { freshseconds: 600 })
+
+const indexListCache = new Cache(async (category: string) => {
+  const values = await db.getall<{ tag: string, label: string }>(`
+    SELECT DISTINCT l.tag, l.label
+    FROM tag_labels l
+    INNER JOIN app_request_tags t ON l.tag = t.tag && l.category = t.category
+    WHERE l.category = ?
+  `, [category])
+  return values.map(v => ({ value: v.tag, label: v.label ?? v.tag })) as TagDefinition[]
+}, { freshseconds: 10, staleseconds: 600 })
+
+const tagListCache = new Cache(async (key: { category: string, search?: string }, getTags: (search?: string) => TagDefinition[] | Promise<TagDefinition[]>) => {
+  const tags = await getTags(key.search)
+  if (tags?.length) {
+    const ibinds: any[] = []
+    await db.insert(`INSERT INTO tag_labels (category, tag, label) VALUES ${db.in(ibinds, tags.map(tag => [key.category, tag.value, tag.label ?? tag.value]))} ON DUPLICATE KEY UPDATE label = VALUES(label)`, ibinds)
+  }
+  return tags ?? []
+}, { freshseconds: 300 })
 
 class PromptRegistry {
   protected prompts: Record<string, PromptDefinition> = {}
@@ -254,6 +274,7 @@ class PromptRegistry {
   protected sortedMigrations: AppRequestMigration[] = []
   protected indexLookups: Record<string, (tag: string) => Promise<string> | string> = {}
   public indexCategories: PromptIndexDefinition[] = []
+  protected indexCategoryMap: Record<string, PromptIndexDefinition> = {}
   public tagCategories: PromptTagDefinition[] = []
   public reachable: PromptDefinition[] = []
 
@@ -282,6 +303,7 @@ class PromptRegistry {
       for (const tag of [...(prompt.tags ?? []), ...(prompt.indexes ?? [])]) {
         if ('getTags' in tag) this.tagCategories.push(tag as PromptTagDefinition)
         this.indexCategories.push(tag)
+        this.indexCategoryMap[tag.category] = tag
         this.indexLookups[tag.category] = async (t: string) => {
           let label = await tag.getLabel?.(t)
           if (label) await db.insert('INSERT INTO tag_labels (category, tag, label) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE label = VALUES(label)', [tag.category, t, label])
@@ -293,8 +315,22 @@ class PromptRegistry {
     }
   }
 
+  getCategoryLabel (category: string) {
+    return this.indexCategoryMap[category]?.categoryLabel ?? category
+  }
+
   async getTagLabel (category: string, tag: string) {
     return await labelLookupCache.get({ category, value: tag })
+  }
+
+  async getAllTags (category: string, search?: string) {
+    const tagCategory = this.indexCategoryMap[category]
+    if (!tagCategory) return []
+    if ('getTags' in tagCategory) {
+      return await tagListCache.get({ category, search }, (tagCategory as PromptTagDefinition).getTags!)
+    } else {
+      return await indexListCache.get(category)
+    }
   }
 
   setUserPrompt (key: string) {

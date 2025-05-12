@@ -6,6 +6,7 @@ import db from 'mysql2-async/db'
 export type AccessRoleGrantDefinition<AdditionalSubjectTypes = unknown, AdditionalControls = unknown> = {
   [roleName: string]: {
     scope?: string
+    description?: string
     groups: string[]
     grants: {
       subjectType: string
@@ -18,6 +19,7 @@ export type AccessRoleGrantDefinition<AdditionalSubjectTypes = unknown, Addition
 
 export const rqAccessSeed: AccessRoleGrantDefinition = {
   Applicant: {
+    description: 'This role is for applicants who are applying for a program. They can create and manage their own applications.',
     groups: [process.env.RQ_APPLICANT_GROUP ?? 'applicants'],
     grants: [
       {
@@ -28,6 +30,7 @@ export const rqAccessSeed: AccessRoleGrantDefinition = {
     ]
   },
   Reviewer: {
+    description: 'This role is for reviewers who are responsible for reviewing applications.',
     groups: [process.env.RQ_REVIEWER_GROUP ?? 'reviewers'],
     grants: [
       {
@@ -53,6 +56,7 @@ export const rqAccessSeed: AccessRoleGrantDefinition = {
     ]
   },
   SystemAdministrator: {
+    description: 'This role is for system administrators who configure the system and manage roles. They do not automatically have applicant and reviewer access.',
     groups: [process.env.RQ_ADMIN_GROUP ?? 'administrators'],
     grants: [
       { subjectType: 'AppRequest', controls: ['review'], allow: true },
@@ -67,7 +71,7 @@ export const rqAccessSeed: AccessRoleGrantDefinition = {
 
 export async function seedAccessRoles (appDef: AccessRoleGrantDefinition): Promise<void> {
   for (const [name, roleDef] of Object.entries(appDef)) {
-    const roleId = await db.insert('INSERT INTO accessRoles (name, scope) VALUES (?, ?)', [name, roleDef.scope])
+    const roleId = await db.insert('INSERT INTO accessRoles (name, scope, description) VALUES (?, ?, ?)', [name, roleDef.scope, roleDef.description])
     const ibinds: any[] = []
     await db.insert(`INSERT INTO accessRoleGroups (roleId, groupName) VALUES ${db.in(ibinds, roleDef.groups.map(g => [roleId, g]))}`, ibinds)
 

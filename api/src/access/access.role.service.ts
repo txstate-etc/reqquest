@@ -31,7 +31,7 @@ const accessRoleGrantsByRoleIdLoader = new OneToManyLoader({
 
 const accessRoleGrantControlsByGrantIdLoader = new OneToManyLoader({
   fetch: async (grantIds: string[]) => await database.getControlsByGrantIds(grantIds),
-  extractKey: control => control.grantId
+  extractKey: control => String(control.grantId)
 })
 
 const accessTagsByGrantIdLoader = new OneToManyLoader({
@@ -90,7 +90,7 @@ export class AccessRoleService extends AuthService<AccessRole> {
   }
 
   async getControlsByGrantId (grantId: string) {
-    return await this.loaders.get(accessRoleGrantControlsByGrantIdLoader).load(grantId)
+    return (await this.loaders.get(accessRoleGrantControlsByGrantIdLoader).load(grantId)).map(control => control.control)
   }
 
   async getTagsByGrantId (grantId: number) {

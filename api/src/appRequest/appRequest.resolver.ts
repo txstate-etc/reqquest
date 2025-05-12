@@ -1,12 +1,17 @@
 import { sortby } from 'txstate-utils'
 import { Arg, Ctx, FieldResolver, ID, Mutation, Query, Resolver, Root } from 'type-graphql'
-import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse, AppRequestIndexCategory, AppRequestIndexValue, AppRequestIndexDestination } from '../internal.js'
+import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse, AppRequestIndexCategory, AppRequestIndexValue, AppRequestIndexDestination, AppRequestIndexFilter } from '../internal.js'
 
 @Resolver(of => AppRequest)
 export class AppRequestResolver {
   @Query(returns => [AppRequest])
   async appRequests (@Ctx() ctx: RQContext, @Arg('filter', { nullable: true }) filter?: AppRequestFilter) {
     return await ctx.svc(AppRequestService).find(filter)
+  }
+
+  @Query(returns => [AppRequestIndexFilter])
+  async appRequestFilters (@Ctx() ctx: RQContext) {
+    return promptRegistry.tagCategories.filter(c => !!c.useInListFilters).map(category => new AppRequestIndexFilter(category))
   }
 
   @FieldResolver(type => [Application])
@@ -20,7 +25,7 @@ export class AppRequestResolver {
     return await ctx.svc(AppRequestService).getData(appRequest.internalId)
   }
 
-  @FieldResolver(type => AppRequestIndexCategory, { description: 'Indexes associated with the App Request. These are pieces of data extracted from the App Request by individual prompts in the ReqQuest project. They have several uses such as filtering App Requests and enriching list views.' })
+  @FieldResolver(type => [AppRequestIndexCategory], { description: 'Indexes associated with the App Request. These are pieces of data extracted from the App Request by individual prompts in the ReqQuest project. They have several uses such as filtering App Requests and enriching list views.' })
   async indexCategories (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest, @Arg('for', type => AppRequestIndexDestination, { nullable: true, description: 'Returns indexes that are flagged to appear in this destination. Also sorts for this destination.' }) forDestination?: AppRequestIndexDestination) {
     const cats = promptRegistry.tagCategories.map(category => new AppRequestIndexCategory(category, appRequest.tags?.[category.category] ?? []))
     return forDestination
@@ -33,6 +38,11 @@ export class AppRequestResolver {
     const period = await ctx.svc(PeriodService).findById(appRequest.periodId)
     if (!period) throw new Error('Somehow the period is missing for this appRequest.')
     return period
+  }
+
+  @FieldResolver(type => AppRequestActions, { description: 'Actions the user can take on this app request.' })
+  actions (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    return appRequest
   }
 
   @Mutation(returns => ValidatedAppRequestResponse, { description: 'Update the data for a prompt in this app request.' })
@@ -62,6 +72,14 @@ export class AppRequestIndexCategoryResolver {
   @FieldResolver(type => [AppRequestIndexValue])
   async values (@Ctx() ctx: RQContext, @Root() tagCategory: AppRequestIndexCategory) {
     return await Promise.all(tagCategory.tagStrings.map(async tag => new AppRequestIndexValue(tag, await promptRegistry.getTagLabel(tagCategory.category, tag))))
+  }
+}
+
+@Resolver(of => AppRequestIndexFilter)
+export class AppRequestIndexFilterResolver {
+  @FieldResolver(type => [AppRequestIndexValue])
+  async values (@Ctx() ctx: RQContext, @Root() tagCategory: AppRequestIndexFilter, @Arg('search', { nullable: true }) search?: string) {
+    return (await promptRegistry.getAllTags(tagCategory.category, search)).map(tag => new AppRequestIndexValue(tag.value, tag.label))
   }
 }
 
@@ -95,5 +113,10 @@ export class AppRequestAccessResolver {
   @FieldResolver(returns => Boolean, { description: 'User may return this app request to the applicant phase.' })
   return (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
     return ctx.svc(AppRequestService).mayReturn(appRequest)
+  }
+
+  @FieldResolver(returns => Boolean, { description: 'User may make an offer on this app request.' })
+  offer (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    return ctx.svc(AppRequestService).mayOffer(appRequest)
   }
 }

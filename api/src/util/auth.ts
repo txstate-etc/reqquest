@@ -95,11 +95,11 @@ const authCache = new Cache(async (login: string, ctx: Context) => {
     for (const grant of role.loadedGrants) {
       mergedPerRole[grant.subjectType] ??= {}
       for (const control of grant.loadedControls) {
-        mergedPerRole[grant.subjectType][control.name] ??= {}
-        mergedPerRole[grant.subjectType][control.name][Number(grant.allow)] ??= {}
+        mergedPerRole[grant.subjectType][control] ??= {}
+        mergedPerRole[grant.subjectType][control][Number(grant.allow)] ??= {}
         for (const tag of grant.loadedTags) {
-          mergedPerRole[grant.subjectType][control.name][Number(grant.allow)][tag.category] ??= new Set()
-          mergedPerRole[grant.subjectType][control.name][Number(grant.allow)][tag.category].add(tag.tag)
+          mergedPerRole[grant.subjectType][control][Number(grant.allow)][tag.category] ??= new Set()
+          mergedPerRole[grant.subjectType][control][Number(grant.allow)][tag.category].add(tag.tag)
         }
       }
     }

@@ -3,7 +3,13 @@ import {
   Access, AccessUser, AccessUserFilter, AccessRole, AccessRoleFilter, AccessRoleValidatedResponse,
   RoleActions, AccessUserService, AccessRoleService, AccessRoleGrantCreate, AccessRoleGrant,
   AccessUserIdentifier, AccessRoleInput, AccessControl, AccessSubjectType, subjectTypes,
-  AccessRoleGrantUpdate, appConfig
+  AccessRoleGrantUpdate, appConfig,
+  AccessTagCategory,
+  AccessTag,
+  AccessGrantTag,
+  promptRegistry,
+  AccessRoleGrantActions,
+  AccessRoleServiceInternal
 } from '../internal.js'
 import { Context, UnimplementedError, ValidatedResponse } from '@txstate-mws/graphql-server'
 
@@ -101,6 +107,24 @@ export class AccessRoleResolver {
   async roleDelete (@Ctx() ctx: Context, @Arg('roleId', type => ID) roleId: string) {
     return await ctx.svc(AccessRoleService).deleteAccessRole(roleId)
   }
+}
+
+@Resolver(of => AccessRoleGrant)
+export class AccessRoleGrantResolver {
+  @FieldResolver(returns => [String])
+  async controls (@Ctx() ctx: Context, @Root() accessRoleGrant: AccessRoleGrant) {
+    return await ctx.svc(AccessRoleService).getControlsByGrantId(accessRoleGrant.id)
+  }
+
+  @FieldResolver(returns => [AccessGrantTag])
+  async tags (@Ctx() ctx: Context, @Root() accessRoleGrant: AccessRoleGrant) {
+    return await ctx.svc(AccessRoleService).getTagsByGrantId(accessRoleGrant.internalId)
+  }
+
+  @FieldResolver(returns => AccessRoleGrantActions)
+  actions (@Root() accessRoleGrant: AccessRoleGrant) {
+    return accessRoleGrant
+  }
 
   @Mutation(returns => AccessRoleValidatedResponse)
   async roleAddGrant (@Ctx() ctx: Context, @Arg('roleId', type => ID) roleId: string,
@@ -124,13 +148,31 @@ export class AccessRoleResolver {
   }
 }
 
-@Resolver(of => RoleActions)
-export class RoleActionsResolver {
+@Resolver(of => AccessRoleGrantActions)
+export class AccessRoleGrantActionsResolver {
   @FieldResolver(returns => Boolean)
-  view (@Ctx() ctx: Context, @Root() role: AccessRole) {
-    return ctx.svc(AccessRoleService).mayView(role)
+  async update (@Ctx() ctx: Context, @Root() accessRoleGrant: AccessRoleGrant) {
+    const role = await ctx.svc(AccessRoleServiceInternal).findAccessRoleById(accessRoleGrant.roleId)
+    return ctx.svc(AccessRoleService).mayUpdate(role!)
   }
 
+  @FieldResolver(returns => Boolean)
+  async delete (@Ctx() ctx: Context, @Root() accessRoleGrant: AccessRoleGrant) {
+    const role = await ctx.svc(AccessRoleServiceInternal).findAccessRoleById(accessRoleGrant.roleId)
+    return ctx.svc(AccessRoleService).mayDelete(role!)
+  }
+}
+
+@Resolver(of => AccessGrantTag)
+export class AccessGrantTagResolver {
+  @FieldResolver(returns => String)
+  async label (@Ctx() ctx: Context, @Root() tag: AccessGrantTag) {
+    return await promptRegistry.getTagLabel(tag.category, tag.tag)
+  }
+}
+
+@Resolver(of => RoleActions)
+export class RoleActionsResolver {
   @FieldResolver(returns => Boolean)
   update (@Ctx() ctx: Context, @Root() role: AccessRole) {
     return ctx.svc(AccessRoleService).mayUpdate(role)
@@ -176,5 +218,13 @@ export class AccessSubjectTypeResolver {
   async controls (@Ctx() ctx: Context, @Root() subjectType: AccessSubjectType) {
     const controls = subjectTypes[subjectType.name].controls
     return Object.keys(controls).map(name => new AccessControl(subjectType.name, name, controls[name]))
+  }
+}
+
+@Resolver(of => AccessTagCategory)
+export class AccessTagCategoryResolver {
+  @FieldResolver(returns => [AccessTag], { description: 'A list of all possible tags for this category. Use this to populate the tag dropdown when creating a grant.' })
+  async tags (@Ctx() ctx: Context, @Root() tagCategory: AccessTagCategory) {
+    return (await tagCategory.def.getTags?.())?.map(tag => new AccessTag(tag.value, tag.label)) ?? []
   }
 }

@@ -1,8 +1,7 @@
 import db from 'mysql2-async/db'
 import {
   AccessRole, AccessUser, type AccessUserFilter, AccessRoleFilter, AccessRoleGrant, ReqquestUser,
-  AccessUserIdentifier, AccessGrantControl, AccessRoleInput, AccessRoleGrantCreate,
-  AccessGrantTag
+  AccessUserIdentifier, AccessRoleInput, AccessRoleGrantCreate, AccessGrantTag
 } from '../internal.js'
 
 export interface AccessUserRow {
@@ -258,14 +257,12 @@ export namespace AccessDatabase {
 
   export async function getControlsByGrantIds (grantIds: string[]) {
     const params: any[] = []
-    const rows = await db.getall<AccessRoleGrantControlRow>(`
-      SELECT c.*, g.subjectType, g.roleId
+    return await db.getall<{ grantId: number, control: string }>(`
+      SELECT c.control, c.grantId
       FROM accessRoleGrantControls c
-      INNER JOIN accessRoleGrants g ON g.id = c.grantId
       WHERE c.grantId IN (${db.in(params, grantIds)})
       ORDER BY c.grantId, c.control
     `, params)
-    return rows.map(row => new AccessGrantControl(row))
   }
 
   export async function getTagsByGrantIds (grantIds: number[]) {
@@ -331,19 +328,12 @@ export namespace AccessDatabase {
         INSERT INTO accessRoleGrants (roleId, subjectType, allow)
         VALUES (?, ?, ?)
       `, [roleId, grantInput.subjectType, grantInput.allow])
-      for (const control of grantInput.controls) {
-        const controlId = await db.insert(`
-          INSERT INTO accessRoleGrantControls (grantId, control)
-          VALUES (?, ?)
-        `, [grantId, control.control])
-        const binds: any[] = [controlId]
-      }
+
       if (grantInput.controls?.length) {
         const binds: any[] = []
         await db.insert(`
           INSERT INTO accessRoleGrantControls (grantId, control)
-          VALUES ${db.in(binds, grantInput.controls.map((r: any) => [grantId, r.control]))}
-          ON DUPLICATE KEY UPDATE grantId = grantId
+          VALUES ${db.in(binds, grantInput.controls.map(control => [grantId, control]))}
         `, binds)
       }
       if (grantInput.tags?.length) {
@@ -351,7 +341,6 @@ export namespace AccessDatabase {
         await db.insert(`
           INSERT INTO accessRoleGrantTags (grantId, category, tag)
           VALUES ${db.in(binds, grantInput.tags.map((r: any) => [grantId, r.category, r.tag]))}
-          ON DUPLICATE KEY UPDATE grantId = grantId
         `, binds)
       }
       return grantId
@@ -360,29 +349,22 @@ export namespace AccessDatabase {
 
   export async function updateAccessRoleGrant (grantId: string, grantInput: AccessRoleGrantCreate) {
     return await db.transaction(async db => {
-      await db.update(`
-        UPDATE accessRoleGrants
-        SET subjectType = ?, allow = ?
-        WHERE id = ?
-      `, [grantInput.subjectType, grantInput.allow, grantId])
+      await db.update('UPDATE accessRoleGrants SET subjectType = ?, allow = ? WHERE id = ?', [grantInput.subjectType, grantInput.allow, grantId])
 
       if (grantInput.controls?.length) {
+        const ibinds: any[] = []
+        await db.insert(`
+          INSERT INTO accessRoleGrantControls (grantId, control)
+          VALUES ${db.in(ibinds, grantInput.controls.map(control => [grantId, control]))}
+          ON DUPLICATE KEY UPDATE grantId = grantId
+        `, ibinds)
         const dbinds: any[] = [grantId]
         await db.delete(`
           DELETE FROM accessRoleGrantControls
-          WHERE grantId = ? AND control NOT IN (${db.in(dbinds, grantInput.controls.map((r: any) => r.control))})
+          WHERE grantId = ? AND control NOT IN (${db.in(dbinds, grantInput.controls)})
         `, dbinds)
-        const binds: any[] = []
-        await db.insert(`
-          INSERT INTO accessRoleGrantControls (grantId, control)
-          VALUES ${db.in(binds, grantInput.controls.map((r: any) => [grantId, r.control]))}
-          ON DUPLICATE KEY UPDATE grantId = grantId
-        `, binds)
       } else {
-        await db.delete(`
-          DELETE FROM accessRoleGrantControls
-          WHERE grantId = ?
-        `, [grantId])
+        await db.delete('DELETE FROM accessRoleGrantControls WHERE grantId = ?', [grantId])
       }
       if (grantInput.tags?.length) {
         const dbinds: any[] = [grantId]
@@ -397,10 +379,7 @@ export namespace AccessDatabase {
           ON DUPLICATE KEY UPDATE grantId = grantId
         `, binds)
       } else {
-        await db.delete(`
-          DELETE FROM accessRoleGrantTags
-          WHERE grantId = ?
-        `, [grantId])
+        await db.delete('DELETE FROM accessRoleGrantTags WHERE grantId = ?', [grantId])
       }
     })
   }

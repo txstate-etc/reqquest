@@ -14,8 +14,10 @@ import {
   periodMigrations, AccessSubjectTypeResolver, AppRequestResolver, ApplicationResolver, ApplicationRequirementResolver,
   RequirementPromptResolver, PeriodResolver, PeriodActionsResolver, ConfigurationResolver,
   ConfigurationActionsResolver, SnakeCaseString, SnakeCaseStringScalar, PeriodProgramActionsResolver,
-  PeriodRequirementResolver, PeriodPromptResolver,
-  initAccess, AppRequestIndexCategoryResolver
+  PeriodRequirementResolver, PeriodPromptResolver, initAccess, AppRequestIndexCategoryResolver,
+  AccessRoleGrantResolver, AccessGrantTagResolver, AppRequestIndexFilterResolver,
+  AccessRoleGrantActionsResolver,
+  AccessTagCategoryResolver
 } from './internal.js'
 
 export interface RQStartOpts extends Omit<GQLStartOpts, 'resolvers'> {
@@ -51,9 +53,13 @@ export class RQServer extends GQLServer {
     await this.app.register(multipartPlugin, { limits: { fileSize: 1024 * 1024 * 100, files: 5 } })
 
     const resolvers = [
+      AccessGrantTagResolver,
       AccessResolver,
       AccessRoleResolver,
+      AccessRoleGrantActionsResolver,
+      AccessRoleGrantResolver,
       AccessSubjectTypeResolver,
+      AccessTagCategoryResolver,
       AccessUserResolver,
       ApplicationActions,
       ApplicationActionsResolver,
@@ -61,8 +67,9 @@ export class RQServer extends GQLServer {
       ApplicationResolver,
       ApplicationRequirementResolver,
       AppRequestAccessResolver,
-      AppRequestResolver,
+      AppRequestIndexFilterResolver,
       AppRequestIndexCategoryResolver,
+      AppRequestResolver,
       ConfigurationResolver,
       ConfigurationActionsResolver,
       PeriodResolver,
