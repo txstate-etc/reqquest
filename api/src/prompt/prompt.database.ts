@@ -1,10 +1,11 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { ApplicationRequirement, PeriodConfigurationRow, PeriodPrompt, PeriodPromptFilters, promptRegistry, RequirementPrompt, RequirementPromptFilter } from '../internal.js'
+import { ApplicationRequirement, AppRequestStatusDB, PeriodConfigurationRow, PeriodPrompt, PeriodPromptFilters, promptRegistry, RequirementPrompt, RequirementPromptFilter } from '../internal.js'
 
 export interface PromptRow {
   id: number
   appRequestId: number
+  appRequestDbStatus: AppRequestStatusDB
   periodId: number
   applicationId: number
   requirementId: number
@@ -47,7 +48,7 @@ function processFilters (filter: RequirementPromptFilter) {
 export async function getRequirementPrompts (filter: RequirementPromptFilter, tdb: Queryable = db) {
   const { where, binds } = processFilters(filter)
   const rows = await tdb.getall<PromptRow>(`
-    SELECT p.*, ar.userId, ar.periodId, r.requirementKey, a.programKey
+    SELECT p.*, ar.userId, ar.periodId, r.requirementKey, a.programKey, ar.status AS appRequestDbStatus
     FROM requirement_prompts p
     INNER JOIN application_requirements r ON r.id=p.requirementId
     INNER JOIN applications a ON a.id=r.applicationId

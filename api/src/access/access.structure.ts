@@ -98,14 +98,21 @@ export function initAccess () {
   const requirementTags = (description?: string) => ({
     category: 'requirement',
     label: 'Requirement',
-    description: description ?? 'Limit this grant to specific requirements.',
-    getTags: () => requirementRegistry.list().map(requirement => ({ value: requirement.key, label: requirement.title }))
+    description: description ?? 'Limit this grant to specific requirements or the requirements associated with a program.',
+    getTags: () => [
+      ...programRegistry.list().map(program => ({ value: program.key, label: 'Program: ' + program.title })),
+      ...requirementRegistry.list().map(requirement => ({ value: requirement.key, label: 'Requirement: ' + requirement.title }))
+    ]
   })
   const promptTags = (description?: string) => ({
     category: 'prompt',
     label: 'Prompt',
-    description: description ?? 'Limit this grant to specific prompts.',
-    getTags: () => promptRegistry.list().map(prompt => ({ value: prompt.key, label: prompt.title }))
+    description: description ?? 'Limit this grant to specific prompts or the prompts associated with a requirement or program.',
+    getTags: () => [
+      ...programRegistry.list().map(program => ({ value: program.key, label: 'Program: ' + program.title })),
+      ...requirementRegistry.list().map(requirement => ({ value: requirement.key, label: 'Requirement: ' + requirement.title })),
+      ...promptRegistry.list().map(prompt => ({ value: prompt.key, label: 'Prompt: ' + prompt.title }))
+    ]
   })
   subjectTypes.Application = {
     tags: [programTags(), ...appRequestTags],
@@ -114,7 +121,7 @@ export function initAccess () {
     }
   }
   subjectTypes.ApplicationRequirement = {
-    tags: [programTags(), ...appRequestTags],
+    tags: [requirementTags(), ...appRequestTags],
     controls: {
       view: { description: 'View requirement status in an AppRequest. You still need AppRequest.review to see the reviewer interface at all.' }
     }
@@ -158,18 +165,18 @@ export function initAccess () {
     }
   }
   subjectTypes.Prompt = {
-    tags: [promptTags(), programTags('Limit to prompts that are used within certain programs.'), requirementTags('Limit to prompts that are used within certain requirements.')],
+    tags: [promptTags()],
     controls: {
       view: { description: 'View the configuration management interface and see prompt configuration data.' },
       configure: { description: 'Configure the way that a prompt works for all appRequests.' }
     }
   }
   subjectTypes.PromptAnswer = {
-    tags: [promptTags(), programTags('Limit to prompts that are used within certain programs.'), requirementTags('Limit to prompts that are used within certain requirements.'), ...appRequestTags],
+    tags: [promptTags(), ...appRequestTags],
     controls: {
       view: { description: 'View prompt data as a reviewer in an AppRequest.' },
-      update: { description: 'Update any individual appRequest\'s prompt data.' },
-      update_anytime: { description: 'Update this prompt as a reviewer even if the appRequest is in the applicant or pre-review phase.' }
+      update: { description: 'Update any individual appRequest\'s prompt data during the review phase.' },
+      update_anytime: { description: 'Update this prompt as a reviewer even if the appRequest is not yet submitted or awaiting acceptance or pre-approval automations.' }
     }
   }
   subjectTypes.Requirement = {

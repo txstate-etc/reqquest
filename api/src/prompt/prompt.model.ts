@@ -1,6 +1,5 @@
-import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
-import { AccessRole, AppRequest, PromptDefinition, promptRegistry, PromptRow } from '../internal.js'
-import { ValidatedResponse } from '@txstate-mws/graphql-server'
+import { Field, ID, InputType, ObjectType } from 'type-graphql'
+import { AppRequestStatusDB, PromptDefinition, promptRegistry, PromptRow } from '../internal.js'
 
 @ObjectType({ description: 'This is the generic definition of a prompt. It is not attached to an appRequest. We will use this type for the administration interface to allow administrators to grant access to prompts and edit their configuration.' })
 export class Prompt {
@@ -37,6 +36,7 @@ export class RequirementPrompt extends Prompt {
     this.applicationId = String(row.applicationId)
     this.appRequestInternalId = row.appRequestId
     this.appRequestId = String(row.appRequestId)
+    this.appRequestDbStatus = row.appRequestDbStatus
     this.periodId = String(row.periodId)
     this.userInternalId = row.userId
     this.answered = !!row.answered
@@ -84,6 +84,7 @@ export class RequirementPrompt extends Prompt {
   requirementKey: string
   programKey: string
   periodId: string
+  appRequestDbStatus: AppRequestStatusDB
 }
 
 @ObjectType()

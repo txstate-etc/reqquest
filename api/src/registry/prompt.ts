@@ -1,8 +1,7 @@
 import type { MutationMessage } from '@txstate-mws/graphql-server'
 import { Cache, sortby } from 'txstate-utils'
-import { AppRequest, requirementRegistry, RQContext, TagDefinition, type AppRequestData } from '../internal.js'
+import { AppRequest, programRegistry, requirementRegistry, RQContext, TagDefinition, type AppRequestData } from '../internal.js'
 import db from 'mysql2-async/db'
-import { get } from 'http'
 
 export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVersion'>> {
   /**
@@ -68,7 +67,7 @@ export interface PromptIndexDefinition<PromptKey extends string = string, DataTy
    * ReqQuest will cache these results in its database in case values disappear from the available
    * list but appeared in the past.
    */
-  getLabel?: (tag: string) => Promise<string> | string
+  getLabel?: (tag: string) => Promise<string | undefined> | string | undefined
 }
 
 export interface PromptTagDefinition<PromptKey extends string = string, DataType = any> extends PromptIndexDefinition<PromptKey, DataType> {
@@ -277,6 +276,7 @@ class PromptRegistry {
   protected indexCategoryMap: Record<string, PromptIndexDefinition> = {}
   public tagCategories: PromptTagDefinition[] = []
   public reachable: PromptDefinition[] = []
+  public authorizationKeys: Record<string, string[]> = {}
 
   register (prompt: PromptDefinition) {
     this.prompts[prompt.key] = prompt
@@ -310,6 +310,19 @@ class PromptRegistry {
           label ??= await db.getval<string>('SELECT label FROM tag_labels WHERE category = ? AND tag = ?', [tag.category, t])
           label ??= t
           return label
+        }
+      }
+    }
+    for (const program of programRegistry.reachable) {
+      for (const rKey of program.requirementKeys) {
+        requirementRegistry.authorizationKeys[rKey] ??= []
+        requirementRegistry.authorizationKeys[rKey].push(rKey)
+        requirementRegistry.authorizationKeys[rKey].push(program.key)
+        for (const promptKey of requirementRegistry.get(rKey).allPromptKeys) {
+          this.authorizationKeys[promptKey] ??= []
+          this.authorizationKeys[promptKey].push(promptKey)
+          this.authorizationKeys[promptKey].push(rKey)
+          this.authorizationKeys[promptKey].push(program.key)
         }
       }
     }

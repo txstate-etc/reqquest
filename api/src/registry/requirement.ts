@@ -84,6 +84,22 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
   promptKeysAnyOrder?: string[]
 
   /**
+   * An array of prompt keys for prompts that this requirement depends on, but that should not be
+   * shown to users beneath this requirement. For instance, if you have a requirement that depends on
+   * data from an external system, you may create a prompt to house that data, but you don't want
+   * to expose it to applicants or reviewers.
+   *
+   * For another example, what if you have two mutually exclusive programs, like if our adopt a dog and
+   * adopt a cat programs didn't allow you to adopt one of each? You would have a requirement/prompt
+   * at the end of each program that says "Okay great you qualify, do you want this dog?" and "Okay
+   * great you qualify, do you want this cat?" and the requirement for the dog would depend on
+   * the prompt for the cat, but you don't want to show the cat prompt to the user when they are
+   * applying for the dog. You just want the dog requirement to fail when they say "yes" to the cat
+   * and vice versa.
+   */
+  promptKeysNoDisplay?: string[]
+
+  /**
    * Set this true to indicate that your resolve function will never return a DISQUALIFYING status.
    *
    * The system will use this information to allow the user to begin the next requirement while
@@ -172,10 +188,11 @@ export interface RequirementDefinitionProcessed extends RequirementDefinition {
 class RequirementRegistry {
   protected requirements: Record<string, RequirementDefinitionProcessed> = {}
   protected requirementsList: RequirementDefinitionProcessed[] = []
+  public authorizationKeys: Record<string, string[]> = {}
   public reachable: RequirementDefinitionProcessed[] = []
 
   register (definition: RequirementDefinition) {
-    const allPromptKeys = [...(definition.promptKeys ?? []), ...(definition.promptKeysAnyOrder ?? [])]
+    const allPromptKeys = [...(definition.promptKeys ?? []), ...(definition.promptKeysAnyOrder ?? []), ...(definition.promptKeysNoDisplay ?? [])]
     const definitionProcessed: RequirementDefinitionProcessed = {
       ...definition,
       allPromptKeys,
@@ -184,7 +201,7 @@ class RequirementRegistry {
     }
     this.requirements[definition.key] = definitionProcessed
     this.requirementsList.push(definitionProcessed)
-    if ([RequirementType.PREQUAL, RequirementType.QUALIFICATION].includes(definition.type)) {
+    if ([RequirementType.PREQUAL, RequirementType.QUALIFICATION, RequirementType.ACCEPTANCE].includes(definition.type)) {
       for (const key of allPromptKeys) promptRegistry.setUserPrompt(key)
     }
   }

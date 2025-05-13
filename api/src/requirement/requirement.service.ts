@@ -1,5 +1,10 @@
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { Application, AuthService, getApplicationRequirements, ApplicationRequirement, ApplicationRequirementFilter, PeriodProgramRequirement, getPeriodProgramRequirements, PeriodProgramKey, PeriodProgramRequirementKey, PeriodRequirementKey, AppRequest, AppRequestService, Program } from '../internal.js'
+import {
+  Application, AuthService, getApplicationRequirements, ApplicationRequirement,
+  ApplicationRequirementFilter, PeriodProgramRequirement, getPeriodProgramRequirements,
+  PeriodProgramKey, PeriodProgramRequirementKey, PeriodRequirementKey, AppRequest,
+  AppRequestService, requirementRegistry
+} from '../internal.js'
 
 const byIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -91,6 +96,6 @@ export class PeriodRequirementService extends AuthService<PeriodProgramRequireme
 
   mayConfigure (requirement: PeriodProgramRequirement) {
     if (requirement.definition.validateConfiguration == null) return false
-    return this.hasControl('Requirement', 'configure', { Requirement: [requirement.key], Program: [requirement.programKey] })
+    return this.hasControl('Requirement', 'configure', { requirementplus: requirementRegistry.authorizationKeys[requirement.key] ?? [] })
   }
 }

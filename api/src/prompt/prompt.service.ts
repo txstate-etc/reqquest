@@ -3,7 +3,8 @@ import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import {
   AppRequestService, ApplicationRequirement, AuthService, Prompt, RequirementPrompt,
   promptRegistry, getRequirementPrompts, AppRequestServiceInternal, ValidatedAppRequestResponse,
-  getPeriodPrompts, ConfigurationService, PeriodPrompt, requirementRegistry
+  getPeriodPrompts, ConfigurationService, PeriodPrompt, requirementRegistry,
+  AppRequestStatusDB
 } from '../internal.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
@@ -89,6 +90,10 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     return data[requirementPrompt.definition.key]
   }
 
+  isOwn (prompt: RequirementPrompt): boolean {
+    return prompt.userInternalId === this.user?.internalId
+  }
+
   mayView (prompt: RequirementPrompt): boolean {
     // may view if the prompt is for the applicant and current user is the applicant
     // if (prompt.request.userInternalId === this.userInternalId && promptRegistry.isUserPrompt(prompt.key)) return true
@@ -98,11 +103,20 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
   }
 
   mayUpdate (prompt: RequirementPrompt): boolean {
-    // may update if the prompt is for the applicant and current user is the applicant
-    if (prompt.userInternalId === this.user?.internalId && promptRegistry.isUserPrompt(prompt.key)) return true
-    // TODO: support tags on AppRequest, have to load them before this function is called
-    // so we can keep it synchronous
-    return this.hasControl('PromptAnswer', 'update', { Prompt: [prompt.key], Requirement: [prompt.requirementKey], Program: [prompt.programKey], ...prompt.appRequestTags })
+    if ([AppRequestStatusDB.CLOSED, AppRequestStatusDB.CANCELLED, AppRequestStatusDB.WITHDRAWN].includes(prompt.appRequestDbStatus)) return false
+    if (this.isOwn(prompt)) {
+      if (
+        [AppRequestStatusDB.STARTED, AppRequestStatusDB.ACCEPTANCE].includes(prompt.appRequestDbStatus)
+        && promptRegistry.isUserPrompt(prompt.key)
+      ) {
+        return true
+      }
+      if (!this.hasControl('AppRequest', 'review_own', prompt.appRequestTags)) return false
+    }
+    if (prompt.appRequestDbStatus === AppRequestStatusDB.SUBMITTED) {
+      return this.hasControl('PromptAnswer', 'update', { prompt: promptRegistry.authorizationKeys[prompt.key], ...prompt.appRequestTags })
+    }
+    return this.hasControl('PromptAnswer', 'update_anytime', { prompt: promptRegistry.authorizationKeys[prompt.key], ...prompt.appRequestTags })
   }
 
   async update (prompt: RequirementPrompt, data: any, validateOnly = false) {
@@ -141,11 +155,11 @@ export class PeriodPromptService extends AuthService<Prompt> {
   }
 
   mayView (prompt: PeriodPrompt) {
-    return this.hasControl('Prompt', 'view', { Prompt: [prompt.key] }) // TODO: add requirementKeys and programKeys that include this prompt
+    return this.hasControl('Prompt', 'view', { prompt: promptRegistry.authorizationKeys[prompt.key] ?? [] })
   }
 
   mayConfigure (prompt: Prompt): boolean {
     if (prompt.definition.validateConfiguration == null) return false
-    return this.hasControl('Prompt', 'configure', { Prompt: [prompt.key] }) // TODO: add requirementKeys and programKeys that include this prompt
+    return this.hasControl('Prompt', 'configure', { prompt: promptRegistry.authorizationKeys[prompt.key] ?? [] })
   }
 }
