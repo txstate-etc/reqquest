@@ -1,6 +1,6 @@
 import { sortby } from 'txstate-utils'
 import { Arg, Ctx, FieldResolver, ID, Mutation, Query, Resolver, Root } from 'type-graphql'
-import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse, AppRequestIndexCategory, AppRequestIndexValue, AppRequestIndexDestination, AppRequestIndexFilter } from '../internal.js'
+import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse, AppRequestIndexCategory, AppRequestIndexValue, AppRequestIndexDestination, AppRequestIndexFilter, RequirementPrompt } from '../internal.js'
 
 @Resolver(of => AppRequest)
 export class AppRequestResolver {
@@ -17,6 +17,13 @@ export class AppRequestResolver {
   @FieldResolver(type => [Application])
   async applications (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
     return await ctx.svc(ApplicationService).findByAppRequest(appRequest)
+  }
+
+  @FieldResolver(type => RequirementPrompt, { description: 'Retrieve a specific prompt by its ID. This is useful for the UI to get the full prompt data and configuration when trying to edit an individual prompt. We don\'t want to be downloading all the config data for everything up front.' })
+  async prompt (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest, @Arg('promptId', type => ID) promptId: string) {
+    const prompt = await ctx.svc(RequirementPromptService).findById(promptId)
+    if (!prompt) throw new Error('Prompt not found.')
+    return prompt
   }
 
   @FieldResolver(type => JsonData, { description: 'All data that has been gathered from the user for this request. It is a Record whose properties are the prompt keys and values are the data gathered by the corresponding prompt dialog.' })

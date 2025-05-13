@@ -137,7 +137,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * warnings rather than errors. The `answered` function (see above) can be used to
    * prevent the application from proceeding until the user has provided required fields.
    */
-  validate?: (data: InputDataType, config: ConfigurationDataType) => Promise<MutationMessage[]> | MutationMessage[]
+  validate?: (data: InputDataType, config: ConfigurationDataType, allConfig: Record<string, any>) => Promise<MutationMessage[]> | MutationMessage[]
   /**
    * Return validation messages to the user to help them provide correct input while
    * configuring the Prompt. Prompt configuration is for administrators to be able to

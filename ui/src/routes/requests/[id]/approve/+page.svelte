@@ -14,16 +14,26 @@
   export let data: PageData
   $: ({ appRequest } = data)
 
+  type PromptExtraData = Awaited<ReturnType<typeof api.getPromptData>>
   type Prompt = PageData['appRequest']['applications'][0]['requirements'][0]['prompts'][0]
-
-  let promptBeingEdited: Prompt | undefined = undefined
+  type PromptWithExtra = Prompt & PromptExtraData
+  let promptBeingEdited: PromptWithExtra | undefined = undefined
   let showPromptDialog = false
-  function editPrompt (prompt: Prompt) {
-    promptBeingEdited = prompt
-    showPromptDialog = true
+  let fetchingEditPrompt = false
+  async function editPrompt (prompt: Prompt) {
+    if (fetchingEditPrompt) return
+    fetchingEditPrompt = true
+    try {
+      const extra = await api.getPromptData(appRequest.id, prompt.id)
+      promptBeingEdited = { ...prompt, ...extra }
+      showPromptDialog = true
+    } finally {
+      fetchingEditPrompt = false
+    }
   }
 
   function closePromptDialog () {
+    fetchingEditPrompt = false
     showPromptDialog = false
     promptBeingEdited = undefined
   }
@@ -54,8 +64,8 @@
             {
               label: 'Edit',
               icon: Edit,
-              onClick: () => {
-                editPrompt(prompt)
+              onClick: async () => {
+                await editPrompt(prompt)
               }
             }
           ]}>

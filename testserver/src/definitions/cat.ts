@@ -102,13 +102,12 @@ export const applicant_seems_nice_prompt: PromptDefinition<NiceData> = {
     }
     return messages
   },
-  tags: [{
+  indexes: [{
     category: 'nice',
     extract: data => {
       const niceData = data.applicant_seems_nice_prompt as NiceData | undefined
       return niceData == null ? [] : niceData.seemsNice ? ['yes'] : ['no']
     },
-    getTags: () => [{ value: 'yes' }, { value: 'no', label: 'No' }],
     getLabel: tag => { return { yes: 'yes', no: 'No' }[tag] ?? tag },
     useInAppRequestList: 1,
     useInListFilters: 1

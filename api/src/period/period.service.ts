@@ -1,4 +1,3 @@
-import type { MutationMessage } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { intersect, isBlank, keyby, pick } from 'txstate-utils'
 import { AuthService, Configuration, ConfigurationFilters, createPeriod, getConfigurationData, getConfigurations, getPeriods, Period, PeriodFilters, PeriodPromptService, PeriodRequirementService, PeriodUpdate, PromptDefinition, promptRegistry, RequirementDefinitionProcessed, requirementRegistry, updatePeriod, upsertConfiguration, ValidatedConfigurationResponse, ValidatedPeriodResponse } from '../internal.js'
@@ -109,6 +108,16 @@ export class ConfigurationService extends AuthService<Configuration> {
   async getData (periodId: string, definitionKey: string) {
     const dataRow = await this.loaders.get(configurationDataByIdLoader).load({ periodId, definitionKey })
     return dataRow?.data ?? {}
+  }
+
+  async getRelatedData (periodId: string, promptKey: string) {
+    const allConfig: Record<string, any> = {}
+    const relatedKeys = promptRegistry.authorizationKeys[promptKey] ?? []
+    await Promise.all(relatedKeys.map(async key => {
+      const config = await this.svc(ConfigurationService).getData(periodId, key)
+      allConfig[key] = config
+    }))
+    return allConfig
   }
 
   mayView (obj: Configuration) {

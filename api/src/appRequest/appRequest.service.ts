@@ -1,5 +1,5 @@
 import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, evaluateAppRequest, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer, getAppRequestTags } from '../internal.js'
-import { ManyJoinedLoader, PrimaryKeyLoader } from 'dataloader-factory'
+import { PrimaryKeyLoader } from 'dataloader-factory'
 import { BaseService } from '@txstate-mws/graphql-server'
 
 const appReqByIdLoader = new PrimaryKeyLoader({
@@ -33,6 +33,18 @@ export class AppRequestServiceInternal extends BaseService<AppRequest> {
     return appRequests
   }
 
+  async findById (id: string) {
+    const appRequest = await this.loaders.get(appReqByIdLoader).load(id)
+    if (appRequest) {
+      this.loaders.get(appReqTagsLoader).prime(id, { id, tags: appRequest.tags! })
+    }
+    return appRequest
+  }
+
+  async findByInternalId (internalId: number) {
+    return await this.findById(String(internalId))
+  }
+
   async getData (appRequestInternalId: number) {
     const row = await this.loaders.get(appReqDataLoader).load(appRequestInternalId)
     if (!row) throw new Error('AppRequest not found')
@@ -63,7 +75,7 @@ export class AppRequestService extends AuthService<AppRequest> {
   }
 
   async findById (id: string) {
-    return await this.loaders.get(appReqByIdLoader).load(id)
+    return this.removeUnauthorized(await this.raw.findById(id))
   }
 
   async findByInternalId (internalId: number) {

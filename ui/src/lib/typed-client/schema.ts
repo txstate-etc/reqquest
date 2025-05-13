@@ -156,6 +156,8 @@ export interface AppRequest {
     indexCategories: AppRequestIndexCategory[]
     /** The period this appRequest is associated with. */
     period: Period
+    /** Retrieve a specific prompt by its ID. This is useful for the UI to get the full prompt data and configuration when trying to edit an individual prompt. We don't want to be downloading all the config data for everything up front. */
+    prompt: RequirementPrompt
     status: AppRequestStatus
     updatedAt: Scalars['DateTime']
     __typename: 'AppRequest'
@@ -458,6 +460,8 @@ export interface RequirementPrompt {
     askedInEarlierRequirement: Scalars['Boolean']
     /** The configuration data for this prompt in the app request's period. */
     configurationData: Scalars['JsonData']
+    /** All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it. */
+    configurationRelatedData: Scalars['JsonData']
     /** The data that has been gathered from the user in response to this prompt. The schema is controlled by the question's implementation. */
     data: (Scalars['JsonData'] | null)
     /** A brief description of the prompt. This should be shown to administrators to help explain the full meaning of the prompt while assigning permissions or editing its configuration. */
@@ -717,6 +721,8 @@ export interface AppRequestGenqlSelection{
     for?: (AppRequestIndexDestination | null)} })
     /** The period this appRequest is associated with. */
     period?: PeriodGenqlSelection
+    /** Retrieve a specific prompt by its ID. This is useful for the UI to get the full prompt data and configuration when trying to edit an individual prompt. We don't want to be downloading all the config data for everything up front. */
+    prompt?: (RequirementPromptGenqlSelection & { __args: {promptId: Scalars['ID']} })
     status?: boolean | number
     updatedAt?: boolean | number
     __typename?: boolean | number
@@ -1058,6 +1064,8 @@ export interface RequirementPromptGenqlSelection{
     askedInEarlierRequirement?: boolean | number
     /** The configuration data for this prompt in the app request's period. */
     configurationData?: boolean | number
+    /** All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it. */
+    configurationRelatedData?: boolean | number
     /** The data that has been gathered from the user in response to this prompt. The schema is controlled by the question's implementation. */
     data?: { __args: {
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */

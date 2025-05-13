@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { ColumnList, FieldCheckboxList, FieldMultiselect, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
+  import { ColumnList, FieldCheckboxList, FieldHidden, FieldMultiselect, FieldSelect, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
+  import { Modal } from 'carbon-components-svelte'
+  import Add from 'carbon-icons-svelte/lib/Add.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
+  import { invalidate } from '$app/navigation'
   import { api, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessTagInput } from '$lib'
   import type { PageData } from './$types'
   import { pick } from 'txstate-utils'
@@ -39,14 +42,18 @@
   }
   function onGrantDelete (row: PageData['role']['grants'][number]) {
     return () => {
-      // Handle row click event
-      console.log('Row clicked:', row)
+      grantToDelete = row.id
     }
   }
   function onCloseEdit () {
+    showGrantCreate = false
     showGrantEdit = false
     grantToEdit = undefined
     grantToEditInput = undefined
+  }
+  async function onSaveGrant () {
+    await invalidate('api:getRoleDetails')
+    onCloseEdit()
   }
   async function onEditSubmit (data: AccessRoleGrantUpdateForm) {
     const response = await api.updateGrant(grantToEdit!.id, transformToAPI(data), false)
@@ -56,6 +63,9 @@
     const response = await api.updateGrant(grantToEdit!.id, transformToAPI(data), true)
     return response.messages
   }
+
+  let showGrantCreate = false
+  let grantCreateAllow = true
   async function onCreateSubmit (data: AccessRoleGrantCreateForm) {
     const response = await api.createGrant(role.id, transformToAPI(data), false)
     return { ...response, data }
@@ -63,6 +73,19 @@
   async function onCreateValidate (data: AccessRoleGrantCreateForm) {
     const response = await api.createGrant(role.id, transformToAPI(data), true)
     return response.messages
+  }
+
+  let grantToDelete: string | undefined
+  function closeDeleteConfirmation () {
+    grantToDelete = undefined
+  }
+  async function executeDelete () {
+    try {
+      await api.deleteGrant(grantToDelete!)
+      await invalidate('api:getRoleDetails')
+    } finally {
+      closeDeleteConfirmation()
+    }
   }
 </script>
 
@@ -82,6 +105,17 @@
 
 <ColumnList
   title="Grants for Role: {role.name}"
+  listActions={[
+    {
+      label: 'Add Grant',
+      icon: Add,
+      onClick: () => {
+        showGrantCreate = true
+        grantCreateAllow = true
+      }
+    }
+  ]}
+  selectedActions={() => []}
   columns={[
     { id: 'subjectType', label: 'Grants', get: 'subjectType' },
     { id: 'controls', label: 'Controls', render: grant => grant.controls.join(', ') },
@@ -103,36 +137,48 @@
     }
   ]}
 />
-
-{#if exceptions.length}
-  <ColumnList
-    title="Exceptions for Role: {role.name}"
-    columns={[
-      { id: 'subjectType', label: 'Exceptions', get: 'subjectType' },
-      { id: 'controls', label: 'Controls', render: role => role.controls.join(', ') },
-      { id: 'tags', label: 'Tags', render: role => role.tags.map(t => t.label).join(', ') }
-    ]}
-    rows={exceptions}
-    actions={row => [
-      {
-        label: 'Edit',
-        icon: Edit,
-        onClick: onGrantEdit(row),
-        disabled: !row.actions.update
-      },
-      {
-        label: 'Delete',
-        icon: TrashCan,
-        onClick: onGrantDelete(row),
-        disabled: !row.actions.delete
+<br><br>
+<ColumnList
+  title="Exceptions for Role: {role.name}"
+  columns={[
+    { id: 'subjectType', label: 'Exceptions', get: 'subjectType' },
+    { id: 'controls', label: 'Controls', render: role => role.controls.join(', ') },
+    { id: 'tags', label: 'Tags', render: role => role.tags.map(t => t.label).join(', ') }
+  ]}
+  noItemsKind='info'
+  noItemsTitle=''
+  noItemsSubtitle='No exceptions on this role.'
+  rows={exceptions}
+  listActions={[
+    {
+      label: 'Add Exception',
+      icon: Add,
+      onClick: () => {
+        showGrantCreate = true
+        grantCreateAllow = false
       }
-    ]}
-  />
-{/if}
+    }
+  ]}
+  selectedActions={() => []}
+  actions={row => [
+    {
+      label: 'Edit',
+      icon: Edit,
+      onClick: onGrantEdit(row),
+      disabled: !row.actions.update
+    },
+    {
+      label: 'Delete',
+      icon: TrashCan,
+      onClick: onGrantDelete(row),
+      disabled: !row.actions.delete
+    }
+  ]}
+/>
 
 {#if showGrantEdit && grantToEdit}
   {@const subjectType = subjectTypeLookup[grantToEdit.subjectType]}
-  <PanelFormDialog open title="Edit {grantToEdit.allow ? 'Grant' : 'Exception'}" centered submit={onEditSubmit} validate={onEditValidate} on:cancel={onCloseEdit} preload={grantToEditInput} let:data>
+  <PanelFormDialog open title="Edit {grantToEdit.allow ? 'Grant' : 'Exception'}" submit={onEditSubmit} validate={onEditValidate} on:cancel={onCloseEdit} on:saved={onSaveGrant} preload={grantToEditInput} let:data>
     <FieldCheckboxList
       path="controls"
       legendText="Controls"
@@ -149,4 +195,46 @@
       />
     {/each}
   </PanelFormDialog>
+{:else if showGrantCreate}
+  <PanelFormDialog open title="New {grantCreateAllow ? 'Grant' : 'Exception'}" submit={onCreateSubmit} validate={onCreateValidate} on:cancel={onCloseEdit} on:saved={onSaveGrant} let:data>
+    <FieldHidden path="allow" value={grantCreateAllow} />
+    <FieldSelect
+      path="subjectType"
+      labelText="Subject Type"
+      items={subjectTypes.map(st => ({ value: st.name }))}
+    />
+    {@const subjectType = data.subjectType ? subjectTypeLookup[data.subjectType] : undefined}
+    {#if subjectType}
+      <FieldCheckboxList
+        path="controls"
+        legendText="Controls"
+        items={subjectType.controls.map(c => ({ value: c.name }))}
+        orientation="horizontal"
+      />
+      {#each subjectType.tags as category (category.category)}
+        <FieldMultiselect
+          path="tags.{category.category}"
+          titleText={category.label}
+          helperText={category.description}
+          label="Restrict to {category.label}"
+          items={category.tags}
+        />
+      {/each}
+    {/if}
+  </PanelFormDialog>
+{:else if grantToDelete}
+  <Modal
+    open
+    modalHeading="Delete Grant"
+    primaryButtonText="Delete"
+    secondaryButtonText="Cancel"
+    size="sm"
+    on:click:button--primary={executeDelete}
+    on:click:button--secondary={closeDeleteConfirmation}
+    on:submit={executeDelete}
+    on:close={closeDeleteConfirmation}
+  >
+    <p>Are you sure you want to delete this grant?</p>
+    <p>This action cannot be undone.</p>
+  </Modal>
 {/if}

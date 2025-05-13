@@ -360,6 +360,15 @@ export default {
             "period": [
                 42
             ],
+            "prompt": [
+                55,
+                {
+                    "promptId": [
+                        37,
+                        "ID!"
+                    ]
+                }
+            ],
             "status": [
                 26
             ],
@@ -1100,6 +1109,9 @@ export default {
                 31
             ],
             "configurationData": [
+                38
+            ],
+            "configurationRelatedData": [
                 38
             ],
             "data": [

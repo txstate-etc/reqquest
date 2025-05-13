@@ -209,6 +209,7 @@ export class AccessRoleService extends AuthService<AccessRole> {
     const response = new AccessRoleValidatedResponse({ success: true, messages: [] })
     await database.deleteAccessRoleGrant(grantId)
     this.loaders.clear()
-    return await this.raw.findAccessRoleById(role.id)
+    response.accessRole = await this.raw.findAccessRoleById(role.id)
+    return response
   }
 }

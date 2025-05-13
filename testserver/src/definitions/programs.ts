@@ -4,6 +4,7 @@ export const adopt_a_dog_program: ProgramDefinition = {
   key: 'adopt_a_dog_program',
   title: 'Adopt a Dog',
   requirementKeys: [
+    'which_state_req',
     'have_big_yard_req',
     'have_adequate_personal_space_req',
     'must_exercise_your_dog_req'

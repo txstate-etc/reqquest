@@ -133,7 +133,8 @@ class API extends APIBase {
               id: true,
               key: true,
               reachable: true,
-              fetchedData: true
+              fetchedData: true,
+              configurationRelatedData: true
             }
           }
         }
@@ -278,6 +279,24 @@ class API extends APIBase {
     if (response.appRequests.length === 0) return undefined
     const appRequest = response.appRequests[0]
     return { ...appRequest, applications: appRequest.applications.map(a => ({ ...a, requirements: a.requirements.filter(r => r.reachable).map(r => ({ ...r, prompts: r.prompts.filter(p => p.reachable) })) })) }
+  }
+
+  async getPromptData (appRequestId: string, promptId: string) {
+    const response = await this.client.query({
+      __name: 'GetPromptData',
+      appRequests: {
+        __args: { filter: { ids: [appRequestId] } },
+        prompt: {
+          __args: { promptId },
+          data: true,
+          preloadData: true,
+          configurationRelatedData: true,
+          fetchedData: true
+        }
+      }
+    })
+    const appRequest = response.appRequests[0]
+    return appRequest.prompt
   }
 
   async getPeriodList () {
@@ -447,6 +466,22 @@ class API extends APIBase {
       }
     })
     return this.mutationForDialog(response.roleAddGrant)
+  }
+
+  async deleteGrant (grantId: string) {
+    const response = await this.client.mutation({
+      __name: 'DeleteGrant',
+      roleDeleteGrant: {
+        __args: { grantId },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.roleDeleteGrant)
   }
 }
 

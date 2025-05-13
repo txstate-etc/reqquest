@@ -4,7 +4,7 @@ import {
   AppRequestService, ApplicationRequirement, AuthService, Prompt, RequirementPrompt,
   promptRegistry, getRequirementPrompts, AppRequestServiceInternal, ValidatedAppRequestResponse,
   getPeriodPrompts, ConfigurationService, PeriodPrompt, requirementRegistry,
-  AppRequestStatusDB
+  AppRequestStatusDB, AppRequest
 } from '../internal.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
@@ -62,24 +62,25 @@ export class PromptService extends AuthService<Prompt> {
 
 export class RequirementPromptService extends AuthService<RequirementPrompt> {
   async findByInternalId (internalId: number) {
-    return await this.loaders.get(byInternalIdLoader).load(internalId)
+    const prompt = await this.loaders.get(byInternalIdLoader).load(internalId)
+    if (prompt) prompt.appRequestTags = await this.svc(AppRequestService).getTags(prompt.appRequestId)
+    return prompt
   }
 
   async findById (id: string) {
     return await this.findByInternalId(Number(id))
   }
 
-  async findByAppRequestId (appRequestId: string) {
-    return await this.loaders.get(byAppRequestInternalIdLoader).load(appRequestId)
+  async findByAppRequest (appRequest: AppRequest) {
+    const prompts = await this.loaders.get(byAppRequestInternalIdLoader).load(appRequest.id)
+    for (const prompt of prompts) prompt.appRequestTags = appRequest.tags
+    return prompts
   }
 
   async findByApplicationRequirement (requirement: ApplicationRequirement) {
-    return await this.loaders.get(byRequirementIdLoader).load(requirement.id)
-  }
-
-  async findByAppRequestAndKey (appRequestId: string, key: string) {
-    const prompts = await this.findByAppRequestId(appRequestId)
-    return prompts.filter(prompt => prompt.key === key)
+    const prompts = await this.loaders.get(byRequirementIdLoader).load(requirement.id)
+    for (const prompt of prompts) prompt.appRequestTags = requirement.appRequestTags
+    return prompts
   }
 
   async getPreloadData (requirementPrompt: RequirementPrompt) {
@@ -122,8 +123,8 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
   async update (prompt: RequirementPrompt, data: any, validateOnly = false) {
     if (!this.mayUpdate(prompt)) throw new Error('You are not allowed to update this prompt.')
     const response = new ValidatedAppRequestResponse({ success: true })
-    const config = await this.svc(ConfigurationService).getData(prompt.periodId, prompt.key)
-    for (const message of await prompt.definition.validate?.(data, config) ?? []) response.addMessage(message.message, message.arg, message.type)
+    const allConfigData = await this.svc(ConfigurationService).getRelatedData(prompt.periodId, prompt.key)
+    for (const message of await prompt.definition.validate?.(data, allConfigData[prompt.key] ?? {}, allConfigData) ?? []) response.addMessage(message.message, message.arg, message.type)
     if (response.hasErrors() || validateOnly) return response
     const [appRequest, appRequestData] = await Promise.all([
       this.svc(AppRequestService).findByInternalId(prompt.appRequestInternalId),

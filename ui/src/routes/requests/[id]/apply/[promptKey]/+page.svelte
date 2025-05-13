@@ -63,7 +63,7 @@
 
 {#if !hideForm}
   <Form bind:store submitText="Save & Continue" submit={onSubmit} validate={onValidate} preload={appRequestData[prompt.key]} on:saved={onSaved} let:data>
-    <svelte:component this={def.formComponent} {data} {appRequestData} fetched={prompt.fetchedData} />
+    <svelte:component this={def.formComponent} {data} {appRequestData} fetched={prompt.fetchedData} configData={prompt.configurationRelatedData} />
     <svelte:fragment slot="submit" let:submitting>
       <div class='form-submit'>
         <Button icon={submitting && !continueAfterSave ? ButtonLoadingIcon : Save} type="submit" disabled={submitting} on:click={() => { continueAfterSave = false }}>Save</Button>
