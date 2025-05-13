@@ -345,8 +345,9 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
         const prompts = promptLookup[requirement.id] ?? []
         let promptEvaluationBroken = false
         let allPromptsAnswered = true
-        requirement.status = requirement.definition.resolve(dataSoFar, requirementConfig, configLookup)
-        requirement.statusReason = typeof requirement.definition.statusReason === 'string' ? requirement.definition.statusReason : requirement.definition.statusReason?.(dataSoFar, requirement.status, requirementConfig, configLookup)
+        const { status, reason } = requirement.definition.resolve(dataSoFar, requirementConfig, configLookup)
+        requirement.status = status
+        requirement.statusReason = reason
         for (const prompt of prompts) {
           // if our requirement can be evaluated without any prompts, all its prompts are
           // unreachable, even if it's a promptsAnyOrder requirement
@@ -378,8 +379,9 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
             // based on partial data, so we will avoid calling resolve on it as we loop through prompts
             // See RequirementDefinition.promptsAnyOrder for more information
             if (!requirement.definition.anyOrderPromptKeySet.has(prompt.key)) {
-              requirement.status = requirement.definition.resolve(dataSoFar, requirementConfig, configLookup)
-              requirement.statusReason = typeof requirement.definition.statusReason === 'string' ? requirement.definition.statusReason : requirement.definition.statusReason?.(dataSoFar, requirement.status, requirementConfig, configLookup)
+              const { status, reason } = requirement.definition.resolve(dataSoFar, requirementConfig, configLookup)
+              requirement.status = status
+              requirement.statusReason = reason
             }
           } else if (!requirement.definition.anyOrderPromptKeySet.has(prompt.key)) promptEvaluationBroken = true
         }
@@ -387,8 +389,9 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
         // now that we have evaluated all prompts, if they are all answered, we can
         // evaluate our requirement with all the data (including data from anyOrder prompts)
         if (requirement.definition.anyOrderPromptKeySet.size > 0 && allPromptsAnswered) {
-          requirement.status = requirement.definition.resolve(dataSoFar, requirementConfig, configLookup)
-          requirement.statusReason = typeof requirement.definition.statusReason === 'string' ? requirement.definition.statusReason : requirement.definition.statusReason?.(dataSoFar, requirement.status, requirementConfig, configLookup)
+          const { status, reason } = requirement.definition.resolve(dataSoFar, requirementConfig, configLookup)
+          requirement.status = status
+          requirement.statusReason = reason
         }
 
         // now we have the requirement status (either cached or fresh), so we can update the

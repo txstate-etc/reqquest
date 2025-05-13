@@ -10,12 +10,11 @@ export const cat_tower_req: RequirementDefinition = {
   promptKeys: ['have_a_cat_tower_prompt'],
   resolve: (data, config) => {
     const catTowerData = data['have_a_cat_tower_prompt'] as CatTowerData
-    if (catTowerData?.haveCatTower == null) return RequirementStatus.PENDING
-    if (catTowerData.haveCatTower) return RequirementStatus.MET
-    if (catTowerData.willPurchaseCatTower == null) return RequirementStatus.PENDING
-    return catTowerData.willPurchaseCatTower ? RequirementStatus.MET : RequirementStatus.DISQUALIFYING
-  },
-  statusReason: 'Must own a cat tower or be willing to purchase one.'
+    if (catTowerData?.haveCatTower == null) return { status: RequirementStatus.PENDING }
+    if (catTowerData.haveCatTower) return { status: RequirementStatus.MET }
+    if (catTowerData.willPurchaseCatTower == null) return { status: RequirementStatus.PENDING }
+    return catTowerData.willPurchaseCatTower ? { status: RequirementStatus.MET } : { status: RequirementStatus.DISQUALIFYING, reason: 'Must own a cat tower or be willing to purchase one.' }
+  }
 }
 
 export interface CatTowerData {
@@ -50,11 +49,10 @@ export const not_allergic_to_tuna_req: RequirementDefinition = {
   promptKeys: ['not_allergic_to_tuna_prompt'],
   resolve: (data, config) => {
     const allergyData = data['not_allergic_to_tuna_prompt'] as TunaAllergyData
-    if (allergyData?.allergicToTuna == null) return RequirementStatus.PENDING
-    if (allergyData.allergicToTuna) return RequirementStatus.DISQUALIFYING
-    return RequirementStatus.MET
-  },
-  statusReason: 'Must not be allergic to tuna.'
+    if (allergyData?.allergicToTuna == null) return { status: RequirementStatus.PENDING }
+    if (allergyData.allergicToTuna) return { status: RequirementStatus.DISQUALIFYING, reason: 'Must not be allergic to tuna.' }
+    return { status: RequirementStatus.MET }
+  }
 }
 export interface TunaAllergyData {
   allergicToTuna: boolean
@@ -82,11 +80,10 @@ export const applicant_seems_nice_req: RequirementDefinition = {
   promptKeys: ['applicant_seems_nice_prompt'],
   resolve: (data, config) => {
     const niceData = data['applicant_seems_nice_prompt'] as NiceData
-    if (niceData?.seemsNice == null) return RequirementStatus.PENDING
-    if (niceData.seemsNice) return RequirementStatus.MET
-    return RequirementStatus.DISQUALIFYING
-  },
-  statusReason: 'Applicant looks kinda mean.'
+    if (niceData?.seemsNice == null) return { status: RequirementStatus.PENDING }
+    if (niceData.seemsNice) return { status: RequirementStatus.MET }
+    return { status: RequirementStatus.DISQUALIFYING, reason: 'Applicant looks kinda mean.' }
+  }
 }
 export interface NiceData {
   seemsNice: boolean

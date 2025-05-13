@@ -115,7 +115,11 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    * be part of the permanent record. Any pertinent data retrieved from external systems
    * should be stored by a prompt in the appRequest data.
    *
-   * This value will be cached until the appRequest is updated in some way.
+   * Optionally provide the reason why the resolve function is returning whatever status
+   * it is returning. This will be shown to the applicant. It's unlikely a reason is needed
+   * for the MET status, but it will be shown if provided.
+   *
+   * These values will be cached until the appRequest is updated in some way.
    *
    * You'll receive the appRequestData, the configuration data, and a lookup object that
    * contains the configuration data for all requirements and prompts in the system, in
@@ -128,27 +132,7 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    * have to carefully design and order your requirements to ensure that the data you need
    * is available to you.
    */
-  resolve: (appRequestData: AppRequestData, config: ConfigurationDataType, configLookup: Record<string, any>) => RequirementStatus
-
-  /**
-   * Optionally provide the reason why the resolve function is returning whatever status it is
-   * returning. This will be shown to the applicant. Provide a function to make it dynamic. It's
-   * unlikely a reason is needed for the MET status, but it will be shown if provided.
-   *
-   * This function should not be async, as the justification for a rejection should
-   * be part of the permanent record. Any pertinent data retrieved from external systems
-   * should be stored by a prompt in the appRequest data.
-   *
-   * This value may be cached until the appRequest is updated in some way.
-   *
-   * NOTE: The appRequest data passed to this function will only include data from prompts
-   * that are required by this requirement and requirements that appear before this one
-   * in execution order. This is to prevent situations where answering a prompt late in the
-   * application process could change the determination made earlier in the process. You'll
-   * have to carefully design and order your requirements to ensure that the data you need
-   * is available to you.
-   */
-  statusReason?: string | ((appRequestData: AppRequestData, status: RequirementStatus, config: ConfigurationDataType, configLookup: Record<string, any>) => string | undefined)
+  resolve: (appRequestData: AppRequestData, config: ConfigurationDataType, configLookup: Record<string, any>) => { status: RequirementStatus, reason?: string }
 
   /**
    * Return validation messages to the user to help them provide correct input while

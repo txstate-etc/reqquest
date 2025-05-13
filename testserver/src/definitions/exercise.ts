@@ -18,11 +18,10 @@ export const must_exercise_your_dog_req: RequirementDefinition<ExerciseConfig> =
   promptKeys: ['must_exercise_your_dog_prompt'],
   resolve: (data, config) => {
     const exerciseData = data.must_exercise_your_dog_prompt as ExerciseData
-    if (exerciseData?.exerciseHours == null) return RequirementStatus.PENDING
-    if (exerciseData.exerciseHours >= config.minExerciseHours) return RequirementStatus.MET
-    return RequirementStatus.WARNING
+    if (exerciseData?.exerciseHours == null) return { status: RequirementStatus.PENDING }
+    if (exerciseData.exerciseHours >= config.minExerciseHours) return { status: RequirementStatus.MET }
+    return { status: RequirementStatus.WARNING, reason: `You must exercise your dog ${config.minExerciseHours} hours a week.` }
   },
-  statusReason: config => `You must exercise your dog ${config.minExerciseHours} hours a week.`,
   validateConfiguration: config => {
     const messages: MutationMessage[] = []
     if (config.minExerciseHours == null) {
