@@ -165,8 +165,10 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
 
 export interface RequirementDefinitionProcessed extends RequirementDefinition {
   allPromptKeys: string[]
+  visiblePromptKeys: string[]
   promptKeySet: Set<string>
   anyOrderPromptKeySet: Set<string>
+  noDisplayPromptKeySet: Set<string>
 }
 
 class RequirementRegistry {
@@ -177,11 +179,14 @@ class RequirementRegistry {
 
   register (definition: RequirementDefinition) {
     const allPromptKeys = [...(definition.promptKeys ?? []), ...(definition.promptKeysAnyOrder ?? []), ...(definition.promptKeysNoDisplay ?? [])]
+    const visiblePromptKeys = [...(definition.promptKeys ?? []), ...(definition.promptKeysAnyOrder ?? [])]
     const definitionProcessed: RequirementDefinitionProcessed = {
       ...definition,
       allPromptKeys,
+      visiblePromptKeys,
       promptKeySet: new Set(allPromptKeys),
-      anyOrderPromptKeySet: new Set(definition.promptKeysAnyOrder ?? [])
+      anyOrderPromptKeySet: new Set(definition.promptKeysAnyOrder ?? []),
+      noDisplayPromptKeySet: new Set(definition.promptKeysNoDisplay ?? [])
     }
     this.requirements[definition.key] = definitionProcessed
     this.requirementsList.push(definitionProcessed)

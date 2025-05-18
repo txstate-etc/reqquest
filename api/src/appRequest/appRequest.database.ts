@@ -234,10 +234,6 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
     // if the appRequest is closed, we don't need to evaluate
     if ([AppRequestStatusDB.CLOSED, AppRequestStatusDB.CANCELLED, AppRequestStatusDB.WITHDRAWN].includes(appRequest.dbStatus)) return
 
-    // let's figure out if we're in applicant mode or reviewer mode, we don't
-    // need to evaluate reviewer requirements in applicant mode
-    const inReview = appRequest.dbStatus === AppRequestStatusDB.SUBMITTED
-
     const data = (await getAppRequestData([appRequest.internalId], db))[0].data
 
     // all of the objects we return here are considered mutable - we will be updating
@@ -286,13 +282,6 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
     for (const application of applications) {
       const requirements = reqLookup[application.id] ?? []
 
-      // We're going to build up a data object as we progress through requirements;
-      // each requirement's resolve function will be called with only the data that
-      // was gathered up to that point. This way, we enforce that later prompts and
-      // their answers cannot alter the outcome of earlier requirements. This keeps
-      // the system sane and predictable and avoids cycles.
-      const dataSoFar: AppRequestData = { savedAtVersion: data.savedAtVersion }
-
       // in the reviewer's view, we will often want related requirements to be grouped together,
       // so we will probably have a mixed overall order like:
       // requirement: user must upload driver license (PREQUAL)
@@ -305,22 +294,30 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
       const qualificationRequirements = requirements.filter(req => req.definition.type === 'QUALIFICATION')
       const preapprovalRequirements = requirements.filter(req => req.definition.type === 'PREAPPROVAL')
       const approvalRequirements = requirements.filter(req => req.definition.type === 'APPROVAL')
+      const acceptanceRequirements = requirements.filter(req => req.definition.type === 'ACCEPTANCE')
 
-      // if we are in applicant mode, we only need to evaluate prequal and qualification requirements
-      const sortedRequirements = inReview
-        ? [...prequalRequirements, ...qualificationRequirements, ...preapprovalRequirements, ...approvalRequirements]
-        : [...prequalRequirements, ...qualificationRequirements]
+      // if we are in applicant phase, we only need to evaluate prequal and qualification requirements
+      // or perhaps acceptance requirements if we are in acceptance phase
+      const sortedRequirements = appRequest.dbStatus === AppRequestStatusDB.STARTED
+        ? [...prequalRequirements, ...qualificationRequirements]
+        : appRequest.dbStatus === AppRequestStatusDB.ACCEPTANCE
+          ? acceptanceRequirements
+          : [...prequalRequirements, ...qualificationRequirements, ...preapprovalRequirements, ...approvalRequirements]
 
       // initialize some tracking variables that we will update during this process
-      application.status = appRequest.dbStatus === AppRequestStatusDB.STARTED ? ApplicationStatus.PREQUAL : ApplicationStatus.PREAPPROVAL
+      application.status = appRequest.dbStatus === AppRequestStatusDB.STARTED
+        ? ApplicationStatus.PREQUAL
+        : appRequest.dbStatus === AppRequestStatusDB.SUBMITTED
+          ? ApplicationStatus.PREAPPROVAL
+          : ApplicationStatus.ACCEPTANCE
       let hasPending = false
       let hasIneligible = false
       let reqEvaluationBroken = false
       const promptsSeenInApplication = new Set<string>()
       const unreachablePrompts = new Set<string>()
-
+      let lastType: RequirementType | undefined
       for (const requirement of sortedRequirements) {
-        if (requirement.definition.allPromptKeys.some(key => unreachablePrompts.has(key))) reqEvaluationBroken = true
+        if (requirement.definition.visiblePromptKeys.some(key => unreachablePrompts.has(key))) reqEvaluationBroken = true
 
         // we use reqEvaluationBroken instead of a loop break because we need to set
         // the reachable status on all requirements/prompts, so we have to continue looping and
@@ -345,12 +342,8 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
         const prompts = promptLookup[requirement.id] ?? []
         let promptEvaluationBroken = false
         let allPromptsAnswered = true
-        const { status, reason } = requirement.definition.resolve(dataSoFar, requirementConfig, configLookup)
-        requirement.status = status
-        requirement.statusReason = reason
+        const dataRequired = {} as AppRequestData
         for (const prompt of prompts) {
-          // if our requirement can be evaluated without any prompts, all its prompts are
-          // unreachable, even if it's a promptsAnyOrder requirement
           if (requirement.status !== RequirementStatus.PENDING) {
             promptEvaluationBroken = true
             allPromptsAnswered = false
@@ -359,7 +352,7 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
             prompt.reachable = false
             prompt.answered = false
             continue
-          } else prompt.reachable = true
+          } else prompt.reachable = !requirement.definition.noDisplayPromptKeySet.has(prompt.key)
           prompt.askedInEarlierApplication = promptEvaluations[prompt.key] != null
           if (promptEvaluations[prompt.key] == null) {
             const promptConfig = configLookup[prompt.key] ?? {}
@@ -374,12 +367,14 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
           // with unanswered prompts in case they can make early determinations (as long as
           // they don't depend on partial answers to unanswered prompts)
           if (promptEvaluations[prompt.key]) {
-            dataSoFar[prompt.key] = data[prompt.key]
-            // If we have a requirement that never disqualifies, we don't want it to evaluate
-            // based on partial data, so we will avoid calling resolve on it as we loop through prompts
+            dataRequired[prompt.key] = data[prompt.key]
+            // If we have anyOrder prompts, we can't evaluate the requirement with partial data
+            // because we could end up making one of them moot after it's already out and on display
+            // to the user - we don't want to have it disappear suddenly.
+            // So we will avoid calling resolve on anyOrder prompts as we loop through
             // See RequirementDefinition.promptsAnyOrder for more information
             if (!requirement.definition.anyOrderPromptKeySet.has(prompt.key)) {
-              const { status, reason } = requirement.definition.resolve(dataSoFar, requirementConfig, configLookup)
+              const { status, reason } = requirement.definition.resolve(dataRequired, requirementConfig, configLookup)
               requirement.status = status
               requirement.statusReason = reason
             }
@@ -389,7 +384,7 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
         // now that we have evaluated all prompts, if they are all answered, we can
         // evaluate our requirement with all the data (including data from anyOrder prompts)
         if (requirement.definition.anyOrderPromptKeySet.size > 0 && allPromptsAnswered) {
-          const { status, reason } = requirement.definition.resolve(dataSoFar, requirementConfig, configLookup)
+          const { status, reason } = requirement.definition.resolve(dataRequired, requirementConfig, configLookup)
           requirement.status = status
           requirement.statusReason = reason
         }
@@ -413,13 +408,10 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
         } else { // PENDING
           // this is that code I spoke of a few lines above that upgrades the application status
           // if the first requirement of a certain type is pending
-          if (application.status === ApplicationStatus.PREQUAL && requirement.definition.type === RequirementType.QUALIFICATION) {
-            application.status = ApplicationStatus.QUALIFICATION
-          } else if (application.status === ApplicationStatus.QUALIFICATION && requirement.definition.type === RequirementType.PREAPPROVAL) {
-            application.status = ApplicationStatus.PREAPPROVAL
-          } else if (application.status === ApplicationStatus.PREAPPROVAL && requirement.definition.type === RequirementType.APPROVAL) {
-            application.status = ApplicationStatus.APPROVAL
+          if (requirement.definition.type !== lastType) {
+            application.status = metStatusLookup[requirement.definition.type]
           }
+          lastType = requirement.definition.type
           hasPending = true
           // allow the user to continue to the next requirement if this one is neverDisqualifying and
           // either all of its prompts are reachable, or later requirements do not depend on any of the
@@ -431,7 +423,7 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
           // filling things in rather than making big changes
           if (requirement.definition.neverDisqualifying) {
             for (const prompt of prompts) {
-              if (!prompt.reachable) unreachablePrompts.add(prompt.key)
+              if (!prompt.reachable && !requirement.definition.noDisplayPromptKeySet.has(prompt.key)) unreachablePrompts.add(prompt.key)
             }
           } else {
             reqEvaluationBroken = true
@@ -451,16 +443,16 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
 
     // determine appRequest status based on the application statuses
     // no need to check for closed status, we don't evaluate closed appRequests
-    if (appRequest.dbStatus === AppRequestStatusDB.STARTED) appRequest.status = AppRequestStatus.STARTED
+    if (applications.some(a => a.status === ApplicationStatus.PREQUAL || a.status === ApplicationStatus.QUALIFICATION)) appRequest.status = AppRequestStatus.STARTED
+    else if (applications.some(a => a.status === ApplicationStatus.READY_TO_SUBMIT)) appRequest.status = AppRequestStatus.READY_TO_SUBMIT
     else if (applications.some(a => a.status === ApplicationStatus.PREAPPROVAL)) appRequest.status = AppRequestStatus.PREAPPROVAL
     else if (applications.some(a => a.status === ApplicationStatus.APPROVAL)) appRequest.status = AppRequestStatus.APPROVAL
     else if (applications.some(a => a.status === ApplicationStatus.APPROVED)) appRequest.status = AppRequestStatus.APPROVED
+    else if (applications.some(a => a.status === ApplicationStatus.ACCEPTANCE)) appRequest.status = AppRequestStatus.ACCEPTANCE
+    else if (applications.some(a => a.status === ApplicationStatus.ACCEPTED)) appRequest.status = AppRequestStatus.ACCEPTED
+    else if (applications.some(a => a.status === ApplicationStatus.NOT_ACCEPTED)) appRequest.status = AppRequestStatus.NOT_ACCEPTED
+    else if (applications.some(a => a.status === ApplicationStatus.NOT_APPROVED)) appRequest.status = AppRequestStatus.NOT_APPROVED
     else appRequest.status = AppRequestStatus.DISQUALIFIED
-
-    if (appRequest.dbStatus === AppRequestStatusDB.STARTED && applications
-      .some(a => a.status === ApplicationStatus.READY_TO_SUBMIT) && applications
-      .every(a => [ApplicationStatus.READY_TO_SUBMIT, ApplicationStatus.FAILED_PREQUAL, ApplicationStatus.FAILED_QUALIFICATION].includes(a.status))
-    ) appRequest.status = AppRequestStatus.READY_TO_SUBMIT
 
     // save the results of the evaluation to the database
     await updateAppRequestComputed(appRequest, db)
