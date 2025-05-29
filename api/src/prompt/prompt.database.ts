@@ -1,6 +1,6 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { ApplicationRequirement, AppRequestStatusDB, PeriodConfigurationRow, PeriodPrompt, PeriodPromptFilters, promptRegistry, RequirementPrompt, RequirementPromptFilter } from '../internal.js'
+import { ApplicationRequirement, AppRequestStatusDB, PeriodConfigurationRow, PeriodPrompt, PeriodPromptFilters, promptRegistry, PromptVisibility, RequirementPrompt, RequirementPromptFilter } from '../internal.js'
 
 export interface PromptRow {
   id: number
@@ -15,9 +15,7 @@ export interface PromptRow {
   promptKey: string
   answered: 0 | 1
   invalidated: 0 | 1
-  reachable: 0 | 1
-  askedInEarlierRequirement: 0 | 1
-  askedInEarlierApplication: 0 | 1
+  visibility: PromptVisibility
 }
 
 function processFilters (filter: RequirementPromptFilter) {
@@ -59,6 +57,10 @@ export async function getRequirementPrompts (filter: RequirementPromptFilter, td
   return rows.map(row => new RequirementPrompt(row))
 }
 
+export async function setRequirementPromptValid (prompt: RequirementPrompt, tdb: Queryable = db) {
+  await tdb.update('UPDATE requirement_prompts SET invalidated = 0 WHERE id = ?', [prompt.internalId])
+}
+
 export async function syncPromptRecords (requirement: ApplicationRequirement, db: Queryable) {
   const existingPrompts = await db.getall<PromptRow>('SELECT * FROM requirement_prompts WHERE requirementId = ?', [requirement.internalId])
   const existingPromptKeys = new Set(existingPrompts.map(row => row.promptKey))
@@ -85,7 +87,7 @@ export async function syncPromptRecords (requirement: ApplicationRequirement, db
 
 export async function updatePromptComputed (prompts: RequirementPrompt[], db: Queryable) {
   for (const prompt of prompts) {
-    await db.update('UPDATE requirement_prompts SET reachable = ?, answered = ?, askedInEarlierRequirement = ?, askedInEarlierApplication = ? WHERE id = ?', [prompt.reachable, prompt.answered, prompt.askedInEarlierRequirement, prompt.askedInEarlierApplication, prompt.internalId])
+    await db.update('UPDATE requirement_prompts SET visibility = ?, answered = ? WHERE id = ?', [prompt.visibility, prompt.answered, prompt.internalId])
   }
 }
 

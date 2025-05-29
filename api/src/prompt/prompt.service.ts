@@ -4,7 +4,9 @@ import {
   AppRequestService, ApplicationRequirement, AuthService, Prompt, RequirementPrompt,
   promptRegistry, getRequirementPrompts, AppRequestServiceInternal, ValidatedAppRequestResponse,
   getPeriodPrompts, ConfigurationService, PeriodPrompt, requirementRegistry,
-  AppRequestStatusDB, AppRequest
+  AppRequestStatusDB, AppRequest,
+  setRequirementPromptValid,
+  updateAppRequestData
 } from '../internal.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
@@ -132,7 +134,8 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     ])
     if (!appRequest) throw new Error('AppRequest not found')
     appRequestData[prompt.key] = prompt.definition.preProcessData ? await prompt.definition.preProcessData(appRequest, data, this.ctx) : data
-    await this.svc(AppRequestServiceInternal).updateData(appRequest, appRequestData)
+    await updateAppRequestData(appRequest.internalId, appRequestData)
+    await setRequirementPromptValid(prompt)
     this.loaders.clear()
     const updatedAppRequest = (await this.svc(AppRequestService).findByInternalId(appRequest.internalId))!
     response.appRequest = updatedAppRequest

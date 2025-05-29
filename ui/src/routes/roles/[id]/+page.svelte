@@ -115,7 +115,6 @@
       }
     }
   ]}
-  selectedActions={() => []}
   columns={[
     { id: 'subjectType', label: 'Grants', get: 'subjectType' },
     { id: 'controls', label: 'Controls', render: grant => grant.controls.join(', ') },
@@ -159,7 +158,6 @@
       }
     }
   ]}
-  selectedActions={() => []}
   actions={row => [
     {
       label: 'Edit',

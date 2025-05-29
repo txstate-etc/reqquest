@@ -1,6 +1,6 @@
 import { PUBLIC_API_BASE, PUBLIC_AUTH_REDIRECT } from '$env/static/public'
 import { APIBase } from '@txstate-mws/sveltekit-utils'
-import { createClient, enumAppRequestIndexDestination, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AppRequestFilter } from './typed-client/index.js'
+import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AppRequestFilter } from './typed-client/index.js'
 
 class API extends APIBase {
   client = createClient({
@@ -57,7 +57,7 @@ class API extends APIBase {
               id: true,
               key: true,
               answered: true,
-              reachable: true
+              visibility: true
             }
           }
         }
@@ -67,8 +67,8 @@ class API extends APIBase {
     for (const applications of response.appRequests[0]?.applications ?? []) {
       for (const requirement of applications.requirements) {
         for (const prompt of requirement.prompts) {
-          if ((!prompt.answered || currentKeyFound) && prompt.reachable) return prompt
-          if (prompt.key === currentPromptKey && prompt.reachable) currentKeyFound = true
+          if ((!prompt.answered || currentKeyFound) && prompt.visibility === enumPromptVisibility.AVAILABLE) return prompt
+          if (prompt.key === currentPromptKey && prompt.visibility === enumPromptVisibility.AVAILABLE) currentKeyFound = true
         }
       }
     }
@@ -98,7 +98,7 @@ class API extends APIBase {
               title: true,
               navTitle: true,
               answered: true,
-              reachable: true
+              visibility: true
             }
           }
         }
@@ -106,12 +106,12 @@ class API extends APIBase {
     })
     if (response.appRequests.length === 0) return { prequalPrompts: [], appRequest: undefined }
     const appRequest = response.appRequests[0]
-    const prequalPrompts = appRequest.applications.flatMap(application => application.requirements.filter(r => r.type === enumRequirementType.PREQUAL).flatMap(r => r.prompts.filter(p => p.reachable)))
+    const prequalPrompts = appRequest.applications.flatMap(application => application.requirements.filter(r => r.type === enumRequirementType.PREQUAL).flatMap(r => r.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE)))
     const applications = appRequest.applications.map(application => ({
       ...application,
       requirements: application.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION).map(requirement => ({
         ...requirement,
-        prompts: requirement.prompts.filter(p => p.reachable)
+        prompts: requirement.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE)
       }))
     }))
     return { prequalPrompts, appRequest: { ...appRequest, applications } }
@@ -132,7 +132,7 @@ class API extends APIBase {
             prompts: {
               id: true,
               key: true,
-              reachable: true,
+              visibility: true,
               fetchedData: true,
               configurationRelatedData: true
             }
@@ -145,7 +145,7 @@ class API extends APIBase {
     for (const application of appRequest.applications) {
       for (const requirement of application.requirements.filter(r => r.type === enumRequirementType.PREQUAL || r.type === enumRequirementType.QUALIFICATION)) {
         for (const prompt of requirement.prompts) {
-          if (prompt.key === promptKey && prompt.reachable) return { appRequestData: appRequest.data, prompt }
+          if (prompt.key === promptKey && prompt.visibility === enumPromptVisibility.AVAILABLE) return { appRequestData: appRequest.data, prompt }
         }
       }
     }
@@ -270,7 +270,7 @@ class API extends APIBase {
               title: true,
               navTitle: true,
               answered: true,
-              reachable: true
+              visibility: true
             }
           }
         }
@@ -278,7 +278,7 @@ class API extends APIBase {
     })
     if (response.appRequests.length === 0) return undefined
     const appRequest = response.appRequests[0]
-    return { ...appRequest, applications: appRequest.applications.map(a => ({ ...a, requirements: a.requirements.filter(r => r.reachable).map(r => ({ ...r, prompts: r.prompts.filter(p => p.reachable) })) })) }
+    return { ...appRequest, applications: appRequest.applications.map(a => ({ ...a, requirements: a.requirements.filter(r => r.reachable).map(r => ({ ...r, prompts: r.prompts.filter(p => p.visibility !== enumPromptVisibility.UNREACHABLE) })) })) }
   }
 
   async getPromptData (appRequestId: string, promptId: string) {

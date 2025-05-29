@@ -2,55 +2,66 @@
   import { base } from '$app/paths'
   import { page } from '$app/stores'
   import { enumApplicationStatus } from '$lib/typed-client'
+  import { ProgressNav, type RootStepItem, type StepItem } from '@txstate-mws/carbon-svelte'
   import type { LayoutData } from './$types'
 
   export let data: LayoutData
   $: ({ appRequestForNavigation, prequalPrompts } = data)
+
+  function getNavItems (..._: any[]) {
+    const ret: RootStepItem[] = []
+    for (const prompt of prequalPrompts) {
+      ret.push({
+        id: `prompt${prompt.id}`,
+        label: prompt.navTitle,
+        href: `${base}/requests/${appRequestForNavigation.id}/apply/${prompt.key}`,
+        type: $page.params.promptKey === prompt.key
+          ? 'current'
+          : prompt.answered ? 'complete' : 'available',
+        substeps: []
+      })
+    }
+    if (appRequestForNavigation.applications.length && !appRequestForNavigation.applications.some(a => a.status === enumApplicationStatus.PREQUAL)) {
+      for (const application of appRequestForNavigation.applications) {
+        const substeps: StepItem[] = []
+        for (const requirement of application.requirements) {
+          for (const prompt of requirement.prompts) {
+            substeps.push({
+              id: `prompt${prompt.id}`,
+              label: prompt.navTitle,
+              href: `${base}/requests/${appRequestForNavigation.id}/apply/${prompt.key}`,
+              type: $page.params.promptKey === prompt.key
+                ? 'current'
+                : prompt.answered ? 'complete' : 'available'
+            })
+          }
+        }
+        ret.push({
+          id: `application${application.id}`,
+          label: application.navTitle,
+          href: substeps[0].href,
+          type: substeps.some(s => s.type === 'current')
+            ? 'current'
+            : substeps.every(s => s.type === 'complete')
+              ? 'complete'
+              : 'available',
+          substeps
+        })
+      }
+    }
+    ret.push({
+      id: 'review',
+      label: 'Review Submission',
+      href: `${base}/requests/${appRequestForNavigation.id}/apply/review`,
+      type: $page.route.id === '/requests/[id]/apply/review' ? 'current' : 'available',
+      substeps: []
+    })
+    return ret
+  }
+  $: navItems = getNavItems(appRequestForNavigation, prequalPrompts, $page)
+
 </script>
 
-<div class="leftcol">
-{#each prequalPrompts as prompt (prompt.id)}
-  {#if $page.params.promptKey === prompt.key}--&gt;{/if}
-  <a href="{base}/requests/{appRequestForNavigation.id}/apply/{prompt.key}">{prompt.navTitle}</a>
-{/each}
-{#if appRequestForNavigation.applications.length && !appRequestForNavigation.applications.some(a => a.status === enumApplicationStatus.PREQUAL)}
-  <ul>
-    {#each appRequestForNavigation.applications as application (application.id)}
-      <li style:font-weight="bold">{application.navTitle}</li>
-      {@const qualRequirements = application.requirements}
-      {#if qualRequirements.length}
-        <ul>
-          {#each qualRequirements as requirement (requirement.id)}
-            {#each requirement.prompts as prompt (prompt.id)}
-              <li>
-                {#if $page.params.promptKey === prompt.key}--&gt;{/if}
-                <a href="{base}/requests/{appRequestForNavigation.id}/apply/{prompt.key}">{prompt.navTitle}</a>
-              </li>
-            {/each}
-          {/each}
-        </ul>
-      {/if}
-    {/each}
-    <li>
-      {#if $page.route.id === '/requests/[id]/apply/review'}--&gt;{/if}
-      <a href="{base}/requests/{appRequestForNavigation.id}/apply/review">Review Submission</a>
-    </li>
-  </ul>
-{/if}
-</div>
-<div class="rightcol">
+<ProgressNav steps={navItems}>
   <slot />
-</div>
-
-<style>
-  .leftcol {
-    width: 20%;
-    float: left;
-    padding: 1rem;
-  }
-  .rightcol {
-    width: 80%;
-    float: right;
-    padding: 1rem;
-  }
-</style>
+</ProgressNav>

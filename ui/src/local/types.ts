@@ -24,3 +24,8 @@ export interface ExerciseData {
 export interface ExerciseConfig {
   minExerciseHours: number
 }
+
+export interface StateData {
+  state: string
+  stateName: string
+}

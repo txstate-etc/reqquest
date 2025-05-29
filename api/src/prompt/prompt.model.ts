@@ -1,5 +1,24 @@
-import { Field, ID, InputType, ObjectType } from 'type-graphql'
+import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
 import { AppRequestStatusDB, PromptDefinition, promptRegistry, PromptRow } from '../internal.js'
+
+export enum PromptVisibility {
+  UNREACHABLE = 'UNREACHABLE',
+  AUTOMATION = 'AUTOMATION',
+  APPLICATION_DUPE = 'APPLICATION_DUPE',
+  REQUEST_DUPE = 'REQUEST_DUPE',
+  AVAILABLE = 'AVAILABLE'
+}
+registerEnumType(PromptVisibility, {
+  name: 'PromptVisibility',
+  description: 'The visibility of a prompt on a request. This is used to determine whether the prompt should be shown to the user in the UI.',
+  valuesConfig: {
+    UNREACHABLE: { description: 'This RequirementPrompt cannot be reached, there is a requirement or prompt in front of it that could or already has disqualified the application.' },
+    AUTOMATION: { description: 'The prompt is intended to be filled in by an automation, but is otherwise available to be answered. It may or may not be visible in various UIs but it is not editable in any of them.' },
+    APPLICATION_DUPE: { description: 'This RequirementPrompt is a duplicate of a RequirementPrompt that already appears earlier in the same application (it could also be duplicated yet again in an earlier application). It should not be shown to applicants. The reviewer UI may or may not want to show these repeated dependencies.' },
+    REQUEST_DUPE: { description: 'This RequirementPrompt is a duplicate of a RequirementPrompt that already appears earlier in the same app request, but it is the first appearance in its application. It should not be shown to applicants. The reviewer UI may or may not want to show these repeated dependencies.' },
+    AVAILABLE: { description: 'This RequirementPrompt is available to be answered. It is the first appearance of this prompt in the App Request. It should be visible in both the applicant and reviewer UI.' }
+  }
+})
 
 @ObjectType({ description: 'This is the generic definition of a prompt. It is not attached to an appRequest. We will use this type for the administration interface to allow administrators to grant access to prompts and edit their configuration.' })
 export class Prompt {
@@ -41,11 +60,7 @@ export class RequirementPrompt extends Prompt {
     this.userInternalId = row.userId
     this.answered = !!row.answered
     this.invalidated = !!row.invalidated
-    this.reachable = !!row.reachable
-    this.askedInEarlierApplication = !!row.askedInEarlierApplication
-    this.askedInEarlierRequirement = !!row.askedInEarlierRequirement
-    this.askedEarlier = this.askedInEarlierApplication || this.askedInEarlierRequirement
-    this.hiddenInNavigation = !this.reachable || this.askedEarlier
+    this.visibility = row.visibility
   }
 
   @Field(type => ID)
@@ -57,20 +72,8 @@ export class RequirementPrompt extends Prompt {
   @Field({ description: 'When true, this prompt has been invalidated by the answer to another prompt. The `answered` field should remain false until the user specifically answers this prompt again, regardless of the output of the definition\'s `complete` method.' })
   invalidated: boolean
 
-  @Field({ description: 'When true, means that the prompt has not been made moot by an earlier requirement failing. It may still need to be hidden from navigation based on askedInEarlierRequirement or askedInEarlierApplication.' })
-  reachable: boolean
-
-  @Field({ description: 'When true, means that this prompt should be hidden from navigation due to being asked in an earlier requirement in the same application. If a screen were reviewing the details of a single requirement, this prompt\'s information might re-appear in that context.' })
-  askedInEarlierRequirement: boolean
-
-  @Field({ description: 'When true, means that this prompt should be hidden from navigation due to being asked in an earlier application. If a screen were reviewing the details of a single application, this prompt\'s information might re-appear in that context.' })
-  askedInEarlierApplication: boolean
-
-  @Field({ description: 'For convenience, this is true if either askedInEarlierRequirement or askedInEarlierApplication is true.' })
-  askedEarlier: boolean
-
-  @Field({ description: 'For convenience, this is true if the prompt is not reachable or has been asked earlier.' })
-  hiddenInNavigation: boolean
+  @Field(type => PromptVisibility, { description: 'The visibility of the prompt on the request. This is used to determine whether the prompt should be shown to the user in the UI.' })
+  visibility: PromptVisibility
 
   internalId: number
   appRequestInternalId: number

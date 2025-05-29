@@ -425,6 +425,10 @@ export interface ProgramGroup {
     __typename: 'ProgramGroup'
 }
 
+
+/** The visibility of a prompt on a request. This is used to determine whether the prompt should be shown to the user in the UI. */
+export type PromptVisibility = 'APPLICATION_DUPE' | 'AUTOMATION' | 'AVAILABLE' | 'REQUEST_DUPE' | 'UNREACHABLE'
+
 export interface Query {
     /**
      * 
@@ -452,12 +456,6 @@ export interface Query {
 export interface RequirementPrompt {
     /** Whether the prompt has been answered on this request. */
     answered: Scalars['Boolean']
-    /** For convenience, this is true if either askedInEarlierRequirement or askedInEarlierApplication is true. */
-    askedEarlier: Scalars['Boolean']
-    /** When true, means that this prompt should be hidden from navigation due to being asked in an earlier application. If a screen were reviewing the details of a single application, this prompt's information might re-appear in that context. */
-    askedInEarlierApplication: Scalars['Boolean']
-    /** When true, means that this prompt should be hidden from navigation due to being asked in an earlier requirement in the same application. If a screen were reviewing the details of a single requirement, this prompt's information might re-appear in that context. */
-    askedInEarlierRequirement: Scalars['Boolean']
     /** The configuration data for this prompt in the app request's period. */
     configurationData: Scalars['JsonData']
     /** All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it. */
@@ -468,8 +466,6 @@ export interface RequirementPrompt {
     description: (Scalars['String'] | null)
     /** Any data that the API needs to provide to the UI to display the prompt properly. For instance, if the prompt text is in the database and able to be modified by admins, the UI can't hardcode the prompt text and needs it from the API. Could also be used to pull reference information from an external system, e.g. a student's course schedule, for display in the prompt dialog. */
     fetchedData: (Scalars['JsonData'] | null)
-    /** For convenience, this is true if the prompt is not reachable or has been asked earlier. */
-    hiddenInNavigation: Scalars['Boolean']
     id: Scalars['ID']
     /** When true, this prompt has been invalidated by the answer to another prompt. The `answered` field should remain false until the user specifically answers this prompt again, regardless of the output of the definition's `complete` method. */
     invalidated: Scalars['Boolean']
@@ -479,10 +475,10 @@ export interface RequirementPrompt {
     navTitle: Scalars['String']
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
     preloadData: (Scalars['JsonData'] | null)
-    /** When true, means that the prompt has not been made moot by an earlier requirement failing. It may still need to be hidden from navigation based on askedInEarlierRequirement or askedInEarlierApplication. */
-    reachable: Scalars['Boolean']
     /** A human readable title for the prompt. This is what will be shown to users. */
     title: Scalars['String']
+    /** The visibility of the prompt on the request. This is used to determine whether the prompt should be shown to the user in the UI. */
+    visibility: PromptVisibility
     __typename: 'RequirementPrompt'
 }
 
@@ -1056,12 +1052,6 @@ export interface QueryGenqlSelection{
 export interface RequirementPromptGenqlSelection{
     /** Whether the prompt has been answered on this request. */
     answered?: boolean | number
-    /** For convenience, this is true if either askedInEarlierRequirement or askedInEarlierApplication is true. */
-    askedEarlier?: boolean | number
-    /** When true, means that this prompt should be hidden from navigation due to being asked in an earlier application. If a screen were reviewing the details of a single application, this prompt's information might re-appear in that context. */
-    askedInEarlierApplication?: boolean | number
-    /** When true, means that this prompt should be hidden from navigation due to being asked in an earlier requirement in the same application. If a screen were reviewing the details of a single requirement, this prompt's information might re-appear in that context. */
-    askedInEarlierRequirement?: boolean | number
     /** The configuration data for this prompt in the app request's period. */
     configurationData?: boolean | number
     /** All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it. */
@@ -1076,8 +1066,6 @@ export interface RequirementPromptGenqlSelection{
     fetchedData?: { __args: {
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
-    /** For convenience, this is true if the prompt is not reachable or has been asked earlier. */
-    hiddenInNavigation?: boolean | number
     id?: boolean | number
     /** When true, this prompt has been invalidated by the answer to another prompt. The `answered` field should remain false until the user specifically answers this prompt again, regardless of the output of the definition's `complete` method. */
     invalidated?: boolean | number
@@ -1089,10 +1077,10 @@ export interface RequirementPromptGenqlSelection{
     preloadData?: { __args: {
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
-    /** When true, means that the prompt has not been made moot by an earlier requirement failing. It may still need to be hidden from navigation based on askedInEarlierRequirement or askedInEarlierApplication. */
-    reachable?: boolean | number
     /** A human readable title for the prompt. This is what will be shown to users. */
     title?: boolean | number
+    /** The visibility of the prompt on the request. This is used to determine whether the prompt should be shown to the user in the UI. */
+    visibility?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -1494,6 +1482,14 @@ export const enumMutationMessageType = {
    error: 'error' as const,
    success: 'success' as const,
    warning: 'warning' as const
+}
+
+export const enumPromptVisibility = {
+   APPLICATION_DUPE: 'APPLICATION_DUPE' as const,
+   AUTOMATION: 'AUTOMATION' as const,
+   AVAILABLE: 'AVAILABLE' as const,
+   REQUEST_DUPE: 'REQUEST_DUPE' as const,
+   UNREACHABLE: 'UNREACHABLE' as const
 }
 
 export const enumRequirementStatus = {

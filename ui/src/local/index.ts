@@ -11,6 +11,8 @@ import SeemsNicePromptDisplay from './SeemsNicePromptDisplay.svelte'
 import ExerciseConfigure from './ExerciseConfigure.svelte'
 import ExercisePrompt from './ExercisePrompt.svelte'
 import ExercisePromptDisplay from './ExercisePromptDisplay.svelte'
+import StatePrompt from './StatePrompt.svelte'
+import StatePromptDisplay from './StatePromptDisplay.svelte'
 
 export const uiRegistry = new UIRegistry({
   appName: 'Adopt a Critter',
@@ -24,7 +26,8 @@ export const uiRegistry = new UIRegistry({
     { key: 'have_a_cat_tower_req' },
     { key: 'not_allergic_to_tuna_req' },
     { key: 'applicant_seems_nice_req' },
-    { key: 'must_exercise_your_dog_req', configureComponent: ExerciseConfigure }
+    { key: 'must_exercise_your_dog_req', configureComponent: ExerciseConfigure },
+    { key: 'which_state_req' }
   ],
   prompts: [{
     key: 'have_yard_prompt',
@@ -46,5 +49,9 @@ export const uiRegistry = new UIRegistry({
     key: 'must_exercise_your_dog_prompt',
     formComponent: ExercisePrompt,
     displayComponent: ExercisePromptDisplay
+  }, {
+    key: 'which_state_prompt',
+    formComponent: StatePrompt,
+    displayComponent: StatePromptDisplay
   }]
 })

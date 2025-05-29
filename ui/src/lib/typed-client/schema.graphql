@@ -829,6 +829,36 @@ input ProgramGroupFilter {
   keys: [ID!]
 }
 
+"""
+The visibility of a prompt on a request. This is used to determine whether the prompt should be shown to the user in the UI.
+"""
+enum PromptVisibility {
+  """
+  The prompt is a duplicate of a prompt that has already been answered in the same application. It will not be shown to the user, but may still be answered by an administrator or in some other way.
+  """
+  APPLICATION_DUPE
+
+  """
+  The prompt is intended to be filled in by an automation. It may or may not be visible in various UIs but it is not editable in any of them.
+  """
+  AUTOMATION
+
+  """
+  The prompt is available to be answered by the user. It will be shown in the UI.
+  """
+  AVAILABLE
+
+  """
+  The prompt is a duplicate of a prompt that has already been answered in the same request. It will not be shown to the user, but may still be answered by an administrator or in some other way.
+  """
+  REQUEST_DUPE
+
+  """
+  This RequirementPrompt cannot be reached, there is a requirement or prompt in front of it that could or already has disqualified the application.
+  """
+  UNREACHABLE
+}
+
 type Query {
   "\n    This is the global access object. Each field represents a global permission\n    like the ability to view the role management interface.\n  "
   access: Access!
@@ -857,21 +887,6 @@ A RequestPrompt is an instance of a Prompt on a particular request. Once the use
 type RequirementPrompt {
   """Whether the prompt has been answered on this request."""
   answered: Boolean!
-
-  """
-  For convenience, this is true if either askedInEarlierRequirement or askedInEarlierApplication is true.
-  """
-  askedEarlier: Boolean!
-
-  """
-  When true, means that this prompt should be hidden from navigation due to being asked in an earlier application. If a screen were reviewing the details of a single application, this prompt's information might re-appear in that context.
-  """
-  askedInEarlierApplication: Boolean!
-
-  """
-  When true, means that this prompt should be hidden from navigation due to being asked in an earlier requirement in the same application. If a screen were reviewing the details of a single requirement, this prompt's information might re-appear in that context.
-  """
-  askedInEarlierRequirement: Boolean!
 
   """The configuration data for this prompt in the app request's period."""
   configurationData: JsonData!
@@ -905,11 +920,6 @@ type RequirementPrompt {
     """
     schemaVersion: String
   ): JsonData
-
-  """
-  For convenience, this is true if the prompt is not reachable or has been asked earlier.
-  """
-  hiddenInNavigation: Boolean!
   id: ID!
 
   """
@@ -938,14 +948,14 @@ type RequirementPrompt {
   ): JsonData
 
   """
-  When true, means that the prompt has not been made moot by an earlier requirement failing. It may still need to be hidden from navigation based on askedInEarlierRequirement or askedInEarlierApplication.
-  """
-  reachable: Boolean!
-
-  """
   A human readable title for the prompt. This is what will be shown to users.
   """
   title: String!
+
+  """
+  The visibility of the prompt on the request. This is used to determine whether the prompt should be shown to the user in the UI.
+  """
+  visibility: PromptVisibility!
 }
 
 enum RequirementStatus {

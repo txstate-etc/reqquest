@@ -1,7 +1,7 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
 import { clone, groupby, omit } from 'txstate-utils'
-import { ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestFilter, AppRequestStatus, programRegistry, promptRegistry, RequirementPrompt, RequirementStatus, RequirementType, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
+import { ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestFilter, AppRequestStatus, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, RequirementStatus, RequirementType, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
 
 /**
  * This is the status of the whole appRequest as stored in the database. Each application
@@ -317,6 +317,7 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
       const unreachablePrompts = new Set<string>()
       let lastType: RequirementType | undefined
       for (const requirement of sortedRequirements) {
+        requirement.status = RequirementStatus.PENDING
         if (requirement.definition.visiblePromptKeys.some(key => unreachablePrompts.has(key))) reqEvaluationBroken = true
 
         // we use reqEvaluationBroken instead of a loop break because we need to set
@@ -325,7 +326,7 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
         if (reqEvaluationBroken) {
           requirement.reachable = false
           for (const prompt of promptLookup[requirement.id] ?? []) {
-            prompt.reachable = false
+            prompt.visibility = PromptVisibility.UNREACHABLE
             prompt.answered = false
           }
           continue
@@ -349,18 +350,18 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
             allPromptsAnswered = false
           }
           if (promptEvaluationBroken) {
-            prompt.reachable = false
+            prompt.visibility = PromptVisibility.UNREACHABLE
             prompt.answered = false
             continue
-          } else prompt.reachable = !requirement.definition.noDisplayPromptKeySet.has(prompt.key)
-          prompt.askedInEarlierApplication = promptEvaluations[prompt.key] != null
+          } else prompt.visibility = requirement.definition.noDisplayPromptKeySet.has(prompt.key) ? PromptVisibility.AUTOMATION : PromptVisibility.AVAILABLE
+          if (promptEvaluations[prompt.key] != null) prompt.visibility = PromptVisibility.REQUEST_DUPE
           if (promptEvaluations[prompt.key] == null) {
             const promptConfig = configLookup[prompt.key] ?? {}
             promptEvaluations[prompt.key] = prompt.invalidated ? false : prompt.definition.answered?.(data[prompt.key] ?? {}, promptConfig) ?? true
           }
           prompt.answered = promptEvaluations[prompt.key]
           if (!prompt.answered) allPromptsAnswered = false
-          prompt.askedInEarlierRequirement = promptsSeenInApplication.has(prompt.key)
+          if (promptsSeenInApplication.has(prompt.key)) prompt.visibility = PromptVisibility.APPLICATION_DUPE
           promptsSeenInApplication.add(prompt.key)
 
           // only include data from completed prompts, but go ahead and evaluate requirements
@@ -423,7 +424,7 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
           // filling things in rather than making big changes
           if (requirement.definition.neverDisqualifying) {
             for (const prompt of prompts) {
-              if (!prompt.reachable && !requirement.definition.noDisplayPromptKeySet.has(prompt.key)) unreachablePrompts.add(prompt.key)
+              if (prompt.visibility === PromptVisibility.UNREACHABLE) unreachablePrompts.add(prompt.key)
             }
           } else {
             reqEvaluationBroken = true

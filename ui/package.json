@@ -11,7 +11,7 @@
 		"check:watch": "svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"dependencies": {
-		"@txstate-mws/carbon-svelte": "^1.2.3",
+		"@txstate-mws/carbon-svelte": "^1.4.9",
 		"@txstate-mws/fastify-shared": "^1.1.0",
 		"@txstate-mws/svelte-components": "^1.5.13",
 		"@txstate-mws/svelte-store": "^1.0.8",

@@ -55,6 +55,7 @@
   let hideForm = false
   beforeNavigate(() => {
     hideForm = true
+    store?.reset()
   })
   afterNavigate(() => {
     hideForm = false
