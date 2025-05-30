@@ -6,6 +6,7 @@
   * understand when an app request has been returned to me
     * understand the reason for the return
 * create a new app request
+  * select a period to create the app request in, if more than one is open
 * continue an existing app request
 * cancel an app request before it has been submitted
 * withdraw an app request after it has been submitted
