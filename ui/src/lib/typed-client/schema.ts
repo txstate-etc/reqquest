@@ -75,7 +75,7 @@ export interface AccessRoleGrant {
     controls: Scalars['String'][]
     id: Scalars['ID']
     /** The type of subject this grant applies to, e.g. "movie". */
-    subjectType: Scalars['String']
+    subjectType: AccessSubjectType
     tags: AccessGrantTag[]
     __typename: 'AccessRoleGrant'
 }
@@ -97,8 +97,12 @@ export interface AccessRoleValidatedResponse {
 export interface AccessSubjectType {
     /** A list of all possible controls for this subjectType. Use this to populate the control dropdown when creating a grant. */
     controls: AccessControl[]
+    /** A longer explanation of the subject type for display in the role management interface. */
+    description: (Scalars['String'] | null)
     name: Scalars['String']
     tags: AccessTagCategory[]
+    /** A slightly longer version of the subject type's name, for display in the role management interface. */
+    title: Scalars['String']
     __typename: 'AccessSubjectType'
 }
 
@@ -592,7 +596,7 @@ export interface AccessRoleGrantGenqlSelection{
     controls?: boolean | number
     id?: boolean | number
     /** The type of subject this grant applies to, e.g. "movie". */
-    subjectType?: boolean | number
+    subjectType?: AccessSubjectTypeGenqlSelection
     tags?: AccessGrantTagGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
@@ -637,8 +641,12 @@ export interface AccessRoleValidatedResponseGenqlSelection{
 export interface AccessSubjectTypeGenqlSelection{
     /** A list of all possible controls for this subjectType. Use this to populate the control dropdown when creating a grant. */
     controls?: AccessControlGenqlSelection
+    /** A longer explanation of the subject type for display in the role management interface. */
+    description?: boolean | number
     name?: boolean | number
     tags?: AccessTagCategoryGenqlSelection
+    /** A slightly longer version of the subject type's name, for display in the role management interface. */
+    title?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }

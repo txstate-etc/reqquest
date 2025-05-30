@@ -1,17 +1,13 @@
+import { Context, UnimplementedError, ValidatedResponse } from '@txstate-mws/graphql-server'
+import { sortby } from 'txstate-utils'
 import { Arg, Ctx, FieldResolver, ID, Mutation, Query, Resolver, Root } from 'type-graphql'
 import {
   Access, AccessUser, AccessUserFilter, AccessRole, AccessRoleFilter, AccessRoleValidatedResponse,
   RoleActions, AccessUserService, AccessRoleService, AccessRoleGrantCreate, AccessRoleGrant,
   AccessUserIdentifier, AccessRoleInput, AccessControl, AccessSubjectType, subjectTypes,
-  AccessRoleGrantUpdate, appConfig,
-  AccessTagCategory,
-  AccessTag,
-  AccessGrantTag,
-  promptRegistry,
-  AccessRoleGrantActions,
-  AccessRoleServiceInternal
+  AccessRoleGrantUpdate, appConfig, AccessTagCategory, AccessTag, AccessGrantTag,
+  promptRegistry, AccessRoleGrantActions, AccessRoleServiceInternal
 } from '../internal.js'
-import { Context, UnimplementedError, ValidatedResponse } from '@txstate-mws/graphql-server'
 
 @Resolver(of => Access)
 export class AccessResolver {
@@ -211,7 +207,7 @@ export class AccessUserResolver {
 export class AccessSubjectTypeResolver {
   @Query(returns => [AccessSubjectType], { description: 'This is where you get information about the authorization system. Each grant will be associated with one of these subjectTypes and optionally a list of subject instances. The grant will also have a set of controls, and each control will have an optional set of tags. The tags are used to limit the scope of the grant.' })
   async subjectTypes (@Ctx() ctx: Context) {
-    return Object.keys(subjectTypes).map(name => new AccessSubjectType(name))
+    return sortby(Object.keys(subjectTypes).map(name => new AccessSubjectType(name)), 'title')
   }
 
   @FieldResolver(returns => [AccessControl], { description: 'A list of all possible controls for this subjectType. Use this to populate the control dropdown when creating a grant.' })

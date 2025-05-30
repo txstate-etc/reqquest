@@ -387,7 +387,11 @@ class API extends APIBase {
         groups: true,
         grants: {
           id: true,
-          subjectType: true,
+          subjectType: {
+            name: true,
+            title: true,
+            description: true
+          },
           allow: true,
           controls: true,
           tags: {
@@ -417,6 +421,8 @@ class API extends APIBase {
       __name: 'GetAuthorizationInfo',
       subjectTypes: {
         name: true,
+        title: true,
+        description: true,
         tags: {
           category: true,
           label: true,

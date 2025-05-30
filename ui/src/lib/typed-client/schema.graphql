@@ -67,7 +67,7 @@ type AccessRoleGrant {
   id: ID!
 
   """The type of subject this grant applies to, e.g. "movie"."""
-  subjectType: String!
+  subjectType: AccessSubjectType!
   tags: [AccessGrantTag!]!
 }
 
@@ -135,8 +135,18 @@ type AccessSubjectType {
   A list of all possible controls for this subjectType. Use this to populate the control dropdown when creating a grant.
   """
   controls: [AccessControl!]!
+
+  """
+  A longer explanation of the subject type for display in the role management interface.
+  """
+  description: String
   name: String!
   tags: [AccessTagCategory!]!
+
+  """
+  A slightly longer version of the subject type's name, for display in the role management interface.
+  """
+  title: String!
 }
 
 type AccessTag {
@@ -834,22 +844,22 @@ The visibility of a prompt on a request. This is used to determine whether the p
 """
 enum PromptVisibility {
   """
-  The prompt is a duplicate of a prompt that has already been answered in the same application. It will not be shown to the user, but may still be answered by an administrator or in some other way.
+  This RequirementPrompt is a duplicate of a RequirementPrompt that already appears earlier in the same application (it could also be duplicated yet again in an earlier application). It should not be shown to applicants. The reviewer UI may or may not want to show these repeated dependencies.
   """
   APPLICATION_DUPE
 
   """
-  The prompt is intended to be filled in by an automation. It may or may not be visible in various UIs but it is not editable in any of them.
+  The prompt is intended to be filled in by an automation, but is otherwise available to be answered. It may or may not be visible in various UIs but it is not editable in any of them.
   """
   AUTOMATION
 
   """
-  The prompt is available to be answered by the user. It will be shown in the UI.
+  This RequirementPrompt is available to be answered. It is the first appearance of this prompt in the App Request. It should be visible in both the applicant and reviewer UI.
   """
   AVAILABLE
 
   """
-  The prompt is a duplicate of a prompt that has already been answered in the same request. It will not be shown to the user, but may still be answered by an administrator or in some other way.
+  This RequirementPrompt is a duplicate of a RequirementPrompt that already appears earlier in the same app request, but it is the first appearance in its application. It should not be shown to applicants. The reviewer UI may or may not want to show these repeated dependencies.
   """
   REQUEST_DUPE
 

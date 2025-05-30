@@ -4,10 +4,10 @@
   import Add from 'carbon-icons-svelte/lib/Add.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
+  import { pick } from 'txstate-utils'
   import { invalidate } from '$app/navigation'
   import { api, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessTagInput } from '$lib'
   import type { PageData } from './$types'
-  import { pick } from 'txstate-utils'
 
   export let data: PageData
   $: ({ role, subjectTypes, subjectTypeLookup } = data)
@@ -19,7 +19,8 @@
   type AccessRoleGrantUpdateForm = Omit<AccessRoleGrantUpdate, 'tags'> & { tags: Record<string, string[]> }
   function transformFromAPI (data: PageData['role']['grants'][number]): AccessRoleGrantUpdateForm {
     return {
-      ...pick(data, 'subjectType', 'controls', 'allow'),
+      ...pick(data, 'controls', 'allow'),
+      subjectType: data.subjectType.name,
       tags: data.tags.reduce((acc: Record<string, string[]>, curr) => ({ ...acc, [curr.category]: [...(acc[curr.category] ?? []), curr.tag] }), {})
     }
   }
@@ -116,9 +117,9 @@
     }
   ]}
   columns={[
-    { id: 'subjectType', label: 'Grants', get: 'subjectType' },
+    { id: 'subjectType', label: 'Grants', render: grant => grant.subjectType.title },
     { id: 'controls', label: 'Controls', render: grant => grant.controls.join(', ') },
-    { id: 'tags', label: 'Tags', render: grant => grant.tags.map(t => t.label).join(', ') }
+    { id: 'tags', label: 'Restrictions', render: grant => grant.tags.map(t => t.label).join(', ') }
   ]}
   rows={grants}
   actions={row => [
@@ -140,9 +141,9 @@
 <ColumnList
   title="Exceptions for Role: {role.name}"
   columns={[
-    { id: 'subjectType', label: 'Exceptions', get: 'subjectType' },
-    { id: 'controls', label: 'Controls', render: role => role.controls.join(', ') },
-    { id: 'tags', label: 'Tags', render: role => role.tags.map(t => t.label).join(', ') }
+    { id: 'subjectType', label: 'Grants', render: grant => grant.subjectType.title },
+    { id: 'controls', label: 'Controls', render: grant => grant.controls.join(', ') },
+    { id: 'tags', label: 'Restrictions', render: grant => grant.tags.map(t => t.label).join(', ') }
   ]}
   noItemsKind='info'
   noItemsTitle=''
@@ -175,7 +176,7 @@
 />
 
 {#if showGrantEdit && grantToEdit}
-  {@const subjectType = subjectTypeLookup[grantToEdit.subjectType]}
+  {@const subjectType = subjectTypeLookup[grantToEdit.subjectType.name]}
   <PanelFormDialog open title="Edit {grantToEdit.allow ? 'Grant' : 'Exception'}" submit={onEditSubmit} validate={onEditValidate} on:cancel={onCloseEdit} on:saved={onSaveGrant} preload={grantToEditInput} let:data>
     <FieldCheckboxList
       path="controls"
@@ -199,7 +200,7 @@
     <FieldSelect
       path="subjectType"
       labelText="Subject Type"
-      items={subjectTypes.map(st => ({ value: st.name }))}
+      items={subjectTypes.map(st => ({ value: st.name, label: st.title }))}
     />
     {@const subjectType = data.subjectType ? subjectTypeLookup[data.subjectType] : undefined}
     {#if subjectType}

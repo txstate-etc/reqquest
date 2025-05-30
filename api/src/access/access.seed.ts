@@ -23,8 +23,13 @@ export const rqAccessSeed: AccessRoleGrantDefinition = {
     groups: [process.env.RQ_APPLICANT_GROUP ?? 'applicants'],
     grants: [
       {
-        subjectType: 'AppRequest',
-        controls: ['create_own', 'cancel', 'cancel_review', 'reopen_own', 'submit_own', 'return_own'],
+        subjectType: 'AppRequestOwn',
+        controls: ['create', 'cancel', 'uncancel'],
+        allow: true
+      },
+      {
+        subjectType: 'AppRequestOwnReview',
+        controls: ['withdraw', 'unwithdraw'],
         allow: true
       }
     ]
@@ -35,7 +40,12 @@ export const rqAccessSeed: AccessRoleGrantDefinition = {
     grants: [
       {
         subjectType: 'AppRequest',
-        controls: ['review', 'return', 'reopen', 'close'],
+        controls: ['review', 'return', 'reopen', 'close', 'offer'],
+        allow: true
+      },
+      {
+        subjectType: 'AppRequestPreReview',
+        controls: ['create', 'uncancel'],
         allow: true
       },
       {
@@ -59,7 +69,6 @@ export const rqAccessSeed: AccessRoleGrantDefinition = {
     description: 'This role is for system administrators who configure the system and manage roles. They do not automatically have applicant and reviewer access.',
     groups: [process.env.RQ_ADMIN_GROUP ?? 'administrators'],
     grants: [
-      { subjectType: 'AppRequest', controls: ['review'], allow: true },
       { subjectType: 'Period', controls: ['view', 'view_configuration', 'create', 'update', 'delete'], allow: true },
       { subjectType: 'Program', controls: ['view', 'configure', 'disable'], allow: true },
       { subjectType: 'Prompt', controls: ['view', 'configure'], allow: true },

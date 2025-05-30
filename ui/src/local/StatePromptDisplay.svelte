@@ -4,4 +4,4 @@
   export let data: Partial<StateData>
 </script>
 
-{data.state}
+{data.stateName ?? data.state}

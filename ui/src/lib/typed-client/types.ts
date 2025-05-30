@@ -126,7 +126,7 @@ export default {
                 37
             ],
             "subjectType": [
-                60
+                11
             ],
             "tags": [
                 2
@@ -215,11 +215,17 @@ export default {
             "controls": [
                 1
             ],
+            "description": [
+                60
+            ],
             "name": [
                 60
             ],
             "tags": [
                 13
+            ],
+            "title": [
+                60
             ],
             "__typename": [
                 60

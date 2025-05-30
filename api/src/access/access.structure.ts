@@ -74,6 +74,15 @@ export interface ControlDefinition {
  * and tags that are relevant to the subjectType.
  */
 export interface SubjectTypeDefinition {
+  /**
+   * This title will be shown in the role management UI and may be easier to read than
+   * the name we store in the database.
+   */
+  title: string
+  /**
+   * Describe the set of controls that this subjectType has, to help administrators decide
+   * which subjectType to choose when creating a grant.
+   */
   description?: string
   tags?: TagCategoryDefinition[]
   controls: Record<string, ControlDefinition>
@@ -115,39 +124,62 @@ export function initAccess () {
     ]
   })
   subjectTypes.Application = {
+    title: 'Reviewer - View Applications',
     tags: [programTags(), ...appRequestTags],
     controls: {
       view: { description: 'View application as a reviewer in an AppRequest.' }
     }
   }
   subjectTypes.ApplicationRequirement = {
+    title: 'Reviewer - Requirement Statuses',
     tags: [requirementTags(), ...appRequestTags],
     controls: {
       view: { description: 'View requirement status in an AppRequest. You still need AppRequest.review to see the reviewer interface at all.' }
     }
   }
+  subjectTypes.AppRequestOwn = {
+    title: 'Applicant - Applicant Phase',
+    description: 'These controls govern actions people take on their own appRequest during the applicant phase, like creating and cancelling. No restrictions are available because we need to complete the applicant phase in order to collect enough data to generate tags.',
+    controls: {
+      create_own: { description: 'Create an appRequest for oneself.' },
+      cancel: { description: 'Cancel one\'s own appRequest while in the applicant phase.' },
+      uncancel: { description: 'Re-open one\'s own appRequest that was cancelled in the applicant phase.' }
+    }
+  }
+  subjectTypes.AppRequestOwnReview = {
+    title: 'Applicant - Reviewer Phase',
+    description: 'These controls govern actions people take on their own appRequest during the reviewer phase, like withdrawing and un-withdrawing.',
+    controls: {
+      withdraw: { description: 'Withdraw one\'s own appRequest while in the reviewer phase.' },
+      unwithdraw: { description: 'Re-open any withdrawn appRequest (one that was cancelled while in the reviewer phase).' }
+    },
+    tags: appRequestTags
+  }
   subjectTypes.AppRequest = {
+    title: 'Reviewer - Review Phase',
     description: 'These controls govern the overall lifecycle of an App Request, like creating, submitting, and closing. See PromptAnswer, ApplicationRequirement, and Application for some additional controls governing the reviewer interface of an App Request.',
     tags: appRequestTags,
     controls: {
-      close: { description: 'Close an appRequest despite it not being completed.' },
-      cancel: { description: 'Cancel one\'s own appRequest while in the applicant phase.' },
-      cancel_review: { description: 'Cancel one\'s own appRequest while in the reviewer phase.' },
-      reopen: { description: 'Reopen anyone\'s appRequest that has been closed or cancelled. Must be in a valid period.' },
-      reopen_own: { description: 'Reopen one\'s own appRequest that has been cancelled. Must be in a valid period.' },
-      submit: { description: 'Submit anyone\'s appRequest when all requirements pass.' },
-      submit_own: { description: 'Submit one\'s own appRequest when all requirements pass.' },
+      submit: { description: 'Submit an appRequest when all requirements pass, even if you are not the applicant.' },
+      close: { description: 'Close an appRequest despite it not being completed. It will not be marked as disqualified or ineligible, just closed. Viewing it would show it in exactly the state it was in when it was closed. The system will automatically close requests on the archive date, so you may not need to give this to anyone.' },
+      reopen: { description: 'Reopen an appRequest that has been closed. Must be in a valid period.' },
+      reopen_any: { description: 'Reopen any appRequest that has been closed, even in an old period.' },
       return: { description: 'Return an appRequest in the reviewer phase to the applicant phase.' },
-      return_own: { description: 'Return one\'s own appRequest to the applicant phase. Only available under certain conditions.' },
-      create: { description: 'Create an appRequest for anyone.' },
-      create_own: { description: 'Create an appRequest for oneself.' },
-      review: { description: 'See appRequests in the reviewer interface.' },
-      review_own: { description: 'Must have review_own to see your own appRequests in the reviewer UI and/or update ANY reviewer-only prompt data, in addition to having appropriate permission on the Prompt subjectType.' },
-      offer: { description: 'Close out a review and make an offer to the applicant. This only applies when there is at least one ACCEPTANCE requirement in the period.' },
-      offer_own: { description: 'Close out the review on one\'s own appRequest and make an offer to oneself. This only applies when there is at least one ACCEPTANCE requirement in the period.' }
+      review: { description: 'See an appRequest in the reviewer list interface.' },
+      review_own: { description: 'Typically, reviewers are prevented from acting as reviewers on their own requests. This control removes that block, but the reviewer is still limited to the other controls they have been granted. For example, a reviewer who only has access to a single prompt still only has access to that single prompt, but may also update that prompt in their own request(s). Note that permissions from other roles will also be affected by the removal of this block, so use it carefully.' },
+      offer: { description: 'Finish out a review and make an offer to the applicant. This only applies when there is at least one ACCEPTANCE requirement in the system/period.' }
     }
   }
+  subjectTypes.AppRequestPreReview = {
+    title: 'Reviewer - Applicant Phase',
+    description: 'These are the App Request controls that relate to reviewers/admins taking action during the applicant phase instead of the review phase. No restrictions are available because we need to complete the applicant phase in order to collect enough data to generate tags.',
+    controls: {
+      create: { description: 'Create an appRequest on someone else\'s behalf.' },
+      uncancel: { description: 'Re-open any appRequest that was cancelled in the applicant phase.' }
+    }
+  },
   subjectTypes.Period = {
+    title: 'Admin - Manage Periods',
     controls: {
       view: { description: 'View the period management interface and see all the periods.' },
       view_configuration: { description: 'View the configuration management interface for a period.' },
@@ -157,6 +189,7 @@ export function initAccess () {
     }
   }
   subjectTypes.Program = {
+    title: 'Admin - Configure Programs',
     tags: [programTags()],
     controls: {
       view: { description: 'See the current configuration for this program.' },
@@ -165,6 +198,7 @@ export function initAccess () {
     }
   }
   subjectTypes.Prompt = {
+    title: 'Admin - Configure Prompts',
     tags: [promptTags()],
     controls: {
       view: { description: 'View the configuration management interface and see prompt configuration data.' },
@@ -172,6 +206,7 @@ export function initAccess () {
     }
   }
   subjectTypes.PromptAnswer = {
+    title: 'Reviewer - View and Update Prompt Data',
     tags: [promptTags(), ...appRequestTags],
     controls: {
       view: { description: 'View prompt data as a reviewer in an AppRequest.' },
@@ -180,6 +215,7 @@ export function initAccess () {
     }
   }
   subjectTypes.Requirement = {
+    title: 'Admin - Configure Requirements',
     tags: [requirementTags(), programTags('Limit to requirements that are used within certain programs.')],
     controls: {
       view: { description: 'View requirement configuration data.' },
@@ -188,6 +224,7 @@ export function initAccess () {
     }
   }
   subjectTypes.Role = {
+    title: 'Admin - Manage Roles',
     controls: {
       view: { description: 'View the role management interface and see all the roles.' },
       create: { description: 'Create new roles.' },

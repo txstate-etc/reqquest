@@ -116,11 +116,19 @@ export class AccessSubjectType {
   constructor (name: string) {
     this.name = name
     const def = subjectTypes[name]
+    this.title = def.title ?? name
+    this.description = def.description
     this.tags = def.tags?.map(category => new AccessTagCategory(category)) ?? []
   }
 
   @Field()
   name: string
+
+  @Field({ description: 'A slightly longer version of the subject type\'s name, for display in the role management interface.' })
+  title: string
+
+  @Field({ nullable: true, description: 'A longer explanation of the subject type for display in the role management interface.' })
+  description?: string
 
   @Field(type => [AccessTagCategory])
   tags: AccessTagCategory[]
@@ -182,7 +190,7 @@ export class AccessControl {
 @ObjectType()
 export class AccessRoleGrant {
   constructor (row: AccessRoleGrantRow) {
-    this.subjectType = row.subjectType
+    this.subjectType = new AccessSubjectType(row.subjectType)
     this.allow = !!row.allow
     this.roleId = String(row.roleId)
     this.internalId = row.id
@@ -195,8 +203,8 @@ export class AccessRoleGrant {
   @Field(type => ID)
   id: string
 
-  @Field({ description: 'The type of subject this grant applies to, e.g. "movie".' })
-  subjectType: string
+  @Field(type => AccessSubjectType, { description: 'The type of subject this grant applies to, e.g. "movie".' })
+  subjectType: AccessSubjectType
 
   @Field({ description: `
     If true, this grant allows the action specified by the selected controls. If false, it removes
