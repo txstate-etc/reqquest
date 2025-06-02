@@ -6,7 +6,7 @@ import {
   RoleActions, AccessUserService, AccessRoleService, AccessRoleGrantCreate, AccessRoleGrant,
   AccessUserIdentifier, AccessRoleInput, AccessControl, AccessSubjectType, subjectTypes,
   AccessRoleGrantUpdate, appConfig, AccessTagCategory, AccessTag, AccessGrantTag,
-  promptRegistry, AccessRoleGrantActions, AccessRoleServiceInternal
+  promptRegistry, AccessRoleGrantActions, AccessRoleServiceInternal, AppRequestService
 } from '../internal.js'
 
 @Resolver(of => Access)
@@ -17,6 +17,11 @@ export class AccessResolver {
   ` })
   async access (@Ctx() ctx: Context) {
     return {}
+  }
+
+  @FieldResolver(returns => Boolean, { description: 'Current user may create a new app request, either for themselves or on behalf of another user.' })
+  async createAppRequest (@Ctx() ctx: Context) {
+    return ctx.svc(AppRequestService).mayCreate()
   }
 
   @FieldResolver(returns => Boolean, { description: 'Current user is permitted to view the role management UI.' })
@@ -31,7 +36,7 @@ export class AccessResolver {
 
   @FieldResolver(returns => Boolean, { description: 'Current user is permitted to view the period management UI.' })
   async viewPeriodManagement (@Ctx() ctx: Context) {
-    throw new UnimplementedError()
+    return ctx.svc(AccessRoleService).mayViewPeriodManagement()
   }
 
   @FieldResolver(returns => Boolean, { description: 'Current user is permitted to create new periods in the period management UI.' })

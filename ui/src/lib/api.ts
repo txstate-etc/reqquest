@@ -307,7 +307,7 @@ class API extends APIBase {
         name: true,
         openDate: true,
         closeDate: true,
-        archiveAt: true
+        archiveDate: true
       }
     })
     return response.periods
@@ -323,7 +323,7 @@ class API extends APIBase {
         code: true,
         openDate: true,
         closeDate: true,
-        archiveAt: true,
+        archiveDate: true,
         programs: {
           key: true,
           title: true,

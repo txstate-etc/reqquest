@@ -11,6 +11,7 @@ export class Requirement {
     this.navTitle = definition.navTitle ?? definition.title
     this.description = definition.description
     this.type = definition.type
+    this.authorizationKeys = { requirement: requirementRegistry.authorizationKeys[definition.key] ?? [] }
   }
 
   @Field({ description: 'A human and machine readable unique and stable identifier that we can use to add javascript logic to the evaluation of whether a requirement is satisfied. For example: "gi_ch33_must_be_post911"' })
@@ -27,6 +28,8 @@ export class Requirement {
 
   @Field(type => RequirementType, { description: 'The type of requirement. This determines when the requirement is evaluated and who can see the requirement.' })
   type: RequirementType
+
+  authorizationKeys: Record<string, string[]>
 }
 
 export enum RequirementType {

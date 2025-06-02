@@ -13,6 +13,8 @@ export type Scalars = {
 }
 
 export interface Access {
+    /** Current user may create a new app request, either for themselves or on behalf of another user. */
+    createAppRequest: Scalars['Boolean']
     /** Current user is permitted to create new periods in the period management UI. */
     createPeriod: Scalars['Boolean']
     /** Current user is permitted to create new roles in the role management UI. */
@@ -337,9 +339,9 @@ export type MutationMessageType = 'error' | 'success' | 'warning'
 export interface Period {
     actions: PeriodActions
     /** This is useful for filtering out periods that are no longer useful. For instance, a window might close applications after 2 weeks but the reviewers could be working. */
-    archiveAt: (Scalars['DateTime'] | null)
-    /** Date that this period closes for applications. */
-    closeDate: Scalars['DateTime']
+    archiveDate: (Scalars['DateTime'] | null)
+    /** Date that this period closes for applications. Some periods do not set a close date. */
+    closeDate: (Scalars['DateTime'] | null)
     /** Unique identifier for this period that references an external system. Ideally human readable. */
     code: (Scalars['String'] | null)
     configurations: Configuration[]
@@ -528,6 +530,8 @@ export interface ValidatedResponse {
 }
 
 export interface AccessGenqlSelection{
+    /** Current user may create a new app request, either for themselves or on behalf of another user. */
+    createAppRequest?: boolean | number
     /** Current user is permitted to create new periods in the period management UI. */
     createPeriod?: boolean | number
     /** Current user is permitted to create new roles in the role management UI. */
@@ -906,8 +910,8 @@ export interface MutationMessageGenqlSelection{
 export interface PeriodGenqlSelection{
     actions?: PeriodActionsGenqlSelection
     /** This is useful for filtering out periods that are no longer useful. For instance, a window might close applications after 2 weeks but the reviewers could be working. */
-    archiveAt?: boolean | number
-    /** Date that this period closes for applications. */
+    archiveDate?: boolean | number
+    /** Date that this period closes for applications. Some periods do not set a close date. */
     closeDate?: boolean | number
     /** Unique identifier for this period that references an external system. Ideally human readable. */
     code?: boolean | number
@@ -1007,7 +1011,7 @@ export interface PeriodPromptGenqlSelection{
     __scalar?: boolean | number
 }
 
-export interface PeriodUpdate {archiveAt?: (Scalars['DateTime'] | null),closeDate?: (Scalars['DateTime'] | null),code?: (Scalars['String'] | null),name?: (Scalars['String'] | null),openDate?: (Scalars['DateTime'] | null)}
+export interface PeriodUpdate {archiveDate?: (Scalars['DateTime'] | null),closeDate?: (Scalars['DateTime'] | null),code?: (Scalars['String'] | null),name: Scalars['String'],openDate: Scalars['DateTime']}
 
 export interface ProgramGenqlSelection{
     key?: boolean | number

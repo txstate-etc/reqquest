@@ -1,7 +1,7 @@
 import { ValidatedResponse } from '@txstate-mws/graphql-server'
 import { DateTime } from 'luxon'
 import { Field, ID, InputType, ObjectType } from 'type-graphql'
-import { PeriodConfigurationRow, PeriodRow } from '../internal.js'
+import { PeriodConfigurationRow, PeriodRow, Prompt, promptRegistry, Requirement, requirementRegistry } from '../internal.js'
 
 @ObjectType()
 export class Period {
@@ -17,11 +17,11 @@ export class Period {
   @Field({ description: 'Date that this period opens for applications.' })
   openDate: DateTime
 
-  @Field({ description: 'Date that this period closes for applications.' })
-  closeDate: DateTime
+  @Field({ nullable: true, description: 'Date that this period closes for applications. Some periods do not set a close date.' })
+  closeDate?: DateTime
 
   @Field({ nullable: true, description: 'This is useful for filtering out periods that are no longer useful. For instance, a window might close applications after 2 weeks but the reviewers could be working.' })
-  archiveAt?: DateTime
+  archiveDate?: DateTime
 
   internalId: number
 
@@ -31,8 +31,8 @@ export class Period {
     this.code = row.code
     this.name = row.name
     this.openDate = DateTime.fromJSDate(row.openDate)
-    this.closeDate = DateTime.fromJSDate(row.closeDate)
-    this.archiveAt = row.archiveAt != null ? DateTime.fromJSDate(row.archiveAt) : undefined
+    this.closeDate = row.closeDate != null ? DateTime.fromJSDate(row.closeDate) : undefined
+    this.archiveDate = row.archiveDate != null ? DateTime.fromJSDate(row.archiveDate) : undefined
   }
 }
 
@@ -74,17 +74,17 @@ export class PeriodUpdate {
   @Field({ nullable: true })
   code?: string
 
-  @Field({ nullable: true })
-  name?: string
+  @Field()
+  name!: string
 
-  @Field({ nullable: true })
-  openDate?: DateTime
+  @Field()
+  openDate!: DateTime
 
   @Field({ nullable: true })
   closeDate?: DateTime
 
   @Field({ nullable: true })
-  archiveAt?: DateTime
+  archiveDate?: DateTime
 }
 
 @ObjectType()
@@ -100,11 +100,20 @@ export class Configuration {
 
   periodInternalId: number
   periodId: string
+  configuredObject: Requirement | Prompt
+  type: 'Requirement' | 'Prompt'
 
   constructor (row: PeriodConfigurationRow) {
     this.periodInternalId = row.periodId
     this.periodId = String(row.periodId)
     this.key = row.definitionKey
+    let obj: any
+    if (obj = requirementRegistry.get(row.definitionKey)) this.configuredObject = new Requirement(obj)
+    else if (obj = promptRegistry.get(row.definitionKey)) this.configuredObject = new Prompt(obj)
+    else throw new Error(`Configuration for key ${row.definitionKey} not found in registries.`)
+    this.type = this.configuredObject instanceof Requirement
+      ? 'Requirement'
+      : 'Prompt'
   }
 }
 

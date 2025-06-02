@@ -105,6 +105,10 @@ export class AccessRoleService extends AuthService<AccessRole> {
     return this.hasAnyControl('Role', 'view')
   }
 
+  mayViewPeriodManagement () {
+    return this.hasAnyControl('Period', 'view')
+  }
+
   mayCreate () {
     return this.hasAnyControl('Role', 'create')
   }

@@ -26,6 +26,12 @@ export enum AppRequestStatusDB {
   WITHDRAWN = 'WITHDRAWN'
 }
 
+export const closedStatuses = new Set<AppRequestStatusDB>([
+  AppRequestStatusDB.CANCELLED,
+  AppRequestStatusDB.CLOSED,
+  AppRequestStatusDB.WITHDRAWN
+])
+
 export interface AppRequestRow {
   id: number
   periodId: number
@@ -35,6 +41,9 @@ export interface AppRequestRow {
   createdAt: Date
   updatedAt: Date
   closedAt: Date
+  periodClosesAt?: Date
+  periodArchivesAt?: Date
+  periodOpensAt: Date
 }
 
 export interface AppRequestRowData {
@@ -94,8 +103,10 @@ function processFilters (filter?: AppRequestFilter) {
 export async function getAppRequests (filter?: AppRequestFilter, tdb: Queryable = db) {
   const { joins, where, binds } = processFilters(filter)
   const rows = await tdb.getall<AppRequestRow>(`
-    SELECT ar.id, ar.periodId, ar.userId, ar.status, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt
+    SELECT ar.id, ar.periodId, ar.userId, ar.status, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt,
+           p.closeDate AS periodClosesAt, p.archiveDate AS periodArchivesAt, p.openDate AS periodOpensAt
     FROM app_requests ar
+    INNER JOIN periods p ON p.id = ar.periodId
     ${Array.from(joins.values()).join('\n')}
     ${where.length === 0 ? '' : `WHERE (${where.join(') AND (')})`}
   `, binds)

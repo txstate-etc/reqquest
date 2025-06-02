@@ -1,6 +1,7 @@
-import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, evaluateAppRequest, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer, getAppRequestTags } from '../internal.js'
+import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer, getAppRequestTags, closedStatuses } from '../internal.js'
 import { PrimaryKeyLoader } from 'dataloader-factory'
 import { BaseService } from '@txstate-mws/graphql-server'
+import { DateTime } from 'luxon'
 
 const appReqByIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -96,6 +97,16 @@ export class AppRequestService extends AuthService<AppRequest> {
     return appRequest.userInternalId === this.user?.internalId
   }
 
+  isInOpenPeriod (appRequest: AppRequest) {
+    if (appRequest.periodOpensAt > DateTime.now()) return false // app request got created somehow in a future period - maybe the dates got changed?
+    if (appRequest.periodArchivesAt == null) return true // no archive date means the period is still open
+    return appRequest.periodArchivesAt > DateTime.now()
+  }
+
+  isClosed (appRequest: AppRequest) {
+    return closedStatuses.has(appRequest.dbStatus)
+  }
+
   mayView (appRequest: AppRequest) {
     return this.isOwn(appRequest) || this.mayViewAsReviewer(appRequest)
   }
@@ -106,51 +117,51 @@ export class AppRequestService extends AuthService<AppRequest> {
   }
 
   mayCreate () {
-    return this.hasAnyControl('AppRequest', 'create') || this.hasAnyControl('AppRequest', 'create_own')
+    return this.hasAnyControl('AppRequestPreReview', 'create') || this.hasAnyControl('AppRequestOwn', 'create')
   }
 
   mayClose (appRequest: AppRequest) {
-    return this.hasControl('AppRequest', 'close', appRequest.tags) || this.hasControl('AppRequest', 'close_own')
+    if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false
+    return this.hasControl('AppRequest', 'close', appRequest.tags)
   }
 
   mayCancel (appRequest: AppRequest) {
     if (!this.isOwn(appRequest)) return false
-    if (appRequest.dbStatus === AppRequestStatusDB.SUBMITTED) return this.hasControl('AppRequest', 'cancel_review')
-    if (appRequest.dbStatus === AppRequestStatusDB.STARTED) return this.hasControl('AppRequest', 'cancel')
+    if (appRequest.dbStatus === AppRequestStatusDB.STARTED) return this.hasControl('AppRequestOwn', 'cancel')
+    if (appRequest.dbStatus === AppRequestStatusDB.SUBMITTED) return this.hasControl('AppRequestOwnReview', 'withdraw', appRequest.tags)
     return false
   }
 
   mayReopen (appRequest: AppRequest) {
-    // TODO: check if the appRequest is in a valid period
-    if ([AppRequestStatusDB.CANCELLED, AppRequestStatusDB.WITHDRAWN].includes(appRequest.dbStatus)) {
-      return (this.isOwn(appRequest) && this.hasControl('AppRequest', 'reopen_own', appRequest.tags)) || this.hasControl('AppRequest', 'reopen', appRequest.tags)
+    if (!this.isClosed(appRequest)) return false
+    if (this.isInOpenPeriod(appRequest)) {
+      if (this.isOwn(appRequest)) {
+        if (appRequest.dbStatus === AppRequestStatusDB.CANCELLED && !this.hasControl('AppRequestOwn', 'uncancel')) return true
+        if (appRequest.dbStatus === AppRequestStatusDB.WITHDRAWN && !this.hasControl('AppRequestOwnReview', 'unwithdraw', appRequest.tags)) return true
+        if (!this.hasControl('AppRequest', 'review_own')) return false
+      }
+      if (appRequest.dbStatus === AppRequestStatusDB.CLOSED && this.hasControl('AppRequest', 'reopen', appRequest.tags)) return true
     }
-    if (appRequest.dbStatus === AppRequestStatusDB.CLOSED) {
-      return this.hasControl('AppRequest', 'reopen', appRequest.tags)
-    }
-    return false
+    return this.hasControl('AppRequest', 'reopen_any', appRequest.tags)
   }
 
   maySubmit (appRequest: AppRequest) {
+    if (!this.isInOpenPeriod(appRequest)) return false
     if (appRequest.status !== AppRequestStatus.READY_TO_SUBMIT) return false
-    return (
-      this.isOwn(appRequest) && this.hasControl('AppRequest', 'submit_own', appRequest.tags)
-    ) || this.hasControl('AppRequest', 'submit', appRequest.tags)
+    return this.isOwn(appRequest) || this.hasControl('AppRequest', 'submit', appRequest.tags)
   }
 
   mayReturn (appRequest: AppRequest) {
     if (appRequest.dbStatus !== AppRequestStatusDB.SUBMITTED) return false
-    return (
-      this.isOwn(appRequest) && this.hasControl('AppRequest', 'return_own', appRequest.tags)
-    ) || this.hasControl('AppRequest', 'return', appRequest.tags)
+    if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false
+    return this.hasControl('AppRequest', 'return', appRequest.tags)
   }
 
   mayOffer (appRequest: AppRequest) {
     if (appRequest.dbStatus !== AppRequestStatusDB.SUBMITTED) return false
-    // TODO: check if there are any ACCEPTANCE requirements
-    return (
-      this.isOwn(appRequest) && this.hasControl('AppRequest', 'offer_own', appRequest.tags)
-    ) || this.hasControl('AppRequest', 'offer', appRequest.tags)
+    if (!this.isAcceptancePeriod(appRequest.periodId)) return false
+    if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false
+    return this.hasControl('AppRequest', 'offer', appRequest.tags)
   }
 
   async submit (appRequest: AppRequest) {

@@ -79,6 +79,6 @@ export class ConfigurationActionsResolver {
 
   @FieldResolver(returns => Boolean)
   update (@Ctx() ctx: RQContext, @Root() configuration: Configuration) {
-    return ctx.svc(ConfigurationService).mayUpdate(configuration.periodId, configuration.key)
+    return ctx.svc(ConfigurationService).mayUpdate(configuration)
   }
 }

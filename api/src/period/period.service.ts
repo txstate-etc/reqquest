@@ -1,6 +1,6 @@
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { intersect, isBlank, keyby, pick } from 'txstate-utils'
-import { AuthService, Configuration, ConfigurationFilters, createPeriod, getConfigurationData, getConfigurations, getPeriods, Period, PeriodFilters, PeriodPromptService, PeriodRequirementService, PeriodUpdate, PromptDefinition, promptRegistry, RequirementDefinitionProcessed, requirementRegistry, updatePeriod, upsertConfiguration, ValidatedConfigurationResponse, ValidatedPeriodResponse } from '../internal.js'
+import { AuthService, Configuration, ConfigurationFilters, createPeriod, getConfigurationData, getConfigurations, getPeriods, Period, PeriodFilters, PeriodUpdate, promptRegistry, requirementRegistry, updatePeriod, upsertConfiguration, ValidatedConfigurationResponse, ValidatedPeriodResponse } from '../internal.js'
 
 const periodByIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -10,23 +10,35 @@ const periodByIdLoader = new PrimaryKeyLoader({
 
 export class PeriodService extends AuthService<Period> {
   async find (filter?: PeriodFilters) {
-    return await getPeriods(filter)
+    const periods = await getPeriods(filter)
+    for (const period of periods) {
+      this.loaders.get(periodByIdLoader).prime(period.id, period)
+    }
+    return periods
   }
 
   async findById (id: string) {
     return await this.loaders.get(periodByIdLoader).load(id)
   }
 
-  mayView (obj: Period) {
-    return true // TODO
+  mayView (period: Period) {
+    return true
+  }
+
+  mayViewConfigurations (period: Period) {
+    return this.hasControl('Period', 'view_configuration')
   }
 
   mayCreate () {
-    return true // TODO
+    return this.hasControl('Period', 'create')
   }
 
   mayUpdate (period: Period) {
-    return true // TODO
+    return this.hasControl('Period', 'update')
+  }
+
+  mayDelete (period: Period) {
+    return this.hasControl('Period', 'delete')
   }
 
   async validate (update: PeriodUpdate) {
@@ -120,32 +132,21 @@ export class ConfigurationService extends AuthService<Configuration> {
     return allConfig
   }
 
-  mayView (obj: Configuration) {
-    return true // TODO
+  mayView (cfg: Configuration) {
+    return this.hasControl(cfg.type, 'view', cfg.configuredObject.authorizationKeys)
   }
 
-  async mayUpdate (periodId: string, key: string) {
+  async mayUpdate (cfg: Configuration) {
     // TODO: make sure there are no app requests that have been submitted in the period
-    // TODO: make sure the user has permission to update the key, subjectType could be Prompt or Requirement
-    const promptDef = promptRegistry.get(key)
-    const requirementDef = requirementRegistry.get(key)
-    if (promptDef) {
-      const periodPrompt = await this.svc(PeriodPromptService).findByPeriodIdAndPromptKey(periodId, key)
-      return periodPrompt && await this.svc(PeriodPromptService).mayConfigure(periodPrompt)
-    } else if (requirementDef) {
-      const periodProgramRequirements = await this.svc(PeriodRequirementService).findByPeriodIdAndRequirementKey(periodId, key)
-      const mayUpdates = await Promise.all(periodProgramRequirements.map(async ppr => await this.svc(PeriodRequirementService).mayConfigure(ppr)))
-      return mayUpdates.some(Boolean)
-    }
-    return false
+    return this.hasControl(cfg.type, 'configure', cfg.configuredObject.authorizationKeys)
   }
 
   async update (periodId: string, key: string, data: any, validateOnly?: boolean) {
-    const definition: PromptDefinition | RequirementDefinitionProcessed | undefined = promptRegistry.get(key) ?? requirementRegistry.get(key)
-    if (!definition) throw new Error('Definition not found')
-    if (!await this.mayUpdate(periodId, key)) throw new Error('You are not allowed to update this configuration.')
+    const cfg = await this.findByPeriodIdAndKey(periodId, key)
+    if (!cfg) throw new Error('Configuration not found')
+    if (!await this.mayUpdate(cfg)) throw new Error('You are not allowed to update this configuration.')
     const response = new ValidatedConfigurationResponse({ success: true })
-    const messages = await definition.validateConfiguration?.(data) ?? []
+    const messages = await cfg.configuredObject.definition.validateConfiguration?.(data) ?? []
     for (const feedback of messages) response.addMessage(feedback.message)
     if (validateOnly || response.hasErrors()) return response
     await upsertConfiguration(periodId, key, data)

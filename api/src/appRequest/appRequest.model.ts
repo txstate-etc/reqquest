@@ -50,6 +50,9 @@ export class AppRequest {
     this.closedAt = row.closedAt ? DateTime.fromJSDate(row.closedAt) : undefined
     this.userInternalId = row.userId
     this.periodId = String(row.periodId)
+    this.periodClosesAt = row.periodClosesAt ? DateTime.fromJSDate(row.periodClosesAt) : undefined
+    this.periodArchivesAt = row.periodArchivesAt ? DateTime.fromJSDate(row.periodArchivesAt) : undefined
+    this.periodOpensAt = DateTime.fromJSDate(row.periodOpensAt)
   }
 
   @Field(type => ID)
@@ -67,6 +70,9 @@ export class AppRequest {
   @Field({ nullable: true, description: 'Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date.' })
   closedAt?: DateTime
 
+  periodClosesAt?: DateTime
+  periodArchivesAt?: DateTime
+  periodOpensAt: DateTime
   dbStatus: AppRequestStatusDB
   internalId: number
   userInternalId: number

@@ -29,6 +29,15 @@ export * from './program/program.resolver.js'
 export * from './prompt/prompt.resolver.js'
 export * from './requirement/requirement.resolver.js'
 
+/** db queries */
+export * from './access/access.database.js'
+export * from './application/application.database.js'
+export * from './appRequest/appRequest.database.js'
+export * from './period/period.database.js'
+export * from './program/program.database.js'
+export * from './prompt/prompt.database.js'
+export * from './requirement/requirement.database.js'
+
 /** Services */
 export * from './access/access.user.service.js'
 export * from './access/access.role.service.js'
@@ -39,15 +48,6 @@ export * from './programGroup/programGroup.service.js'
 export * from './program/program.service.js'
 export * from './prompt/prompt.service.js'
 export * from './requirement/requirement.service.js'
-
-/** db queries */
-export * from './access/access.database.js'
-export * from './application/application.database.js'
-export * from './appRequest/appRequest.database.js'
-export * from './period/period.database.js'
-export * from './program/program.database.js'
-export * from './prompt/prompt.database.js'
-export * from './requirement/requirement.database.js'
 
 /** db migrations */
 export * from './migrations.js'

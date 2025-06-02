@@ -141,7 +141,7 @@ export function initAccess () {
     title: 'Applicant - Applicant Phase',
     description: 'These controls govern actions people take on their own appRequest during the applicant phase, like creating and cancelling. No restrictions are available because we need to complete the applicant phase in order to collect enough data to generate tags.',
     controls: {
-      create_own: { description: 'Create an appRequest for oneself.' },
+      create: { description: 'Create an appRequest for oneself.' },
       cancel: { description: 'Cancel one\'s own appRequest while in the applicant phase.' },
       uncancel: { description: 'Re-open one\'s own appRequest that was cancelled in the applicant phase.' }
     }
@@ -163,7 +163,7 @@ export function initAccess () {
       submit: { description: 'Submit an appRequest when all requirements pass, even if you are not the applicant.' },
       close: { description: 'Close an appRequest despite it not being completed. It will not be marked as disqualified or ineligible, just closed. Viewing it would show it in exactly the state it was in when it was closed. The system will automatically close requests on the archive date, so you may not need to give this to anyone.' },
       reopen: { description: 'Reopen an appRequest that has been closed. Must be in a valid period.' },
-      reopen_any: { description: 'Reopen any appRequest that has been closed, even in an old period.' },
+      reopen_any: { description: 'Reopen any appRequest that has been closed, even in an old period or when it was cancelled by the applicant.' },
       return: { description: 'Return an appRequest in the reviewer phase to the applicant phase.' },
       review: { description: 'See an appRequest in the reviewer list interface.' },
       review_own: { description: 'Typically, reviewers are prevented from acting as reviewers on their own requests. This control removes that block, but the reviewer is still limited to the other controls they have been granted. For example, a reviewer who only has access to a single prompt still only has access to that single prompt, but may also update that prompt in their own request(s). Note that permissions from other roles will also be affected by the removal of this block, so use it carefully.' },

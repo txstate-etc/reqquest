@@ -1,6 +1,6 @@
 import db from 'mysql2-async/db'
 import type { Queryable } from 'mysql2-async'
-import { Configuration, ConfigurationFilters, ensureAppRequestRecords, getAppRequests, Period, PeriodFilters, PeriodUpdate, programRegistry, promptRegistry, requirementRegistry } from '../internal.js'
+import { Configuration, ConfigurationFilters, ensureAppRequestRecords, getAppRequests, Period, PeriodFilters, PeriodUpdate, programRegistry, promptRegistry, requirementRegistry, RequirementType } from '../internal.js'
 import { stringify } from 'txstate-utils'
 
 export interface PeriodRow {
@@ -8,8 +8,8 @@ export interface PeriodRow {
   code?: string
   name: string
   openDate: Date
-  closeDate: Date
-  archiveAt: Date | null
+  closeDate: Date | null
+  archiveDate: Date | null
   createdAt: Date
   updatedAt: Date
 }
@@ -61,11 +61,11 @@ function processFilters (filters?: PeriodFilters) {
     binds.push(filters.closesBefore.toJSDate())
   }
   if (filters?.archiveAfter) {
-    where.push('p.archiveAt > ?')
+    where.push('p.archiveDate > ?')
     binds.push(filters.archiveAfter.toJSDate())
   }
   if (filters?.archiveBefore) {
-    where.push('p.archiveAt < ?')
+    where.push('p.archiveDate < ?')
     binds.push(filters.archiveBefore.toJSDate())
   }
   if (filters?.openNow != null) {
@@ -87,6 +87,20 @@ export async function getPeriods (filters?: PeriodFilters) {
     ORDER BY p.openDate DESC
   `, binds)
   return rows.map(row => new Period(row))
+}
+
+export async function getAcceptancePeriodIds () {
+  const requirementKeys = requirementRegistry.list().filter(r => r.type === RequirementType.ACCEPTANCE).map(r => r.key)
+  if (!requirementKeys.length) return new Set<string>()
+  const binds: any[] = []
+  const rows = await db.getvals<number>(`
+    SELECT DISTINCT p.id
+    FROM periods p
+    INNER JOIN period_programs pp ON pp.periodId = p.id
+    INNER JOIN period_program_requirements ppr ON ppr.periodId = p.id AND pp.programKey = ppr.programKey
+    WHERE pp.disabled = 0 AND ppr.disabled = 0 AND ppr.requirementKey IN (${db.in(binds, requirementKeys)})
+  `, binds)
+  return new Set(rows.map(String))
 }
 
 export async function copyConfigurations (fromPeriodId: number | string | undefined, toPeriodId: number | string, db: Queryable) {
@@ -134,13 +148,13 @@ export async function copyConfigurations (fromPeriodId: number | string | undefi
 }
 
 export async function createPeriod (period: PeriodUpdate) {
-  const { code, name, openDate, closeDate, archiveAt } = period
+  const { code, name, openDate, closeDate, archiveDate } = period
   const prevId = await db.getval<number>('SELECT id FROM periods ORDER BY id DESC LIMIT 1')
   return await db.transaction(async db => {
     const periodId = await db.insert(`
-      INSERT INTO periods (code, name, openDate, closeDate, archiveAt)
+      INSERT INTO periods (code, name, openDate, closeDate, archiveDate)
       VALUES (?, ?, ?, ?, ?)
-    `, [code, name, openDate?.toJSDate(), closeDate?.toJSDate(), archiveAt?.toJSDate()])
+    `, [code, name, openDate?.toJSDate(), closeDate?.toJSDate(), archiveDate?.toJSDate()])
     await copyConfigurations(prevId, periodId, db)
     await ensureConfigurationRecords([periodId], db)
     return periodId
@@ -148,12 +162,12 @@ export async function createPeriod (period: PeriodUpdate) {
 }
 
 export async function updatePeriod (id: string, period: PeriodUpdate) {
-  const { code, name, openDate, closeDate, archiveAt } = period
+  const { code, name, openDate, closeDate, archiveDate } = period
   await db.update(`
     UPDATE periods
-    SET code = ?, name = ?, openDate = ?, closeDate = ?, archiveAt = ?
+    SET code = ?, name = ?, openDate = ?, closeDate = ?, archiveDate = ?
     WHERE id = ?
-  `, [code, name, openDate, closeDate, archiveAt, id])
+  `, [code, name, openDate, closeDate, archiveDate, id])
 }
 
 function processConfigurationFilters (filters?: ConfigurationFilters) {

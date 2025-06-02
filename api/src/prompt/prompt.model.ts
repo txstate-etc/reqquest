@@ -26,6 +26,7 @@ export class Prompt {
     this.key = definition.key
     this.title = definition.title
     this.navTitle = definition.navTitle ?? definition.title
+    this.authorizationKeys = { prompt: promptRegistry.authorizationKeys[definition.key] ?? [] }
   }
 
   @Field({ description: 'A human and machine readable identifier for the prompt. Will be used to match prompt data with UI and API code that handles it.' })
@@ -39,6 +40,8 @@ export class Prompt {
 
   @Field({ nullable: true, description: 'A brief description of the prompt. This should be shown to administrators to help explain the full meaning of the prompt while assigning permissions or editing its configuration.' })
   description?: string
+
+  authorizationKeys?: Record<string, string[]>
 }
 
 @ObjectType({ description: 'A RequestPrompt is an instance of a Prompt on a particular request. Once the user has answered the prompt, it contains the answer and the prompt status on that request.' })

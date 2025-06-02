@@ -96,6 +96,6 @@ export class PeriodRequirementService extends AuthService<PeriodProgramRequireme
 
   mayConfigure (requirement: PeriodProgramRequirement) {
     if (requirement.definition.validateConfiguration == null) return false
-    return this.hasControl('Requirement', 'configure', { requirementplus: requirementRegistry.authorizationKeys[requirement.key] ?? [] })
+    return this.hasControl('Requirement', 'configure', requirement.authorizationKeys)
   }
 }

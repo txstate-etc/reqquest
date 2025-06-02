@@ -1,12 +1,7 @@
 import { AuthorizedServiceSync, Context, MockContext } from '@txstate-mws/graphql-server'
 import { FastifyRequest } from 'fastify'
 import { Cache, isNotBlank } from 'txstate-utils'
-import { AccessUser, appConfig, AccessDatabase, AccessRoleServiceInternal } from '../internal.js'
-
-interface GrantCategoryRecord {
-  allow: boolean
-  tags: Set<string>
-}
+import { AccessUser, appConfig, AccessDatabase, AccessRoleServiceInternal, getAcceptancePeriodIds } from '../internal.js'
 
 type RoleLookup = Record<string, Record<string, Record<number, Record<string, Set<string>>>>>
 
@@ -15,6 +10,10 @@ export abstract class AuthService<ObjType, RedactedType = ObjType> extends Autho
 
   isCurrentUser (login: string) {
     return this.login === login
+  }
+
+  isAcceptancePeriod (periodId: string) {
+    return this.ctx.authInfo.acceptancePeriods.has(periodId)
   }
 
   protected get login () {
@@ -66,6 +65,7 @@ export abstract class AuthService<ObjType, RedactedType = ObjType> extends Autho
 export interface AuthInfo {
   user?: AccessUser
   roleLookups: RoleLookup[]
+  acceptancePeriods: Set<string>
 }
 
 const allGroupCache = new Cache(async () => {
@@ -80,12 +80,16 @@ const userCache = new Cache(async (login: string, ctx: Context) => {
   return user
 }, { freshseconds: 30, staleseconds: 28800 }) // 30 seconds, 8 hours
 
+const acceptancePeriodsCache = new Cache(async () => {
+  return await getAcceptancePeriodIds()
+})
+
 const authCache = new Cache(async (login: string, ctx: Context) => {
+  const periodPromise = acceptancePeriodsCache.get()
   const user = await userCache.get(login, ctx)
-  if (!user) return { user: undefined, roleLookups: [] }
+  if (!user) return { user: undefined, roleLookups: [], acceptancePeriods: await periodPromise }
   const scopes = new Set<string>(isNotBlank(ctx.auth?.scope) ? ctx.auth.scope.split(' ') : [])
   const roles = (await ctx.svc(AccessRoleServiceInternal).findAccessRolesByUserId(user.internalId)).filter(r => (r.scope == null && scopes.size === 0) || scopes.has(r.scope ?? ''))
-
   // load up all the roles with their grants, grants with their controls, etc
   await Promise.all(roles.map(role => role.load(ctx)))
 
@@ -105,7 +109,7 @@ const authCache = new Cache(async (login: string, ctx: Context) => {
     }
     roleLookups.push(mergedPerRole)
   }
-  return { user, roleLookups }
+  return { user, roleLookups, acceptancePeriods: await periodPromise }
 }, { freshseconds: 30, staleseconds: 300 }) // 1 minute, 5 minutes
 
 export interface RQContext extends Context {

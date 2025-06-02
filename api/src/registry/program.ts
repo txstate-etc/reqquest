@@ -1,4 +1,4 @@
-import { appConfig, requirementRegistry } from '../internal.js'
+import { requirementRegistry } from '../internal.js'
 
 export interface ProgramDefinition {
   key: string

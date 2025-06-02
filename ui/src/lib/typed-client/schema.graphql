@@ -1,5 +1,10 @@
 type Access {
   """
+  Current user may create a new app request, either for themselves or on behalf of another user.
+  """
+  createAppRequest: Boolean!
+
+  """
   Current user is permitted to create new periods in the period management UI.
   """
   createPeriod: Boolean!
@@ -659,10 +664,12 @@ type Period {
   """
   This is useful for filtering out periods that are no longer useful. For instance, a window might close applications after 2 weeks but the reviewers could be working.
   """
-  archiveAt: DateTime
+  archiveDate: DateTime
 
-  """Date that this period closes for applications."""
-  closeDate: DateTime!
+  """
+  Date that this period closes for applications. Some periods do not set a close date.
+  """
+  closeDate: DateTime
 
   """
   Unique identifier for this period that references an external system. Ideally human readable.
@@ -803,11 +810,11 @@ type PeriodPrompt {
 }
 
 input PeriodUpdate {
-  archiveAt: DateTime
+  archiveDate: DateTime
   closeDate: DateTime
   code: String
-  name: String
-  openDate: DateTime
+  name: String!
+  openDate: DateTime!
 }
 
 type Program {

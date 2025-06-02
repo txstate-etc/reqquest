@@ -23,6 +23,6 @@ export class ProgramService extends AuthService<Program> {
   }
 
   mayConfigure (program: Program) {
-    return true // TODO
+    return this.hasControl('Program', 'configure', program.authorizationKeys)
   }
 }

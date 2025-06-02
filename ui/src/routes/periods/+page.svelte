@@ -10,7 +10,7 @@
   export let data: PageData
   $: ({ periods } = data)
 
-  function renderDate (prop: 'openDate' | 'closeDate' | 'archiveAt') {
+  function renderDate (prop: 'openDate' | 'closeDate' | 'archiveDate') {
     return (period: Period) => {
       const date = period[prop]
       if (isBlank(date)) return ''
@@ -25,7 +25,7 @@
     { id: 'period', label: 'Period', get: 'name' },
     { id: 'openDate', label: 'Start Date', render: renderDate('openDate') },
     { id: 'closeDate', label: 'Close Date', render: renderDate('closeDate') },
-    { id: 'archiveDate', label: 'Archive Date', render: renderDate('archiveAt') },
+    { id: 'archiveDate', label: 'Archive Date', render: renderDate('archiveDate') },
     { id: 'status', label: 'Status', get: 'status' }
   ]}
   rows={periods}

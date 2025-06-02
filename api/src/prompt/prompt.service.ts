@@ -2,11 +2,10 @@ import { BaseService } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import {
   AppRequestService, ApplicationRequirement, AuthService, Prompt, RequirementPrompt,
-  promptRegistry, getRequirementPrompts, AppRequestServiceInternal, ValidatedAppRequestResponse,
+  promptRegistry, getRequirementPrompts, ValidatedAppRequestResponse,
   getPeriodPrompts, ConfigurationService, PeriodPrompt, requirementRegistry,
-  AppRequestStatusDB, AppRequest,
-  setRequirementPromptValid,
-  updateAppRequestData
+  AppRequestStatusDB, AppRequest, setRequirementPromptValid, updateAppRequestData,
+  closedStatuses
 } from '../internal.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
@@ -58,7 +57,7 @@ export class PromptService extends AuthService<Prompt> {
   }
 
   protected mayView (prompt: Prompt): boolean {
-    return true // TODO
+    return true
   }
 }
 
@@ -98,15 +97,15 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
   }
 
   mayView (prompt: RequirementPrompt): boolean {
-    // may view if the prompt is for the applicant and current user is the applicant
-    // if (prompt.request.userInternalId === this.userInternalId && promptRegistry.isUserPrompt(prompt.key)) return true
-    // TODO: may view if the user has been granted access to view the prompt
-
-    return false
+    if (this.isOwn(prompt)) {
+      if (promptRegistry.isUserPrompt(prompt.key)) return true
+      if (!this.hasControl('AppRequest', 'review_own', prompt.appRequestTags)) return false
+    }
+    return this.hasControl('PromptAnswer', 'view', { ...prompt.authorizationKeys, ...prompt.appRequestTags })
   }
 
   mayUpdate (prompt: RequirementPrompt): boolean {
-    if ([AppRequestStatusDB.CLOSED, AppRequestStatusDB.CANCELLED, AppRequestStatusDB.WITHDRAWN].includes(prompt.appRequestDbStatus)) return false
+    if (closedStatuses.has(prompt.appRequestDbStatus)) return false
     if (this.isOwn(prompt)) {
       if (
         [AppRequestStatusDB.STARTED, AppRequestStatusDB.ACCEPTANCE].includes(prompt.appRequestDbStatus)
@@ -117,9 +116,9 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
       if (!this.hasControl('AppRequest', 'review_own', prompt.appRequestTags)) return false
     }
     if (prompt.appRequestDbStatus === AppRequestStatusDB.SUBMITTED) {
-      return this.hasControl('PromptAnswer', 'update', { prompt: promptRegistry.authorizationKeys[prompt.key], ...prompt.appRequestTags })
+      return this.hasControl('PromptAnswer', 'update', { ...prompt.authorizationKeys, ...prompt.appRequestTags })
     }
-    return this.hasControl('PromptAnswer', 'update_anytime', { prompt: promptRegistry.authorizationKeys[prompt.key], ...prompt.appRequestTags })
+    return this.hasControl('PromptAnswer', 'update_anytime', { ...prompt.authorizationKeys, ...prompt.appRequestTags })
   }
 
   async update (prompt: RequirementPrompt, data: any, validateOnly = false) {

@@ -7,6 +7,7 @@ export class Program {
     this.key = definition.key
     this.title = definition.title
     this.navTitle = definition.navTitle ?? definition.title
+    this.authorizationKeys = { program: [this.key] }
   }
 
   @Field(type => ID)
@@ -17,6 +18,8 @@ export class Program {
 
   @Field()
   navTitle: string
+
+  authorizationKeys: Record<string, string[]>
 }
 
 @InputType({ description: 'Identifies a single PeriodProgram.' })
