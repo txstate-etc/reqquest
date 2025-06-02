@@ -4,7 +4,7 @@
   import Add from 'carbon-icons-svelte/lib/Add.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
-  import { pick } from 'txstate-utils'
+  import { isNotBlank, pick } from 'txstate-utils'
   import { invalidate } from '$app/navigation'
   import { api, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessTagInput } from '$lib'
   import type { PageData } from './$types'
@@ -197,12 +197,13 @@
 {:else if showGrantCreate}
   <PanelFormDialog open title="New {grantCreateAllow ? 'Grant' : 'Exception'}" submit={onCreateSubmit} validate={onCreateValidate} on:cancel={onCloseEdit} on:saved={onSaveGrant} let:data>
     <FieldHidden path="allow" value={grantCreateAllow} />
+    {@const subjectType = data.subjectType ? subjectTypeLookup[data.subjectType] : undefined}
     <FieldSelect
       path="subjectType"
       labelText="Subject Type"
       items={subjectTypes.map(st => ({ value: st.name, label: st.title }))}
+      helperText={subjectType?.description}
     />
-    {@const subjectType = data.subjectType ? subjectTypeLookup[data.subjectType] : undefined}
     {#if subjectType}
       <FieldCheckboxList
         path="controls"
