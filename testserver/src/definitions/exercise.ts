@@ -1,5 +1,5 @@
 import { MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { Prompt, PromptDefinition, RequirementDefinition, RequirementStatus, RequirementType } from '@txstate-mws/reqquest'
+import { Prompt, PromptDefinition, RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 
 export interface ExerciseData {
   exerciseHours: number

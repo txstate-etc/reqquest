@@ -1,5 +1,5 @@
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { type PromptDefinition, type RequirementDefinition, RequirementStatus, RequirementType } from '@txstate-mws/reqquest'
+import { type PromptDefinition, type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 
 export const cat_tower_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,

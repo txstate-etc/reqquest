@@ -1,4 +1,4 @@
-import { PromptDefinition, RequirementDefinition, RequirementStatus, RequirementType } from '@txstate-mws/reqquest'
+import { PromptDefinition, RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
 
 export interface YardData {

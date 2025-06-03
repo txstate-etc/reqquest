@@ -1,5 +1,5 @@
 import { MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { PromptDefinition, RequirementDefinition, RequirementStatus, RequirementType } from '@txstate-mws/reqquest'
+import { PromptDefinition, RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 
 export const which_state_req: RequirementDefinition = {
   type: RequirementType.PREQUAL,

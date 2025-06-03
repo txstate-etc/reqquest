@@ -1,4 +1,4 @@
-import { createAppRequest, createPeriod, DatabaseMigration, AccessDatabase, updateAppRequestData, submitAppRequest } from '@txstate-mws/reqquest'
+import { createAppRequest, createPeriod, DatabaseMigration, AccessDatabase, updateAppRequestData, submitAppRequest } from '@reqquest/api'
 import { DateTime } from 'luxon'
 
 export const testMigrations: DatabaseMigration[] = [

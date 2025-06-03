@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@txstate-mws/graphql-server": "^2.3.2",
-    "@txstate-mws/reqquest": "file:../api",
+    "@reqquest/api": "file:../api",
     "luxon": "^3.6.1"
   },
   "devDependencies": {
