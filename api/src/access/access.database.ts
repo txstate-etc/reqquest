@@ -280,9 +280,9 @@ export namespace AccessDatabase {
   export async function createAccessRole (role: AccessRoleInput) {
     return await db.transaction(async db => {
       const roleId = await db.insert(`
-        INSERT INTO accessRoles (name, scope)
-        VALUES (?, ?)
-      `, [role.name, role.scope])
+        INSERT INTO accessRoles (name, scope, description)
+        VALUES (?, ?, ?)
+      `, [role.name, role.scope, role.description])
       if (role.groups?.length) {
         const binds: any[] = []
         await db.insert(`
@@ -297,7 +297,7 @@ export namespace AccessDatabase {
 
   export async function updateAccessRole (id: string, role: AccessRoleInput) {
     return await db.transaction(async db => {
-      await db.update('UPDATE accessRoles SET name = ?, scope = ? WHERE id = ?', [role.name, role.scope, id])
+      await db.update('UPDATE accessRoles SET name = ?, scope = ?, description = ? WHERE id = ?', [role.name, role.scope, role.description, id])
       if (role.groups?.length) {
         const ibinds: any[] = []
         await db.insert(`

@@ -4,8 +4,9 @@
   import Add from 'carbon-icons-svelte/lib/Add.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
-  import { isNotBlank, pick } from 'txstate-utils'
-  import { invalidate } from '$app/navigation'
+  import { pick } from 'txstate-utils'
+  import { goto, invalidate } from '$app/navigation'
+  import { base } from '$app/paths'
   import { api, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessTagInput } from '$lib'
   import type { PageData } from './$types'
 
@@ -88,9 +89,30 @@
       closeDeleteConfirmation()
     }
   }
+
+  let roleDeleteDialog = false
+  function closeRoleDeleteDialog () {
+    roleDeleteDialog = false
+  }
+  async function executeRoleDelete () {
+    try {
+      await api.deleteRole(role.id)
+      await goto(`${base}/roles`)
+    } catch (e: any) {
+      closeRoleDeleteDialog()
+    }
+  }
 </script>
 
-<Panel title="{role.name} Details">
+<Panel title="{role.name} Details" actions={[
+  {
+    label: 'Delete',
+    icon: TrashCan,
+    onClick: () => {
+      roleDeleteDialog = true
+    }
+  }
+]}>
   <div class="description">
     {role.description ?? ''}
   </div>
@@ -238,3 +260,15 @@
     <p>This action cannot be undone.</p>
   </Modal>
 {/if}
+<Modal
+  bind:open={roleDeleteDialog}
+  modalHeading="Delete Role"
+  primaryButtonText="Delete"
+  secondaryButtonText="Cancel"
+  size="sm"
+  on:click:button--secondary={closeRoleDeleteDialog}
+  on:submit={executeRoleDelete}
+>
+  <p>Are you sure you want to delete the role {role.name}?</p>
+  <p>This action cannot be undone.</p>
+</Modal>

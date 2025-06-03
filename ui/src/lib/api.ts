@@ -1,6 +1,6 @@
 import { PUBLIC_API_BASE, PUBLIC_AUTH_REDIRECT } from '$env/static/public'
 import { APIBase } from '@txstate-mws/sveltekit-utils'
-import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AppRequestFilter } from './typed-client/index.js'
+import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleInput, type AppRequestFilter } from './typed-client/index.js'
 
 class API extends APIBase {
   client = createClient({
@@ -440,6 +440,49 @@ class API extends APIBase {
       }
     })
     return response.subjectTypes
+  }
+
+  async upsertRole (roleId: string | undefined, role: AccessRoleInput, validateOnly: boolean) {
+    if (roleId != null) {
+      const response = await this.client.mutation({
+        __name: 'UpdateRole',
+        roleUpdate: {
+          __args: { roleId, role, validateOnly },
+          success: true,
+          messages: {
+            message: true,
+            type: true,
+            arg: true
+          }
+        }
+      })
+      return this.mutationForDialog(response.roleUpdate)
+    } else {
+      const response = await this.client.mutation({
+        __name: 'CreateRole',
+        roleCreate: {
+          __args: { role, validateOnly },
+          success: true,
+          messages: {
+            message: true,
+            type: true,
+            arg: true
+          }
+        }
+      })
+      return this.mutationForDialog(response.roleCreate)
+    }
+  }
+
+  async deleteRole (roleId: string) {
+    const response = await this.client.mutation({
+      __name: 'DeleteRole',
+      roleDelete: {
+        __args: { roleId },
+        success: true
+      }
+    })
+    return response.roleDelete.success
   }
 
   async updateGrant (grantId: string, grant: AccessRoleGrantUpdate, validateOnly: boolean) {
