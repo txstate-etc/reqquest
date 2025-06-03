@@ -1,4 +1,5 @@
 import { RQServer } from '@txstate-mws/reqquest'
+import { TxStateUAuthContext } from '@txstate-mws/graphql-server'
 import { analyticsPlugin, unifiedAuthenticate } from 'fastify-txstate'
 import { have_yard_prompt, adopt_a_dog_program, have_big_yard_req, have_adequate_personal_space_req, adopt_a_cat_program, cat_tower_req, not_allergic_to_tuna_req, have_a_cat_tower_prompt, not_allergic_to_tuna_prompt, applicant_seems_nice_req, applicant_seems_nice_prompt, must_exercise_your_dog_req, must_exercise_your_dog_prompt, which_state_req, which_state_prompt } from './definitions/index.js'
 import { testMigrations } from './testdata.js'
@@ -12,6 +13,7 @@ async function main () {
   await server.app.register(analyticsPlugin, { appName: 'reqquest', authorize: req => !!req.auth?.username.length })
 
   await server.start({
+    customContext: TxStateUAuthContext,
     appConfig: {
       userLookups: {
         byLogins: async (logins, applicableGroups) => {
