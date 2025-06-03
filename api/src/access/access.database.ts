@@ -312,7 +312,7 @@ export namespace AccessDatabase {
           AND arg.groupName NOT IN (${db.in(dbinds, role.groups)})
         `, dbinds)
       } else {
-        await db.delete('DELETE FROM accessRoleGroups WHERE arg.roleId = ?', [id])
+        await db.delete('DELETE FROM accessRoleGroups WHERE roleId = ?', [id])
       }
     })
   }

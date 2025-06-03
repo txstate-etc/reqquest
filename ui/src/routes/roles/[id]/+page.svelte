@@ -25,10 +25,10 @@
       tags: data.tags.reduce((acc: Record<string, string[]>, curr) => ({ ...acc, [curr.category]: [...(acc[curr.category] ?? []), curr.tag] }), {})
     }
   }
-  function transformToAPI<T extends { tags: Record<string, string[]> }> (data: T): Omit<T, 'tags'> & { tags: AccessTagInput[] } {
+  function transformToAPI<T extends { tags?: Record<string, string[]> }> (data: T): Omit<T, 'tags'> & { tags: AccessTagInput[] } {
     return {
       ...data,
-      tags: Object.entries(data.tags).flatMap(([category, tags]) => tags.map(tag => ({ category, tag })))
+      tags: Object.entries(data.tags ?? {}).flatMap(([category, tags]) => tags.map(tag => ({ category, tag })))
     }
   }
 
@@ -163,7 +163,7 @@
 <ColumnList
   title="Exceptions for Role: {role.name}"
   columns={[
-    { id: 'subjectType', label: 'Grants', render: grant => grant.subjectType.title },
+    { id: 'subjectType', label: 'Exceptions', render: grant => grant.subjectType.title },
     { id: 'controls', label: 'Controls', render: grant => grant.controls.join(', ') },
     { id: 'tags', label: 'Restrictions', render: grant => grant.tags.map(t => t.label).join(', ') }
   ]}
@@ -200,6 +200,8 @@
 {#if showGrantEdit && grantToEdit}
   {@const subjectType = subjectTypeLookup[grantToEdit.subjectType.name]}
   <PanelFormDialog open title="Edit {grantToEdit.allow ? 'Grant' : 'Exception'}" submit={onEditSubmit} validate={onEditValidate} on:cancel={onCloseEdit} on:saved={onSaveGrant} preload={grantToEditInput} let:data>
+    <FieldHidden path="allow" value={grantToEdit.allow} />
+    <FieldHidden path="subjectType" value={grantToEdit.subjectType.name} />
     <FieldCheckboxList
       path="controls"
       legendText="Controls"

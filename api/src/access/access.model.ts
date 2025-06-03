@@ -270,14 +270,14 @@ export class AccessTagInput {
 
 @InputType()
 export class AccessRoleGrantCreate {
-  @Field()
-  subjectType!: string
+  @Field({ nullable: true })
+  subjectType?: string
 
   @Field(type => [AccessTagInput], { nullable: true, description: 'A list of tags to restrict a grant. For instance, if this is added to a grant on PromptAnswer-update, each tag refers to a subset of App Requests.' })
   tags?: AccessTagInput[]
 
-  @Field(type => [String], { description: 'A list of controls that are allowed or denied by this grant. Each subjectType has a list of available controls, available under Query.subjectTypes.' })
-  controls!: string[]
+  @Field(type => [String], { nullable: true, description: 'A list of controls that are allowed or denied by this grant. Each subjectType has a list of available controls, available under Query.subjectTypes.' })
+  controls?: string[]
 
   @Field()
   allow!: boolean

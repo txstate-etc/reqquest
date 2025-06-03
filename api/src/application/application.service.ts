@@ -52,6 +52,6 @@ export class ApplicationService extends AuthService<Application> {
 
   mayViewAsReviewer (application: Application) {
     if (this.isOwn(application) && !this.hasControl('AppRequest', 'review_own')) return false
-    return this.hasControl('Application', 'view', { Program: [application.programKey] })
+    return this.hasControl('Application', 'view', application.authorizationKeys)
   }
 }

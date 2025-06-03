@@ -64,6 +64,7 @@ export class Application {
     this.statusReason = row.computedStatusReason
     this.title = this.program.title
     this.navTitle = this.program.title ?? this.program.title
+    this.authorizationKeys = { program: [this.program.key] }
   }
 
   @Field(() => ID)
@@ -89,6 +90,7 @@ export class Application {
   periodId: string
   programKey: string
   program: ProgramDefinition
+  authorizationKeys: Record<string, string[]>
 }
 
 @ObjectType()

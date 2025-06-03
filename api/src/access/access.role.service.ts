@@ -1,6 +1,6 @@
 import { BaseService, MutationMessageType, ValidatedResponse } from '@txstate-mws/graphql-server'
 import { ManyJoinedLoader, OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { keyby, unique } from 'txstate-utils'
+import { isBlank, keyby, unique } from 'txstate-utils'
 import { AuthService, AccessDatabase as database, AccessRoleFilter, AccessRoleValidatedResponse, AccessRoleGrant, AccessRole, AccessRoleGrantCreate, AccessRoleInput } from '../internal.js'
 
 const accessRolesByIdLoader = new PrimaryKeyLoader({
@@ -171,12 +171,18 @@ export class AccessRoleService extends AuthService<AccessRole> {
     return response
   }
 
+  validateAccessRoleGrant (grant: AccessRoleGrantCreate): AccessRoleValidatedResponse {
+    const response = new AccessRoleValidatedResponse({ success: true, messages: [] })
+    if (isBlank(grant.subjectType)) response.addMessage('Subject type is required.', 'subjectType', MutationMessageType.error)
+    else if (!grant.controls?.length) response.addMessage('At least one control must be selected.', 'controls', MutationMessageType.error)
+    return response
+  }
+
   async addAccessRoleGrant (roleId: string, grant: AccessRoleGrantCreate, validateOnly?: boolean) {
     const role = await this.raw.findAccessRoleById(roleId)
     if (!role) throw new Error('Role does not exist.')
     if (!this.mayUpdate(role)) throw new Error('Access forbidden')
-    const response = new AccessRoleValidatedResponse({ success: true, messages: [] })
-    if (!grant.controls?.length) response.addMessage('At least one control must be selected.', 'controls', MutationMessageType.error)
+    const response = this.validateAccessRoleGrant(grant)
     if (response.hasErrors() || validateOnly) return response
     try {
       await database.addAccessRoleGrant(roleId, grant)
@@ -195,8 +201,7 @@ export class AccessRoleService extends AuthService<AccessRole> {
     const role = await this.raw.findAccessRoleById(grant.roleId)
     if (!role) throw new Error('Role does not exist.')
     if (!this.mayUpdate(role)) throw new Error('Access forbidden')
-    const response = new AccessRoleValidatedResponse({ success: true, messages: [] })
-    if (!grantInput.controls?.length) response.addMessage('At least one control must be selected.', 'controls', MutationMessageType.error)
+    const response = this.validateAccessRoleGrant(grantInput)
     if (response.hasErrors() || validateOnly) return response
     await database.updateAccessRoleGrant(grantId, grantInput)
     this.loaders.clear()

@@ -87,8 +87,8 @@ input AccessRoleGrantCreate {
   """
   A list of controls that are allowed or denied by this grant. Each subjectType has a list of available controls, available under Query.subjectTypes.
   """
-  controls: [String!]!
-  subjectType: String!
+  controls: [String!]
+  subjectType: String
 
   """
   A list of tags to restrict a grant. For instance, if this is added to a grant on PromptAnswer-update, each tag refers to a subset of App Requests.
@@ -102,8 +102,8 @@ input AccessRoleGrantUpdate {
   """
   A list of controls that are allowed or denied by this grant. Each subjectType has a list of available controls, available under Query.subjectTypes.
   """
-  controls: [String!]!
-  subjectType: String!
+  controls: [String!]
+  subjectType: String
 
   """
   A list of tags to restrict a grant. For instance, if this is added to a grant on PromptAnswer-update, each tag refers to a subset of App Requests.

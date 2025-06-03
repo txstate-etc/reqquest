@@ -615,13 +615,13 @@ export interface AccessRoleGrantActionsGenqlSelection{
 
 export interface AccessRoleGrantCreate {allow: Scalars['Boolean'],
 /** A list of controls that are allowed or denied by this grant. Each subjectType has a list of available controls, available under Query.subjectTypes. */
-controls: Scalars['String'][],subjectType: Scalars['String'],
+controls?: (Scalars['String'][] | null),subjectType?: (Scalars['String'] | null),
 /** A list of tags to restrict a grant. For instance, if this is added to a grant on PromptAnswer-update, each tag refers to a subset of App Requests. */
 tags?: (AccessTagInput[] | null)}
 
 export interface AccessRoleGrantUpdate {allow: Scalars['Boolean'],
 /** A list of controls that are allowed or denied by this grant. Each subjectType has a list of available controls, available under Query.subjectTypes. */
-controls: Scalars['String'][],subjectType: Scalars['String'],
+controls?: (Scalars['String'][] | null),subjectType?: (Scalars['String'] | null),
 /** A list of tags to restrict a grant. For instance, if this is added to a grant on PromptAnswer-update, each tag refers to a subset of App Requests. */
 tags?: (AccessTagInput[] | null)}
 

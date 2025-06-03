@@ -158,11 +158,11 @@ export class PeriodPromptService extends AuthService<Prompt> {
   }
 
   mayView (prompt: PeriodPrompt) {
-    return this.hasControl('Prompt', 'view', { prompt: promptRegistry.authorizationKeys[prompt.key] ?? [] })
+    return this.hasControl('Prompt', 'view', prompt.authorizationKeys)
   }
 
-  mayConfigure (prompt: Prompt): boolean {
+  mayConfigure (prompt: PeriodPrompt): boolean {
     if (prompt.definition.validateConfiguration == null) return false
-    return this.hasControl('Prompt', 'configure', { prompt: promptRegistry.authorizationKeys[prompt.key] ?? [] })
+    return this.hasControl('Prompt', 'configure', prompt.authorizationKeys)
   }
 }
