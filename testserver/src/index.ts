@@ -13,7 +13,6 @@ async function main () {
   await server.app.register(analyticsPlugin, { appName: 'reqquest', authorize: req => !!req.auth?.username.length })
 
   await server.start({
-    customContext: TxStateUAuthContext,
     appConfig: {
       userLookups: {
         byLogins: async (logins, applicableGroups) => {
