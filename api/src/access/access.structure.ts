@@ -226,7 +226,7 @@ export function initAccess () {
   subjectTypes.Role = {
     title: 'Admin - Manage Roles',
     controls: {
-      view: { description: 'View the role management interface and see all the roles.' },
+      view: { description: 'View the role management interface and see all the roles, grants, exceptions, groups, and users associated with each.' },
       create: { description: 'Create new roles.' },
       update: { description: 'Update existing roles.' },
       delete: { description: 'Delete existing roles.' }

@@ -434,27 +434,67 @@ reviewer dashboard - separate screens. In addition, there are a set of screens f
 as an applicant and a separate set of screens for reviewing an application.
 
 ### List of Control Groups / Controls
-* AppRequest (no Subjects, does have Tags)
-  * View Others (ability to view your own is implicit and does not need to be granted)
-  * Create/Submit/Accept Own (MVP has no capability to create on behalf of an applicant - become user may fill this anyway)
-  * Submit Others (ability to submit your own is implicit)
-  * Cancel Own
-  * Cancel Others
-  * Return Others
-  * Return Own
-* Prompt (has both Subjects and Tags)
-  * View Own As Reviewer (view own as applicant is implicit)
-  * View Others As Reviewer
-  * Update Own As Reviewer (update own as applicant is implicit, no need to grant it)
-  * Update Others As Reviewer (reviewers can be granted access to write over applicant prompts
-    if desired but they never see the applicant's view)
-  * Configure (for instance, an Administrator could customize the question or help text that appears on a Prompt)
-* Role (no Subjects, no Tags)
-  * Manage Groups (group _membership_ is handled outside the system, each group has managers who can add/remove)
-  * Manage Grants (must have both Manage Groups AND Manage Grants to create new roles)
-* Requirement
-  * Configure (for instance, if there's an income limit, an Administrator may change the dollar amount)
-  * (Proposed) Disable (stop evaluating this requirement or asking its prompts in all open requests)
+
+#### AppRequestOwn (Applicant - Applicant Phase, *no restrictions/tags*)
+- create — Create an appRequest for oneself.
+- cancel — Cancel one's own appRequest while in the applicant phase.
+- uncancel — Re-open one's own appRequest that was cancelled in the applicant phase.
+
+#### AppRequestOwnReview (Applicant - Reviewer Phase, *tags: AppRequest tags*)
+- withdraw — Withdraw one's own appRequest while in the reviewer phase.
+- unwithdraw — Re-open one's own withdrawn appRequest (one that was cancelled while in the reviewer phase).
+
+#### AppRequest (Reviewer - Review Phase, *tags: AppRequest tags*)
+- submit — Submit an appRequest when all requirements pass, even if you are not the applicant.
+- close — Close an appRequest to further edits. Each application and requirement will keep their current status. This will happen automatically when the period's archive date is reached, but can also be done manually by a reviewer.
+- reopen — Reopen an appRequest that has been closed (must be in a valid period).
+- reopen_any — Reopen any appRequest that has been closed, even in an old period or when it was withdrawn by the applicant.
+- return — Return an appRequest in the reviewer phase to the applicant phase.
+- review — See an appRequest in the reviewer list interface.
+- review_own — Allow reviewers to act as reviewers on their own requests. Any permission they have, from any role, related to reviewing will now also apply to their own appRequests. Use with caution.
+- offer — Make an offer to the applicant (move the request from the review phase to the acceptance phase). Only applies in projects/periods where there is at least one enabled ACCEPTANCE requirement.
+
+#### AppRequestPreReview (Reviewer - Applicant Phase, *no restrictions/tags*)
+- create — Create an appRequest on someone else's behalf.
+- uncancel — Re-open any appRequest that was cancelled in the applicant phase.
+
+#### Application (Reviewer - View Applications, *tags: program, AppRequest tags*)
+- view — View application as a reviewer in an AppRequest (requires AppRequest.review to see the reviewer interface).
+
+#### ApplicationRequirement (Reviewer - Requirement Statuses, *tags: requirement, AppRequest tags*)
+- view — View requirement status in an AppRequest (requires AppRequest.review to see the reviewer interface).
+
+#### PromptAnswer (Reviewer - View and Update Prompt Data, *tags: prompt, AppRequest tags*)
+- view — View prompt data as a reviewer in an AppRequest.
+- update — Update any individual appRequest's prompt data during the review phase.
+- update_anytime — Update this prompt as a reviewer even if the appRequest is not yet submitted or awaiting acceptance or pre-approval automations.
+
+#### Prompt (Admin - Configure Prompts, *tags: prompt*)
+- view — View the configuration management interface and see prompt configuration data.
+- configure — Configure the way that a prompt works for all appRequests in a period.
+
+#### Requirement (Admin - Configure Requirements, *tags: requirement, program*)
+- view — View requirement configuration data.
+- configure — Configure the way that a requirement works for all appRequests.
+- disable — Disable/Enable a requirement for all appRequests in a period.
+
+#### Program (Admin - Configure Programs, *tags: program*)
+- view — See the current configuration for this program.
+- configure — Configure the way that a program works for all appRequests in a given period.
+- disable — Disable/Enable a program for all appRequests in a given period.
+
+#### Period (Admin - Manage Periods, *no restrictions/tags*)
+- view — View the period management interface and see all the periods.
+- view_configuration — View the configuration management interface for a period.
+- create — Create new periods.
+- update — Update existing periods.
+- delete — Delete existing periods.
+
+#### Role (Admin - Manage Roles, *no restrictions/tags*)
+- view — View the role management interface and see all the roles, grants, exceptions, groups, and users associated with each.
+- create — Create new roles.
+- update — Update existing roles.
+- delete — Delete existing roles.
 
 # Activities
 These are pretty well represented in the above discussion of Roles and Grants, but we'll
