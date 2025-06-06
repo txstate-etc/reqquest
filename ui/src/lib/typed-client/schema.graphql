@@ -1012,6 +1012,11 @@ enum RequirementType {
   APPROVAL
 
   """
+  A requirement that should be shown to applicants at the end of the request process, prior to review and submission, outside the context of the individual programs. It is intended for acknowledgements like "I affirm that I have given truthful answers". It wouldn't make sense to have them affirm that their answers are truthful in one application but not in the others.
+  """
+  POSTQUAL
+
+  """
   A requirement that has no prompts and must have a non-PENDING status before an application may be reviewed. Use this for materials/data that must appear in an external system before a reviewer will be able to begin their work.
   """
   PREAPPROVAL

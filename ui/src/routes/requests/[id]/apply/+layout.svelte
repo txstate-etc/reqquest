@@ -6,7 +6,7 @@
   import type { LayoutData } from './$types'
 
   export let data: LayoutData
-  $: ({ appRequestForNavigation, prequalPrompts } = data)
+  $: ({ appRequestForNavigation, prequalPrompts, postqualPrompts } = data)
 
   function getNavItems (..._: any[]) {
     const ret: RootStepItem[] = []
@@ -48,6 +48,17 @@
           substeps
         })
       }
+    }
+    for (const prompt of postqualPrompts) {
+      ret.push({
+        id: `prompt${prompt.id}`,
+        label: prompt.navTitle,
+        href: `${base}/requests/${appRequestForNavigation.id}/apply/${prompt.key}`,
+        type: $page.params.promptKey === prompt.key
+          ? 'current'
+          : prompt.answered ? 'complete' : 'available',
+        substeps: []
+      })
     }
     ret.push({
       id: 'review',

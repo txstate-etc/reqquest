@@ -217,6 +217,7 @@ export async function ensureAppRequestRecords (appRequest: AppRequest, db: Query
 const failureStatusLookup = {
   [RequirementType.PREQUAL]: ApplicationStatus.FAILED_PREQUAL,
   [RequirementType.QUALIFICATION]: ApplicationStatus.FAILED_QUALIFICATION,
+  [RequirementType.POSTQUAL]: ApplicationStatus.FAILED_QUALIFICATION,
   [RequirementType.PREAPPROVAL]: ApplicationStatus.NOT_APPROVED,
   [RequirementType.APPROVAL]: ApplicationStatus.NOT_APPROVED,
   [RequirementType.ACCEPTANCE]: ApplicationStatus.NOT_ACCEPTED
@@ -225,10 +226,18 @@ const failureStatusLookup = {
 const metStatusLookup = {
   [RequirementType.PREQUAL]: ApplicationStatus.PREQUAL,
   [RequirementType.QUALIFICATION]: ApplicationStatus.QUALIFICATION,
+  [RequirementType.POSTQUAL]: ApplicationStatus.QUALIFICATION,
   [RequirementType.PREAPPROVAL]: ApplicationStatus.PREAPPROVAL,
   [RequirementType.APPROVAL]: ApplicationStatus.APPROVED,
   [RequirementType.ACCEPTANCE]: ApplicationStatus.ACCEPTED
 }
+
+export const applicantRequirementTypes = new Set<RequirementType>([
+  RequirementType.PREQUAL,
+  RequirementType.QUALIFICATION,
+  RequirementType.POSTQUAL,
+  RequirementType.ACCEPTANCE
+])
 
 export async function evaluateAppRequest (appRequestInternalId: number) {
   // after an appRequest is created and each time it is modified, we will evaluate

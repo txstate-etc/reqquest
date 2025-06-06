@@ -1,5 +1,5 @@
 import { MutationMessage } from '@txstate-mws/graphql-server'
-import { AppRequestData, AppRequestMigration, programRegistry, promptRegistry, RequirementStatus, RequirementType } from '../internal.js'
+import { applicantRequirementTypes, AppRequestData, AppRequestMigration, programRegistry, promptRegistry, RequirementStatus, RequirementType } from '../internal.js'
 
 export interface RequirementDefinition<ConfigurationDataType = any> {
   /**
@@ -190,7 +190,7 @@ class RequirementRegistry {
     }
     this.requirements[definition.key] = definitionProcessed
     this.requirementsList.push(definitionProcessed)
-    if ([RequirementType.PREQUAL, RequirementType.QUALIFICATION, RequirementType.ACCEPTANCE].includes(definition.type)) {
+    if (applicantRequirementTypes.has(definition.type)) {
       for (const key of allPromptKeys) promptRegistry.setUserPrompt(key)
     }
   }

@@ -490,7 +490,7 @@ export interface RequirementPrompt {
 
 export type RequirementStatus = 'DISQUALIFYING' | 'MET' | 'NOT_APPLICABLE' | 'PENDING' | 'WARNING'
 
-export type RequirementType = 'ACCEPTANCE' | 'APPROVAL' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION'
+export type RequirementType = 'ACCEPTANCE' | 'APPROVAL' | 'POSTQUAL' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION'
 
 export interface RoleActions {
     delete: Scalars['Boolean']
@@ -1515,6 +1515,7 @@ export const enumRequirementStatus = {
 export const enumRequirementType = {
    ACCEPTANCE: 'ACCEPTANCE' as const,
    APPROVAL: 'APPROVAL' as const,
+   POSTQUAL: 'POSTQUAL' as const,
    PREAPPROVAL: 'PREAPPROVAL' as const,
    PREQUAL: 'PREQUAL' as const,
    QUALIFICATION: 'QUALIFICATION' as const

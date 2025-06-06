@@ -35,6 +35,7 @@ export class Requirement {
 export enum RequirementType {
   PREQUAL = 'PREQUAL',
   QUALIFICATION = 'QUALIFICATION',
+  POSTQUAL = 'POSTQUAL',
   PREAPPROVAL = 'PREAPPROVAL',
   APPROVAL = 'APPROVAL',
   ACCEPTANCE = 'ACCEPTANCE'
@@ -42,8 +43,9 @@ export enum RequirementType {
 registerEnumType(RequirementType, {
   name: 'RequirementType',
   valuesConfig: {
-    QUALIFICATION: { description: 'A requirement that should have a non-pending status before an application may be submitted for review. Programs with a DISQUALIFYING requirement of type APPLICATION should be visible to the submitter but visually distinct as disabled/ineligible.' },
     PREQUAL: { description: 'A requirement that should have a non-PENDING status before the user is shown their programs. Only the applications for programs whose PREQUAL requirements are MET or NOT_APPLICABLE should be visible. The others should be entirely hidden, rather than being shown in a disabled/ineligible state.' },
+    QUALIFICATION: { description: 'A requirement that should have a non-pending status before an application may be submitted for review. Programs with a DISQUALIFYING requirement of type APPLICATION should be visible to the submitter but visually distinct as disabled/ineligible.' },
+    POSTQUAL: { description: 'A requirement that should be shown to applicants at the end of the request process, prior to review and submission, outside the context of the individual programs. It is intended for acknowledgements like "I affirm that I have given truthful answers". It wouldn\'t make sense to have them affirm that their answers are truthful in one application but not in the others.' },
     PREAPPROVAL: { description: 'A requirement that has no prompts and must have a non-PENDING status before an application may be reviewed. Use this for materials/data that must appear in an external system before a reviewer will be able to begin their work.' },
     APPROVAL: { description: 'A requirement that should only be shown to agents/reviewers and must have a non-pending status before an application is closed.' },
     ACCEPTANCE: { description: 'A requirement that should only be shown to applicants after the application has been through review and an offer has been made. The applicant can come back and fill out the requirement\'s prompts to accept the offer.' }

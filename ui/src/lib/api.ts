@@ -107,6 +107,7 @@ class API extends APIBase {
     if (response.appRequests.length === 0) return { prequalPrompts: [], appRequest: undefined }
     const appRequest = response.appRequests[0]
     const prequalPrompts = appRequest.applications.flatMap(application => application.requirements.filter(r => r.type === enumRequirementType.PREQUAL).flatMap(r => r.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE)))
+    const postqualPrompts = appRequest.applications.flatMap(application => application.requirements.filter(r => r.type === enumRequirementType.POSTQUAL).flatMap(r => r.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE)))
     const applications = appRequest.applications.map(application => ({
       ...application,
       requirements: application.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION).map(requirement => ({
@@ -114,7 +115,7 @@ class API extends APIBase {
         prompts: requirement.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE)
       }))
     }))
-    return { prequalPrompts, appRequest: { ...appRequest, applications } }
+    return { prequalPrompts, postqualPrompts, appRequest: { ...appRequest, applications } }
   }
 
   async getApplicantPrompt (appRequestId: string, promptKey: string) {
@@ -143,7 +144,7 @@ class API extends APIBase {
     if (response.appRequests.length === 0) return {}
     const appRequest = response.appRequests[0]
     for (const application of appRequest.applications) {
-      for (const requirement of application.requirements.filter(r => r.type === enumRequirementType.PREQUAL || r.type === enumRequirementType.QUALIFICATION)) {
+      for (const requirement of application.requirements.filter(r => r.type === enumRequirementType.PREQUAL || r.type === enumRequirementType.QUALIFICATION || r.type === enumRequirementType.POSTQUAL)) {
         for (const prompt of requirement.prompts) {
           if (prompt.key === promptKey && prompt.visibility === enumPromptVisibility.AVAILABLE) return { appRequestData: appRequest.data, prompt }
         }

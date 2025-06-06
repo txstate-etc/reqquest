@@ -86,6 +86,13 @@ fill out prompts that are organized beneath each of the programs. When they are 
 phase, their request is ready to submit for review. If all applications are ineligible, the
 App Request is stuck in this phase until closure or until the applicant changes their answers.
 
+3. POSTQUAL (optional) - In some ReqQuest projects, there will be acknowledgements that the applicant
+must agree to before they can submit their request, but they are not particularly related to any
+of the programs. For instance, if the applicant must agree to a code of conduct or acknowledge
+that they understand the system's privacy policy, those can be added as POSTQUAL requirements. They
+will be shown to the applicant outside the context of any individual program, just before they
+review their entire request and submit it.
+
 3. READY TO SUBMIT - Once all applications are complete, and at least one application
 is still eligible, the App Request becomes eligible to submit.
 
@@ -277,6 +284,7 @@ discussed in detail above, but the general idea is that some requirements are in
 for the applicant to resolve, and some the reviewer(s).
 * PREQUAL
 * QUALIFICATION
+* POSTQUAL
 * PREAPPROVAL
 * APPROVAL
 * ACCEPTANCE
