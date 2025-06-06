@@ -7,14 +7,13 @@ especially helpful in situations with complex requirements and branching logic.
 Each time we build a ReqQuest project, developers, business process analysts, and the
 program administrators will break down the process they're trying to model into programs
 (there could be more than one), requirements (that must be satisfied to prove eligibility),
-and the data that must be collected to satisfy the requirements. This breakdown inclues
-both the applicant and reviewer process. They work much the same way - reviewers also
-answer prompts that satisfy the review requirements.
+and the data that must be collected to satisfy the requirements. Requirements are further
+broken down into applicant and reviewer requirements, depending on whom we expect to provide
+the data.
 
 UX/UI experts will then do a (hopefully quick) pass to create prompts - web forms that
 elicit the data from applicants and reviewers. They'll have flexibility to create multiple
-prompt screens and give each prompt clever functionality because each prompt is
-a Svelte component.
+prompts as needed and include clever functionality because each prompt is a Svelte component.
 
 Let's talk about requirements in a little more detail for a second. It's natural to
 start thinking about requirements in a kind of general way. For instance, "applicant
@@ -23,7 +22,7 @@ requirements are more specific, and probably get broken down into pairs. For ins
 "applicant must provide proof that they make less than $50k/year" and "reviewer must
 evaluate proof that applicant makes less than $50k/year". There is no need for reviewers
 to "check off" on the applicant's requirements, they simply fulfill their
-own set of review requirements.
+own set of requirements.
 
 Ideally, each requirement can be considered individually, without worrying too much about
 other requirements in the system and the information they have already collected.
@@ -76,7 +75,7 @@ Request that contains 4 applications - one for each scholarship.
 Each App Request goes through the following phases on its way through the system.
 
 1. PREQUAL (optional) - In this phase, applicants do not know what programs are available or
-which ones they should apply to. They start answering prompts and at the end of PREQUAL, the
+which ones they should apply to. They start answering prompts and at the end of PREQUAL,
 ReqQuest will help them understand which programs are relevant to them. A ReqQuest project may
 skip this phase entirely if they only have one program or if users will not be confused by
 immediately choosing a program to begin working on.
@@ -96,7 +95,7 @@ review their entire request and submit it.
 3. READY TO SUBMIT - Once all applications are complete, and at least one application
 is still eligible, the App Request becomes eligible to submit.
 
-    The applicant will be prompted to review all the data they have entered and return to prompt
+    The applicant will be shown all the data they have entered and return to prompt
     screens to make any desired changes. Changing answers may cause some applications or
     prompts to appear and/or disappear, but they should never have a prompt appear or disappear
     behind the spot that they are working.
@@ -104,20 +103,20 @@ is still eligible, the App Request becomes eligible to submit.
 4. PREAPPROVAL (optional) - In some ReqQuest projects, there will be requirements that can
 be automatically evaluated instead of requiring a human reviewer. __If__ the reviewers would
 prefer to wait for automated evaluations before they begin their work, the team may add PREAPPROVAL
-requirements to the project. Prompts that belong to these requirements will never be shown to humans,
+requirements to the project. Prompts that belong to these requirements will never be edited by humans,
 they will only receive data from automation processes.
 
     For instance, if a student is required to enroll in courses, they may submit their App Request before
     they have enrolled, and a PREAPPROVAL requirement can wait for their enrollment to show up in
-    the Student Information System before their App Request is allowed to proceed.
+    the Student Information System before their App Request is shown to reviewers as needing attention.
 
-5. APPROVAL - This is the main post-submission phase. Reviewers are able to begin answering their
+5. APPROVAL - This is the main review phase. Reviewers are able to begin answering their
 prompts (and depending on permissions, editing/correcting the applicant's prompts). This phase continues
 until the applications are all approved or denied.
 
-6. APPROVED / DISQUALIFIED - Once the reviewer has answered all appropriate prompts, each application
-will automatically be designated as APPROVED or DISQUALIFIED. If at least one application is APPROVED, the
-App Request as a whole will be marked as APPROVED, otherwise it will be marked as DISQUALIFIED. This
+6. APPROVED / NOT_APPROVED - Once the reviewer has answered all appropriate prompts, each application
+will automatically be designated as APPROVED or NOT_APPROVED. If at least one application is APPROVED, the
+App Request as a whole will be marked as APPROVED, otherwise it will be marked as NOT_APPROVED. This
 designation at the App Request level is mostly for display convenience so that it's easy to tell the
 difference between requests that ended in benefits and those that ended without benefits. Automations
 would likely be configured to respond to individual applications and their status. Automations can also
@@ -158,14 +157,6 @@ what state they live in, a developer could set up the system to use their answer
 their state, and you could create a role that only has final approval rights for applicants who live in Texas.
 
 # Detailed Definitions
-* App Requests
-  * Programs / Applications
-    * Requirements / ApplicationRequirements
-      * Prompts / PromptAnswers
-* Roles
-  * Grants
-    * SubjectType, Subject, (Proposed) Category, Permission
-  * Exceptions
 
 ## App Requests
 App Requests represent the entirety of an applicant's submission during a time window.
@@ -194,7 +185,7 @@ status of her request.
 
 * READY_TO_SUBMIT
 
-  All pre-submission requirements have been evaluated as MET or NOT_APPLICABLE. The application is ready to be submitted.
+  All pre-submission requirements have been evaluated as passing (MET, WARNING, or NOT_APPLICABLE). The application is ready to be submitted.
 
 * PREAPPROVAL
 
@@ -338,42 +329,44 @@ a yes-or-no question and based on the answer the Prompt asks you a followup ques
 logic can also be handled with additional Requirements. It will be up to the developers and
 designers to decide what's most appropriate.
 
-Within the context of an individual application, we will store a PromptAnswer.
-This represents the information collected from users, and has a status of "answered" or not.
+Within the context of an individual application, we will store a PromptAnswer for each Prompt.
+This represents the information collected from the user, and has a status of "answered" or not.
 
 The Requirement is not given the information from the Prompt until it has been
 fully answered. We don't want requirements making decisions based on incomplete or invalid
-data. It is the responsibility of the developer to write javascript code determining whether the
+data. It is the responsibility of the project developer to write javascript code determining whether the
 prompt has been sufficiently answered or is still incomplete. Note: generally the user is allowed to
-save incomplete data and come back later. The developer has discretion to disallow saving certain
+save incomplete data and come back later. The project developer has discretion to disallow saving certain
 data, like a large invalid upload, since that could have consequences.
 
 ## Roles
 Roles represent a set of access privileges that can be assigned to a group of users. Each
-Role is linked to one or more ActiveDirectory groups. Membership in the groups is managed
-outside the system, but which groups go with which Roles is managed within the system. If
+Role is linked to one or more groups (e.g. loaded from ActiveDirectory). Membership in the groups
+is managed outside ReqQuest, but which groups go with which Roles is managed within ReqQuest. If
 the Role lists multiple groups, the group memberships are merged and everyone has the Role.
 
 Each Role has a list of Grants and Exceptions.
 
 ## Grants
-Each Grant bestows one ore more controls from a single Control Group. You may select one or more controls
-from that group.
+Each Grant bestows one or more controls from a single Control Group.
 
 ### Controls and Control Groups
-A control is simple - a specific permission that allows the user to perform a specific action
+A control is a specific permission that allows the user to perform a specific action
 in a specific circumstance. For instance, "create a new app request for myself" is one control,
-while "create a new app request for others" is an entirely separate control.
+while "create a new app request for others" is an entirely separate control. See below for a full
+list of controls.
 
 Some permissions are granted implicitly, like "view your own app requests", "submit your own app requests",
-and "view applicant-phase prompt data from your own app requests". You won't find controls for these.
+and "view applicant-phase prompt data from your own app requests". You won't find controls for these because
+disallowing them would make no sense.
 
 Control Groups are a way to group related controls together to make the process of creating grants
 more convenient. Controls can only live in the same group if they work on the same type of data and have
-the same set of available restrictions (see below for more on restrictions). Groups should be
-further split so that it would make sense to grant all the controls at the same time. For instance, "create a
-new app request for myself" and "create a new app request for others" are in different groups
-because one is for applicants and the other is for staff members. "creating a role for yourself" isn't a
+the same set of available restrictions (see below for more on restrictions).
+
+Groups should be further split so that it would make sense to grant all the controls at the same time. For
+instance, "create a new app request for myself" and "create a new app request for others" are in different groups
+because one is for applicants and the other is for staff members. "create an app request for yourself" isn't a
 a common permission for staff members, so for clarity, it shouldn't get mixed in. You can still make a role
 that has both permissions, but you would create two separate grants.
 
@@ -406,13 +399,14 @@ might want to create a role that allows a user to review all App Requests NOT ta
 "College of Engineering". This is where exceptions come in.
 
 First you create a grant that allows the user to review all App Requests, with no restrictions.
-Then you create an exception, which is just like a grant. Select a Control Group and then one
-or more controls. Then you select a set of tags to define the exception. In our example, you
-would select the "College of Engineering" tag.
+Then you create an exception, and select the same control group and controls as your grant.
+To finish, you select a set of tags to define the exception. In our example, you would select
+the "College of Engineering" tag.
 
-Once you save your exception, the role __cannot__ grant the selected controls to App Requests
-tagged with "College of Engineering". So the combined effect of your grant and your exception is
-that the user can review all App Requests except those tagged with "College of Engineering".
+Once you save your exception, the role __cannot__ grant the permission to review App Requests
+tagged with "College of Engineering", no matter how many grants you add. So the combined
+effect of your grant and your exception is that the user can review all App Requests except
+those tagged with "College of Engineering".
 
 A major advantage to this approach is that as new colleges are added to the system, the role
 automatically gets access to them, without needing to update the role. If you had
@@ -424,9 +418,10 @@ Keep in mind, exceptions only apply to the __role__. Once the role has resolved 
 its grants and exceptions, the role itself can only _add_ permissions to the user.
 
 For instance, consider a system with two reviewer roles: one that grants "update" on all Prompts
-except reviewing driver's licenses, and another granting the review of driver's licenses. A
-user could be placed in both roles and now they are able to review everything, including
-driver's licenses.
+_except_ reviewing driver's licenses, and another granting the review of driver's licenses. A
+user could be placed in the first role to review everything except driver's licenses, and then added
+to the second role to add the ability to review driver's licenses. Now they are able to review
+everything, including driver's licenses.
 
 Note: If a user has both applicant and reviewer roles, the actions available to them will
 be based on which screen they are on. For instance, there is an applicant dashboard and a
@@ -497,31 +492,36 @@ as an applicant and a separate set of screens for reviewing an application.
 - delete — Delete existing roles.
 
 # Activities
-These are pretty well represented in the above discussion of Roles and Grants, but we'll
-keep this section up to date so we have a simplified view for quicker understanding.
 
-* Applicant creates new App Request
-* Applicant updates Prompts
-* Applicant does final review of entered data prior to submission
-* Applicant cancels request before submitting it
-* Applicant un-cancels request
-* Applicant submits App Request for review
-* Applicant views prior App Requests on a dashboard
-* Applicant views status of current App Request on a dashboard
-* Applicant reviews their submitted App Request and sees all entered data
-* Applicant withdraws request after submitting it
-* (phase 2) Applicant accepts an approved offer
-* Reviewer views list of App Requests with various filters
-* Reviewer views a dashboard highlighting App Requests that need their attention
-* Reviewer updates Prompts
-* Reviewer sends App Request back to applicant for edits
-* Reviewer closes App Request
-* Reviewer re-opens App Request
-* (phase 2) Reviewer sends App Request to applicant with an offer to be accepted
-* Administrator creates/updates Periods
-* Administrator creates/updates Roles
-* Administrator creates/updates Grants and Exceptions within Roles
-* Administrator updates Prompt configurations within an upcoming period
-* Administrator updates Requirement configurations within an upcoming period
-* (phase 2) Administrator disables/re-enables a Requirement in a period
-* (phase 2) Administrator disables/re-enables a Program in a period
+This section summarizes the main activities users can perform in ReqQuest. Activities are grouped by user type for clarity.
+
+**Applicant Activities**
+- Create a new App Request
+- Update and answer prompts
+- Review and finalize entered data before submission
+- Cancel or uncancel an App Request before submission
+- Submit an App Request for review
+- View prior and current App Requests and their statuses on a dashboard
+- Review submitted App Requests and see all entered data
+- Withdraw or unwithdraw a submitted App Request during the reviewer phase
+- Accept or decline an offer (if applicable) by filling out acceptance prompts
+
+**Reviewer Activities**
+- View the list of App Requests with filters
+- View dashboards highlighting App Requests needing attention
+- Review and update prompt data during the review phase
+- Return an App Request to the applicant phase
+- Close or reopen App Requests
+- Make an offer to the applicant (if applicable)
+- View and update application and requirement statuses
+- Send App Request back to applicant for edits
+
+**Administrator Activities**
+- Create, update, or delete Periods
+- Create, update, or delete Roles
+- Create, update, or delete Grants and Exceptions within Roles
+- Update Prompt configurations for upcoming periods
+- Update Requirement configurations for upcoming periods
+- Enable or disable Requirements or Programs in a period
+
+If your project has additional phases or custom activities, be sure to add them here to keep this list up to date.
