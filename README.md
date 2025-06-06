@@ -356,34 +356,76 @@ the Role lists multiple groups, the group memberships are merged and everyone ha
 
 Each Role has a list of Grants and Exceptions.
 
-### SubjectTypes and Subjects
-A SubjectType represents a certain type of data, many of which we've already discussed,
-like Prompt and Requirement.
+## Grants
+Each Grant bestows one ore more controls from a single Control Group. You may select one or more controls
+from that group.
 
-A Subject represents one example of a SubjectType, so for instance, if "Prompt" is the SubjectType,
-one of the Subjects might be the "Upload your Driver's License" Prompt.
+### Controls and Control Groups
+A control is simple - a specific permission that allows the user to perform a specific action
+in a specific circumstance. For instance, "create a new app request for myself" is one control,
+while "create a new app request for others" is an entirely separate control.
 
-When you create a Grant, you'll always choose a SubjectType for the Grant. If that SubjectType
-also has Subjects, you'll either choose one or leave it blank to make the Grant affect ALL Subjects.
+Some permissions are granted implicitly, like "view your own app requests", "submit your own app requests",
+and "view applicant-phase prompt data from your own app requests". You won't find controls for these.
 
-Some SubjectTypes do theoretically have Subjects, but too many to add them individually to Roles.
-For example the SubjectType "AppRequest" will eventually number in the tens of thousands in the
-database, but creating a role to allow access to a single applicant's request would be
-ridiculous, so the system doesn't allow it.
+Control Groups are a way to group related controls together to make the process of creating grants
+more convenient. Controls can only live in the same group if they work on the same type of data and have
+the same set of available restrictions (see below for more on restrictions). Groups should be
+further split so that it would make sense to grant all the controls at the same time. For instance, "create a
+new app request for myself" and "create a new app request for others" are in different groups
+because one is for applicants and the other is for staff members. "creating a role for yourself" isn't a
+a common permission for staff members, so for clarity, it shouldn't get mixed in. You can still make a role
+that has both permissions, but you would create two separate grants.
 
-## Grants and Exceptions
-Each Grant bestows permission on one SubjectType. You may then select one or more Subjects
-of that SubjectType, or leave it blank to make the grant apply to everything.
+### Restrictions / Tags
+Each time you grant a control, you can restrict your grant to a specific set of Tags. These tags
+vary from control group to control group, because different permissions have different ways that you
+might want to restrict them.
 
-If you choose ALL subjects, you may save your Grant and then add an Exception that removes
-the same permission from a single subject.
+For instance, if you grant permission to answer prompts, you might want to restrict your grant to
+prompts that are part of a specific program, or restrict it to a specific prompt (like a "final approval"
+prompt).
 
-Once the role has all of its grants and exceptions, it only _adds_ permissions to the user,
-after removing exceptions.
+ReqQuest provides downstream project developers with the ability to define their own tags, by adding
+code to one of the prompts that they create. For instance, if you have a faculty leave request
+application, you might want to restrict some permissions to a specific department or college. The
+developer can write code that produces a list of all the departments and colleges, and then
+assigns tags to App Requests based on the department and college that the applicant selects in a
+"Confirm Your Info" prompt.
 
-For instance, consider a system with two reviewer roles: one that grants update on all Prompts
+These tags can then be used by role administrators to restrict grants, for instance, creating a
+role that is a reviewer for all App Requests that have been tagged as College of Engineering.
+
+Administrators __cannot__ create new ways of tagging - that would take a developer and a software
+update.
+
+## Exceptions
+Grants add permissions to a role, possibly with restrictions. But what if you want to
+grant a permission for everything __except__ a specific set of tags? For instance, you
+might want to create a role that allows a user to review all App Requests NOT tagged as
+"College of Engineering". This is where exceptions come in.
+
+First you create a grant that allows the user to review all App Requests, with no restrictions.
+Then you create an exception, which is just like a grant. Select a Control Group and then one
+or more controls. Then you select a set of tags to define the exception. In our example, you
+would select the "College of Engineering" tag.
+
+Once you save your exception, the role __cannot__ grant the selected controls to App Requests
+tagged with "College of Engineering". So the combined effect of your grant and your exception is
+that the user can review all App Requests except those tagged with "College of Engineering".
+
+A major advantage to this approach is that as new colleges are added to the system, the role
+automatically gets access to them, without needing to update the role. If you had
+created a grant that whitelisted access to an exhaustive list of colleges but not engineering,
+you would have to update the role every time a new college was added.
+
+### Exceptions and users with multiple roles
+Keep in mind, exceptions only apply to the __role__. Once the role has resolved all of
+its grants and exceptions, the role itself can only _add_ permissions to the user.
+
+For instance, consider a system with two reviewer roles: one that grants "update" on all Prompts
 except reviewing driver's licenses, and another granting the review of driver's licenses. A
-user could be placed in both roles and now they are able to review everything including
+user could be placed in both roles and now they are able to review everything, including
 driver's licenses.
 
 Note: If a user has both applicant and reviewer roles, the actions available to them will
@@ -391,40 +433,7 @@ be based on which screen they are on. For instance, there is an applicant dashbo
 reviewer dashboard - separate screens. In addition, there are a set of screens for submitting
 as an applicant and a separate set of screens for reviewing an application.
 
-### Tags
-There are two cases where being able to choose individual subjects is not enough. One is when the
-subject list is theoretically infinite. We're absolutely not going to create a role that can only
-update a single App Request. Two is when we want to restrict on two things at once. For instance, if
-I want to allow a reviewer to update a single prompt for App Requests where the applicant lives
-in Texas, I've got two restrictions, one for the Prompt subject type and a specific Prompt subject,
-and another for App Requests filed from Texas.
-
-To support these cases, developers will have the opportunity to provide code that assigns "tags"
-to App Requests. Now while granting permissions to a role, the administrator will be able to limit
-their grant to one or more of the tags available in the system. Administrators __cannot__ create new
-ways of tagging - that would take a developer and a software update.
-
-As an example, let's think about that faculty leave request. The faculty leave request application
-developer will provide two functions:
-+ One to produce all the possible departments and colleges. It would fulfill this with a live
-  request to the Student Information System, and spit out something like:
-  `["department: Anthropology", "department: History", "college: Liberal Arts", ...]`
-  * The specific text of each tag would be completely up to the developer working on
-    the faculty leave request application - ReqQuest only demands that they are all unique.
-+ One to examine an App Request and determine which department and college it belongs to.
-  * We would create a "Confirm Your Info" Prompt to gather this information before the applicant
-    submits, and store it permanently inside the application data. So if the applicant was in
-    Engineering when they confirmed their info, they keep the "department: Engineering" tag for
-    the life of the application, or until they re-save that Prompt.
-  * Knowing that the information exists in the "Confirm Your Info" Prompt, the developer can
-    write a function that takes the App Request data and spits out
-    `["department: Engineering", "college: College of Engineering"]`.
-
-Now when an Administrator creates a Role, they can add a Grant that targets either ALL tags
-or a single tag. Similarly, they can make Exceptions that target all tags or a single
-tag.
-
-### List of SubjectTypes / Permissions
+### List of Control Groups / Controls
 * AppRequest (no Subjects, does have Tags)
   * View Others (ability to view your own is implicit and does not need to be granted)
   * Create/Submit/Accept Own (MVP has no capability to create on behalf of an applicant - become user may fill this anyway)
