@@ -1,6 +1,6 @@
 import { Context, ValidatedResponse, ValidatedResponseArgs } from '@txstate-mws/graphql-server'
 import { ObjectType, InputType, Field, ID } from 'type-graphql'
-import { AccessRoleGrantControlRow, AccessRoleGrantRow, AccessRoleGrantTagRow, AccessRoleRow, AccessRoleService, AccessUserIdentifierRow, AccessUserRow, ControlDefinition, JsonData, promptRegistry, safeParse, subjectTypes, TagCategoryDefinition } from '../internal.js'
+import { AccessRoleGrantRow, AccessRoleGrantTagRow, AccessRoleRow, AccessRoleService, AccessUserIdentifierRow, AccessUserRow, ControlDefinition, JsonData, safeParse, SubjectTypeDefinitionProcessed, subjectTypes, TagCategoryDefinition } from '../internal.js'
 
 @ObjectType()
 export class Access {}
@@ -237,8 +237,10 @@ export class AccessRoleGrantActions {}
 @ObjectType()
 export class AccessGrantTag {
   constructor (row: AccessRoleGrantTagRow) {
+    const subjectType = subjectTypes[row.subjectType] as SubjectTypeDefinitionProcessed
+    const category = subjectType.tagCategoryLookup[row.category] as TagCategoryDefinition
     this.category = row.category
-    this.categoryLabel = promptRegistry.getCategoryLabel(row.category)
+    this.categoryLabel = category.label ?? row.category
     this.tag = row.tag
     this.subjectType = row.subjectType
     this.grantId = row.grantId

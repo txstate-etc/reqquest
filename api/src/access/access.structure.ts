@@ -1,3 +1,4 @@
+import { keyby } from 'txstate-utils'
 import { programRegistry, promptRegistry, requirementRegistry } from '../internal.js'
 
 export interface TagDefinition {
@@ -88,7 +89,12 @@ export interface SubjectTypeDefinition {
   controls: Record<string, ControlDefinition>
 }
 
-export function initAccess () {
+export interface SubjectTypeDefinitionProcessed extends SubjectTypeDefinition {
+  tagCategoryLookup: Record<string, TagCategoryDefinition>
+  tagLookup: Record<string, Record<string, TagDefinition>>
+}
+
+export async function initAccess () {
   const appRequestTags: TagCategoryDefinition[] = promptRegistry.tagCategories.map(category => ({
     category: category.category,
     label: category.categoryLabel ?? category.category,
@@ -230,6 +236,15 @@ export function initAccess () {
       create: { description: 'Create new roles.' },
       update: { description: 'Update existing roles.' },
       delete: { description: 'Delete existing roles.' }
+    }
+  }
+  for (const subjectType of Object.keys(subjectTypes)) {
+    const def = subjectTypes[subjectType] as SubjectTypeDefinitionProcessed
+    def.tagCategoryLookup = keyby(def.tags ?? [], 'category')
+    def.tagLookup = {}
+    for (const tagCategory of def.tags ?? []) {
+      if (!tagCategory.notListable) def.tagLookup[tagCategory.category] = keyby(await tagCategory.getTags?.() ?? [], 'value')
+      tagCategory.getLabel ??= (value: string) => (def.tagLookup[tagCategory.category]?.[value]?.label ?? value)
     }
   }
 }

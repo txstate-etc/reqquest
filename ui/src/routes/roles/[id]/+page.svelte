@@ -4,17 +4,24 @@
   import Add from 'carbon-icons-svelte/lib/Add.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
-  import { pick } from 'txstate-utils'
-  import { goto, invalidate } from '$app/navigation'
-  import { base } from '$app/paths'
+  import { setContext } from 'svelte'
+  import { groupby, pick } from 'txstate-utils'
+  import { invalidate } from '$app/navigation'
   import { api, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessTagInput } from '$lib'
   import type { PageData } from './$types'
+  import ControlWithTooltip from './ControlWithTooltip.svelte'
 
   export let data: PageData
   $: ({ role, subjectTypes, subjectTypeLookup } = data)
 
   $: grants = role.grants.filter(g => g.allow)
   $: exceptions = role.grants.filter(g => !g.allow)
+
+  setContext('subjectTypeLookup', () => subjectTypeLookup)
+  function tagsRender (tags: { categoryLabel: string, label: string }[]) {
+    const categories = groupby(tags, 'categoryLabel')
+    return Object.entries(categories).map(([category, tags]) => `<strong>${tags[0].categoryLabel}</strong><br>${tags.map(t => t.label).join(', ')}`).join('<br>')
+  }
 
   type AccessRoleGrantCreateForm = Omit<AccessRoleGrantCreate, 'tags'> & { tags: Record<string, string[]> }
   type AccessRoleGrantUpdateForm = Omit<AccessRoleGrantUpdate, 'tags'> & { tags: Record<string, string[]> }
@@ -44,7 +51,7 @@
   }
   function onGrantDelete (row: PageData['role']['grants'][number]) {
     return () => {
-      grantToDelete = row.id
+      grantToDelete = row
     }
   }
   function onCloseEdit () {
@@ -77,42 +84,21 @@
     return response.messages
   }
 
-  let grantToDelete: string | undefined
+  let grantToDelete: PageData['role']['grants'][number] | undefined
   function closeDeleteConfirmation () {
     grantToDelete = undefined
   }
   async function executeDelete () {
     try {
-      await api.deleteGrant(grantToDelete!)
+      await api.deleteGrant(grantToDelete!.id)
       await invalidate('api:getRoleDetails')
     } finally {
       closeDeleteConfirmation()
     }
   }
-
-  let roleDeleteDialog = false
-  function closeRoleDeleteDialog () {
-    roleDeleteDialog = false
-  }
-  async function executeRoleDelete () {
-    try {
-      await api.deleteRole(role.id)
-      await goto(`${base}/roles`)
-    } catch (e: any) {
-      closeRoleDeleteDialog()
-    }
-  }
 </script>
 
-<Panel title="{role.name} Details" actions={[
-  {
-    label: 'Delete',
-    icon: TrashCan,
-    onClick: () => {
-      roleDeleteDialog = true
-    }
-  }
-]}>
+<Panel title="{role.name} Details">
   <div class="description">
     {role.description ?? ''}
   </div>
@@ -140,8 +126,8 @@
   ]}
   columns={[
     { id: 'subjectType', label: 'Grants', render: grant => grant.subjectType.title },
-    { id: 'controls', label: 'Controls', render: grant => grant.controls.join(', ') },
-    { id: 'tags', label: 'Restrictions', render: grant => grant.tags.map(t => t.label).join(', ') }
+    { id: 'controls', label: 'Controls', component: ControlWithTooltip },
+    { id: 'tags', label: 'Restrictions', render: grant => tagsRender(grant.tags) }
   ]}
   rows={grants}
   actions={row => [
@@ -249,7 +235,7 @@
 {:else if grantToDelete}
   <Modal
     open
-    modalHeading="Delete Grant"
+    modalHeading="Delete {grantToDelete.allow ? 'Grant' : 'Exception'}"
     primaryButtonText="Delete"
     secondaryButtonText="Cancel"
     size="sm"
@@ -258,19 +244,7 @@
     on:submit={executeDelete}
     on:close={closeDeleteConfirmation}
   >
-    <p>Are you sure you want to delete this grant?</p>
+    <p>Are you sure you want to delete this {grantToDelete.allow ? 'grant' : 'exception'}?<br><em>{subjectTypeLookup[grantToDelete.subjectType.name].title}</em></p>
     <p>This action cannot be undone.</p>
   </Modal>
 {/if}
-<Modal
-  bind:open={roleDeleteDialog}
-  modalHeading="Delete Role"
-  primaryButtonText="Delete"
-  secondaryButtonText="Cancel"
-  size="sm"
-  on:click:button--secondary={closeRoleDeleteDialog}
-  on:submit={executeRoleDelete}
->
-  <p>Are you sure you want to delete the role {role.name}?</p>
-  <p>This action cannot be undone.</p>
-</Modal>

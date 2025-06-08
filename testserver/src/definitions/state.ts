@@ -1,5 +1,6 @@
 import { MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
 import { PromptDefinition, RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
+import { keyby } from 'txstate-utils'
 
 export const which_state_req: RequirementDefinition = {
   type: RequirementType.PREQUAL,
@@ -68,6 +69,7 @@ const stateList = [
   { value: 'WI', label: 'Wisconsin' },
   { value: 'WY', label: 'Wyoming' }
 ]
+const stateLookup = keyby(stateList, 'value')
 
 export const which_state_prompt: PromptDefinition = {
   key: 'which_state_prompt',
@@ -87,6 +89,7 @@ export const which_state_prompt: PromptDefinition = {
     categoryLabel: 'State',
     extract: data => data.which_state_prompt ? [data.which_state_prompt.state] : [],
     description: 'Limit based on the state the applicant lives in.',
-    getTags: () => stateList
+    getTags: () => stateList,
+    getLabel: tag => stateLookup[tag]?.label ?? tag
   }]
 }

@@ -6,7 +6,8 @@ import {
   RoleActions, AccessUserService, AccessRoleService, AccessRoleGrantCreate, AccessRoleGrant,
   AccessUserIdentifier, AccessRoleInput, AccessControl, AccessSubjectType, subjectTypes,
   AccessRoleGrantUpdate, appConfig, AccessTagCategory, AccessTag, AccessGrantTag,
-  promptRegistry, AccessRoleGrantActions, AccessRoleServiceInternal, AppRequestService
+  AccessRoleGrantActions, AccessRoleServiceInternal, AppRequestService, SubjectTypeDefinitionProcessed,
+  TagCategoryDefinition
 } from '../internal.js'
 
 @Resolver(of => Access)
@@ -168,7 +169,9 @@ export class AccessRoleGrantActionsResolver {
 export class AccessGrantTagResolver {
   @FieldResolver(returns => String)
   async label (@Ctx() ctx: Context, @Root() tag: AccessGrantTag) {
-    return await promptRegistry.getTagLabel(tag.category, tag.tag)
+    const subjectType = subjectTypes[tag.subjectType] as SubjectTypeDefinitionProcessed
+    const category = subjectType.tagCategoryLookup[tag.category] as TagCategoryDefinition
+    return await category.getLabel?.(tag.tag) ?? tag.tag
   }
 }
 

@@ -300,14 +300,21 @@ class PromptRegistry {
     const reachableKeys = new Set(requirementRegistry.reachable.flatMap(req => req.allPromptKeys))
     this.reachable = this.promptsList.filter(prompt => reachableKeys.has(prompt.key))
     for (const prompt of this.reachable) {
-      for (const tag of [...(prompt.tags ?? []), ...(prompt.indexes ?? [])]) {
-        if ('getTags' in tag) this.tagCategories.push(tag as PromptTagDefinition)
-        this.indexCategories.push(tag)
-        this.indexCategoryMap[tag.category] = tag
-        this.indexLookups[tag.category] = async (t: string) => {
-          let label = await tag.getLabel?.(t)
-          if (label) await db.insert('INSERT INTO tag_labels (category, tag, label) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE label = VALUES(label)', [tag.category, t, label])
-          label ??= await db.getval<string>('SELECT label FROM tag_labels WHERE category = ? AND tag = ?', [tag.category, t])
+      for (const index of [...(prompt.tags ?? []), ...(prompt.indexes ?? [])]) {
+        if ('getTags' in index) {
+          const tag = index as PromptTagDefinition
+          this.tagCategories.push(tag)
+        }
+        this.indexCategories.push(index)
+        this.indexCategoryMap[index.category] = index
+        this.indexLookups[index.category] = async (t: string) => {
+          let label = await index.getLabel?.(t)
+          if ('getTags' in index && !label) {
+            const tag = index as PromptTagDefinition
+            label = (await tag.getTags!(t)).find(tag => tag.value === t)?.label
+          }
+          if (label) await db.insert('INSERT INTO tag_labels (category, tag, label) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE label = VALUES(label)', [index.category, t, label])
+          label ??= await db.getval<string>('SELECT label FROM tag_labels WHERE category = ? AND tag = ?', [index.category, t])
           label ??= t
           return label
         }
