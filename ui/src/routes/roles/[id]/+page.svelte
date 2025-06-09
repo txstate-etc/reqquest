@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ColumnList, FieldCheckboxList, FieldHidden, FieldMultiselect, FieldSelect, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
-  import { Modal } from 'carbon-components-svelte'
+  import { Modal, TooltipDefinition } from 'carbon-components-svelte'
   import Add from 'carbon-icons-svelte/lib/Add.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
@@ -192,8 +192,18 @@
       path="controls"
       legendText="Controls"
       items={subjectType.controls.map(c => ({ value: c.name }))}
-      orientation="horizontal"
-    />
+    >
+      <svelte:fragment slot="labelText" let:item>
+        {@const control = subjectType.controls.find(c => c.name === item.value)}
+        {#if control}
+          <TooltipDefinition tooltipText={control.description} direction="bottom" align="start">
+            {control.name}
+          </TooltipDefinition>
+        {:else}
+          {item.value}
+        {/if}
+      </svelte:fragment>
+    </FieldCheckboxList>
     {#each subjectType.tags as category}
       <FieldMultiselect
         path="tags.{category.category}"
@@ -219,8 +229,19 @@
         path="controls"
         legendText="Controls"
         items={subjectType.controls.map(c => ({ value: c.name }))}
-        orientation="horizontal"
-      />
+      >
+        <svelte:fragment slot="labelText" let:item>
+          {@const control = subjectType.controls.find(c => c.name === item.value)}
+          {#if control}
+            <TooltipDefinition tooltipText={control.description} direction="bottom" align="start">
+              {control.name}
+            </TooltipDefinition>
+          {:else}
+            {item.value}
+          {/if}
+        </svelte:fragment>
+      </FieldCheckboxList>
+
       {#each subjectType.tags as category (category.category)}
         <FieldMultiselect
           path="tags.{category.category}"
