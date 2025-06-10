@@ -132,6 +132,16 @@ export async function getAppRequestTags (appRequestIds: string[], tdb: Queryable
   return tagLookup
 }
 
+export async function getIndexesInUse (category: string) {
+  return await db.getall<{ tag: string, label: string }>(`
+    SELECT DISTINCT art.tag AS value, tl.label
+    FROM app_request_tags art
+    INNER JOIN app_requests r ON r.id = art.appRequestId
+    INNER JOIN tag_labels tl ON tl.category = art.category AND tl.tag = art.tag
+    WHERE art.category = ?
+  `, [category])
+}
+
 export async function updateAppRequestComputed (appRequest: AppRequest, db: Queryable) {
   await db.execute('UPDATE app_requests SET computedStatus = ? WHERE id = ?', [appRequest.status, appRequest.internalId])
 }

@@ -127,6 +127,7 @@ export interface AccessTagCategory {
 
 /** A user that has or once had access to the system. */
 export interface AccessUser {
+    fullname: Scalars['String']
     groups: Scalars['String'][]
     login: Scalars['ID']
     otherIdentifiers: AccessUserIdentifier[]
@@ -151,6 +152,7 @@ export interface AccessUserIdentifier {
 export interface AppRequest {
     /** Actions the user can take on this app request. */
     actions: AppRequestActions
+    applicant: AccessUser
     applications: Application[]
     /** Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date. */
     closedAt: (Scalars['DateTime'] | null)
@@ -165,6 +167,8 @@ export interface AppRequest {
     /** Retrieve a specific prompt by its ID. This is useful for the UI to get the full prompt data and configuration when trying to edit an individual prompt. We don't want to be downloading all the config data for everything up front. */
     prompt: RequirementPrompt
     status: AppRequestStatus
+    /** The most pertinent status reason for this app request. The logic is complicated and depends on the AppRequest's status. */
+    statusReason: (Scalars['String'] | null)
     updatedAt: Scalars['DateTime']
     __typename: 'AppRequest'
 }
@@ -187,6 +191,8 @@ export interface AppRequestActions {
     __typename: 'AppRequestActions'
 }
 
+
+/** This represents an index category attached to an app request. Its tagStrings property contains the tag values that have been extracted from the app request data. */
 export interface AppRequestIndexCategory {
     /** If this is > 0, the index values should be shown on the main app request list page, sorted by this priority in descending order. */
     appRequestListPriority: (Scalars['Float'] | null)
@@ -196,6 +202,7 @@ export interface AppRequestIndexCategory {
     categoryLabel: Scalars['String']
     /** If this is > 0, the index values should be shown on the list filters, sorted by this priority in descending order. */
     listFiltersPriority: (Scalars['Float'] | null)
+    listable: Scalars['Boolean']
     /** If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order. */
     reviewerDashboardPriority: (Scalars['Float'] | null)
     values: AppRequestIndexValue[]
@@ -205,16 +212,6 @@ export interface AppRequestIndexCategory {
 
 /** This is used to indicate where the index values should be displayed. */
 export type AppRequestIndexDestination = 'APPLICANT_DASHBOARD' | 'APP_REQUEST_LIST' | 'LIST_FILTERS' | 'REVIEWER_DASHBOARD'
-
-
-/** This is used to list all the available filters for the app request list. */
-export interface AppRequestIndexFilter {
-    category: Scalars['String']
-    categoryLabel: Scalars['String']
-    listable: Scalars['Boolean']
-    values: AppRequestIndexValue[]
-    __typename: 'AppRequestIndexFilter'
-}
 
 export interface AppRequestIndexValue {
     label: Scalars['String']
@@ -304,6 +301,24 @@ export interface ConfigurationAccess {
     update: Scalars['Boolean']
     view: Scalars['Boolean']
     __typename: 'ConfigurationAccess'
+}
+
+
+/** This represents an index as registered by one of the project's prompt definitions. */
+export interface IndexCategory {
+    /** If this is > 0, the index values should be shown on the main app request list page, sorted by this priority in descending order. */
+    appRequestListPriority: (Scalars['Float'] | null)
+    /** If this is > 0, the index values should be shown on the applicant dashboard, sorted by this priority in descending order. */
+    applicantDashboardPriority: (Scalars['Float'] | null)
+    category: Scalars['String']
+    categoryLabel: Scalars['String']
+    /** If this is > 0, the index values should be shown on the list filters, sorted by this priority in descending order. */
+    listFiltersPriority: (Scalars['Float'] | null)
+    listable: Scalars['Boolean']
+    /** If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order. */
+    reviewerDashboardPriority: (Scalars['Float'] | null)
+    values: AppRequestIndexValue[]
+    __typename: 'IndexCategory'
 }
 
 export interface Mutation {
@@ -444,7 +459,7 @@ export interface Query {
      */
     access: Access
     accessUsers: AccessUser[]
-    appRequestFilters: AppRequestIndexFilter[]
+    appRequestIndexes: IndexCategory[]
     appRequests: AppRequest[]
     periods: Period[]
     programGroups: ProgramGroup[]
@@ -460,6 +475,8 @@ export interface Query {
 
 /** A RequestPrompt is an instance of a Prompt on a particular request. Once the user has answered the prompt, it contains the answer and the prompt status on that request. */
 export interface RequirementPrompt {
+    /** Actions that the user can take on this prompt. */
+    actions: RequirementPromptActions
     /** Whether the prompt has been answered on this request. */
     answered: Scalars['Boolean']
     /** The configuration data for this prompt in the app request's period. */
@@ -481,11 +498,18 @@ export interface RequirementPrompt {
     navTitle: Scalars['String']
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
     preloadData: (Scalars['JsonData'] | null)
+    /** The requirement that this prompt is associated with. */
+    requirement: ApplicationRequirement
     /** A human readable title for the prompt. This is what will be shown to users. */
     title: Scalars['String']
     /** The visibility of the prompt on the request. This is used to determine whether the prompt should be shown to the user in the UI. */
     visibility: PromptVisibility
     __typename: 'RequirementPrompt'
+}
+
+export interface RequirementPromptActions {
+    update: Scalars['Boolean']
+    __typename: 'RequirementPromptActions'
 }
 
 export type RequirementStatus = 'DISQUALIFYING' | 'MET' | 'NOT_APPLICABLE' | 'PENDING' | 'WARNING'
@@ -682,6 +706,7 @@ tag: Scalars['String']}
 
 /** A user that has or once had access to the system. */
 export interface AccessUserGenqlSelection{
+    fullname?: boolean | number
     groups?: boolean | number
     login?: boolean | number
     otherIdentifiers?: AccessUserIdentifierGenqlSelection
@@ -714,6 +739,7 @@ export interface AccessUserIdentifierInput {id: Scalars['ID'],label: Scalars['St
 export interface AppRequestGenqlSelection{
     /** Actions the user can take on this app request. */
     actions?: AppRequestActionsGenqlSelection
+    applicant?: AccessUserGenqlSelection
     applications?: ApplicationGenqlSelection
     /** Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date. */
     closedAt?: boolean | number
@@ -732,6 +758,8 @@ export interface AppRequestGenqlSelection{
     /** Retrieve a specific prompt by its ID. This is useful for the UI to get the full prompt data and configuration when trying to edit an individual prompt. We don't want to be downloading all the config data for everything up front. */
     prompt?: (RequirementPromptGenqlSelection & { __args: {promptId: Scalars['ID']} })
     status?: boolean | number
+    /** The most pertinent status reason for this app request. The logic is complicated and depends on the AppRequest's status. */
+    statusReason?: boolean | number
     updatedAt?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
@@ -764,6 +792,8 @@ logins?: (Scalars['ID'][] | null),
 /** Only return appRequests that are owned by the current user. */
 own?: (Scalars['Boolean'] | null),periodIds?: (Scalars['ID'][] | null),status?: (AppRequestStatus[] | null)}
 
+
+/** This represents an index category attached to an app request. Its tagStrings property contains the tag values that have been extracted from the app request data. */
 export interface AppRequestIndexCategoryGenqlSelection{
     /** If this is > 0, the index values should be shown on the main app request list page, sorted by this priority in descending order. */
     appRequestListPriority?: boolean | number
@@ -773,20 +803,10 @@ export interface AppRequestIndexCategoryGenqlSelection{
     categoryLabel?: boolean | number
     /** If this is > 0, the index values should be shown on the list filters, sorted by this priority in descending order. */
     listFiltersPriority?: boolean | number
+    listable?: boolean | number
     /** If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order. */
     reviewerDashboardPriority?: boolean | number
     values?: AppRequestIndexValueGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-
-/** This is used to list all the available filters for the app request list. */
-export interface AppRequestIndexFilterGenqlSelection{
-    category?: boolean | number
-    categoryLabel?: boolean | number
-    listable?: boolean | number
-    values?: (AppRequestIndexValueGenqlSelection & { __args?: {search?: (Scalars['String'] | null)} })
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -876,6 +896,27 @@ keys?: (Scalars['String'][] | null),
 periodCodes?: (Scalars['String'][] | null),
 /** Return configurations for these period IDs. */
 periodIds?: (Scalars['ID'][] | null)}
+
+
+/** This represents an index as registered by one of the project's prompt definitions. */
+export interface IndexCategoryGenqlSelection{
+    /** If this is > 0, the index values should be shown on the main app request list page, sorted by this priority in descending order. */
+    appRequestListPriority?: boolean | number
+    /** If this is > 0, the index values should be shown on the applicant dashboard, sorted by this priority in descending order. */
+    applicantDashboardPriority?: boolean | number
+    category?: boolean | number
+    categoryLabel?: boolean | number
+    /** If this is > 0, the index values should be shown on the list filters, sorted by this priority in descending order. */
+    listFiltersPriority?: boolean | number
+    listable?: boolean | number
+    /** If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order. */
+    reviewerDashboardPriority?: boolean | number
+    values?: (AppRequestIndexValueGenqlSelection & { __args?: {
+    /** If true, only return tags that are currently in use by app requests. This is useful for only presenting useful filters. */
+    inUse?: (Scalars['Boolean'] | null), search?: (Scalars['String'] | null)} })
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
 
 export interface MutationGenqlSelection{
     /** Make an offer on the app request. */
@@ -1045,7 +1086,9 @@ export interface QueryGenqlSelection{
      */
     access?: AccessGenqlSelection
     accessUsers?: (AccessUserGenqlSelection & { __args?: {filter?: (AccessUserFilter | null)} })
-    appRequestFilters?: AppRequestIndexFilterGenqlSelection
+    appRequestIndexes?: (IndexCategoryGenqlSelection & { __args?: {
+    /** Returns indexes that are flagged to appear in this destination. Also sorts for this destination. */
+    for?: (AppRequestIndexDestination | null)} })
     appRequests?: (AppRequestGenqlSelection & { __args?: {filter?: (AppRequestFilter | null)} })
     periods?: (PeriodGenqlSelection & { __args?: {filter?: (PeriodFilters | null)} })
     programGroups?: (ProgramGroupGenqlSelection & { __args?: {filter?: (ProgramGroupFilter | null)} })
@@ -1062,6 +1105,8 @@ export interface QueryGenqlSelection{
 
 /** A RequestPrompt is an instance of a Prompt on a particular request. Once the user has answered the prompt, it contains the answer and the prompt status on that request. */
 export interface RequirementPromptGenqlSelection{
+    /** Actions that the user can take on this prompt. */
+    actions?: RequirementPromptActionsGenqlSelection
     /** Whether the prompt has been answered on this request. */
     answered?: boolean | number
     /** The configuration data for this prompt in the app request's period. */
@@ -1089,10 +1134,18 @@ export interface RequirementPromptGenqlSelection{
     preloadData?: { __args: {
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
+    /** The requirement that this prompt is associated with. */
+    requirement?: ApplicationRequirementGenqlSelection
     /** A human readable title for the prompt. This is what will be shown to users. */
     title?: boolean | number
     /** The visibility of the prompt on the request. This is used to determine whether the prompt should be shown to the user in the UI. */
     visibility?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface RequirementPromptActionsGenqlSelection{
+    update?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -1260,14 +1313,6 @@ export interface ValidatedResponseGenqlSelection{
     
 
 
-    const AppRequestIndexFilter_possibleTypes: string[] = ['AppRequestIndexFilter']
-    export const isAppRequestIndexFilter = (obj?: { __typename?: any } | null): obj is AppRequestIndexFilter => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isAppRequestIndexFilter"')
-      return AppRequestIndexFilter_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
     const AppRequestIndexValue_possibleTypes: string[] = ['AppRequestIndexValue']
     export const isAppRequestIndexValue = (obj?: { __typename?: any } | null): obj is AppRequestIndexValue => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isAppRequestIndexValue"')
@@ -1312,6 +1357,14 @@ export interface ValidatedResponseGenqlSelection{
     export const isConfigurationAccess = (obj?: { __typename?: any } | null): obj is ConfigurationAccess => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isConfigurationAccess"')
       return ConfigurationAccess_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const IndexCategory_possibleTypes: string[] = ['IndexCategory']
+    export const isIndexCategory = (obj?: { __typename?: any } | null): obj is IndexCategory => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isIndexCategory"')
+      return IndexCategory_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -1408,6 +1461,14 @@ export interface ValidatedResponseGenqlSelection{
     export const isRequirementPrompt = (obj?: { __typename?: any } | null): obj is RequirementPrompt => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isRequirementPrompt"')
       return RequirementPrompt_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RequirementPromptActions_possibleTypes: string[] = ['RequirementPromptActions']
+    export const isRequirementPromptActions = (obj?: { __typename?: any } | null): obj is RequirementPromptActions => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRequirementPromptActions"')
+      return RequirementPromptActions_possibleTypes.includes(obj.__typename)
     }
     
 

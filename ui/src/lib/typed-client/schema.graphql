@@ -181,6 +181,7 @@ input AccessTagInput {
 
 """A user that has or once had access to the system."""
 type AccessUser {
+  fullname: String!
   groups: [String!]!
   login: ID!
   otherIdentifiers: [AccessUserIdentifier!]!
@@ -224,6 +225,7 @@ Represents a group of applications all being applied for at the same time. As pa
 type AppRequest {
   """Actions the user can take on this app request."""
   actions: AppRequestActions!
+  applicant: AccessUser!
   applications: [Application!]!
 
   """
@@ -261,6 +263,11 @@ type AppRequest {
   """
   prompt(promptId: ID!): RequirementPrompt!
   status: AppRequestStatus!
+
+  """
+  The most pertinent status reason for this app request. The logic is complicated and depends on the AppRequest's status.
+  """
+  statusReason: String
   updatedAt: DateTime!
 }
 
@@ -309,6 +316,9 @@ input AppRequestFilter {
   status: [AppRequestStatus!]
 }
 
+"""
+This represents an index category attached to an app request. Its tagStrings property contains the tag values that have been extracted from the app request data.
+"""
 type AppRequestIndexCategory {
   """
   If this is > 0, the index values should be shown on the main app request list page, sorted by this priority in descending order.
@@ -326,6 +336,7 @@ type AppRequestIndexCategory {
   If this is > 0, the index values should be shown on the list filters, sorted by this priority in descending order.
   """
   listFiltersPriority: Float
+  listable: Boolean!
 
   """
   If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order.
@@ -353,16 +364,6 @@ enum AppRequestIndexDestination {
   Show these index values when listing App Requests on the reviewer dashboard.
   """
   REVIEWER_DASHBOARD
-}
-
-"""
-This is used to list all the available filters for the app request list.
-"""
-type AppRequestIndexFilter {
-  category: String!
-  categoryLabel: String!
-  listable: Boolean!
-  values(search: String): [AppRequestIndexValue!]!
 }
 
 type AppRequestIndexValue {
@@ -605,6 +606,41 @@ input ConfigurationFilters {
 Date and Time in ISO 8601 string format. JSON parser should convert to javascript Date type.
 """
 scalar DateTime
+
+"""
+This represents an index as registered by one of the project's prompt definitions.
+"""
+type IndexCategory {
+  """
+  If this is > 0, the index values should be shown on the main app request list page, sorted by this priority in descending order.
+  """
+  appRequestListPriority: Float
+
+  """
+  If this is > 0, the index values should be shown on the applicant dashboard, sorted by this priority in descending order.
+  """
+  applicantDashboardPriority: Float
+  category: String!
+  categoryLabel: String!
+
+  """
+  If this is > 0, the index values should be shown on the list filters, sorted by this priority in descending order.
+  """
+  listFiltersPriority: Float
+  listable: Boolean!
+
+  """
+  If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order.
+  """
+  reviewerDashboardPriority: Float
+  values(
+    """
+    If true, only return tags that are currently in use by app requests. This is useful for only presenting useful filters.
+    """
+    inUse: Boolean
+    search: String
+  ): [AppRequestIndexValue!]!
+}
 
 """Unstructured JSON data."""
 scalar JsonData
@@ -880,7 +916,12 @@ type Query {
   "\n    This is the global access object. Each field represents a global permission\n    like the ability to view the role management interface.\n  "
   access: Access!
   accessUsers(filter: AccessUserFilter): [AccessUser!]!
-  appRequestFilters: [AppRequestIndexFilter!]!
+  appRequestIndexes(
+    """
+    Returns indexes that are flagged to appear in this destination. Also sorts for this destination.
+    """
+    for: AppRequestIndexDestination
+  ): [IndexCategory!]!
   appRequests(filter: AppRequestFilter): [AppRequest!]!
   periods(filter: PeriodFilters): [Period!]!
   programGroups(filter: ProgramGroupFilter): [ProgramGroup!]!
@@ -902,6 +943,9 @@ type Query {
 A RequestPrompt is an instance of a Prompt on a particular request. Once the user has answered the prompt, it contains the answer and the prompt status on that request.
 """
 type RequirementPrompt {
+  """Actions that the user can take on this prompt."""
+  actions: RequirementPromptActions!
+
   """Whether the prompt has been answered on this request."""
   answered: Boolean!
 
@@ -964,6 +1008,9 @@ type RequirementPrompt {
     schemaVersion: String
   ): JsonData
 
+  """The requirement that this prompt is associated with."""
+  requirement: ApplicationRequirement!
+
   """
   A human readable title for the prompt. This is what will be shown to users.
   """
@@ -973,6 +1020,10 @@ type RequirementPrompt {
   The visibility of the prompt on the request. This is used to determine whether the prompt should be shown to the user in the UI.
   """
   visibility: PromptVisibility!
+}
+
+type RequirementPromptActions {
+  update: Boolean!
 }
 
 enum RequirementStatus {

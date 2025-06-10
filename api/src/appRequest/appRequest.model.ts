@@ -53,6 +53,7 @@ export class AppRequest {
     this.periodClosesAt = row.periodClosesAt ? DateTime.fromJSDate(row.periodClosesAt) : undefined
     this.periodArchivesAt = row.periodArchivesAt ? DateTime.fromJSDate(row.periodArchivesAt) : undefined
     this.periodOpensAt = DateTime.fromJSDate(row.periodOpensAt)
+    this.tags = tags ?? {}
   }
 
   @Field(type => ID)
@@ -111,12 +112,12 @@ export class AppRequestIndexValue {
   label: string
 }
 
-@ObjectType()
-export class AppRequestIndexCategory {
-  constructor (def: PromptTagDefinition, tags: string[]) {
+@ObjectType({ description: 'This represents an index as registered by one of the project\'s prompt definitions.' })
+export class IndexCategory {
+  constructor (def: PromptTagDefinition) {
     this.category = def.category
     this.categoryLabel = def.categoryLabel ?? def.category
-    this.tagStrings = tags
+    this.listable = !def.notListable
     this[AppRequestIndexDestination.APPLICANT_DASHBOARD] = def.useInApplicantDashboard ?? 0
     this[AppRequestIndexDestination.REVIEWER_DASHBOARD] = def.useInReviewerDashboard ?? 0
     this[AppRequestIndexDestination.APP_REQUEST_LIST] = def.useInAppRequestList ?? 0
@@ -132,6 +133,9 @@ export class AppRequestIndexCategory {
 
   @Field()
   categoryLabel: string
+
+  @Field()
+  listable: boolean
 
   @Field({ nullable: true, description: 'If this is > 0, the index values should be shown on the applicant dashboard, sorted by this priority in descending order.' })
   applicantDashboardPriority?: number
@@ -149,25 +153,13 @@ export class AppRequestIndexCategory {
   [AppRequestIndexDestination.REVIEWER_DASHBOARD]: number
   [AppRequestIndexDestination.APP_REQUEST_LIST]: number
   [AppRequestIndexDestination.LIST_FILTERS]: number
-  tagStrings: string[]
 }
 
-@ObjectType({ description: 'This is used to list all the available filters for the app request list.' })
-export class AppRequestIndexFilter {
-  constructor (def: PromptTagDefinition) {
-    this.category = def.category
-    this.categoryLabel = def.categoryLabel ?? def.category
-    this.listable = !def.notListable
+@ObjectType({ description: 'This represents an index category attached to an app request. Its tagStrings property contains the tag values that have been extracted from the app request data.' })
+export class AppRequestIndexCategory extends IndexCategory {
+  constructor (def: PromptTagDefinition, public tagStrings: string[]) {
+    super(def)
   }
-
-  @Field()
-  category: string
-
-  @Field()
-  categoryLabel: string
-
-  @Field()
-  listable: boolean
 }
 
 @ObjectType()

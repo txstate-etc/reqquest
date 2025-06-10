@@ -12,7 +12,7 @@ export const testMigrations: DatabaseMigration[] = [
       const oldPeriodId = await createPeriod({ name: '2024', openDate: DateTime.fromFormat('20240101080000', 'yyyyMMddHHmmss'), closeDate: DateTime.fromFormat('20240131235959', 'yyyyMMddHHmmss') })
       const periodId = await createPeriod({ name: '2025', openDate: DateTime.fromFormat('20250101080000', 'yyyyMMddHHmmss'), closeDate: DateTime.fromFormat('20250131235959', 'yyyyMMddHHmmss') })
       const appRequestId = await createAppRequest(periodId, applicant.id)
-      // await updateAppRequestData(appRequestId, { have_yard_prompt: { haveYard: true, squareFootage: 100, totalPets: 2 }, have_a_cat_tower_prompt: { haveCatTower: false, willPurchaseCatTower: true }, savedAtVersion: '20240101000000', not_allergic_to_tuna_prompt: { allergicToTuna: false } })
+      await updateAppRequestData(appRequestId, { which_state_prompt: { state: 'TX' }, have_yard_prompt: { haveYard: true, squareFootage: 100, totalPets: 2 }, have_a_cat_tower_prompt: { haveCatTower: false, willPurchaseCatTower: true }, not_allergic_to_tuna_prompt: { allergicToTuna: false }, savedAtVersion: '20240101000000' })
       // await submitAppRequest(appRequestId)
     }
   }

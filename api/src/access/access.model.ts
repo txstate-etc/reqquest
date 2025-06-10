@@ -10,6 +10,7 @@ export class AccessUser {
   constructor (row: AccessUserRow) {
     this.internalId = row.id
     this.login = row.login
+    this.fullname = row.fullname
     this.otherInfo = safeParse(row.otherInfo)
   }
 
@@ -17,6 +18,9 @@ export class AccessUser {
 
   @Field(type => ID)
   login: string
+
+  @Field()
+  fullname: string
 
   @Field(type => JsonData, { nullable: true, description: 'A JSON object containing any information about the user that the implementing application wants to store. Could be useful for constructing personalized UI.' })
   otherInfo?: any

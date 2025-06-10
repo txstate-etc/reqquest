@@ -38,6 +38,7 @@ export class ApplicationRequirementService extends AuthService<ApplicationRequir
   async findByAppRequest (appRequest: AppRequest) {
     const reqs = await this.loaders.get(byAppRequestIdLoader).load(appRequest.id)
     for (const req of reqs) req.appRequestTags = appRequest.tags
+    return reqs
   }
 
   async findByApplication (application: Application) {

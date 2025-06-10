@@ -90,6 +90,9 @@ export const which_state_prompt: PromptDefinition = {
     extract: data => data.which_state_prompt ? [data.which_state_prompt.state] : [],
     description: 'Limit based on the state the applicant lives in.',
     getTags: () => stateList,
-    getLabel: tag => stateLookup[tag]?.label ?? tag
+    getLabel: tag => stateLookup[tag]?.label ?? tag,
+    useInAppRequestList: 1,
+    useInListFilters: 1,
+    useInReviewerDashboard: 1
   }]
 }

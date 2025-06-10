@@ -34,8 +34,12 @@ async function processFilters (filter: ApplicationRequirementFilter) {
 export async function getApplicationRequirements (filter: ApplicationRequirementFilter, tdb: Queryable = db) {
   const { where, binds } = await processFilters(filter)
   const rows = await tdb.getall<ApplicationRequirementRow>(`
-    SELECT r.*, a.periodId FROM application_requirements r INNER JOIN app_requests a ON a.id=r.appRequestId WHERE (${where.join(') AND (')})
-    ORDER BY evaluationOrder
+    SELECT r.*, a.periodId
+    FROM application_requirements r
+    INNER JOIN applications app ON app.id=r.applicationId
+    INNER JOIN app_requests a ON a.id=r.appRequestId
+    WHERE (${where.join(') AND (')})
+    ORDER BY app.evaluationOrder, r.evaluationOrder
   `, binds)
   return rows.map(row => new ApplicationRequirement(row))
 }

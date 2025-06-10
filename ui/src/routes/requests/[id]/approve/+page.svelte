@@ -64,6 +64,7 @@
             {
               label: 'Edit',
               icon: Edit,
+              disabled: !prompt.actions.update,
               onClick: async () => {
                 await editPrompt(prompt)
               }
@@ -94,6 +95,6 @@
     let:data
   >
     {@const def = uiRegistry.getPrompt(promptBeingEdited.key)}
-    <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} fetched={{ TODO: 'TODO' }} />
+    <svelte:component this={def.formComponent} {data} appRequestData={promptBeingEdited.data} fetched={promptBeingEdited.fetchedData} configData={promptBeingEdited.configurationRelatedData} />
   </PanelFormDialog>
 {/if}

@@ -1,6 +1,6 @@
 import { sortby } from 'txstate-utils'
 import { Arg, Ctx, FieldResolver, ID, Mutation, Query, Resolver, Root } from 'type-graphql'
-import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse, AppRequestIndexCategory, AppRequestIndexValue, AppRequestIndexDestination, AppRequestIndexFilter, RequirementPrompt } from '../internal.js'
+import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse, AppRequestIndexCategory, AppRequestIndexValue, AppRequestIndexDestination, IndexCategory, RequirementPrompt, AccessUser, AccessUserService } from '../internal.js'
 
 @Resolver(of => AppRequest)
 export class AppRequestResolver {
@@ -9,9 +9,19 @@ export class AppRequestResolver {
     return await ctx.svc(AppRequestService).find(filter)
   }
 
-  @Query(returns => [AppRequestIndexFilter])
-  async appRequestFilters (@Ctx() ctx: RQContext) {
-    return promptRegistry.tagCategories.filter(c => !!c.useInListFilters).map(category => new AppRequestIndexFilter(category))
+  @Query(returns => [IndexCategory])
+  async appRequestIndexes (@Ctx() ctx: RQContext, @Arg('for', type => AppRequestIndexDestination, { nullable: true, description: 'Returns indexes that are flagged to appear in this destination. Also sorts for this destination.' }) forDestination: AppRequestIndexDestination = AppRequestIndexDestination.LIST_FILTERS) {
+    const cats = promptRegistry.tagCategories.map(category => new IndexCategory(category))
+    return forDestination
+      ? sortby(cats.filter(cat => cat[forDestination] > 0), forDestination, true)
+      : cats
+  }
+
+  @FieldResolver(type => AccessUser)
+  async applicant (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    const user = await ctx.svc(AccessUserService).findByInternalId(appRequest.userInternalId)
+    if (!user) throw new Error('Applicant not found.')
+    return user
   }
 
   @FieldResolver(type => [Application])
@@ -45,6 +55,11 @@ export class AppRequestResolver {
     const period = await ctx.svc(PeriodService).findById(appRequest.periodId)
     if (!period) throw new Error('Somehow the period is missing for this appRequest.')
     return period
+  }
+
+  @FieldResolver(type => String, { nullable: true, description: 'The most pertinent status reason for this app request. The logic is complicated and depends on the AppRequest\'s status.' })
+  async statusReason (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    return await ctx.svc(AppRequestService).getStatusReason(appRequest)
   }
 
   @FieldResolver(type => AppRequestActions, { description: 'Actions the user can take on this app request.' })
@@ -82,10 +97,10 @@ export class AppRequestIndexCategoryResolver {
   }
 }
 
-@Resolver(of => AppRequestIndexFilter)
-export class AppRequestIndexFilterResolver {
+@Resolver(of => IndexCategory)
+export class IndexCategoryResolver {
   @FieldResolver(type => [AppRequestIndexValue])
-  async values (@Ctx() ctx: RQContext, @Root() tagCategory: AppRequestIndexFilter, @Arg('search', { nullable: true }) search?: string) {
+  async values (@Ctx() ctx: RQContext, @Root() tagCategory: IndexCategory, @Arg('search', { nullable: true }) search?: string, @Arg('inUse', { nullable: true, description: 'If true, only return tags that are currently in use by app requests. This is useful for only presenting useful filters.' }) inUse?: boolean) {
     return (await promptRegistry.getAllTags(tagCategory.category, search)).map(tag => new AppRequestIndexValue(tag.value, tag.label))
   }
 }

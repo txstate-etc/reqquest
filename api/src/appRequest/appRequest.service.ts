@@ -1,4 +1,4 @@
-import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer, getAppRequestTags, closedStatuses } from '../internal.js'
+import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer, getAppRequestTags, closedStatuses, ApplicationRequirementService } from '../internal.js'
 import { PrimaryKeyLoader } from 'dataloader-factory'
 import { BaseService } from '@txstate-mws/graphql-server'
 import { DateTime } from 'luxon'
@@ -91,6 +91,15 @@ export class AppRequestService extends AuthService<AppRequest> {
   async getData (appRequestInternalId: number) {
     // TODO: authorize release of the data or strike out prompt data for unauthorized prompts
     return await this.raw.getData(appRequestInternalId)
+  }
+
+  async getStatusReason (appRequest: AppRequest) {
+    if (appRequest.dbStatus === AppRequestStatusDB.STARTED) {
+      // TODO: implement different logic for different statuses
+    }
+    // fallback to the first requirement with a status reason
+    const requirements = await this.svc(ApplicationRequirementService).findByAppRequest(appRequest)
+    return requirements.find(req => req.statusReason)?.statusReason
   }
 
   isOwn (appRequest: AppRequest) {

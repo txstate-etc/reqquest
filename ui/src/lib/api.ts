@@ -221,6 +221,10 @@ class API extends APIBase {
       appRequests: {
         __args: { filter },
         id: true,
+        applicant: {
+          login: true,
+          fullname: true
+        },
         status: true,
         statusReason: true,
         period: {
@@ -228,7 +232,13 @@ class API extends APIBase {
           name: true
         },
         indexCategories: {
-          __args: { for: dest }
+          __args: { for: dest },
+          category: true,
+          categoryLabel: true,
+          values: {
+            value: true,
+            label: true
+          }
         },
         actions: {
           cancel: true,
@@ -239,9 +249,20 @@ class API extends APIBase {
           offer: true,
           submit: true
         }
+      },
+      appRequestIndexes: {
+        category: true,
+        categoryLabel: true,
+        appRequestListPriority: true,
+        listFiltersPriority: true,
+        listable: true,
+        values: {
+          value: true,
+          label: true
+        }
       }
     })
-    return response.appRequests
+    return response
   }
 
   async getReviewData (appRequestId: string) {
@@ -271,7 +292,10 @@ class API extends APIBase {
               title: true,
               navTitle: true,
               answered: true,
-              visibility: true
+              visibility: true,
+              actions: {
+                update: true
+              }
             }
           }
         }

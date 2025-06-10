@@ -1,5 +1,5 @@
 import { Arg, Ctx, FieldResolver, Query, Resolver, Root } from 'type-graphql'
-import { ApplicationRequirementService, AppRequestService, JsonData, Prompt, promptRegistry, RequirementPrompt, RequirementPromptService, RQContext, ConfigurationService, Configuration, PeriodPrompt, PeriodPromptActions, RequirementPromptActions, PeriodPromptService } from '../internal.js'
+import { ApplicationRequirementService, AppRequestService, JsonData, Prompt, promptRegistry, RequirementPrompt, RequirementPromptService, RQContext, ConfigurationService, Configuration, PeriodPrompt, PeriodPromptActions, RequirementPromptActions, PeriodPromptService, ApplicationRequirement } from '../internal.js'
 
 @Resolver(of => Prompt)
 export class PromptResolver {
@@ -43,8 +43,14 @@ export class RequirementPromptResolver {
     return await ctx.svc(ConfigurationService).getRelatedData(requirementPrompt.periodId, requirementPrompt.key)
   }
 
+  @FieldResolver(type => ApplicationRequirement, { description: 'The requirement that this prompt is associated with.' })
   async requirement (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt) {
     return ctx.svc(ApplicationRequirementService).findById(requirementPrompt.requirementId)
+  }
+
+  @FieldResolver(type => RequirementPromptActions, { description: 'Actions that the user can take on this prompt.' })
+  actions (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt) {
+    return requirementPrompt
   }
 }
 
