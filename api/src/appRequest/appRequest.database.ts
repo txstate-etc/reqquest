@@ -133,7 +133,7 @@ export async function getAppRequestTags (appRequestIds: string[], tdb: Queryable
 }
 
 export async function getIndexesInUse (category: string) {
-  return await db.getall<{ tag: string, label: string }>(`
+  return await db.getall<{ value: string, label: string }>(`
     SELECT DISTINCT art.tag AS value, tl.label
     FROM app_request_tags art
     INNER JOIN app_requests r ON r.id = art.appRequestId

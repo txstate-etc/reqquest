@@ -1,6 +1,6 @@
 import { sortby } from 'txstate-utils'
 import { Arg, Ctx, FieldResolver, ID, Mutation, Query, Resolver, Root } from 'type-graphql'
-import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse, AppRequestIndexCategory, AppRequestIndexValue, AppRequestIndexDestination, IndexCategory, RequirementPrompt, AccessUser, AccessUserService } from '../internal.js'
+import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse, AppRequestIndexCategory, IndexValue, AppRequestIndexDestination, IndexCategory, RequirementPrompt, AccessUser, AccessUserService } from '../internal.js'
 
 @Resolver(of => AppRequest)
 export class AppRequestResolver {
@@ -10,8 +10,8 @@ export class AppRequestResolver {
   }
 
   @Query(returns => [IndexCategory])
-  async appRequestIndexes (@Ctx() ctx: RQContext, @Arg('for', type => AppRequestIndexDestination, { nullable: true, description: 'Returns indexes that are flagged to appear in this destination. Also sorts for this destination.' }) forDestination: AppRequestIndexDestination = AppRequestIndexDestination.LIST_FILTERS) {
-    const cats = promptRegistry.tagCategories.map(category => new IndexCategory(category))
+  async appRequestIndexes (@Ctx() ctx: RQContext, @Arg('categories', type => [String], { nullable: true }) categories?: string[], @Arg('for', type => AppRequestIndexDestination, { nullable: true, description: 'Returns indexes that are flagged to appear in this destination. Also sorts for this destination.' }) forDestination: AppRequestIndexDestination = AppRequestIndexDestination.LIST_FILTERS) {
+    const cats = (categories?.length ? categories.map(c => promptRegistry.indexCategoryMap[c]) : promptRegistry.indexCategories).map(category => new IndexCategory(category))
     return forDestination
       ? sortby(cats.filter(cat => cat[forDestination] > 0), forDestination, true)
       : cats
@@ -44,7 +44,7 @@ export class AppRequestResolver {
 
   @FieldResolver(type => [AppRequestIndexCategory], { description: 'Indexes associated with the App Request. These are pieces of data extracted from the App Request by individual prompts in the ReqQuest project. They have several uses such as filtering App Requests and enriching list views.' })
   async indexCategories (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest, @Arg('for', type => AppRequestIndexDestination, { nullable: true, description: 'Returns indexes that are flagged to appear in this destination. Also sorts for this destination.' }) forDestination?: AppRequestIndexDestination) {
-    const cats = promptRegistry.tagCategories.map(category => new AppRequestIndexCategory(category, appRequest.tags?.[category.category] ?? []))
+    const cats = promptRegistry.indexCategories.map(category => new AppRequestIndexCategory(category, appRequest.tags?.[category.category] ?? []))
     return forDestination
       ? sortby(cats.filter(cat => cat[forDestination] > 0), forDestination, true)
       : cats
@@ -91,17 +91,17 @@ export class AppRequestResolver {
 
 @Resolver(of => AppRequestIndexCategory)
 export class AppRequestIndexCategoryResolver {
-  @FieldResolver(type => [AppRequestIndexValue])
+  @FieldResolver(type => [IndexValue])
   async values (@Ctx() ctx: RQContext, @Root() tagCategory: AppRequestIndexCategory) {
-    return await Promise.all(tagCategory.tagStrings.map(async tag => new AppRequestIndexValue(tag, await promptRegistry.getTagLabel(tagCategory.category, tag))))
+    return await Promise.all(tagCategory.tagStrings.map(async tag => new IndexValue(tag, await promptRegistry.getTagLabel(tagCategory.category, tag))))
   }
 }
 
 @Resolver(of => IndexCategory)
 export class IndexCategoryResolver {
-  @FieldResolver(type => [AppRequestIndexValue])
+  @FieldResolver(type => [IndexValue])
   async values (@Ctx() ctx: RQContext, @Root() tagCategory: IndexCategory, @Arg('search', { nullable: true }) search?: string, @Arg('inUse', { nullable: true, description: 'If true, only return tags that are currently in use by app requests. This is useful for only presenting useful filters.' }) inUse?: boolean) {
-    return (await promptRegistry.getAllTags(tagCategory.category, search)).map(tag => new AppRequestIndexValue(tag.value, tag.label))
+    return (await promptRegistry.getAllTags(tagCategory.category, search, inUse)).map(tag => new IndexValue(tag.value, tag.label)) ?? []
   }
 }
 

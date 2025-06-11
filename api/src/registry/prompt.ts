@@ -1,6 +1,6 @@
 import type { MutationMessage } from '@txstate-mws/graphql-server'
-import { Cache, sortby } from 'txstate-utils'
-import { AppRequest, programRegistry, requirementRegistry, RQContext, TagDefinition, type AppRequestData } from '../internal.js'
+import { Cache, isNotBlank, sortby } from 'txstate-utils'
+import { AppRequest, getIndexesInUse, programRegistry, requirementRegistry, RQContext, TagDefinition, type AppRequestData } from '../internal.js'
 import db from 'mysql2-async/db'
 
 export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVersion'>> {
@@ -247,13 +247,7 @@ const labelLookupCache = new Cache(async (tag: { category: string, value: string
 }, { freshseconds: 600 })
 
 const indexListCache = new Cache(async (category: string) => {
-  const values = await db.getall<{ tag: string, label: string }>(`
-    SELECT DISTINCT l.tag, l.label
-    FROM tag_labels l
-    INNER JOIN app_request_tags t ON l.tag = t.tag && l.category = t.category
-    WHERE l.category = ?
-  `, [category])
-  return values.map(v => ({ value: v.tag, label: v.label ?? v.tag })) as TagDefinition[]
+  return await getIndexesInUse(category)
 }, { freshseconds: 10, staleseconds: 600 })
 
 const tagListCache = new Cache(async (key: { category: string, search?: string }, getTags: (search?: string) => TagDefinition[] | Promise<TagDefinition[]>) => {
@@ -273,7 +267,7 @@ class PromptRegistry {
   protected sortedMigrations: AppRequestMigration[] = []
   protected indexLookups: Record<string, (tag: string) => Promise<string> | string> = {}
   public indexCategories: PromptIndexDefinition[] = []
-  protected indexCategoryMap: Record<string, PromptIndexDefinition> = {}
+  public indexCategoryMap: Record<string, PromptIndexDefinition> = {}
   public tagCategories: PromptTagDefinition[] = []
   public reachable: PromptDefinition[] = []
   public authorizationKeys: Record<string, string[]> = {}
@@ -343,13 +337,17 @@ class PromptRegistry {
     return await labelLookupCache.get({ category, value: tag })
   }
 
-  async getAllTags (category: string, search?: string) {
+  async getAllTags (category: string, search?: string, inUse?: boolean) {
+    const lcSearch = search?.toLowerCase()
     const tagCategory = this.indexCategoryMap[category]
     if (!tagCategory) return []
-    if ('getTags' in tagCategory) {
-      return await tagListCache.get({ category, search }, (tagCategory as PromptTagDefinition).getTags!)
+    if ('getTags' in tagCategory && !inUse) {
+      return await tagListCache.get({ category, search: lcSearch }, (tagCategory as PromptTagDefinition).getTags!)
     } else {
-      return await indexListCache.get(category)
+      const tags = await indexListCache.get(category)
+      return isNotBlank(lcSearch)
+        ? tags.filter(t => t.value.toLowerCase().includes(lcSearch) || t.label.toLowerCase().includes(lcSearch))
+        : tags
     }
   }
 

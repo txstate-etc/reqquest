@@ -205,19 +205,13 @@ export interface AppRequestIndexCategory {
     listable: Scalars['Boolean']
     /** If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order. */
     reviewerDashboardPriority: (Scalars['Float'] | null)
-    values: AppRequestIndexValue[]
+    values: IndexValue[]
     __typename: 'AppRequestIndexCategory'
 }
 
 
 /** This is used to indicate where the index values should be displayed. */
 export type AppRequestIndexDestination = 'APPLICANT_DASHBOARD' | 'APP_REQUEST_LIST' | 'LIST_FILTERS' | 'REVIEWER_DASHBOARD'
-
-export interface AppRequestIndexValue {
-    label: Scalars['String']
-    value: Scalars['String']
-    __typename: 'AppRequestIndexValue'
-}
 
 
 /**
@@ -317,8 +311,14 @@ export interface IndexCategory {
     listable: Scalars['Boolean']
     /** If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order. */
     reviewerDashboardPriority: (Scalars['Float'] | null)
-    values: AppRequestIndexValue[]
+    values: IndexValue[]
     __typename: 'IndexCategory'
+}
+
+export interface IndexValue {
+    label: Scalars['String']
+    value: Scalars['String']
+    __typename: 'IndexValue'
 }
 
 export interface Mutation {
@@ -806,14 +806,7 @@ export interface AppRequestIndexCategoryGenqlSelection{
     listable?: boolean | number
     /** If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order. */
     reviewerDashboardPriority?: boolean | number
-    values?: AppRequestIndexValueGenqlSelection
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-export interface AppRequestIndexValueGenqlSelection{
-    label?: boolean | number
-    value?: boolean | number
+    values?: IndexValueGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -911,9 +904,16 @@ export interface IndexCategoryGenqlSelection{
     listable?: boolean | number
     /** If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order. */
     reviewerDashboardPriority?: boolean | number
-    values?: (AppRequestIndexValueGenqlSelection & { __args?: {
+    values?: (IndexValueGenqlSelection & { __args?: {
     /** If true, only return tags that are currently in use by app requests. This is useful for only presenting useful filters. */
     inUse?: (Scalars['Boolean'] | null), search?: (Scalars['String'] | null)} })
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface IndexValueGenqlSelection{
+    label?: boolean | number
+    value?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -1086,7 +1086,7 @@ export interface QueryGenqlSelection{
      */
     access?: AccessGenqlSelection
     accessUsers?: (AccessUserGenqlSelection & { __args?: {filter?: (AccessUserFilter | null)} })
-    appRequestIndexes?: (IndexCategoryGenqlSelection & { __args?: {
+    appRequestIndexes?: (IndexCategoryGenqlSelection & { __args?: {categories?: (Scalars['String'][] | null), 
     /** Returns indexes that are flagged to appear in this destination. Also sorts for this destination. */
     for?: (AppRequestIndexDestination | null)} })
     appRequests?: (AppRequestGenqlSelection & { __args?: {filter?: (AppRequestFilter | null)} })
@@ -1313,14 +1313,6 @@ export interface ValidatedResponseGenqlSelection{
     
 
 
-    const AppRequestIndexValue_possibleTypes: string[] = ['AppRequestIndexValue']
-    export const isAppRequestIndexValue = (obj?: { __typename?: any } | null): obj is AppRequestIndexValue => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isAppRequestIndexValue"')
-      return AppRequestIndexValue_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
     const Application_possibleTypes: string[] = ['Application']
     export const isApplication = (obj?: { __typename?: any } | null): obj is Application => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isApplication"')
@@ -1365,6 +1357,14 @@ export interface ValidatedResponseGenqlSelection{
     export const isIndexCategory = (obj?: { __typename?: any } | null): obj is IndexCategory => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isIndexCategory"')
       return IndexCategory_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const IndexValue_possibleTypes: string[] = ['IndexValue']
+    export const isIndexValue = (obj?: { __typename?: any } | null): obj is IndexValue => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isIndexValue"')
+      return IndexValue_possibleTypes.includes(obj.__typename)
     }
     
 

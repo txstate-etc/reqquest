@@ -36,17 +36,19 @@
             })
           }
         }
-        ret.push({
-          id: `application${application.id}`,
-          label: application.navTitle,
-          href: substeps[0].href,
-          type: substeps.some(s => s.type === 'current')
-            ? 'current'
-            : substeps.every(s => s.type === 'complete')
-              ? 'complete'
-              : 'available',
-          substeps
-        })
+        if (substeps.length > 0) {
+          ret.push({
+            id: `application${application.id}`,
+            label: application.navTitle,
+            href: substeps[0].href,
+            type: substeps.some(s => s.type === 'current')
+              ? 'current'
+              : substeps.every(s => s.type === 'complete')
+                ? 'complete'
+                : 'available',
+            substeps
+          })
+        }
       }
     }
     for (const prompt of postqualPrompts) {

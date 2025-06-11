@@ -99,7 +99,7 @@ registerEnumType(AppRequestIndexDestination, {
 })
 
 @ObjectType()
-export class AppRequestIndexValue {
+export class IndexValue {
   constructor (tag: string, label: string | undefined) {
     this.value = tag
     this.label = label ?? tag

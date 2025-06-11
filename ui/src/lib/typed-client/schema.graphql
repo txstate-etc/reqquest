@@ -342,7 +342,7 @@ type AppRequestIndexCategory {
   If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order.
   """
   reviewerDashboardPriority: Float
-  values: [AppRequestIndexValue!]!
+  values: [IndexValue!]!
 }
 
 """This is used to indicate where the index values should be displayed."""
@@ -364,11 +364,6 @@ enum AppRequestIndexDestination {
   Show these index values when listing App Requests on the reviewer dashboard.
   """
   REVIEWER_DASHBOARD
-}
-
-type AppRequestIndexValue {
-  label: String!
-  value: String!
 }
 
 "\n    The status of an appRequest. This status is computed based on the \"dbStatus\" recorded in\n    the database and the status of each application.\n  "
@@ -639,7 +634,12 @@ type IndexCategory {
     """
     inUse: Boolean
     search: String
-  ): [AppRequestIndexValue!]!
+  ): [IndexValue!]!
+}
+
+type IndexValue {
+  label: String!
+  value: String!
 }
 
 """Unstructured JSON data."""
@@ -917,6 +917,8 @@ type Query {
   access: Access!
   accessUsers(filter: AccessUserFilter): [AccessUser!]!
   appRequestIndexes(
+    categories: [String!]
+
     """
     Returns indexes that are flagged to appear in this destination. Also sorts for this destination.
     """

@@ -257,12 +257,28 @@ class API extends APIBase {
         listFiltersPriority: true,
         listable: true,
         values: {
+          __args: { inUse: true },
           value: true,
           label: true
         }
       }
     })
     return response
+  }
+
+  async searchIndexItems (category: string, search: string) {
+    const response = await this.client.query({
+      __name: 'SearchIndexItems',
+      appRequestIndexes: {
+        __args: { categories: [category] },
+        values: {
+          __args: { search },
+          value: true,
+          label: true
+        }
+      }
+    })
+    return response.appRequestIndexes[0]?.values ?? []
   }
 
   async getReviewData (appRequestId: string) {
