@@ -340,6 +340,7 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
         : appRequest.dbStatus === AppRequestStatusDB.SUBMITTED
           ? ApplicationStatus.PREAPPROVAL
           : ApplicationStatus.ACCEPTANCE
+      application.statusReason = undefined
       let hasPending = false
       let hasIneligible = false
       let reqEvaluationBroken = false
@@ -435,13 +436,13 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
           // all requirements of the previous type have passed and the first requirement of the next type is
           // pending
           application.status = metStatusLookup[requirement.definition.type]
-          if (requirement.status === RequirementStatus.WARNING) application.statusReason = requirement.statusReason
         } else { // PENDING
           // this is that code I spoke of a few lines above that upgrades the application status
           // if the first requirement of a certain type is pending
           if (requirement.definition.type !== lastType) {
             application.status = metStatusLookup[requirement.definition.type]
           }
+          application.statusReason = requirement.statusReason
           lastType = requirement.definition.type
           hasPending = true
           // allow the user to continue to the next requirement if this one is neverDisqualifying and
@@ -464,11 +465,9 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
       // upgrade application to approved if all requirements are met
       if (application.status === ApplicationStatus.APPROVAL && !hasPending && !hasIneligible) {
         application.status = ApplicationStatus.APPROVED
-        application.statusReason = undefined
       }
       if (application.status === ApplicationStatus.QUALIFICATION && !hasPending && !hasIneligible) {
         application.status = ApplicationStatus.READY_TO_SUBMIT
-        application.statusReason = undefined
       }
     }
 

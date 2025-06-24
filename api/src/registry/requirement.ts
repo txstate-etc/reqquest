@@ -117,7 +117,8 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    *
    * Optionally provide the reason why the resolve function is returning whatever status
    * it is returning. This will be shown to the applicant. It's unlikely a reason is needed
-   * for the MET status, but it will be shown if provided.
+   * for the MET status, but it will be shown if provided. Note that the application will
+   * only ever show a single reason, the last one provided by a failing or pending requirement.
    *
    * These values will be cached until the appRequest is updated in some way.
    *
