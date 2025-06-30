@@ -135,6 +135,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     appRequestData[prompt.key] = prompt.definition.preProcessData ? await prompt.definition.preProcessData(appRequest, data, this.ctx) : data
     await updateAppRequestData(appRequest.internalId, appRequestData)
     await setRequirementPromptValid(prompt)
+    this.svc(AppRequestService).recordActivity(appRequest, 'Prompt Updated', { data, description: prompt.title })
     this.loaders.clear()
     const updatedAppRequest = (await this.svc(AppRequestService).findByInternalId(appRequest.internalId))!
     response.appRequest = updatedAppRequest

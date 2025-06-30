@@ -24,6 +24,10 @@ export abstract class AuthService<ObjType, RedactedType = ObjType> extends Autho
     return this.ctx.authInfo.user
   }
 
+  protected get impersonationUser () {
+    return this.ctx.authInfo.impersonationUser
+  }
+
   private roleMatches (roleLookup: RoleLookup, allow: boolean, subjectType: string, control: string, tags?: Record<string, string[]>) {
     const controlLookup = roleLookup[subjectType]?.[control]?.[Number(allow)]
     if (!controlLookup) return false
@@ -64,6 +68,7 @@ export abstract class AuthService<ObjType, RedactedType = ObjType> extends Autho
 
 export interface AuthInfo {
   user?: AccessUser
+  impersonationUser?: AccessUser
   roleLookups: RoleLookup[]
   acceptancePeriods: Set<string>
 }
@@ -133,6 +138,7 @@ export function rqContextMixin (Ctx: typeof Context): RQContextClass {
     async waitForAuth () {
       await super.waitForAuth()
       this.authInfo = await authCache.get(this.login, this)
+      this.authInfo.impersonationUser = this.auth?.impersonatedBy ? await userCache.get(this.auth.impersonatedBy, this) : undefined
     }
   }
 }

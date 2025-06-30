@@ -1,5 +1,5 @@
 import multipartPlugin from '@fastify/multipart'
-import { Context, GQLServer, GQLStartOpts } from '@txstate-mws/graphql-server'
+import { type Context, FastifyTxStateContext, GQLServer, type GQLStartOpts } from '@txstate-mws/graphql-server'
 import type { GraphQLScalarType } from 'graphql'
 import { DateTime } from 'luxon'
 import { NonEmptyArray } from 'type-graphql'
@@ -16,8 +16,7 @@ import {
   ConfigurationActionsResolver, SnakeCaseString, SnakeCaseStringScalar, PeriodProgramActionsResolver,
   PeriodRequirementResolver, PeriodPromptResolver, initAccess, AppRequestIndexCategoryResolver,
   AccessRoleGrantResolver, AccessGrantTagResolver, IndexCategoryResolver,
-  AccessRoleGrantActionsResolver,
-  AccessTagCategoryResolver
+  AccessRoleGrantActionsResolver, AccessTagCategoryResolver, logMutation
 } from './internal.js'
 
 export interface RQStartOpts extends Omit<GQLStartOpts, 'resolvers'> {
@@ -91,10 +90,17 @@ export class RQServer extends GQLServer {
     ]
     scalarsMap.push(...(options.scalarsMap ?? []))
 
-    options.customContext = rqContextMixin(options.customContext ?? Context)
+    options.customContext = rqContextMixin(options.customContext ?? FastifyTxStateContext as typeof Context)
     options.scalarsMap = scalarsMap
     options.send401 ??= true
-    options.introspection ??= process.env.NODE_ENV !== 'production'
+
+    const originalAfter = options.after
+    options.after = async (...args) => {
+      await Promise.all([
+        originalAfter?.(...args),
+        logMutation(...args)
+      ])
+    }
 
     Object.assign(appConfig, options.appConfig)
     appConfig.customContext = options.customContext as RQContextClass

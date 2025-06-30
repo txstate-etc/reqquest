@@ -1,7 +1,10 @@
+import type { Context } from '@txstate-mws/graphql-server'
+import type { FastifyTxStateAuthInfo } from 'fastify-txstate'
+import type { GraphQLError } from 'graphql'
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { clone, groupby, omit } from 'txstate-utils'
-import { ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestFilter, AppRequestStatus, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, RequirementStatus, RequirementType, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
+import { clone, groupby, omit, stringify } from 'txstate-utils'
+import { ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestFilter, AppRequestStatus, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, RequirementStatus, RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
 
 /**
  * This is the status of the whole appRequest as stored in the database. Each application
@@ -490,4 +493,42 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
     await updateRequirementComputed(requirements, db)
     await updatePromptComputed(prompts, db)
   })
+}
+
+export async function recordAppRequestActivity (appRequestId: number, userId: number, action: string, info?: { description?: string, data?: any, impersonatedBy?: number }) {
+  await db.insert(`
+    INSERT INTO app_request_activity (appRequestId, userId, impersonatedBy, action, description, data)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `, [
+    appRequestId,
+    userId,
+    info?.impersonatedBy,
+    action,
+    info?.description,
+    info?.data ? stringify(info.data) : null
+  ])
+}
+
+export async function addAppRequestNote (appRequestId: number, authorId: number, note: string, internal: boolean) {
+  await db.insert(`
+    INSERT INTO app_request_notes (appRequestId, userId, content, internal)
+    VALUES (?, ?, ?, ?)
+  `, [appRequestId, authorId, note, internal])
+}
+
+export async function logMutation (queryTime: number, operationName: string, query: string, auth: FastifyTxStateAuthInfo, variables: any, data: any, errors: GraphQLError[] | undefined, context: Context) {
+  try {
+    // only log mutations, and only if they were successful
+    if (!query.trimStart().startsWith('mutation') || !data?.[Object.keys(data)[0]]?.success) return
+    // don't log mutations that are only validating
+    const m = query.match(/validateOnly:\s*\$(\w+)/)
+    if (m && variables[m[1]] === true) return
+
+    const authInfo = (context as RQContext).authInfo
+    await db.insert('INSERT INTO mutationlog (userId, impersonatedBy, clientId, scope, mutation, query, variables) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [authInfo.user!.internalId, authInfo.impersonationUser?.internalId, auth.clientId, auth.scope, operationName, query, stringify(variables)]
+    )
+  } catch (e: any) {
+    console.error('Error logging mutation:', e)
+  }
 }

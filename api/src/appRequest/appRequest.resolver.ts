@@ -87,6 +87,11 @@ export class AppRequestResolver {
     if (!appRequest) throw new Error('App request not found.')
     return await ctx.svc(AppRequestService).offer(appRequest)
   }
+
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Add a note to the app request.' })
+  addNote (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest, @Arg('content', type => String) content: string, @Arg('internal', { description: 'If true, the note will be marked as internal and only visible to reviewers.' }) internal: boolean) {
+    return ctx.svc(AppRequestService).addNote(appRequest, content, internal)
+  }
 }
 
 @Resolver(of => AppRequestIndexCategory)

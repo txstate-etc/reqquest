@@ -1,7 +1,8 @@
-import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer, getAppRequestTags, closedStatuses, ApplicationRequirementService } from '../internal.js'
+import { BaseService, MutationMessageType } from '@txstate-mws/graphql-server'
 import { PrimaryKeyLoader } from 'dataloader-factory'
-import { BaseService } from '@txstate-mws/graphql-server'
 import { DateTime } from 'luxon'
+import { isBlank } from 'txstate-utils'
+import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer, getAppRequestTags, closedStatuses, ApplicationRequirementService, recordAppRequestActivity, addAppRequestNote, closeAppRequest } from '../internal.js'
 
 const appReqByIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -102,6 +103,10 @@ export class AppRequestService extends AuthService<AppRequest> {
     return requirements.find(req => req.statusReason)?.statusReason
   }
 
+  async recordActivity (appRequest: AppRequest, action: string, info?: { data?: any, description?: string }) {
+    await recordAppRequestActivity(appRequest.internalId, this.user!.internalId, action, { ...info, impersonatedBy: this.impersonationUser?.internalId })
+  }
+
   isOwn (appRequest: AppRequest) {
     return appRequest.userInternalId === this.user?.internalId
   }
@@ -123,6 +128,10 @@ export class AppRequestService extends AuthService<AppRequest> {
   mayViewAsReviewer (appRequest: AppRequest) {
     if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false
     return this.hasControl('AppRequest', 'review', appRequest.tags)
+  }
+
+  mayAddNote (appRequest: AppRequest) {
+    return this.mayViewAsReviewer(appRequest)
   }
 
   mayCreate () {
@@ -178,6 +187,7 @@ export class AppRequestService extends AuthService<AppRequest> {
     const response = new ValidatedAppRequestResponse()
     if (response.hasErrors()) return response
     await submitAppRequest(appRequest.internalId)
+    await this.recordActivity(appRequest, 'Submitted')
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
     return response
@@ -188,6 +198,30 @@ export class AppRequestService extends AuthService<AppRequest> {
     const response = new ValidatedAppRequestResponse()
     if (response.hasErrors()) return response
     await appRequestMakeOffer(appRequest.internalId)
+    await this.recordActivity(appRequest, 'Made Offer')
+    this.loaders.clear()
+    response.appRequest = (await this.findById(appRequest.id))!
+    return response
+  }
+
+  async close (appRequest: AppRequest) {
+    if (!this.mayClose(appRequest)) throw new Error('You may not close this app request.')
+    const response = new ValidatedAppRequestResponse()
+    if (response.hasErrors()) return response
+    await closeAppRequest(appRequest.internalId)
+    await this.recordActivity(appRequest, 'Closed')
+    this.loaders.clear()
+    response.appRequest = (await this.findById(appRequest.id))!
+    return response
+  }
+
+  async addNote (appRequest: AppRequest, note: string, internal: boolean) {
+    if (!this.mayAddNote(appRequest)) throw new Error('You may not add a note to this app request.')
+    const response = new ValidatedAppRequestResponse()
+    if (isBlank(note)) response.addMessage('Message is required.', 'note', MutationMessageType.error)
+    if (response.hasErrors()) return response
+    await addAppRequestNote(appRequest.internalId, this.user!.internalId, note, internal)
+    await this.recordActivity(appRequest, 'Added Note', { description: note })
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
     return response
