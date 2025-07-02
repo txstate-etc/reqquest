@@ -3,7 +3,7 @@ import { expect, test } from './fixtures.js'
 test('should be able get information about the logged in user', async ({ applicantRequest }) => {
   const { accessUsers } = await applicantRequest.graphql<{ accessUsers: { login: string }[] }>(`
     {
-      accessUsers (filter: { logins: ["applicant"] }) {
+      accessUsers (filter: { self: true }) {
         login
       }
     }

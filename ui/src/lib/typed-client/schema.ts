@@ -322,6 +322,8 @@ export interface IndexValue {
 }
 
 export interface Mutation {
+    /** Add a note to the app request. */
+    addNote: ValidatedAppRequestResponse
     /** Make an offer on the app request. */
     offerAppRequest: ValidatedAppRequestResponse
     roleAddGrant: AccessRoleValidatedResponse
@@ -717,7 +719,11 @@ export interface AccessUserGenqlSelection{
     __scalar?: boolean | number
 }
 
-export interface AccessUserFilter {logins?: (Scalars['ID'][] | null),otherIdentifersByLabel?: (AccessUserIdentifierInput[] | null),otherIdentifiers?: (Scalars['String'][] | null),search?: (Scalars['String'] | null)}
+export interface AccessUserFilter {logins?: (Scalars['ID'][] | null),
+/** Filter by identifiers aside from username, like an Employee ID. */
+otherIdentifiers?: (Scalars['String'][] | null),otherIdentifiersByLabel?: (AccessUserIdentifierInput[] | null),search?: (Scalars['String'] | null),
+/** If true, only return the user that is currently logged in. */
+self?: (Scalars['Boolean'] | null)}
 
 
 /** A label and ID pair for an external user unique ID. For example, { label: "Student ID", id: "123456" } */
@@ -919,6 +925,10 @@ export interface IndexValueGenqlSelection{
 }
 
 export interface MutationGenqlSelection{
+    /** Add a note to the app request. */
+    addNote?: (ValidatedAppRequestResponseGenqlSelection & { __args: {content: Scalars['String'], 
+    /** If true, the note will be marked as internal and only visible to reviewers. */
+    internal: Scalars['Boolean']} })
     /** Make an offer on the app request. */
     offerAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     roleAddGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grant: AccessRoleGrantCreate, roleId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })

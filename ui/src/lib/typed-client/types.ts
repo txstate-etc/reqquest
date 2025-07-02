@@ -303,14 +303,17 @@ export default {
             "logins": [
                 35
             ],
-            "otherIdentifersByLabel": [
-                18
-            ],
             "otherIdentifiers": [
                 61
             ],
+            "otherIdentifiersByLabel": [
+                18
+            ],
             "search": [
                 61
+            ],
+            "self": [
+                29
             ],
             "__typename": [
                 61
@@ -653,6 +656,19 @@ export default {
         },
         "JsonData": {},
         "Mutation": {
+            "addNote": [
+                62,
+                {
+                    "content": [
+                        61,
+                        "String!"
+                    ],
+                    "internal": [
+                        29,
+                        "Boolean!"
+                    ]
+                }
+            ],
             "offerAppRequest": [
                 62,
                 {

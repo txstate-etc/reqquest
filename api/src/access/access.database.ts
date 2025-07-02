@@ -91,12 +91,12 @@ export namespace AccessDatabase {
       `)
     }
 
-    if (filter?.otherIdentifersByLabel) {
+    if (filter?.otherIdentifiersByLabel) {
       joins.set('otherIdAnyByLabel', `
         LEFT JOIN (
           SELECT DISTINCT userId
           FROM accessUserIdentifiers
-          WHERE (label, id) IN (${db.in(joinbinds, filter.otherIdentifersByLabel.map((r: any) => [r.label, r.id]))})
+          WHERE (label, id) IN (${db.in(joinbinds, filter.otherIdentifiersByLabel.map((r: any) => [r.label, r.id]))})
           GROUP BY userId
         ) AS otherIdAnyByLabel ON accessUsers.id = otherIdAnyByLabel.userId
       `)

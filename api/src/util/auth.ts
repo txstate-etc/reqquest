@@ -132,11 +132,12 @@ export function rqContextMixin (Ctx: typeof Context): RQContextClass {
     authInfo!: AuthInfo
 
     get login () {
-      return this.auth?.sub ?? this.auth?.client_id ?? 'anonymous'
+      return this.auth?.username
     }
 
     async waitForAuth () {
       await super.waitForAuth()
+      if (!this.login) return
       this.authInfo = await authCache.get(this.login, this)
       this.authInfo.impersonationUser = this.auth?.impersonatedBy ? await userCache.get(this.auth.impersonatedBy, this) : undefined
     }

@@ -195,9 +195,14 @@ type AccessUser {
 
 input AccessUserFilter {
   logins: [ID!]
-  otherIdentifersByLabel: [AccessUserIdentifierInput!]
+
+  """Filter by identifiers aside from username, like an Employee ID."""
   otherIdentifiers: [String!]
+  otherIdentifiersByLabel: [AccessUserIdentifierInput!]
   search: String
+
+  """If true, only return the user that is currently logged in."""
+  self: Boolean
 }
 
 """
@@ -646,6 +651,16 @@ type IndexValue {
 scalar JsonData
 
 type Mutation {
+  """Add a note to the app request."""
+  addNote(
+    content: String!
+
+    """
+    If true, the note will be marked as internal and only visible to reviewers.
+    """
+    internal: Boolean!
+  ): ValidatedAppRequestResponse!
+
   """Make an offer on the app request."""
   offerAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
   roleAddGrant(grant: AccessRoleGrantCreate!, roleId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!

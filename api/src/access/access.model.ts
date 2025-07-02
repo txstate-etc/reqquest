@@ -56,14 +56,17 @@ export class AccessUserIdentifier {
 export class AccessUserFilter {
   internalIds?: number[]
 
+  @Field({ nullable: true, description: 'If true, only return the user that is currently logged in.' })
+  self?: boolean
+
   @Field(() => [ID], { nullable: true })
   logins?: string[]
 
-  @Field(() => [String], { nullable: true })
+  @Field(() => [String], { nullable: true, description: 'Filter by identifiers aside from username, like an Employee ID.' })
   otherIdentifiers?: string[]
 
   @Field(() => [AccessUserIdentifierInput], { nullable: true })
-  otherIdentifersByLabel?: AccessUserIdentifierInput[]
+  otherIdentifiersByLabel?: AccessUserIdentifierInput[]
 
   @Field({ nullable: true })
   search?: string
