@@ -39,6 +39,7 @@ services:
       - ./ui/vite.config.ts:/usr/app/vite.config.ts
   fakeauth:
     image: registry.its.txstate.edu/unified-auth-stub:dev
+    attach: false
     ports:
       - 3001:80
   mysql:

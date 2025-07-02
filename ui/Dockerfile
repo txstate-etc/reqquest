@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:24-alpine AS build
 RUN apk update && apk upgrade
 
 WORKDIR /usr/app
@@ -15,9 +15,10 @@ COPY ui/static static
 COPY ui/.env ./
 RUN npm run build
 
-FROM nginx:mainline-alpine
-RUN apk update && apk upgrade && apk add grep brotli
+FROM alpine:3.22
+RUN apk update && apk upgrade && apk add brotli envsubst grep nginx nginx-mod-http-brotli
 COPY --from=build /usr/app/build /usr/share/nginx/html
 COPY ui/static/* /usr/share/nginx/html/
 COPY ui/nginx.conf /etc/nginx/nginx.conf
-COPY ui/apply-env.sh /docker-entrypoint.d/40-apply-env.sh
+COPY ui/apply-env.sh /apply-env.sh
+CMD ["/bin/sh", "-c", "/apply-env.sh && nginx -g 'daemon off;'"]
