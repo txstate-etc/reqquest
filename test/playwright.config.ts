@@ -8,7 +8,7 @@ const config: PlaywrightTestConfig = {
 	},
 	use: {
 		baseURL: 'http://ui',
-		screenshot: { mode: 'only-on-failure', fullPage: true },
+		trace: 'retain-on-failure',
 	},
 	testDir: 'tests',
 	testMatch: /(.+\.)?(test|spec)\.[jt]s/

@@ -1,7 +1,13 @@
-import { expect, test } from '@playwright/test'
-import { loginAs } from './common.js'
+import { expect, test } from './fixtures.js'
 
-test('should be able to log in', async ({ page }) => {
-  const token = await loginAs(page, 'admin')
-  expect(token.length).toBeGreaterThan(0)
+test('should be able get information about the logged in user', async ({ applicantRequest }) => {
+  const { accessUsers } = await applicantRequest.graphql<{ accessUsers: { login: string }[] }>(`
+    {
+      accessUsers (filter: { logins: ["applicant"] }) {
+        login
+      }
+    }
+  `)
+  expect(accessUsers).toHaveLength(1)
+  expect(accessUsers[0].login).toEqual('applicant')
 })

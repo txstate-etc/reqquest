@@ -6,9 +6,10 @@
     "playwright": "playwright test"
   },
   "dependencies": {
+    "@playwright/test": "~1.53.2"
   },
   "devDependencies": {
-    "@playwright/test": "~1.48.0",
+    "@types/node": "^24.0.0",
     "@stylistic/eslint-plugin": "^2.10.1",
     "eslint-config-love": "^97.0.0"
   }
