@@ -152,6 +152,8 @@ export interface AccessUserIdentifier {
 export interface AppRequest {
     /** Actions the user can take on this app request. */
     actions: AppRequestActions
+    /** The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order. */
+    activity: AppRequestActivity[]
     applicant: AccessUser
     applications: Application[]
     /** Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date. */
@@ -189,6 +191,24 @@ export interface AppRequestActions {
     /** User may submit this app request either as or on behalf of the owner. */
     submit: Scalars['Boolean']
     __typename: 'AppRequestActions'
+}
+
+export interface AppRequestActivity {
+    action: Scalars['String']
+    /** The app request this activity is associated with. */
+    appRequest: AppRequest
+    /** The date and time when the action occurred. */
+    createdAt: Scalars['DateTime']
+    /** A JSON object containing additional data about the activity. This could be filtered but different actions would place different data here so it is not strongly typed. */
+    data: (Scalars['JsonData'] | null)
+    /** A detailed description of the activity. This is not meant to be filtered and could contain specific details about the action. */
+    description: (Scalars['String'] | null)
+    id: Scalars['ID']
+    /** If this activity was performed by an impersonated user, this will be the user that did the impersonation. */
+    impersonatedBy: (AccessUser | null)
+    /** The user that performed the activity. */
+    user: AccessUser
+    __typename: 'AppRequestActivity'
 }
 
 
@@ -745,6 +765,10 @@ export interface AccessUserIdentifierInput {id: Scalars['ID'],label: Scalars['St
 export interface AppRequestGenqlSelection{
     /** Actions the user can take on this app request. */
     actions?: AppRequestActionsGenqlSelection
+    /** The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order. */
+    activity?: (AppRequestActivityGenqlSelection & { __args?: {
+    /** Filters to apply to the activity log. This can be used to filter by action type, date range, etc. */
+    filters?: (AppRequestActivityFilters | null)} })
     applicant?: AccessUserGenqlSelection
     applications?: ApplicationGenqlSelection
     /** Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date. */
@@ -789,6 +813,43 @@ export interface AppRequestActionsGenqlSelection{
     __typename?: boolean | number
     __scalar?: boolean | number
 }
+
+export interface AppRequestActivityGenqlSelection{
+    action?: boolean | number
+    /** The app request this activity is associated with. */
+    appRequest?: AppRequestGenqlSelection
+    /** The date and time when the action occurred. */
+    createdAt?: boolean | number
+    /** A JSON object containing additional data about the activity. This could be filtered but different actions would place different data here so it is not strongly typed. */
+    data?: boolean | number
+    /** A detailed description of the activity. This is not meant to be filtered and could contain specific details about the action. */
+    description?: boolean | number
+    id?: boolean | number
+    /** If this activity was performed by an impersonated user, this will be the user that did the impersonation. */
+    impersonatedBy?: AccessUserGenqlSelection
+    /** The user that performed the activity. */
+    user?: AccessUserGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** This is used to filter a list of activities. */
+export interface AppRequestActivityFilters {
+/** Filter activities by action. This is a list of action names that should be matched. There are many potential action names, they are untyped. */
+actions?: (Scalars['String'][] | null),appRequestIds?: (Scalars['ID'][] | null),
+/** Return activities that happened after this date. */
+happenedAfter?: (Scalars['DateTime'] | null),
+/** Return activities that happened before this date. */
+happenedBefore?: (Scalars['DateTime'] | null),
+/** true -> Return activities that were performed while a user was impersonating another user. false -> Return activities that were not impersonated. */
+impersonated?: (Scalars['Boolean'] | null),
+/** Return activities that were performed while one of the given logins was impersonating another user. */
+impersonatedBy?: (Scalars['ID'][] | null),
+/** Return activities that were performed while one of the given logins was being impersonated by someone else. */
+impersonatedUsers?: (Scalars['ID'][] | null),
+/** Return activities that were performed by one of the given logins. */
+users?: (Scalars['ID'][] | null)}
 
 export interface AppRequestFilter {
 /** true -> only return appRequests that are closed. false -> only return appRequests that are open. null -> return all appRequests. */
@@ -1311,6 +1372,14 @@ export interface ValidatedResponseGenqlSelection{
     export const isAppRequestActions = (obj?: { __typename?: any } | null): obj is AppRequestActions => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isAppRequestActions"')
       return AppRequestActions_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppRequestActivity_possibleTypes: string[] = ['AppRequestActivity']
+    export const isAppRequestActivity = (obj?: { __typename?: any } | null): obj is AppRequestActivity => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppRequestActivity"')
+      return AppRequestActivity_possibleTypes.includes(obj.__typename)
     }
     
 

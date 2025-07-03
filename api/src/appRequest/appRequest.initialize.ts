@@ -48,6 +48,9 @@ export const appRequestMigrations: DatabaseMigration[] = [
         description TEXT,
         data TEXT,
         createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX (appRequestId, createdAt),
+        INDEX (userId, createdAt),
+        INDEX (impersonatedBy, createdAt),
         FOREIGN KEY (appRequestId) REFERENCES app_requests (id) ON DELETE CASCADE,
         FOREIGN KEY (userId) REFERENCES accessUsers (id),
         FOREIGN KEY (impersonatedBy) REFERENCES accessUsers (id)

@@ -230,6 +230,16 @@ Represents a group of applications all being applied for at the same time. As pa
 type AppRequest {
   """Actions the user can take on this app request."""
   actions: AppRequestActions!
+
+  """
+  The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order.
+  """
+  activity(
+    """
+    Filters to apply to the activity log. This can be used to filter by action type, date range, etc.
+    """
+    filters: AppRequestActivityFilters
+  ): [AppRequestActivity!]!
   applicant: AccessUser!
   applications: [Application!]!
 
@@ -303,6 +313,68 @@ type AppRequestActions {
 
   """User may submit this app request either as or on behalf of the owner."""
   submit: Boolean!
+}
+
+type AppRequestActivity {
+  action: String!
+
+  """The app request this activity is associated with."""
+  appRequest: AppRequest!
+
+  """The date and time when the action occurred."""
+  createdAt: DateTime!
+
+  """
+  A JSON object containing additional data about the activity. This could be filtered but different actions would place different data here so it is not strongly typed.
+  """
+  data: JsonData
+
+  """
+  A detailed description of the activity. This is not meant to be filtered and could contain specific details about the action.
+  """
+  description: String
+  id: ID!
+
+  """
+  If this activity was performed by an impersonated user, this will be the user that did the impersonation.
+  """
+  impersonatedBy: AccessUser
+
+  """The user that performed the activity."""
+  user: AccessUser!
+}
+
+"""This is used to filter a list of activities."""
+input AppRequestActivityFilters {
+  """
+  Filter activities by action. This is a list of action names that should be matched. There are many potential action names, they are untyped.
+  """
+  actions: [String!]
+  appRequestIds: [ID!]
+
+  """Return activities that happened after this date."""
+  happenedAfter: DateTime
+
+  """Return activities that happened before this date."""
+  happenedBefore: DateTime
+
+  """
+  true -> Return activities that were performed while a user was impersonating another user. false -> Return activities that were not impersonated.
+  """
+  impersonated: Boolean
+
+  """
+  Return activities that were performed while one of the given logins was impersonating another user.
+  """
+  impersonatedBy: [ID!]
+
+  """
+  Return activities that were performed while one of the given logins was being impersonated by someone else.
+  """
+  impersonatedUsers: [ID!]
+
+  """Return activities that were performed by one of the given logins."""
+  users: [ID!]
 }
 
 input AppRequestFilter {

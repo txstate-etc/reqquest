@@ -32,20 +32,28 @@
       routeId: '/dashboards/reviewer'
     },
     {
-      title: 'App Requests',
+      title: uiRegistry.getPlural('appRequest'),
       group: 'Administration',
       icon: DocumentMultiple_01,
       routeId: '/requests',
       children: [{
-        title: 'Application',
-        routeId: '/requests/[id]/apply',
+        title: $page => $page.data.basicRequestData ? `${$page.data.basicRequestData.applicant.fullname} (${$page.data.basicRequestData.period.name})` : 'Unknown Request',
+        routeId: '/requests/[id]',
         children: [{
-          title: 'Review Your Submission',
-          routeId: '/requests/[id]/apply/review'
+          title: 'Application',
+          routeId: '/requests/[id]/apply',
+          children: [{
+            title: 'Review Your Submission',
+            routeId: '/requests/[id]/apply/review'
+          }]
+        }, {
+          title: `Review ${uiRegistry.getWord('appRequest')}`,
+          routeId: '/requests/[id]/approve',
+          children: [{
+            title: 'Activity Log',
+            routeId: '/requests/[id]/approve/activity'
+          }]
         }]
-      }, {
-        title: 'Review Application',
-        routeId: '/requests/[id]/approve'
       }]
     },
     {

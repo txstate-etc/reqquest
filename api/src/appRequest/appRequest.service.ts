@@ -1,8 +1,8 @@
 import { BaseService, MutationMessageType } from '@txstate-mws/graphql-server'
-import { PrimaryKeyLoader } from 'dataloader-factory'
+import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { DateTime } from 'luxon'
 import { isBlank } from 'txstate-utils'
-import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer, getAppRequestTags, closedStatuses, ApplicationRequirementService, recordAppRequestActivity, addAppRequestNote, closeAppRequest } from '../internal.js'
+import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer, getAppRequestTags, closedStatuses, ApplicationRequirementService, recordAppRequestActivity, addAppRequestNote, closeAppRequest, getAppRequestActivity, AppRequestActivityFilters } from '../internal.js'
 
 const appReqByIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -21,6 +21,13 @@ const appReqTagsLoader = new PrimaryKeyLoader({
     const tagLookup = await getAppRequestTags(appRequestIds)
     return appRequestIds.map(id => ({ id, tags: tagLookup[id] }))
   }
+})
+
+const activityByAppReqLoader = new OneToManyLoader({
+  fetch: async (appRequestInternalIds: number[], filters?: AppRequestActivityFilters) => {
+    return await getAppRequestActivity({ ...filters, appRequestInternalIds })
+  },
+  extractKey: row => row.appRequestInternalId
 })
 
 export class AppRequestServiceInternal extends BaseService<AppRequest> {
@@ -51,6 +58,10 @@ export class AppRequestServiceInternal extends BaseService<AppRequest> {
     const row = await this.loaders.get(appReqDataLoader).load(appRequestInternalId)
     if (!row) throw new Error('AppRequest not found')
     return row.data as AppRequestData ?? {}
+  }
+
+  async getActivityForAppRequest (appRequestInternalId: number, filters?: AppRequestActivityFilters) {
+    return await this.loaders.get(activityByAppReqLoader, filters).load(appRequestInternalId)
   }
 
   async updateData (appRequest: AppRequest, data: AppRequestData) {
@@ -105,6 +116,11 @@ export class AppRequestService extends AuthService<AppRequest> {
 
   async recordActivity (appRequest: AppRequest, action: string, info?: { data?: any, description?: string }) {
     await recordAppRequestActivity(appRequest.internalId, this.user!.internalId, action, { ...info, impersonatedBy: this.impersonationUser?.internalId })
+  }
+
+  async getActivityForAppRequest (appRequest: AppRequest, filters?: AppRequestActivityFilters) {
+    if (!this.mayViewAsReviewer(appRequest)) return []
+    return await this.svc(AppRequestServiceInternal).getActivityForAppRequest(appRequest.internalId, filters)
   }
 
   isOwn (appRequest: AppRequest) {

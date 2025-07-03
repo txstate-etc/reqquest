@@ -1,6 +1,7 @@
 import { PUBLIC_API_BASE, PUBLIC_AUTH_REDIRECT } from '$env/static/public'
 import { APIBase } from '@txstate-mws/sveltekit-utils'
-import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleInput, type AppRequestFilter } from './typed-client/index.js'
+import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleInput, type AppRequestActivityFilters, type AppRequestFilter } from './typed-client/index.js'
+import { DateTime } from 'luxon'
 
 class API extends APIBase {
   client = createClient({
@@ -281,6 +282,25 @@ class API extends APIBase {
     return response.appRequestIndexes[0]?.values ?? []
   }
 
+  async getBasicRequestData (appRequestId: string) {
+    const response = await this.client.query({
+      __name: 'GetBasicRequestData',
+      appRequests: {
+        __args: { filter: { ids: [appRequestId] } },
+        applicant: {
+          login: true,
+          fullname: true
+        },
+        period: {
+          id: true,
+          name: true
+        }
+      }
+    })
+    if (response.appRequests.length === 0) return undefined
+    return response.appRequests[0]
+  }
+
   async getReviewData (appRequestId: string) {
     const response = await this.client.query({
       __name: 'GetReviewData',
@@ -320,6 +340,36 @@ class API extends APIBase {
     if (response.appRequests.length === 0) return undefined
     const appRequest = response.appRequests[0]
     return { ...appRequest, applications: appRequest.applications.map(a => ({ ...a, requirements: a.requirements.filter(r => r.reachable).map(r => ({ ...r, prompts: r.prompts.filter(p => p.visibility !== enumPromptVisibility.UNREACHABLE) })) })) }
+  }
+
+  async getRequestActivity (appRequestId: string, filters?: AppRequestActivityFilters) {
+    const response = await this.client.query({
+      __name: 'GetRequestActivity',
+      appRequests: {
+        __args: { filter: { ids: [appRequestId] } },
+        activity: {
+          __args: { filters },
+          id: true,
+          user: {
+            login: true,
+            fullname: true
+          },
+          impersonatedBy: {
+            login: true,
+            fullname: true
+          },
+          action: true,
+          description: true,
+          data: true,
+          createdAt: true
+        }
+      }
+    })
+    if (response.appRequests.length === 0) return undefined
+    return response.appRequests[0].activity.map(activity => ({
+      ...activity,
+      createdAt: DateTime.fromISO(activity.createdAt)
+    }))
   }
 
   async getPromptData (appRequestId: string, promptId: string) {

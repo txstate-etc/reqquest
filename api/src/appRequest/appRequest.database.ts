@@ -4,7 +4,7 @@ import type { GraphQLError } from 'graphql'
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
 import { clone, groupby, omit, stringify } from 'txstate-utils'
-import { ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestFilter, AppRequestStatus, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, RequirementStatus, RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
+import { ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter, AppRequestStatus, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, RequirementStatus, RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
 
 /**
  * This is the status of the whole appRequest as stored in the database. Each application
@@ -52,6 +52,17 @@ export interface AppRequestRow {
 export interface AppRequestRowData {
   id: number
   data?: string
+}
+
+export interface AppRequestActivityRow {
+  id: number
+  appRequestId: number
+  userId: number
+  impersonatedBy?: number
+  action: string
+  description?: string
+  data?: string
+  createdAt: Date
 }
 
 export async function getAppRequestData (ids: number[], tdb: Queryable = db): Promise<{ id: number, data: AppRequestData }[]> {
@@ -507,6 +518,53 @@ export async function recordAppRequestActivity (appRequestId: number, userId: nu
     info?.description,
     info?.data ? stringify(info.data) : null
   ])
+}
+
+export async function getAppRequestActivity (filter: AppRequestActivityFilters) {
+  const where = []
+  const binds: any[] = []
+  if (filter.appRequestIds?.length) {
+    where.push(`ara.appRequestId IN (${db.in(binds, filter.appRequestIds)})`)
+  }
+  if (filter.appRequestInternalIds?.length) {
+    where.push(`ara.appRequestId IN (${db.in(binds, filter.appRequestInternalIds)})`)
+  }
+  if (filter.users?.length) {
+    where.push(`u.login IN (${db.in(binds, filter.users)}) OR iu.login IN (${db.in(binds, filter.users)})`)
+  }
+  if (filter.actions?.length) {
+    where.push(`action IN (${db.in(binds, filter.actions)})`)
+  }
+  if (filter.impersonatedBy?.length) {
+    where.push(`iu.login IN (${db.in(binds, filter.impersonatedBy)})`)
+  }
+  if (filter.impersonatedUsers?.length) {
+    where.push(`u.login IN (${db.in(binds, filter.impersonatedUsers)}) AND impersonatedBy IS NOT NULL`)
+  }
+  if (filter.impersonated != null) {
+    if (filter.impersonated) {
+      where.push('impersonatedBy IS NOT NULL')
+    } else {
+      where.push('impersonatedBy IS NULL')
+    }
+  }
+  if (filter.happenedAfter) {
+    where.push('createdAt >= ?')
+    binds.push(filter.happenedAfter.toJSDate())
+  }
+  if (filter.happenedBefore) {
+    where.push('createdAt <= ?')
+    binds.push(filter.happenedBefore.toJSDate())
+  }
+
+  const rows = await db.getall<AppRequestActivityRow>(`
+    SELECT ara.* FROM app_request_activity ara
+    INNER JOIN accessUsers u ON u.id = ara.userId
+    LEFT JOIN accessUsers iu ON iu.id = ara.impersonatedBy
+    WHERE (${where.join(') AND (')})
+    ORDER BY ara.createdAt DESC
+  `, binds)
+  return rows.map(row => new AppRequestActivity(row))
 }
 
 export async function addAppRequestNote (appRequestId: number, authorId: number, note: string, internal: boolean) {

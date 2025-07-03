@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon'
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
-import { AppRequestRow, AppRequestStatusDB, PromptTagDefinition } from '../internal.js'
+import { AppRequestActivityRow, AppRequestRow, AppRequestStatusDB, JsonData, PromptTagDefinition } from '../internal.js'
 import { ValidatedResponse } from '@txstate-mws/graphql-server'
 
 export enum AppRequestStatus {
@@ -193,4 +193,68 @@ export class AppRequestFilter {
 export class ValidatedAppRequestResponse extends ValidatedResponse {
   @Field(type => AppRequest)
   appRequest!: AppRequest
+}
+
+@ObjectType()
+export class AppRequestActivity {
+  constructor (row: AppRequestActivityRow) {
+    this.id = String(row.id)
+    this.appRequestId = String(row.appRequestId)
+    this.appRequestInternalId = row.appRequestId
+    this.userInternalId = row.userId
+    this.impersonatedBy = row.impersonatedBy
+    this.action = row.action
+    this.description = row.description
+    this.data = row.data ? JSON.parse(row.data) : undefined
+    this.createdAt = DateTime.fromJSDate(row.createdAt)
+  }
+
+  appRequestId!: string
+  appRequestInternalId!: number
+  userInternalId!: number
+  impersonatedBy?: number
+
+  @Field(type => ID)
+  id: string
+
+  @Field()
+  action!: string
+
+  @Field({ nullable: true, description: 'A detailed description of the activity. This is not meant to be filtered and could contain specific details about the action.' })
+  description?: string
+
+  @Field(type => JsonData, { nullable: true, description: 'A JSON object containing additional data about the activity. This could be filtered but different actions would place different data here so it is not strongly typed.' })
+  data?: any
+
+  @Field(type => DateTime, { description: 'The date and time when the action occurred.' })
+  createdAt!: DateTime
+}
+
+@InputType({ description: 'This is used to filter a list of activities.' })
+export class AppRequestActivityFilters {
+  appRequestInternalIds?: number[]
+
+  @Field(type => [ID], { nullable: true })
+  appRequestIds?: string[]
+
+  @Field(type => [ID], { nullable: true, description: 'Return activities that were performed by one of the given logins. Also returns activities that were performed while one of the given logins was impersonating someone else.' })
+  users?: string[]
+
+  @Field({ nullable: true, description: 'true -> Return activities that were performed while a user was impersonating another user. false -> Return activities that were not impersonated.' })
+  impersonated?: boolean
+
+  @Field(type => [ID], { nullable: true, description: 'Return activities that were performed while one of the given logins was being impersonated by someone else.' })
+  impersonatedUsers?: string[]
+
+  @Field(type => [ID], { nullable: true, description: 'Return activities that were performed while one of the given logins was impersonating another user.' })
+  impersonatedBy?: string[]
+
+  @Field(type => [String], { nullable: true, description: 'Filter activities by action. This is a list of action names that should be matched. There are many potential action names, they are untyped.' })
+  actions?: string[]
+
+  @Field(type => DateTime, { nullable: true, description: 'Return activities that happened after this date.' })
+  happenedAfter?: DateTime
+
+  @Field(type => DateTime, { nullable: true, description: 'Return activities that happened before this date.' })
+  happenedBefore?: DateTime
 }

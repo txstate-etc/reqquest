@@ -1,6 +1,6 @@
 import { sortby } from 'txstate-utils'
 import { Arg, Ctx, FieldResolver, ID, Mutation, Query, Resolver, Root } from 'type-graphql'
-import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse, AppRequestIndexCategory, IndexValue, AppRequestIndexDestination, IndexCategory, RequirementPrompt, AccessUser, AccessUserService } from '../internal.js'
+import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse, AppRequestIndexCategory, IndexValue, AppRequestIndexDestination, IndexCategory, RequirementPrompt, AccessUser, AccessUserService, AppRequestActivity, AppRequestActivityFilters } from '../internal.js'
 
 @Resolver(of => AppRequest)
 export class AppRequestResolver {
@@ -60,6 +60,11 @@ export class AppRequestResolver {
   @FieldResolver(type => String, { nullable: true, description: 'The most pertinent status reason for this app request. The logic is complicated and depends on the AppRequest\'s status.' })
   async statusReason (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
     return await ctx.svc(AppRequestService).getStatusReason(appRequest)
+  }
+
+  @FieldResolver(type => [AppRequestActivity], { description: 'The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order.' })
+  async activity (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest, @Arg('filters', type => AppRequestActivityFilters, { nullable: true, description: 'Filters to apply to the activity log. This can be used to filter by action type, date range, etc.' }) filters?: AppRequestActivityFilters) {
+    return await ctx.svc(AppRequestService).getActivityForAppRequest(appRequest, filters)
   }
 
   @FieldResolver(type => AppRequestActions, { description: 'Actions the user can take on this app request.' })
@@ -145,5 +150,27 @@ export class AppRequestAccessResolver {
   @FieldResolver(returns => Boolean, { description: 'User may make an offer on this app request.' })
   offer (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
     return ctx.svc(AppRequestService).mayOffer(appRequest)
+  }
+}
+
+@Resolver(of => AppRequestActivity)
+export class AppRequestActivityResolver {
+  @FieldResolver(type => AccessUser, { description: 'The user that performed the activity.' })
+  async user (@Ctx() ctx: RQContext, @Root() activity: AppRequestActivity) {
+    const user = await ctx.svc(AccessUserService).findByInternalId(activity.userInternalId)
+    return user!
+  }
+
+  @FieldResolver(type => AccessUser, { nullable: true, description: 'If this activity was performed by an impersonated user, this will be the user that did the impersonation.' })
+  async impersonatedBy (@Ctx() ctx: RQContext, @Root() activity: AppRequestActivity) {
+    if (!activity.impersonatedBy) return undefined
+    const user = await ctx.svc(AccessUserService).findByInternalId(activity.impersonatedBy)
+    return user!
+  }
+
+  @FieldResolver(type => AppRequest, { description: 'The app request this activity is associated with.' })
+  async appRequest (@Ctx() ctx: RQContext, @Root() activity: AppRequestActivity) {
+    const appRequest = await ctx.svc(AppRequestService).findByInternalId(activity.appRequestInternalId)
+    return appRequest!
   }
 }
