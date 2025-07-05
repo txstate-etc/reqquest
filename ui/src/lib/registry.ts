@@ -101,6 +101,28 @@ export interface UIConfig {
      */
     plural?: Terminologies
   }
+  /**
+   * Several spots in the UI allow you to provide custom components to add extra data or functionality.
+   *
+   * Specify the components here.
+   */
+  slots?: {
+    /**
+     * This will be placed inside the card on the reviewer sidebar.
+     *
+     * It will be given the `basicRequestData` prop, which contains the basic information about the
+     * request, such as the name of the applicant and the period. Any custom user information returned
+     * by the userLookup function you provide will also be included at `basicRequestData.applicant.otherInfo`.
+     */
+    reviewerSidebarCard?: typeof SvelteComponent<any>
+    /**
+     * This will be placed below the request details in the sidebar.
+     *
+     * It will only receive the `basicRequestData` prop, but you may use the `api` object from
+     * @reqquest/ui to fetch additional data.
+     */
+    reviewerSidebar?: typeof SvelteComponent<any>
+  }
 }
 
 export interface UIConfigWithDefaults extends UIConfig {

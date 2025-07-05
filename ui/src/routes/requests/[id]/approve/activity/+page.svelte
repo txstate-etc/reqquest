@@ -14,7 +14,7 @@
 <div>
   <FilterUI>
     <svelte:fragment slot="quickfilters">
-      <FieldMultiselect path="actions" label="Actions" placeholder="Filter by action" items={activityActions} />
+      <FieldMultiselect path="actions" label="Activity Type" placeholder="Filter by activity type" items={activityActions} />
       <FieldMultiselect path="users" label="People" placeholder="Filter by person" items={activityPeople} />
     </svelte:fragment>
     <FieldDate path="happenedAfter" labelText="From" placeholder="Activities After" />
@@ -24,8 +24,8 @@
   <ColumnList title='Activity Log' rows={activity} columns={[
     { id: 'user', label: 'Person', render: row => htmlEncode(`${row.user.fullname} (${row.user.login})`) + (row.impersonatedBy ? `<div class="impersonator">${htmlEncode(row.impersonatedBy.fullname)} (${row.impersonatedBy.login})</div>` : '') },
     { id: 'createdAt', label: 'Date', render: row => longDateTime(row.createdAt) },
-    { id: 'action', label: 'Action', get: 'action' },
-    { id: 'description', label: 'Description', get: 'description' }
+    { id: 'action', label: 'Activity', get: 'action' },
+    { id: 'description', label: 'Detail', get: 'description' }
   ]} noItemsTitle="No activity." noItemsSubtitle="No activity has been recorded for this {uiRegistry.getWord('appRequest').toLocaleLowerCase()}." />
 </div>
 

@@ -289,7 +289,12 @@ class API extends APIBase {
         __args: { filter: { ids: [appRequestId] } },
         applicant: {
           login: true,
-          fullname: true
+          fullname: true,
+          otherIdentifiers: {
+            id: true,
+            label: true
+          },
+          otherInfo: true
         },
         period: {
           id: true,
