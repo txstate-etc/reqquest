@@ -1,4 +1,4 @@
-import { UIRegistry } from '$lib/registry'
+import { UIRegistry } from '$lib'
 import DogWalker from 'carbon-icons-svelte/lib/DogWalker.svelte'
 import YardPromptDisplay from './YardPromptDisplay.svelte'
 import YardPrompt from './YardPrompt.svelte'
