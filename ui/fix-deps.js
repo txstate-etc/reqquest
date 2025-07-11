@@ -1,8 +1,9 @@
-import { readDirSync, readFileSync, writeFileSync } from 'node:fs'
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 
 const original = JSON.parse(readFileSync('package.json'))
 const local = JSON.parse(readFileSync('package-local.json'))
 
+original.name = local.name
 for (const [k, v] of Object.entries(local.dependencies)) {
   original.dependencies[k] ??= v
 }
@@ -10,16 +11,16 @@ for (const [k, v] of Object.entries(local.dependencies)) {
 writeFileSync('package.json', JSON.stringify(original))
 
 function fixRouteImports(route) {
-  const entries = readDirSync(route, { withFileTypes: true })
+  const entries = readdirSync(route, { withFileTypes: true })
   for (const entry of entries) {
     if (entry.name.endsWith('.ts') || entry.name.endsWith('.svelte')) {
-      const content = readFileSync(`${route}/${entry.name}`, 'utf-8')
+      const content = readFileSync(new URL(entry.name, route), 'utf-8')
       const fixedContent = content.replace(/from '\$lib/g, "from '@reqquest/ui")
-      writeFileSync(`${route}/${entry.name}`, fixedContent)
+      writeFileSync(new URL(entry.name, route), fixedContent)
     } else if (entry.isDirectory()) {
-      fixRouteImports(`${route}/${entry.name}`)
+      fixRouteImports(new URL(entry.name + '/', route))
     }
   }
 }
 
-fixRouteImports(new URL('src/routes', import.meta.url))
+fixRouteImports(new URL('./src/routes/', import.meta.url))
