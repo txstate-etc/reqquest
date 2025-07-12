@@ -146,6 +146,14 @@ export class AppRequestService extends AuthService<AppRequest> {
     return this.hasControl('AppRequest', 'review', appRequest.tags)
   }
 
+  mayViewReviewerInterface () {
+    return this.hasAnyControl('AppRequest', 'review')
+  }
+
+  mayViewApplicantDashboard () {
+    return this.hasControl('AppRequestOwn', 'create')
+  }
+
   mayAddNote (appRequest: AppRequest) {
     return this.mayViewAsReviewer(appRequest)
   }

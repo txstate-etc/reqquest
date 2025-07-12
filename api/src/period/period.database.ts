@@ -170,6 +170,14 @@ export async function updatePeriod (id: string, period: PeriodUpdate) {
   `, [code, name, openDate, closeDate, archiveDate, id])
 }
 
+export async function deletePeriod (id: string) {
+  await db.transaction(async db => {
+    const hasAppRequests = await db.getval<number>('SELECT COUNT(*) FROM app_requests WHERE periodId = ?', [id])
+    if (hasAppRequests) throw new Error('Cannot delete a period that has app requests.')
+    await db.delete('DELETE FROM periods WHERE id = ?', [id])
+  })
+}
+
 function processConfigurationFilters (filters?: ConfigurationFilters) {
   const where: string[] = []
   const binds: any[] = []

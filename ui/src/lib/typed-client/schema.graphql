@@ -373,7 +373,9 @@ input AppRequestActivityFilters {
   """
   impersonatedUsers: [ID!]
 
-  """Return activities that were performed by one of the given logins."""
+  """
+  Return activities that were performed by one of the given logins. Also returns activities that were performed while one of the given logins was impersonating someone else.
+  """
   users: [ID!]
 }
 
@@ -732,6 +734,8 @@ type Mutation {
     """
     internal: Boolean!
   ): ValidatedAppRequestResponse!
+  createPeriod(period: PeriodUpdate!, validateOnly: Boolean): ValidatedPeriodResponse!
+  deletePeriod(periodId: ID!): ValidatedResponse!
 
   """Make an offer on the app request."""
   offerAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
@@ -744,8 +748,8 @@ type Mutation {
 
   """Submit the app request."""
   submitAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
-  updateConfiguration(data: JsonData!, key: String!, periodId: String!, validateOnly: Boolean): ValidatedConfigurationResponse!
-  updatePeriod(id: String!, update: PeriodUpdate!, validateOnly: Boolean): ValidatedPeriodResponse!
+  updateConfiguration(data: JsonData!, key: String!, periodId: ID!, validateOnly: Boolean): ValidatedConfigurationResponse!
+  updatePeriod(periodId: ID!, update: PeriodUpdate!, validateOnly: Boolean): ValidatedPeriodResponse!
 
   """Update the data for a prompt in this app request."""
   updatePrompt(data: JsonData!, promptId: ID!, validateOnly: Boolean): ValidatedAppRequestResponse!
@@ -814,8 +818,8 @@ type Period {
 }
 
 type PeriodActions {
+  delete: Boolean!
   update: Boolean!
-  view: Boolean!
 }
 
 input PeriodFilters {

@@ -7,10 +7,14 @@
   import DocumentMultiple_01 from 'carbon-icons-svelte/lib/DocumentMultiple_01.svelte'
   import Settings from 'carbon-icons-svelte/lib/Settings.svelte'
   import Time from 'carbon-icons-svelte/lib/Time.svelte'
+  import type { LayoutData } from './$types.js'
   import { uiRegistry } from '../local/index.js'
   import '../app.css'
 
   api.recordNavigations()
+
+  export let data: LayoutData
+  $: ({ access } = data)
 </script>
 
 <UIShell appName={uiRegistry.config.appName} reverseWeights={!!PUBLIC_ENVIRONMENT} companyName={PUBLIC_ENVIRONMENT || 'TXST'} overlayText={PUBLIC_ENVIRONMENT} navRoot={{
@@ -22,18 +26,21 @@
       title: uiRegistry.config.applicantDashboardTitle ?? 'Applicant Dashboard',
       navTitle: uiRegistry.config.applicantDashboardNavTitle ?? uiRegistry.config.applicantDashboardTitle ?? 'Applicant',
       group: 'Dashboards',
+      hideFromSideNav: !access.viewApplicantDashboard,
       icon: Dashboard,
       routeId: '/dashboards/applicant'
     },
     {
       title: 'Reviewer',
       group: 'Dashboards',
+      hideFromSideNav: !access.viewReviewerInterface,
       icon: Dashboard,
       routeId: '/dashboards/reviewer'
     },
     {
       title: uiRegistry.getPlural('appRequest'),
       group: 'Administration',
+      hideFromSideNav: !access.viewAppRequestList,
       icon: DocumentMultiple_01,
       routeId: '/requests',
       children: [{
@@ -59,6 +66,7 @@
     {
       title: 'Manage Roles',
       group: 'Administration',
+      hideFromSideNav: !access.viewRoleManagement,
       icon: Settings,
       routeId: '/roles',
       children: [
@@ -71,6 +79,7 @@
     {
       title: 'Manage Periods',
       group: 'Administration',
+      hideFromSideNav: !access.viewPeriodManagement,
       icon: Time,
       routeId: '/periods',
       children: [

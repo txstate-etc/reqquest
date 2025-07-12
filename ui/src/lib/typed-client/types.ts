@@ -735,6 +735,27 @@ export default {
                     ]
                 }
             ],
+            "createPeriod": [
+                66,
+                {
+                    "period": [
+                        51,
+                        "PeriodUpdate!"
+                    ],
+                    "validateOnly": [
+                        31
+                    ]
+                }
+            ],
+            "deletePeriod": [
+                67,
+                {
+                    "periodId": [
+                        37,
+                        "ID!"
+                    ]
+                }
+            ],
             "offerAppRequest": [
                 64,
                 {
@@ -843,8 +864,8 @@ export default {
                         "String!"
                     ],
                     "periodId": [
-                        63,
-                        "String!"
+                        37,
+                        "ID!"
                     ],
                     "validateOnly": [
                         31
@@ -854,9 +875,9 @@ export default {
             "updatePeriod": [
                 66,
                 {
-                    "id": [
-                        63,
-                        "String!"
+                    "periodId": [
+                        37,
+                        "ID!"
                     ],
                     "update": [
                         51,
@@ -946,10 +967,10 @@ export default {
             ]
         },
         "PeriodActions": {
-            "update": [
+            "delete": [
                 31
             ],
-            "view": [
+            "update": [
                 31
             ],
             "__typename": [

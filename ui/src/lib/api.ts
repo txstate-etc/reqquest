@@ -1,6 +1,6 @@
 import { PUBLIC_API_BASE, PUBLIC_AUTH_REDIRECT } from '$env/static/public'
 import { APIBase } from '@txstate-mws/sveltekit-utils'
-import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleInput, type AppRequestActivityFilters, type AppRequestFilter } from './typed-client/index.js'
+import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleInput, type AppRequestActivityFilters, type AppRequestFilter, type PeriodUpdate } from './typed-client/index.js'
 import { DateTime } from 'luxon'
 
 class API extends APIBase {
@@ -403,10 +403,57 @@ class API extends APIBase {
         name: true,
         openDate: true,
         closeDate: true,
-        archiveDate: true
+        archiveDate: true,
+        actions: {
+          update: true,
+          delete: true
+        }
       }
     })
     return response.periods
+  }
+
+  async createPeriod (period: PeriodUpdate, validateOnly: boolean) {
+    const response = await this.client.mutation({
+      __name: 'CreatePeriod',
+      createPeriod: {
+        __args: { period, validateOnly },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return api.mutationForDialog(response.createPeriod, { prefix: 'period' })
+  }
+
+  async updatePeriod (periodId: string, period: PeriodUpdate, validateOnly: boolean) {
+    const response = await this.client.mutation({
+      __name: 'UpdatePeriod',
+      updatePeriod: {
+        __args: { periodId, update: period, validateOnly },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.updatePeriod, { prefix: 'period' })
+  }
+
+  async deletePeriod (periodId: string) {
+    const response = await this.client.mutation({
+      __name: 'DeletePeriod',
+      deletePeriod: {
+        __args: { periodId },
+        success: true
+      }
+    })
+    return response.deletePeriod.success
   }
 
   async getPeriodConfigurations (periodId: string) {

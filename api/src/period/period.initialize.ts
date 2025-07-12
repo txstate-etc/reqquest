@@ -25,7 +25,7 @@ export const periodMigrations: DatabaseMigration[] = [
           programKey VARCHAR(255) NOT NULL,
           disabled TINYINT(1) NOT NULL DEFAULT 0,
           PRIMARY KEY (periodId, programKey),
-          FOREIGN KEY (periodId) REFERENCES periods (id)
+          FOREIGN KEY (periodId) REFERENCES periods (id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `) // test
       await db.execute(`
@@ -35,7 +35,7 @@ export const periodMigrations: DatabaseMigration[] = [
           data TEXT NOT NULL,
           updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           PRIMARY KEY (periodId, definitionKey),
-          FOREIGN KEY (periodId) REFERENCES periods (id)
+          FOREIGN KEY (periodId) REFERENCES periods (id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `)
       await db.execute(`
@@ -46,7 +46,7 @@ export const periodMigrations: DatabaseMigration[] = [
           disabled TINYINT(1) NOT NULL DEFAULT 0,
           updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           PRIMARY KEY (periodId, programKey, requirementKey),
-          FOREIGN KEY (periodId) REFERENCES periods (id)
+          FOREIGN KEY (periodId) REFERENCES periods (id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `)
     }

@@ -7,7 +7,8 @@ import {
   AccessUserIdentifier, AccessRoleInput, AccessControl, AccessSubjectType, subjectTypes,
   AccessRoleGrantUpdate, appConfig, AccessTagCategory, AccessTag, AccessGrantTag,
   AccessRoleGrantActions, AccessRoleServiceInternal, AppRequestService, SubjectTypeDefinitionProcessed,
-  TagCategoryDefinition
+  TagCategoryDefinition,
+  PeriodService
 } from '../internal.js'
 
 @Resolver(of => Access)
@@ -27,12 +28,12 @@ export class AccessResolver {
 
   @FieldResolver(returns => Boolean, { description: 'Current user is permitted to view the role management UI.' })
   async viewRoleManagement (@Ctx() ctx: Context) {
-    ctx.svc(AccessRoleService).mayViewRoleManagement()
+    return ctx.svc(AccessRoleService).mayViewRoleManagement()
   }
 
   @FieldResolver(returns => Boolean, { description: 'Current user is permitted to create new roles in the role management UI.' })
   async createRole (@Ctx() ctx: Context) {
-    throw new UnimplementedError()
+    return ctx.svc(AccessRoleService).mayCreate()
   }
 
   @FieldResolver(returns => Boolean, { description: 'Current user is permitted to view the period management UI.' })
@@ -42,22 +43,22 @@ export class AccessResolver {
 
   @FieldResolver(returns => Boolean, { description: 'Current user is permitted to create new periods in the period management UI.' })
   async createPeriod (@Ctx() ctx: Context) {
-    throw new UnimplementedError()
+    return ctx.svc(PeriodService).mayCreate()
   }
 
   @FieldResolver(returns => Boolean, { description: 'Current user is permitted to view the reviewer dashboard.' })
   async viewReviewerInterface (@Ctx() ctx: Context) {
-    throw new UnimplementedError()
+    return ctx.svc(AppRequestService).mayViewReviewerInterface()
   }
 
   @FieldResolver(returns => Boolean, { description: 'Current user is permitted to view the applicant dashboard.' })
   async viewApplicantDashboard (@Ctx() ctx: Context) {
-    throw new UnimplementedError()
+    return ctx.svc(AppRequestService).mayViewApplicantDashboard()
   }
 
   @FieldResolver(returns => Boolean, { description: 'Current user is permitted to view the app request list.' })
   async viewAppRequestList (@Ctx() ctx: Context) {
-    throw new UnimplementedError()
+    return ctx.svc(AppRequestService).mayViewReviewerInterface()
   }
 }
 

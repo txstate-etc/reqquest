@@ -1,6 +1,7 @@
+import { ValidatedResponse } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { intersect, isBlank, keyby, pick } from 'txstate-utils'
-import { AuthService, Configuration, ConfigurationFilters, createPeriod, getConfigurationData, getConfigurations, getPeriods, Period, PeriodFilters, PeriodUpdate, promptRegistry, requirementRegistry, updatePeriod, upsertConfiguration, ValidatedConfigurationResponse, ValidatedPeriodResponse } from '../internal.js'
+import { AuthService, Configuration, ConfigurationFilters, createPeriod, deletePeriod, getConfigurationData, getConfigurations, getPeriods, Period, PeriodFilters, PeriodUpdate, promptRegistry, requirementRegistry, updatePeriod, upsertConfiguration, ValidatedConfigurationResponse, ValidatedPeriodResponse } from '../internal.js'
 
 const periodByIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -41,13 +42,20 @@ export class PeriodService extends AuthService<Period> {
     return this.hasControl('Period', 'delete')
   }
 
-  async validate (update: PeriodUpdate) {
+  async validate (period: PeriodUpdate) {
     const response = new ValidatedPeriodResponse({ success: true })
-    const existing = update.code ? await getPeriods({ codes: [update.code] }) : []
-    if (existing.length) response.addMessage('Code is already in use.', 'update.code')
-    if (isBlank(update.name)) response.addMessage('Name is required.', 'update.name')
-    if (update.openDate == null) response.addMessage('Open date is required.', 'update.openDate')
-    if (update.closeDate == null) response.addMessage('Close date is required.', 'update.closeDate')
+    const existing = period.code ? await getPeriods({ codes: [period.code] }) : []
+    if (existing.length) response.addMessage('Code is already in use.', 'period.code')
+    if (isBlank(period.name)) response.addMessage('Name is required.', 'period.name')
+    if (period.openDate == null) response.addMessage('Open date is required.', 'period.openDate')
+    if (period.closeDate != null && period.closeDate < period.openDate) {
+      response.addMessage('Close date must be after open date.', 'period.closeDate')
+    }
+    if (period.archiveDate != null && period.closeDate != null && period.archiveDate < period.closeDate) {
+      response.addMessage('Archive date must be after close date.', 'period.archiveDate')
+    } else if (period.archiveDate != null && period.archiveDate < period.openDate) {
+      response.addMessage('Archive date must be after open date.', 'period.archiveDate')
+    }
     return response
   }
 
@@ -76,6 +84,14 @@ export class PeriodService extends AuthService<Period> {
     this.loaders.clear()
     response.period = await this.findById(id)
     return response
+  }
+
+  async delete (id: string) {
+    const period = await this.findById(id)
+    if (!period) throw new Error('Period not found')
+    if (!this.mayDelete(period)) throw new Error('You are not allowed to delete this period.')
+    await deletePeriod(id)
+    return new ValidatedResponse({ success: true })
   }
 }
 

@@ -344,6 +344,8 @@ export interface IndexValue {
 export interface Mutation {
     /** Add a note to the app request. */
     addNote: ValidatedAppRequestResponse
+    createPeriod: ValidatedPeriodResponse
+    deletePeriod: ValidatedResponse
     /** Make an offer on the app request. */
     offerAppRequest: ValidatedAppRequestResponse
     roleAddGrant: AccessRoleValidatedResponse
@@ -394,8 +396,8 @@ export interface Period {
 }
 
 export interface PeriodActions {
+    delete: Scalars['Boolean']
     update: Scalars['Boolean']
-    view: Scalars['Boolean']
     __typename: 'PeriodActions'
 }
 
@@ -848,7 +850,7 @@ impersonated?: (Scalars['Boolean'] | null),
 impersonatedBy?: (Scalars['ID'][] | null),
 /** Return activities that were performed while one of the given logins was being impersonated by someone else. */
 impersonatedUsers?: (Scalars['ID'][] | null),
-/** Return activities that were performed by one of the given logins. */
+/** Return activities that were performed by one of the given logins. Also returns activities that were performed while one of the given logins was impersonating someone else. */
 users?: (Scalars['ID'][] | null)}
 
 export interface AppRequestFilter {
@@ -990,6 +992,8 @@ export interface MutationGenqlSelection{
     addNote?: (ValidatedAppRequestResponseGenqlSelection & { __args: {content: Scalars['String'], 
     /** If true, the note will be marked as internal and only visible to reviewers. */
     internal: Scalars['Boolean']} })
+    createPeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {period: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
+    deletePeriod?: (ValidatedResponseGenqlSelection & { __args: {periodId: Scalars['ID']} })
     /** Make an offer on the app request. */
     offerAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     roleAddGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grant: AccessRoleGrantCreate, roleId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
@@ -1000,8 +1004,8 @@ export interface MutationGenqlSelection{
     roleUpdateGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grant: AccessRoleGrantUpdate, grantId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     /** Submit the app request. */
     submitAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
-    updateConfiguration?: (ValidatedConfigurationResponseGenqlSelection & { __args: {data: Scalars['JsonData'], key: Scalars['String'], periodId: Scalars['String'], validateOnly?: (Scalars['Boolean'] | null)} })
-    updatePeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {id: Scalars['String'], update: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
+    updateConfiguration?: (ValidatedConfigurationResponseGenqlSelection & { __args: {data: Scalars['JsonData'], key: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
+    updatePeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {periodId: Scalars['ID'], update: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
     /** Update the data for a prompt in this app request. */
     updatePrompt?: (ValidatedAppRequestResponseGenqlSelection & { __args: {data: Scalars['JsonData'], promptId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     __typename?: boolean | number
@@ -1041,8 +1045,8 @@ export interface PeriodGenqlSelection{
 }
 
 export interface PeriodActionsGenqlSelection{
+    delete?: boolean | number
     update?: boolean | number
-    view?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }

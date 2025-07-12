@@ -1,5 +1,6 @@
-import { Arg, Ctx, FieldResolver, Mutation, Query, Resolver, Root } from 'type-graphql'
+import { Arg, Ctx, FieldResolver, ID, Mutation, Query, Resolver, Root } from 'type-graphql'
 import { Configuration, ConfigurationAccess as ConfigurationActions, ConfigurationFilters, ConfigurationService, JsonData, Period, PeriodActions, PeriodFilters, PeriodProgram, PeriodPrompt, PeriodPromptService, PeriodProgramRequirement, PeriodRequirementService, PeriodService, PeriodUpdate, ProgramService, RQContext, ValidatedPeriodResponse, ValidatedConfigurationResponse } from '../internal.js'
+import { ValidatedResponse } from '@txstate-mws/graphql-server'
 
 @Resolver(of => Period)
 export class PeriodResolver {
@@ -29,12 +30,22 @@ export class PeriodResolver {
   }
 
   @Mutation(returns => ValidatedPeriodResponse)
-  async updatePeriod (@Ctx() ctx: RQContext, @Arg('id') id: string, @Arg('update', type => PeriodUpdate) update: PeriodUpdate, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
-    return await ctx.svc(PeriodService).update(id, update, validateOnly)
+  async createPeriod (@Ctx() ctx: RQContext, @Arg('period', type => PeriodUpdate) period: PeriodUpdate, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
+    return await ctx.svc(PeriodService).create(period, validateOnly)
+  }
+
+  @Mutation(returns => ValidatedPeriodResponse)
+  async updatePeriod (@Ctx() ctx: RQContext, @Arg('periodId', type => ID) periodId: string, @Arg('update', type => PeriodUpdate) update: PeriodUpdate, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
+    return await ctx.svc(PeriodService).update(periodId, update, validateOnly)
+  }
+
+  @Mutation(returns => ValidatedResponse)
+  async deletePeriod (@Ctx() ctx: RQContext, @Arg('periodId', type => ID) periodId: string) {
+    return await ctx.svc(PeriodService).delete(periodId)
   }
 
   @Mutation(returns => ValidatedConfigurationResponse)
-  async updateConfiguration (@Ctx() ctx: RQContext, @Arg('periodId') periodId: string, @Arg('key') key: string, @Arg('data', type => JsonData) data: any, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
+  async updateConfiguration (@Ctx() ctx: RQContext, @Arg('periodId', type => ID) periodId: string, @Arg('key') key: string, @Arg('data', type => JsonData) data: any, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
     return await ctx.svc(ConfigurationService).update(periodId, key, data, validateOnly)
   }
 
@@ -47,8 +58,8 @@ export class PeriodResolver {
 @Resolver(of => PeriodActions)
 export class PeriodActionsResolver {
   @FieldResolver(returns => Boolean)
-  view (@Ctx() ctx: RQContext, @Root() period: Period) {
-    return ctx.svc(PeriodService).mayView(period)
+  delete (@Ctx() ctx: RQContext, @Root() period: Period) {
+    return ctx.svc(PeriodService).mayDelete(period)
   }
 
   @FieldResolver(returns => Boolean)

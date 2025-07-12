@@ -11,7 +11,7 @@
   import type { PageData } from './$types'
 
   export let data: PageData
-  $: ({ roles } = data)
+  $: ({ roles, access } = data)
 
   let createDialog = false
   let editingRole: PageData['roles'][number] | undefined
@@ -74,6 +74,7 @@
     {
       label: 'Create Role',
       icon: Add,
+      disabled: !access.createRole,
       onClick: () => {
         createDialog = true
         editingRole = undefined
