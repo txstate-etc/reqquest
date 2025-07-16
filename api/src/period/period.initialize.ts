@@ -12,11 +12,11 @@ export const periodMigrations: DatabaseMigration[] = [
           openDate DATETIME NOT NULL,
           closeDate DATETIME,
           archiveDate DATETIME,
-          createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          reviewed TINYINT(1) NOT NULL DEFAULT 0,
           UNIQUE (code),
           INDEX (openDate),
-          INDEX (closeDate)
+          INDEX (closeDate),
+          INDEX (archiveDate)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `)
       await db.execute(`

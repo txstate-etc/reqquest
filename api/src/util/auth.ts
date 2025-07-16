@@ -1,7 +1,7 @@
 import { AuthorizedServiceSync, Context, MockContext } from '@txstate-mws/graphql-server'
 import { FastifyRequest } from 'fastify'
 import { Cache, isNotBlank } from 'txstate-utils'
-import { AccessUser, appConfig, AccessDatabase, AccessRoleServiceInternal, getAcceptancePeriodIds } from '../internal.js'
+import { AccessUser, appConfig, AccessDatabase, AccessRoleServiceInternal, getAcceptancePeriodIds, ReqquestUser } from '../internal.js'
 
 type RoleLookup = Record<string, Record<string, Record<number, Record<string, Set<string>>>>>
 
@@ -26,6 +26,11 @@ export abstract class AuthService<ObjType, RedactedType = ObjType> extends Autho
 
   protected get impersonationUser () {
     return this.ctx.authInfo.impersonationUser
+  }
+
+  async lookupUser (login: string): Promise<ReqquestUser | undefined> {
+    const groups = await allGroupCache.get()
+    return (await appConfig.userLookups.byLogins([login], groups))[0]
   }
 
   private roleMatches (roleLookup: RoleLookup, allow: boolean, subjectType: string, control: string, tags?: Record<string, string[]>) {

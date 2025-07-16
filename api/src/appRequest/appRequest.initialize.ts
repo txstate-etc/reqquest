@@ -14,6 +14,7 @@ export const appRequestMigrations: DatabaseMigration[] = [
           computedStatus VARCHAR(255) NOT NULL DEFAULT 'PREQUAL',
           createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          submittedAt DATETIME,
           closedAt DATETIME,
           data LONGTEXT,
           submittedData LONGTEXT,
@@ -22,6 +23,7 @@ export const appRequestMigrations: DatabaseMigration[] = [
           INDEX (status),
           INDEX (createdAt),
           INDEX (updatedAt),
+          INDEX (submittedAt),
           INDEX (closedAt)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `)

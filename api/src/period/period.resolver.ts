@@ -1,5 +1,5 @@
 import { Arg, Ctx, FieldResolver, ID, Mutation, Query, Resolver, Root } from 'type-graphql'
-import { Configuration, ConfigurationAccess as ConfigurationActions, ConfigurationFilters, ConfigurationService, JsonData, Period, PeriodActions, PeriodFilters, PeriodProgram, PeriodPrompt, PeriodPromptService, PeriodProgramRequirement, PeriodRequirementService, PeriodService, PeriodUpdate, ProgramService, RQContext, ValidatedPeriodResponse, ValidatedConfigurationResponse } from '../internal.js'
+import { Configuration, ConfigurationAccess as ConfigurationActions, ConfigurationFilters, ConfigurationService, JsonData, Period, PeriodActions, PeriodFilters, PeriodProgram, PeriodPrompt, PeriodPromptService, PeriodProgramRequirement, PeriodRequirementService, PeriodService, PeriodUpdate, ProgramService, RQContext, ValidatedPeriodResponse, ValidatedConfigurationResponse, AppRequest, AppRequestService } from '../internal.js'
 import { ValidatedResponse } from '@txstate-mws/graphql-server'
 
 @Resolver(of => Period)
@@ -65,6 +65,11 @@ export class PeriodActionsResolver {
   @FieldResolver(returns => Boolean)
   update (@Ctx() ctx: RQContext, @Root() period: Period) {
     return ctx.svc(PeriodService).mayUpdate(period)
+  }
+
+  @FieldResolver(returns => Boolean)
+  async createAppRequest (@Ctx() ctx: RQContext, @Root() period: Period) {
+    return await ctx.svc(AppRequestService).mayCreateInPeriod(period)
   }
 }
 

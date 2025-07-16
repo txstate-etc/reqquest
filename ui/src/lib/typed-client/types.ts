@@ -1,118 +1,124 @@
 export default {
     "scalars": [
         25,
-        26,
-        30,
+        27,
         31,
-        35,
+        32,
         36,
         37,
-        40,
-        43,
-        56,
-        60,
+        38,
+        41,
+        44,
+        57,
         61,
-        63
+        62,
+        64
     ],
     "types": {
         "Access": {
-            "createAppRequest": [
-                31
+            "createAppRequestOther": [
+                32
+            ],
+            "createAppRequestSelf": [
+                32
             ],
             "createPeriod": [
-                31
+                32
             ],
             "createRole": [
-                31
+                32
+            ],
+            "user": [
+                15
             ],
             "viewAppRequestList": [
-                31
+                32
             ],
             "viewApplicantDashboard": [
-                31
+                32
             ],
             "viewPeriodManagement": [
-                31
+                32
             ],
             "viewReviewerInterface": [
-                31
+                32
             ],
             "viewRoleManagement": [
-                31
+                32
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessControl": {
             "description": [
-                63
+                64
             ],
             "name": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessGrantTag": {
             "category": [
-                63
+                64
             ],
             "categoryLabel": [
-                63
+                64
             ],
             "label": [
-                63
+                64
             ],
             "tag": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessRole": {
             "actions": [
-                62
+                63
             ],
             "description": [
-                63
+                64
             ],
             "grants": [
                 5
             ],
             "groups": [
-                63
+                64
             ],
             "id": [
-                37
+                38
             ],
             "name": [
-                63
+                64
             ],
             "scope": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessRoleFilter": {
             "groups": [
-                63
+                64
             ],
             "ids": [
-                37
+                38
             ],
             "names": [
-                63
+                64
             ],
             "scopes": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessRoleGrant": {
@@ -120,13 +126,13 @@ export default {
                 6
             ],
             "allow": [
-                31
+                32
             ],
             "controls": [
-                63
+                64
             ],
             "id": [
-                37
+                38
             ],
             "subjectType": [
                 11
@@ -135,69 +141,69 @@ export default {
                 2
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessRoleGrantActions": {
             "delete": [
-                31
+                32
             ],
             "update": [
-                31
+                32
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessRoleGrantCreate": {
             "allow": [
-                31
+                32
             ],
             "controls": [
-                63
+                64
             ],
             "subjectType": [
-                63
+                64
             ],
             "tags": [
                 14
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessRoleGrantUpdate": {
             "allow": [
-                31
+                32
             ],
             "controls": [
-                63
+                64
             ],
             "subjectType": [
-                63
+                64
             ],
             "tags": [
                 14
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessRoleInput": {
             "description": [
-                63
+                64
             ],
             "groups": [
-                63
+                64
             ],
             "name": [
-                63
+                64
             ],
             "scope": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessRoleValidatedResponse": {
@@ -205,13 +211,13 @@ export default {
                 3
             ],
             "messages": [
-                42
+                43
             ],
             "success": [
-                31
+                32
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessSubjectType": {
@@ -219,126 +225,129 @@ export default {
                 1
             ],
             "description": [
-                63
+                64
             ],
             "name": [
-                63
+                64
             ],
             "tags": [
                 13
             ],
             "title": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessTag": {
             "label": [
-                63
+                64
             ],
             "value": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessTagCategory": {
             "category": [
-                63
+                64
             ],
             "description": [
-                63
+                64
             ],
             "label": [
-                63
+                64
             ],
             "listable": [
-                31
+                32
             ],
             "tags": [
                 12
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessTagInput": {
             "category": [
-                63
+                64
             ],
             "tag": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessUser": {
             "fullname": [
-                63
+                64
             ],
             "groups": [
-                63
+                64
             ],
             "login": [
-                37
+                38
             ],
             "otherIdentifiers": [
                 17
             ],
             "otherInfo": [
-                40
+                41
             ],
             "roles": [
                 3
             ],
+            "stillValid": [
+                32
+            ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessUserFilter": {
             "logins": [
-                37
+                38
             ],
             "otherIdentifiers": [
-                63
+                64
             ],
             "otherIdentifiersByLabel": [
                 18
             ],
             "search": [
-                63
+                64
             ],
             "self": [
-                31
+                32
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessUserIdentifier": {
             "id": [
-                37
+                38
             ],
             "label": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AccessUserIdentifierInput": {
             "id": [
-                37
+                38
             ],
             "label": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AppRequest": {
@@ -357,24 +366,24 @@ export default {
                 15
             ],
             "applications": [
-                27
+                28
             ],
             "closedAt": [
-                35
+                36
             ],
             "createdAt": [
-                35
+                36
             ],
             "data": [
-                40,
+                41,
                 {
                     "schemaVersion": [
-                        63
+                        64
                     ]
                 }
             ],
             "id": [
-                37
+                38
             ],
             "indexCategories": [
                 24,
@@ -385,74 +394,74 @@ export default {
                 }
             ],
             "period": [
-                44
+                45
             ],
             "prompt": [
-                58,
+                59,
                 {
                     "promptId": [
-                        37,
+                        38,
                         "ID!"
                     ]
                 }
             ],
             "status": [
-                26
+                27
             ],
             "statusReason": [
-                63
+                64
             ],
             "updatedAt": [
-                35
+                36
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AppRequestActions": {
             "cancel": [
-                31
+                32
             ],
             "close": [
-                31
+                32
             ],
             "offer": [
-                31
+                32
             ],
             "reopen": [
-                31
+                32
             ],
             "return": [
-                31
+                32
             ],
             "review": [
-                31
+                32
             ],
             "submit": [
-                31
+                32
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AppRequestActivity": {
             "action": [
-                63
+                64
             ],
             "appRequest": [
                 19
             ],
             "createdAt": [
-                35
+                36
             ],
             "data": [
-                40
+                41
             ],
             "description": [
-                63
+                64
             ],
             "id": [
-                37
+                38
             ],
             "impersonatedBy": [
                 15
@@ -461,212 +470,253 @@ export default {
                 15
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AppRequestActivityFilters": {
             "actions": [
-                63
+                64
             ],
             "appRequestIds": [
-                37
+                38
             ],
             "happenedAfter": [
-                35
+                36
             ],
             "happenedBefore": [
-                35
+                36
             ],
             "impersonated": [
-                31
+                32
             ],
             "impersonatedBy": [
-                37
+                38
             ],
             "impersonatedUsers": [
-                37
+                38
             ],
             "users": [
-                37
+                38
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AppRequestFilter": {
             "closed": [
-                31
+                32
+            ],
+            "closedAfter": [
+                36
+            ],
+            "closedBefore": [
+                36
+            ],
+            "createdAfter": [
+                36
+            ],
+            "createdBefore": [
+                36
             ],
             "ids": [
-                37
+                38
             ],
-            "logins": [
-                37
-            ],
-            "own": [
-                31
-            ],
-            "periodIds": [
-                37
-            ],
-            "status": [
+            "indexes": [
                 26
             ],
+            "logins": [
+                38
+            ],
+            "own": [
+                32
+            ],
+            "periodIds": [
+                38
+            ],
+            "search": [
+                64
+            ],
+            "status": [
+                27
+            ],
+            "submittedAfter": [
+                36
+            ],
+            "submittedBefore": [
+                36
+            ],
+            "updatedAfter": [
+                36
+            ],
+            "updatedBefore": [
+                36
+            ],
             "__typename": [
-                63
+                64
             ]
         },
         "AppRequestIndexCategory": {
             "appRequestListPriority": [
-                36
+                37
             ],
             "applicantDashboardPriority": [
-                36
+                37
             ],
             "category": [
-                63
+                64
             ],
             "categoryLabel": [
-                63
+                64
             ],
             "listFiltersPriority": [
-                36
+                37
             ],
             "listable": [
-                31
+                32
             ],
             "reviewerDashboardPriority": [
-                36
+                37
             ],
             "values": [
-                39
+                40
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "AppRequestIndexDestination": {},
+        "AppRequestIndexFilter": {
+            "category": [
+                64
+            ],
+            "tags": [
+                64
+            ],
+            "__typename": [
+                64
+            ]
+        },
         "AppRequestStatus": {},
         "Application": {
             "actions": [
-                28
-            ],
-            "id": [
-                37
-            ],
-            "navTitle": [
-                63
-            ],
-            "requirements": [
                 29
             ],
-            "status": [
+            "id": [
+                38
+            ],
+            "navTitle": [
+                64
+            ],
+            "requirements": [
                 30
             ],
+            "status": [
+                31
+            ],
             "statusReason": [
-                63
+                64
             ],
             "title": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "ApplicationActions": {
             "viewAsReviewer": [
-                31
+                32
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "ApplicationRequirement": {
             "application": [
-                27
+                28
             ],
             "configurationData": [
-                40
+                41
             ],
             "description": [
-                63
+                64
             ],
             "id": [
-                37
+                38
             ],
             "key": [
-                63
+                64
             ],
             "navTitle": [
-                63
+                64
             ],
             "prompts": [
-                58
+                59
             ],
             "reachable": [
-                31
+                32
             ],
             "smartTitle": [
-                63
+                64
             ],
             "status": [
-                60
-            ],
-            "statusReason": [
-                63
-            ],
-            "title": [
-                63
-            ],
-            "type": [
                 61
             ],
+            "statusReason": [
+                64
+            ],
+            "title": [
+                64
+            ],
+            "type": [
+                62
+            ],
             "__typename": [
-                63
+                64
             ]
         },
         "ApplicationStatus": {},
         "Boolean": {},
         "Configuration": {
             "actions": [
-                33
+                34
             ],
             "data": [
-                40
+                41
             ],
             "key": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "ConfigurationAccess": {
             "update": [
-                31
+                32
             ],
             "view": [
-                31
+                32
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "ConfigurationFilters": {
             "ids": [
-                37
+                38
             ],
             "keys": [
-                63
+                64
             ],
             "periodCodes": [
-                63
+                64
             ],
             "periodIds": [
-                37
+                38
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "DateTime": {},
@@ -674,93 +724,109 @@ export default {
         "ID": {},
         "IndexCategory": {
             "appRequestListPriority": [
-                36
+                37
             ],
             "applicantDashboardPriority": [
-                36
+                37
             ],
             "category": [
-                63
+                64
             ],
             "categoryLabel": [
-                63
+                64
             ],
             "listFiltersPriority": [
-                36
+                37
             ],
             "listable": [
-                31
+                32
             ],
             "reviewerDashboardPriority": [
-                36
+                37
             ],
             "values": [
-                39,
+                40,
                 {
                     "inUse": [
-                        31
+                        32
                     ],
                     "search": [
-                        63
+                        64
                     ]
                 }
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "IndexValue": {
             "label": [
-                63
+                64
             ],
             "value": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "JsonData": {},
         "Mutation": {
             "addNote": [
-                64,
+                65,
                 {
                     "content": [
-                        63,
+                        64,
                         "String!"
                     ],
                     "internal": [
-                        31,
+                        32,
                         "Boolean!"
                     ]
                 }
             ],
+            "createAppRequest": [
+                65,
+                {
+                    "login": [
+                        64,
+                        "String!"
+                    ],
+                    "periodId": [
+                        38,
+                        "ID!"
+                    ],
+                    "validateOnly": [
+                        32
+                    ]
+                }
+            ],
             "createPeriod": [
-                66,
+                67,
                 {
                     "period": [
-                        51,
+                        52,
                         "PeriodUpdate!"
                     ],
                     "validateOnly": [
-                        31
+                        32
                     ]
                 }
             ],
             "deletePeriod": [
-                67,
+                68,
                 {
                     "periodId": [
-                        37,
+                        38,
                         "ID!"
                     ]
                 }
             ],
             "offerAppRequest": [
-                64,
+                65,
                 {
                     "appRequestId": [
-                        37,
+                        38,
                         "ID!"
                     ]
                 }
@@ -773,11 +839,11 @@ export default {
                         "AccessRoleGrantCreate!"
                     ],
                     "roleId": [
-                        37,
+                        38,
                         "ID!"
                     ],
                     "validateOnly": [
-                        31
+                        32
                     ]
                 }
             ],
@@ -789,15 +855,15 @@ export default {
                         "AccessRoleInput!"
                     ],
                     "validateOnly": [
-                        31
+                        32
                     ]
                 }
             ],
             "roleDelete": [
-                67,
+                68,
                 {
                     "roleId": [
-                        37,
+                        38,
                         "ID!"
                     ]
                 }
@@ -806,7 +872,7 @@ export default {
                 10,
                 {
                     "grantId": [
-                        37,
+                        38,
                         "ID!"
                     ]
                 }
@@ -819,11 +885,11 @@ export default {
                         "AccessRoleInput!"
                     ],
                     "roleId": [
-                        37,
+                        38,
                         "ID!"
                     ],
                     "validateOnly": [
-                        31
+                        32
                     ]
                 }
             ],
@@ -835,339 +901,345 @@ export default {
                         "AccessRoleGrantUpdate!"
                     ],
                     "grantId": [
-                        37,
+                        38,
                         "ID!"
                     ],
                     "validateOnly": [
-                        31
+                        32
                     ]
                 }
             ],
             "submitAppRequest": [
-                64,
+                65,
                 {
                     "appRequestId": [
-                        37,
+                        38,
                         "ID!"
                     ]
                 }
             ],
             "updateConfiguration": [
-                65,
+                66,
                 {
                     "data": [
-                        40,
+                        41,
                         "JsonData!"
                     ],
                     "key": [
-                        63,
+                        64,
                         "String!"
                     ],
                     "periodId": [
-                        37,
+                        38,
                         "ID!"
                     ],
                     "validateOnly": [
-                        31
+                        32
                     ]
                 }
             ],
             "updatePeriod": [
-                66,
+                67,
                 {
                     "periodId": [
-                        37,
+                        38,
                         "ID!"
                     ],
                     "update": [
-                        51,
+                        52,
                         "PeriodUpdate!"
                     ],
                     "validateOnly": [
-                        31
+                        32
                     ]
                 }
             ],
             "updatePrompt": [
-                64,
+                65,
                 {
                     "data": [
-                        40,
+                        41,
                         "JsonData!"
                     ],
                     "promptId": [
-                        37,
+                        38,
                         "ID!"
                     ],
                     "validateOnly": [
-                        31
+                        32
                     ]
                 }
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "MutationMessage": {
             "arg": [
-                63
+                64
             ],
             "message": [
-                63
+                64
             ],
             "type": [
-                43
+                44
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "MutationMessageType": {},
         "Period": {
             "actions": [
-                45
+                46
             ],
             "archiveDate": [
-                35
+                36
             ],
             "closeDate": [
-                35
+                36
             ],
             "code": [
-                63
+                64
             ],
             "configurations": [
-                32,
+                33,
                 {
                     "filter": [
-                        34
+                        35
                     ]
                 }
             ],
             "id": [
-                37
+                38
             ],
             "name": [
-                63
+                64
             ],
             "openDate": [
-                35
+                36
             ],
             "programs": [
-                47
+                48
             ],
             "prompts": [
-                50
+                51
             ],
             "requirements": [
-                49
+                50
+            ],
+            "reviewed": [
+                32
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "PeriodActions": {
+            "createAppRequest": [
+                32
+            ],
             "delete": [
-                31
+                32
             ],
             "update": [
-                31
+                32
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "PeriodFilters": {
             "archiveAfter": [
-                35
+                36
             ],
             "archiveBefore": [
-                35
+                36
             ],
             "closesAfter": [
-                35
+                36
             ],
             "closesBefore": [
-                35
+                36
             ],
             "codes": [
-                63
+                64
             ],
             "ids": [
-                37
+                38
             ],
             "openNow": [
-                31
+                32
             ],
             "opensAfter": [
-                35
+                36
             ],
             "opensBefore": [
-                35
+                36
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "PeriodProgram": {
             "actions": [
-                48
-            ],
-            "enabled": [
-                31
-            ],
-            "group": [
-                48
-            ],
-            "key": [
-                37
-            ],
-            "navTitle": [
-                63
-            ],
-            "period": [
-                44
-            ],
-            "requirements": [
                 49
             ],
+            "enabled": [
+                32
+            ],
+            "group": [
+                49
+            ],
+            "key": [
+                38
+            ],
+            "navTitle": [
+                64
+            ],
+            "period": [
+                45
+            ],
+            "requirements": [
+                50
+            ],
             "title": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "PeriodProgramActions": {
             "configure": [
-                31
+                32
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "PeriodProgramRequirement": {
             "configuration": [
-                32
+                33
             ],
             "description": [
-                63
+                64
             ],
             "enabled": [
-                31
+                32
             ],
             "key": [
-                63
+                64
             ],
             "navTitle": [
-                63
+                64
             ],
             "prompts": [
-                50
+                51
             ],
             "title": [
-                63
+                64
             ],
             "type": [
-                61
+                62
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "PeriodPrompt": {
             "configuration": [
-                32
+                33
             ],
             "description": [
-                63
+                64
             ],
             "key": [
-                63
+                64
             ],
             "navTitle": [
-                63
+                64
             ],
             "periodId": [
-                63
+                64
             ],
             "title": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "PeriodUpdate": {
             "archiveDate": [
-                35
+                36
             ],
             "closeDate": [
-                35
+                36
             ],
             "code": [
-                63
+                64
             ],
             "name": [
-                63
+                64
             ],
             "openDate": [
-                35
+                36
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "Program": {
             "key": [
-                37
+                38
             ],
             "navTitle": [
-                63
+                64
             ],
             "title": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "ProgramFilters": {
             "keys": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "ProgramGroup": {
             "key": [
-                37
+                38
             ],
             "navTitle": [
-                63
+                64
             ],
             "programs": [
-                52,
+                53,
                 {
                     "filter": [
-                        53
+                        54
                     ]
                 }
             ],
             "title": [
-                63
+                64
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "ProgramGroupFilter": {
             "keys": [
-                37
+                38
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "PromptVisibility": {},
@@ -1184,10 +1256,10 @@ export default {
                 }
             ],
             "appRequestIndexes": [
-                38,
+                39,
                 {
                     "categories": [
-                        63,
+                        64,
                         "[String!]"
                     ],
                     "for": [
@@ -1204,26 +1276,26 @@ export default {
                 }
             ],
             "periods": [
-                44,
+                45,
                 {
                     "filter": [
-                        46
+                        47
                     ]
                 }
             ],
             "programGroups": [
-                54,
+                55,
                 {
                     "filter": [
-                        55
+                        56
                     ]
                 }
             ],
             "programs": [
-                52,
+                53,
                 {
                     "filter": [
-                        53
+                        54
                     ]
                 }
             ],
@@ -1236,99 +1308,99 @@ export default {
                 }
             ],
             "scopes": [
-                63
+                64
             ],
             "subjectTypes": [
                 11
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "RequirementPrompt": {
             "actions": [
-                59
+                60
             ],
             "answered": [
-                31
+                32
             ],
             "configurationData": [
-                40
+                41
             ],
             "configurationRelatedData": [
-                40
+                41
             ],
             "data": [
-                40,
+                41,
                 {
                     "schemaVersion": [
-                        63
+                        64
                     ]
                 }
             ],
             "description": [
-                63
+                64
             ],
             "fetchedData": [
-                40,
+                41,
                 {
                     "schemaVersion": [
-                        63
+                        64
                     ]
                 }
             ],
             "id": [
-                37
+                38
             ],
             "invalidated": [
-                31
+                32
             ],
             "key": [
-                63
+                64
             ],
             "navTitle": [
-                63
+                64
             ],
             "preloadData": [
-                40,
+                41,
                 {
                     "schemaVersion": [
-                        63
+                        64
                     ]
                 }
             ],
             "requirement": [
-                29
+                30
             ],
             "title": [
-                63
+                64
             ],
             "visibility": [
-                56
+                57
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "RequirementPromptActions": {
             "update": [
-                31
+                32
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "RequirementStatus": {},
         "RequirementType": {},
         "RoleActions": {
             "delete": [
-                31
+                32
             ],
             "update": [
-                31
+                32
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "String": {},
@@ -1337,52 +1409,52 @@ export default {
                 19
             ],
             "messages": [
-                42
+                43
             ],
             "success": [
-                31
+                32
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "ValidatedConfigurationResponse": {
             "configuration": [
-                32
+                33
             ],
             "messages": [
-                42
+                43
             ],
             "success": [
-                31
+                32
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "ValidatedPeriodResponse": {
             "messages": [
-                42
+                43
             ],
             "period": [
-                44
+                45
             ],
             "success": [
-                31
+                32
             ],
             "__typename": [
-                63
+                64
             ]
         },
         "ValidatedResponse": {
             "messages": [
-                42
+                43
             ],
             "success": [
-                31
+                32
             ],
             "__typename": [
-                63
+                64
             ]
         }
     }

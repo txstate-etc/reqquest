@@ -9,6 +9,7 @@ export interface AccessUserRow {
   login: string
   fullname: string
   otherInfo?: string
+  stillValid: 0 | 1
 }
 
 export interface AccessUserIdentifierRow {

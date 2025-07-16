@@ -1,8 +1,13 @@
 type Access {
   """
-  Current user may create a new app request, either for themselves or on behalf of another user.
+  Current user may create a new app request on behalf of another user and should be shown the Create App Request button on the reviewer dashboard or main app request list.
   """
-  createAppRequest: Boolean!
+  createAppRequestOther: Boolean!
+
+  """
+  Current user may create a new app request for themselves and should be shown the Create App Request button.
+  """
+  createAppRequestSelf: Boolean!
 
   """
   Current user is permitted to create new periods in the period management UI.
@@ -13,6 +18,9 @@ type Access {
   Current user is permitted to create new roles in the role management UI.
   """
   createRole: Boolean!
+
+  """The current user, if any."""
+  user: AccessUser
 
   """Current user is permitted to view the app request list."""
   viewAppRequestList: Boolean!
@@ -191,6 +199,11 @@ type AccessUser {
   """
   otherInfo: JsonData
   roles: AccessRole!
+
+  """
+  True as long as the lookupUser.byLogins function still returns this user. False otherwise. Likely this user has been deactivated.
+  """
+  stillValid: Boolean!
 }
 
 input AccessUserFilter {
@@ -384,7 +397,26 @@ input AppRequestFilter {
   true -> only return appRequests that are closed. false -> only return appRequests that are open. null -> return all appRequests.
   """
   closed: Boolean
+
+  """
+  Only return appRequests that were closed after this date. Open appRequests will be filtered out.
+  """
+  closedAfter: DateTime
+
+  """
+  Only return appRequests that were closed before this date. Open appRequests will be filtered out.
+  """
+  closedBefore: DateTime
+
+  """Only return appRequests that were created after this date."""
+  createdAfter: DateTime
+
+  """Only return appRequests that were created before this date."""
+  createdBefore: DateTime
   ids: [ID!]
+
+  """Only return appRequests that match one of the given indexes."""
+  indexes: [AppRequestIndexFilter!]
 
   """Only return appRequests that are owned by one the given logins."""
   logins: [ID!]
@@ -392,7 +424,28 @@ input AppRequestFilter {
   """Only return appRequests that are owned by the current user."""
   own: Boolean
   periodIds: [ID!]
+
+  """
+  Search for appRequests that match this search term. This will do a prefix search across all fields that are indexed.
+  """
+  search: String
   status: [AppRequestStatus!]
+
+  """
+  Only return appRequests that were submitted after this date. App Requests that have not been submitted will be filtered out.
+  """
+  submittedAfter: DateTime
+
+  """
+  Only return appRequests that were submitted before this date. App Requests that have not been submitted will be filtered out.
+  """
+  submittedBefore: DateTime
+
+  """Only return appRequests that were updated after this date."""
+  updatedAfter: DateTime
+
+  """Only return appRequests that were updated before this date."""
+  updatedBefore: DateTime
 }
 
 """
@@ -443,6 +496,11 @@ enum AppRequestIndexDestination {
   Show these index values when listing App Requests on the reviewer dashboard.
   """
   REVIEWER_DASHBOARD
+}
+
+input AppRequestIndexFilter {
+  category: String!
+  tags: [String!]!
 }
 
 "\n    The status of an appRequest. This status is computed based on the \"dbStatus\" recorded in\n    the database and the status of each application.\n  "
@@ -734,6 +792,9 @@ type Mutation {
     """
     internal: Boolean!
   ): ValidatedAppRequestResponse!
+
+  """Create a new app request."""
+  createAppRequest(login: String!, periodId: ID!, validateOnly: Boolean): ValidatedAppRequestResponse!
   createPeriod(period: PeriodUpdate!, validateOnly: Boolean): ValidatedPeriodResponse!
   deletePeriod(periodId: ID!): ValidatedResponse!
 
@@ -815,9 +876,15 @@ type Period {
   programs: [PeriodProgram!]!
   prompts: [PeriodPrompt!]!
   requirements: [PeriodProgramRequirement!]!
+
+  """
+  Whether this period's configurations have been reviewed by an administrator. Newly created periods must be reviewed before they will accept new app requests, even if the open date has passed.
+  """
+  reviewed: Boolean!
 }
 
 type PeriodActions {
+  createAppRequest: Boolean!
   delete: Boolean!
   update: Boolean!
 }
@@ -1182,7 +1249,7 @@ type RoleActions {
 }
 
 type ValidatedAppRequestResponse {
-  appRequest: AppRequest!
+  appRequest: AppRequest
   messages: [MutationMessage!]!
 
   """

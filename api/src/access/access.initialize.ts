@@ -59,6 +59,7 @@ export const accessMigrations: DatabaseMigration[] = [{
       fullname VARCHAR(255) NOT NULL,
       otherInfo TEXT,
       lastUpdated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      stillValid TINYINT(1) DEFAULT 1,
       UNIQUE (login)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
 

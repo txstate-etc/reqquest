@@ -11,16 +11,17 @@ async function main () {
 
   await server.app.register(analyticsPlugin, { appName: 'reqquest', authorize: req => !!req.auth?.username.length })
 
+  const groups: Record<string, string[]> = {
+    admin: ['administrators'],
+    reviewer: ['reviewers'],
+    applicant: ['applicants']
+  }
+  const userPrefixes = Object.keys(groups)
   await server.start({
     appConfig: {
       userLookups: {
         byLogins: async (logins, applicableGroups) => {
-          const groups: Record<string, string[]> = {
-            admin: ['administrators'],
-            reviewer: ['reviewers'],
-            applicant: ['applicants']
-          }
-          return logins.map(login => ({ login, fullname: login, groups: groups[login] ?? applicableGroups }))
+          return logins.filter(login => userPrefixes.some(p => login.startsWith(p))).map(login => ({ login, fullname: login, groups: groups[userPrefixes.find(p => login.startsWith(p))!] }))
         }
       }
     },

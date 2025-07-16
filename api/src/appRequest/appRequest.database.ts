@@ -3,7 +3,7 @@ import type { FastifyTxStateAuthInfo } from 'fastify-txstate'
 import type { GraphQLError } from 'graphql'
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { clone, groupby, omit, stringify } from 'txstate-utils'
+import { clone, groupby, isNotBlank, omit, stringify } from 'txstate-utils'
 import { ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter, AppRequestStatus, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, RequirementStatus, RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
 
 /**
@@ -111,13 +111,59 @@ function processFilters (filter?: AppRequestFilter) {
   } else if (filter?.closed === false) {
     where.push('ar.closedAt IS NULL')
   }
+  if (filter?.indexes?.length) {
+    for (const index of filter.indexes) {
+      joins.set('t', 'INNER JOIN app_request_tags t ON t.appRequestId = ar.id')
+      binds.push(index.category)
+      where.push(`t.category = ? AND t.tag IN (${db.in(binds, index.tags)})`)
+    }
+  }
+  if (isNotBlank(filter?.search)) {
+    joins.set('u', 'INNER JOIN accessUsers u ON u.id = ar.userId')
+    joins.set('t', 'INNER JOIN app_request_tags t ON t.appRequestId = ar.id')
+    joins.set('tl', 'LEFT JOIN tag_labels tl ON tl.category = t.category AND tl.tag = t.tag')
+    where.push('(p.name LIKE ? OR u.login LIKE ? OR u.fullname LIKE ? OR t.tag LIKE ? OR tl.label LIKE ?)')
+    binds.push(`${filter.search}%`, `${filter.search}%`, `%${filter.search}%`, `${filter.search}%`, `${filter.search}%`)
+  }
+  if (filter?.createdAfter) {
+    where.push('ar.createdAt >= ?')
+    binds.push(filter.createdAfter)
+  }
+  if (filter?.createdBefore) {
+    where.push('ar.createdAt <= ?')
+    binds.push(filter.createdBefore)
+  }
+  if (filter?.updatedAfter) {
+    where.push('ar.updatedAt >= ?')
+    binds.push(filter.updatedAfter)
+  }
+  if (filter?.updatedBefore) {
+    where.push('ar.updatedAt <= ?')
+    binds.push(filter.updatedBefore)
+  }
+  if (filter?.submittedAfter) {
+    where.push('ar.submittedAt >= ?')
+    binds.push(filter.submittedAfter)
+  }
+  if (filter?.submittedBefore) {
+    where.push('ar.submittedAt <= ?')
+    binds.push(filter.submittedBefore)
+  }
+  if (filter?.closedAfter) {
+    where.push('ar.closedAt >= ?')
+    binds.push(filter.closedAfter)
+  }
+  if (filter?.closedBefore) {
+    where.push('ar.closedAt <= ?')
+    binds.push(filter.closedBefore)
+  }
   return { joins, where, binds }
 }
 
 export async function getAppRequests (filter?: AppRequestFilter, tdb: Queryable = db) {
   const { joins, where, binds } = processFilters(filter)
   const rows = await tdb.getall<AppRequestRow>(`
-    SELECT ar.id, ar.periodId, ar.userId, ar.status, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt,
+    SELECT DISTINCT ar.id, ar.periodId, ar.userId, ar.status, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt,
            p.closeDate AS periodClosesAt, p.archiveDate AS periodArchivesAt, p.openDate AS periodOpensAt
     FROM app_requests ar
     INNER JOIN periods p ON p.id = ar.periodId
@@ -172,7 +218,12 @@ export async function updateAppRequestData (appRequestId: number, data: AppReque
 }
 
 export async function submitAppRequest (appRequestId: number) {
-  await db.execute('UPDATE app_requests SET status = ?, submittedData = data WHERE id = ?', [AppRequestStatusDB.SUBMITTED, appRequestId])
+  await db.execute('UPDATE app_requests SET status = ?, submittedData = data, submittedAt=NOW() WHERE id = ?', [AppRequestStatusDB.SUBMITTED, appRequestId])
+  await evaluateAppRequest(appRequestId)
+}
+
+export async function returnAppRequest (appRequestId: number) {
+  await db.execute('UPDATE app_requests SET status = ?, submittedAt = NULL WHERE id = ?', [AppRequestStatusDB.STARTED, appRequestId])
   await evaluateAppRequest(appRequestId)
 }
 
@@ -503,7 +554,7 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
     await updateApplicationsComputed(applications, db)
     await updateRequirementComputed(requirements, db)
     await updatePromptComputed(prompts, db)
-  })
+  }, { retries: 2 })
 }
 
 export async function recordAppRequestActivity (appRequestId: number, userId: number, action: string, info?: { description?: string, data?: any, impersonatedBy?: number }) {

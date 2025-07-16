@@ -112,6 +112,15 @@ export class IndexValue {
   label: string
 }
 
+@InputType()
+export class AppRequestIndexFilter {
+  @Field()
+  category!: string
+
+  @Field(type => [String])
+  tags!: string[]
+}
+
 @ObjectType({ description: 'This represents an index as registered by one of the project\'s prompt definitions.' })
 export class IndexCategory {
   constructor (def: PromptTagDefinition) {
@@ -185,14 +194,44 @@ export class AppRequestFilter {
   @Field({ nullable: true, description: 'true -> only return appRequests that are closed. false -> only return appRequests that are open. null -> return all appRequests.' })
   closed?: boolean
 
+  @Field(type => [AppRequestIndexFilter], { nullable: true, description: 'Only return appRequests that match one of the given indexes.' })
+  indexes?: AppRequestIndexFilter[]
+
+  @Field(type => String, { nullable: true, description: 'Search for appRequests that match this search term. This will do a prefix search across all fields that are indexed.' })
+  search?: string
+
+  @Field(type => DateTime, { nullable: true, description: 'Only return appRequests that were created after this date.' })
+  createdAfter?: DateTime
+
+  @Field(type => DateTime, { nullable: true, description: 'Only return appRequests that were created before this date.' })
+  createdBefore?: DateTime
+
+  @Field(type => DateTime, { nullable: true, description: 'Only return appRequests that were updated after this date.' })
+  updatedAfter?: DateTime
+
+  @Field(type => DateTime, { nullable: true, description: 'Only return appRequests that were updated before this date.' })
+  updatedBefore?: DateTime
+
+  @Field(type => DateTime, { nullable: true, description: 'Only return appRequests that were submitted after this date. App Requests that have not been submitted will be filtered out.' })
+  submittedAfter?: DateTime
+
+  @Field(type => DateTime, { nullable: true, description: 'Only return appRequests that were submitted before this date. App Requests that have not been submitted will be filtered out.' })
+  submittedBefore?: DateTime
+
+  @Field(type => DateTime, { nullable: true, description: 'Only return appRequests that were closed after this date. Open appRequests will be filtered out.' })
+  closedAfter?: DateTime
+
+  @Field(type => DateTime, { nullable: true, description: 'Only return appRequests that were closed before this date. Open appRequests will be filtered out.' })
+  closedBefore?: DateTime
+
   internalIds?: number[]
   userInternalIds?: number[]
 }
 
 @ObjectType()
 export class ValidatedAppRequestResponse extends ValidatedResponse {
-  @Field(type => AppRequest)
-  appRequest!: AppRequest
+  @Field(type => AppRequest, { nullable: true })
+  appRequest?: AppRequest
 }
 
 @ObjectType()

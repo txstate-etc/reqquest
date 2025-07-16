@@ -13,12 +13,16 @@ export type Scalars = {
 }
 
 export interface Access {
-    /** Current user may create a new app request, either for themselves or on behalf of another user. */
-    createAppRequest: Scalars['Boolean']
+    /** Current user may create a new app request on behalf of another user and should be shown the Create App Request button on the reviewer dashboard or main app request list. */
+    createAppRequestOther: Scalars['Boolean']
+    /** Current user may create a new app request for themselves and should be shown the Create App Request button. */
+    createAppRequestSelf: Scalars['Boolean']
     /** Current user is permitted to create new periods in the period management UI. */
     createPeriod: Scalars['Boolean']
     /** Current user is permitted to create new roles in the role management UI. */
     createRole: Scalars['Boolean']
+    /** The current user, if any. */
+    user: (AccessUser | null)
     /** Current user is permitted to view the app request list. */
     viewAppRequestList: Scalars['Boolean']
     /** Current user is permitted to view the applicant dashboard. */
@@ -134,6 +138,8 @@ export interface AccessUser {
     /** A JSON object containing any information about the user that the implementing application wants to store. Could be useful for constructing personalized UI. */
     otherInfo: (Scalars['JsonData'] | null)
     roles: AccessRole
+    /** True as long as the lookupUser.byLogins function still returns this user. False otherwise. Likely this user has been deactivated. */
+    stillValid: Scalars['Boolean']
     __typename: 'AccessUser'
 }
 
@@ -344,6 +350,8 @@ export interface IndexValue {
 export interface Mutation {
     /** Add a note to the app request. */
     addNote: ValidatedAppRequestResponse
+    /** Create a new app request. */
+    createAppRequest: ValidatedAppRequestResponse
     createPeriod: ValidatedPeriodResponse
     deletePeriod: ValidatedResponse
     /** Make an offer on the app request. */
@@ -392,10 +400,13 @@ export interface Period {
     programs: PeriodProgram[]
     prompts: PeriodPrompt[]
     requirements: PeriodProgramRequirement[]
+    /** Whether this period's configurations have been reviewed by an administrator. Newly created periods must be reviewed before they will accept new app requests, even if the open date has passed. */
+    reviewed: Scalars['Boolean']
     __typename: 'Period'
 }
 
 export interface PeriodActions {
+    createAppRequest: Scalars['Boolean']
     delete: Scalars['Boolean']
     update: Scalars['Boolean']
     __typename: 'PeriodActions'
@@ -547,7 +558,7 @@ export interface RoleActions {
 }
 
 export interface ValidatedAppRequestResponse {
-    appRequest: AppRequest
+    appRequest: (AppRequest | null)
     messages: MutationMessage[]
     /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
     success: Scalars['Boolean']
@@ -578,12 +589,16 @@ export interface ValidatedResponse {
 }
 
 export interface AccessGenqlSelection{
-    /** Current user may create a new app request, either for themselves or on behalf of another user. */
-    createAppRequest?: boolean | number
+    /** Current user may create a new app request on behalf of another user and should be shown the Create App Request button on the reviewer dashboard or main app request list. */
+    createAppRequestOther?: boolean | number
+    /** Current user may create a new app request for themselves and should be shown the Create App Request button. */
+    createAppRequestSelf?: boolean | number
     /** Current user is permitted to create new periods in the period management UI. */
     createPeriod?: boolean | number
     /** Current user is permitted to create new roles in the role management UI. */
     createRole?: boolean | number
+    /** The current user, if any. */
+    user?: AccessUserGenqlSelection
     /** Current user is permitted to view the app request list. */
     viewAppRequestList?: boolean | number
     /** Current user is permitted to view the applicant dashboard. */
@@ -737,6 +752,8 @@ export interface AccessUserGenqlSelection{
     /** A JSON object containing any information about the user that the implementing application wants to store. Could be useful for constructing personalized UI. */
     otherInfo?: boolean | number
     roles?: AccessRoleGenqlSelection
+    /** True as long as the lookupUser.byLogins function still returns this user. False otherwise. Likely this user has been deactivated. */
+    stillValid?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -855,11 +872,31 @@ users?: (Scalars['ID'][] | null)}
 
 export interface AppRequestFilter {
 /** true -> only return appRequests that are closed. false -> only return appRequests that are open. null -> return all appRequests. */
-closed?: (Scalars['Boolean'] | null),ids?: (Scalars['ID'][] | null),
+closed?: (Scalars['Boolean'] | null),
+/** Only return appRequests that were closed after this date. Open appRequests will be filtered out. */
+closedAfter?: (Scalars['DateTime'] | null),
+/** Only return appRequests that were closed before this date. Open appRequests will be filtered out. */
+closedBefore?: (Scalars['DateTime'] | null),
+/** Only return appRequests that were created after this date. */
+createdAfter?: (Scalars['DateTime'] | null),
+/** Only return appRequests that were created before this date. */
+createdBefore?: (Scalars['DateTime'] | null),ids?: (Scalars['ID'][] | null),
+/** Only return appRequests that match one of the given indexes. */
+indexes?: (AppRequestIndexFilter[] | null),
 /** Only return appRequests that are owned by one the given logins. */
 logins?: (Scalars['ID'][] | null),
 /** Only return appRequests that are owned by the current user. */
-own?: (Scalars['Boolean'] | null),periodIds?: (Scalars['ID'][] | null),status?: (AppRequestStatus[] | null)}
+own?: (Scalars['Boolean'] | null),periodIds?: (Scalars['ID'][] | null),
+/** Search for appRequests that match this search term. This will do a prefix search across all fields that are indexed. */
+search?: (Scalars['String'] | null),status?: (AppRequestStatus[] | null),
+/** Only return appRequests that were submitted after this date. App Requests that have not been submitted will be filtered out. */
+submittedAfter?: (Scalars['DateTime'] | null),
+/** Only return appRequests that were submitted before this date. App Requests that have not been submitted will be filtered out. */
+submittedBefore?: (Scalars['DateTime'] | null),
+/** Only return appRequests that were updated after this date. */
+updatedAfter?: (Scalars['DateTime'] | null),
+/** Only return appRequests that were updated before this date. */
+updatedBefore?: (Scalars['DateTime'] | null)}
 
 
 /** This represents an index category attached to an app request. Its tagStrings property contains the tag values that have been extracted from the app request data. */
@@ -879,6 +916,8 @@ export interface AppRequestIndexCategoryGenqlSelection{
     __typename?: boolean | number
     __scalar?: boolean | number
 }
+
+export interface AppRequestIndexFilter {category: Scalars['String'],tags: Scalars['String'][]}
 
 
 /** An application represents the applicant applying to a specific program. Each appRequest has multiple applications - one per program defined in the system. Some applications are mutually exclusive and/or will be eliminated early based on PREQUAL requirements, but they all technically exist in the data model - there is no concept of picking one application over another, just two applications where one dies and the other survives. */
@@ -992,6 +1031,8 @@ export interface MutationGenqlSelection{
     addNote?: (ValidatedAppRequestResponseGenqlSelection & { __args: {content: Scalars['String'], 
     /** If true, the note will be marked as internal and only visible to reviewers. */
     internal: Scalars['Boolean']} })
+    /** Create a new app request. */
+    createAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {login: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     createPeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {period: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
     deletePeriod?: (ValidatedResponseGenqlSelection & { __args: {periodId: Scalars['ID']} })
     /** Make an offer on the app request. */
@@ -1040,11 +1081,14 @@ export interface PeriodGenqlSelection{
     programs?: PeriodProgramGenqlSelection
     prompts?: PeriodPromptGenqlSelection
     requirements?: PeriodProgramRequirementGenqlSelection
+    /** Whether this period's configurations have been reviewed by an administrator. Newly created periods must be reviewed before they will accept new app requests, even if the open date has passed. */
+    reviewed?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
 
 export interface PeriodActionsGenqlSelection{
+    createAppRequest?: boolean | number
     delete?: boolean | number
     update?: boolean | number
     __typename?: boolean | number

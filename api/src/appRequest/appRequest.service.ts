@@ -1,8 +1,8 @@
 import { BaseService, MutationMessageType } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { DateTime } from 'luxon'
-import { isBlank } from 'txstate-utils'
-import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer, getAppRequestTags, closedStatuses, ApplicationRequirementService, recordAppRequestActivity, addAppRequestNote, closeAppRequest, getAppRequestActivity, AppRequestActivityFilters } from '../internal.js'
+import { isBlank, someAsync } from 'txstate-utils'
+import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer, getAppRequestTags, closedStatuses, ApplicationRequirementService, recordAppRequestActivity, addAppRequestNote, closeAppRequest, getAppRequestActivity, AppRequestActivityFilters, PeriodService, createAppRequest, Period, appConfig, AccessUser, ReqquestUser, AccessDatabase } from '../internal.js'
 
 const appReqByIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -159,7 +159,55 @@ export class AppRequestService extends AuthService<AppRequest> {
   }
 
   mayCreate () {
-    return this.hasAnyControl('AppRequestPreReview', 'create') || this.hasAnyControl('AppRequestOwn', 'create')
+    return this.hasAnyControl('AppRequestOwn', 'create')
+  }
+
+  mayCreateOther () {
+    return this.hasControl('AppRequestPreReview', 'create')
+  }
+
+  async mayCreateInPeriodForUser (period: Period, user: AccessUser | ReqquestUser) {
+    return await this.reasonMayNotCreateInPeriodForUser(period, user) == null
+  }
+
+  async reasonMayNotCreateInPeriodForUser (period: Period, user: AccessUser | ReqquestUser) {
+    if (!this.svc(PeriodService).acceptingAppRequests(period)) return { message: `The period ${period.name} is not currently accepting requests.`, arg: 'periodId' }
+    if (!this.mayCreate() && user.login === this.login) return { message: 'You may not create a request.' }
+    if (!this.mayCreateOther() && user.login !== this.login) return { message: 'You may not create requests for other people.' }
+    if (!appConfig.multipleRequestsPerPeriod && 'internalId' in user) {
+      const requests = await this.svc(AppRequestServiceInternal).find({ periodIds: [period.id], userInternalIds: [user.internalId] })
+      if (requests.length > 0) return { message: `A request already exists in ${period.name}.`, arg: 'login' }
+    }
+    return undefined
+  }
+
+  async mayCreateOwnInPeriod (period: Period) {
+    if (!this.user) return false
+    return await this.mayCreateInPeriodForUser(period, this.user)
+  }
+
+  mayCreateOtherInPeriod (period: Period) {
+    return this.mayCreateOther() && this.svc(PeriodService).acceptingAppRequests(period)
+  }
+
+  async mayCreateInPeriod (period: Period) {
+    return await this.mayCreateOwnInPeriod(period) || this.mayCreateOtherInPeriod(period)
+  }
+
+  async canCreateAny () {
+    const periods = await this.svc(PeriodService).findOpen()
+    return await someAsync(periods, async period => await this.mayCreateInPeriod(period))
+  }
+
+  async canCreateOwn () {
+    if (!this.user) return false
+    const periods = await this.svc(PeriodService).findOpen()
+    return await someAsync(periods, async period => await this.mayCreateInPeriodForUser(period, this.user!))
+  }
+
+  async canCreateOther () {
+    const periods = await this.svc(PeriodService).findOpen()
+    return await someAsync(periods, async period => await this.mayCreateOtherInPeriod(period))
   }
 
   mayClose (appRequest: AppRequest) {
@@ -204,6 +252,54 @@ export class AppRequestService extends AuthService<AppRequest> {
     if (!this.isAcceptancePeriod(appRequest.periodId)) return false
     if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false
     return this.hasControl('AppRequest', 'offer', appRequest.tags)
+  }
+
+  async create (periodId: string, login: string, validateOnly?: boolean) {
+    if (!this.user) throw new Error('You must be logged in to create an app request.')
+    if (login !== this.login) return await this.createOther(periodId, login, validateOnly)
+    const period = await this.svc(PeriodService).findById(periodId)
+    if (!period) throw new Error('Period not found')
+    const response = new ValidatedAppRequestResponse({ success: true })
+    const reason = await this.reasonMayNotCreateInPeriodForUser(period, this.user)
+    if (reason) {
+      if (reason.arg) response.addMessage(reason.message, reason.arg, MutationMessageType.error)
+      else throw new Error(reason.message)
+    }
+    if (validateOnly || response.hasErrors()) return response
+    const internalId = await createAppRequest(period.internalId, this.user!.internalId)
+    this.loaders.clear()
+    response.appRequest = await this.findByInternalId(internalId)
+    return response
+  }
+
+  /**
+   * I'm splitting this out because it's easier to think about it this way.
+   *
+   * When an administrator creates an app request for another user, they could be creating it
+   * for someone who has never logged into our system, so we have to look them up externally.
+   * Then we don't want to actually create the user record until the creation is finally being
+   * committed (i.e. not validateOnly).
+   */
+  async createOther (periodId: string, login: string, validateOnly?: boolean) {
+    const period = await this.svc(PeriodService).findById(periodId)
+    const rqUser = await this.lookupUser(login)
+    if (!period) throw new Error('Period not found')
+    const response = new ValidatedAppRequestResponse({ success: true })
+    if (!rqUser) response.addMessage('User not found.', 'login')
+    else {
+      const reason = await this.reasonMayNotCreateInPeriodForUser(period, rqUser)
+      if (reason) {
+        if (reason.arg) response.addMessage(reason.message, reason.arg, MutationMessageType.error)
+        else throw new Error(reason.message)
+      }
+    }
+    if (validateOnly || response.hasErrors()) return response
+    // now that we're sure we want to create the app request, we can upsert the user
+    const user = await AccessDatabase.upsertAccessUser(rqUser!)
+    const internalId = await createAppRequest(period.internalId, user.internalId)
+    this.loaders.clear()
+    response.appRequest = await this.findByInternalId(internalId)
+    return response
   }
 
   async submit (appRequest: AppRequest) {

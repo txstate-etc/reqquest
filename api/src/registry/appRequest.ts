@@ -22,12 +22,9 @@ export interface ReqquestUser {
 
 export interface AppDefinition {
   /**
-   * Provide a function that will determine whether applicants are allowed to
-   * reopen their applications after they have been cancelled. Basic checks will
-   * still be performed if this returns true, like whether the application
-   * period has concluded.
+   * Configure whether this system allows multiple app requests for the same user in the same period.
    */
-  applicantMayReopen?: (appRequest: AppRequest) => boolean | Promise<boolean>
+  multipleRequestsPerPeriod?: boolean
   /**
    * Instead of copying user and group data into the database, reqquest leaves it to the implementing application
    * to provide this data. This is useful for applications that already have a user and group database (e.g. Active Directory).

@@ -1,5 +1,6 @@
 import { PUBLIC_API_BASE, PUBLIC_AUTH_REDIRECT } from '$env/static/public'
 import { APIBase } from '@txstate-mws/sveltekit-utils'
+import type { Feedback } from '@txstate-mws/svelte-forms'
 import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleInput, type AppRequestActivityFilters, type AppRequestFilter, type PeriodUpdate } from './typed-client/index.js'
 import { DateTime } from 'luxon'
 
@@ -17,13 +18,19 @@ class API extends APIBase {
     const response = await this.client.query({
       __name: 'GetAccess',
       access: {
+        user: {
+          login: true,
+          fullname: true
+        },
         createPeriod: true,
         createRole: true,
         viewRoleManagement: true,
         viewPeriodManagement: true,
         viewReviewerInterface: true,
         viewApplicantDashboard: true,
-        viewAppRequestList: true
+        viewAppRequestList: true,
+        createAppRequestSelf: true,
+        createAppRequestOther: true
       }
     })
     return response.access
@@ -200,6 +207,30 @@ class API extends APIBase {
     return appRequest.data
   }
 
+  async createAppRequest (periodId?: string, login?: string, validateOnly?: boolean) {
+    const messages: Feedback[] = []
+    if (!periodId) messages.push({ message: 'You must select a period to create an application.', type: 'error', path: 'periodId' })
+    if (!login) messages.push({ message: 'You must provide a login to create an application.', type: 'error', path: 'login' })
+    if (messages.length > 0) return { success: false, messages, data: { periodId, login }, id: undefined }
+
+    const response = await this.client.mutation({
+      __name: 'CreateAppRequest',
+      createAppRequest: {
+        __args: { periodId: periodId!, login: login!, validateOnly },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        },
+        appRequest: {
+          id: true
+        }
+      }
+    })
+    return { ...this.mutationForDialog(response.createAppRequest), id: response.createAppRequest.appRequest?.id }
+  }
+
   async submitAppRequest (appRequestId: string) {
     const response = await this.client.mutation({
       __name: 'SubmitAppRequest',
@@ -216,11 +247,15 @@ class API extends APIBase {
     return this.mutationForDialog(response.submitAppRequest)
   }
 
-  async getAppRequests (filter: AppRequestFilter, dest = enumAppRequestIndexDestination.APP_REQUEST_LIST) {
+  async getAppRequests (filter?: Omit<AppRequestFilter, 'indexes'> & { indexes?: Record<string, string[]> }, dest = enumAppRequestIndexDestination.APP_REQUEST_LIST) {
+    const processedFilter = {
+      ...filter,
+      indexes: filter?.indexes ? Object.entries(filter.indexes).map(([category, tags]) => ({ category, tags })) : undefined
+    }
     const response = await this.client.query({
       __name: 'GetAppRequests',
       appRequests: {
-        __args: { filter },
+        __args: { filter: processedFilter },
         id: true,
         applicant: {
           login: true,
@@ -406,8 +441,21 @@ class API extends APIBase {
         archiveDate: true,
         actions: {
           update: true,
-          delete: true
+          delete: true,
+          createAppRequest: true
         }
+      }
+    })
+    return response.periods
+  }
+
+  async getOpenPeriods () {
+    const response = await this.client.query({
+      __name: 'GetOpenPeriods',
+      periods: {
+        __args: { filter: { openNow: true } },
+        id: true,
+        name: true
       }
     })
     return response.periods

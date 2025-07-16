@@ -1,4 +1,4 @@
-import { Context, UnimplementedError, ValidatedResponse } from '@txstate-mws/graphql-server'
+import { Context, ValidatedResponse } from '@txstate-mws/graphql-server'
 import { sortby } from 'txstate-utils'
 import { Arg, Ctx, FieldResolver, ID, Mutation, Query, Resolver, Root } from 'type-graphql'
 import {
@@ -7,8 +7,7 @@ import {
   AccessUserIdentifier, AccessRoleInput, AccessControl, AccessSubjectType, subjectTypes,
   AccessRoleGrantUpdate, appConfig, AccessTagCategory, AccessTag, AccessGrantTag,
   AccessRoleGrantActions, AccessRoleServiceInternal, AppRequestService, SubjectTypeDefinitionProcessed,
-  TagCategoryDefinition,
-  PeriodService
+  TagCategoryDefinition, PeriodService, RQContext
 } from '../internal.js'
 
 @Resolver(of => Access)
@@ -21,9 +20,19 @@ export class AccessResolver {
     return {}
   }
 
-  @FieldResolver(returns => Boolean, { description: 'Current user may create a new app request, either for themselves or on behalf of another user.' })
-  async createAppRequest (@Ctx() ctx: Context) {
-    return ctx.svc(AppRequestService).mayCreate()
+  @FieldResolver(returns => AccessUser, { nullable: true, description: 'The current user, if any.' })
+  async user (@Ctx() ctx: RQContext) {
+    return ctx.authInfo.user
+  }
+
+  @FieldResolver(returns => Boolean, { description: 'Current user may create a new app request for themselves and should be shown the Create App Request button.' })
+  async createAppRequestSelf (@Ctx() ctx: Context) {
+    return await ctx.svc(AppRequestService).canCreateOwn()
+  }
+
+  @FieldResolver(returns => Boolean, { description: 'Current user may create a new app request on behalf of another user and should be shown the Create App Request button on the reviewer dashboard or main app request list.' })
+  async createAppRequestOther (@Ctx() ctx: Context) {
+    return await ctx.svc(AppRequestService).canCreateOther()
   }
 
   @FieldResolver(returns => Boolean, { description: 'Current user is permitted to view the role management UI.' })

@@ -2,6 +2,7 @@ import { ValidatedResponse } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { intersect, isBlank, keyby, pick } from 'txstate-utils'
 import { AuthService, Configuration, ConfigurationFilters, createPeriod, deletePeriod, getConfigurationData, getConfigurations, getPeriods, Period, PeriodFilters, PeriodUpdate, promptRegistry, requirementRegistry, updatePeriod, upsertConfiguration, ValidatedConfigurationResponse, ValidatedPeriodResponse } from '../internal.js'
+import { DateTime } from 'luxon'
 
 const periodByIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -22,12 +23,28 @@ export class PeriodService extends AuthService<Period> {
     return await this.loaders.get(periodByIdLoader).load(id)
   }
 
+  #openNow: Period[] | undefined
+  async findOpen () {
+    if (!this.#openNow) {
+      this.#openNow = await this.find({ openNow: true })
+    }
+    return this.#openNow
+  }
+
   mayView (period: Period) {
     return true
   }
 
   mayViewConfigurations (period: Period) {
     return this.hasControl('Period', 'view_configuration')
+  }
+
+  acceptingAppRequests (period: Period) {
+    return (
+      period.reviewed
+      && period.openDate <= DateTime.now()
+      && (period.closeDate == null || period.closeDate > DateTime.now())
+    )
   }
 
   mayCreate () {

@@ -41,6 +41,16 @@
     }
   }
 
+  function closeDialog () {
+    creatingPeriod = false
+    editingPeriod = undefined
+  }
+
+  async function onSaved () {
+    closeDialog()
+    await invalidate('api:getPeriodList')
+  }
+
   function closePeriodDeleteDialog () {
     deleteDialog = false
     deletingPeriod = undefined
@@ -85,8 +95,7 @@
 />
 
 <PanelFormDialog open={creatingPeriod || !!editingPeriod} title={editingPeriod ? 'Edit Period' : 'Create Period'}
-  on:cancel={() => { creatingPeriod = false; editingPeriod = undefined }}
-  preload={editingPeriod} {validate} {submit} on:saved={() => { invalidate('api:getPeriodList').catch(console.error) }}>
+  preload={editingPeriod} {validate} {submit} on:saved={onSaved} on:cancel={closeDialog}>
   <FieldTextInput path="name" labelText="Period Name" required notNull />
   <FieldTextInput path="code" labelText="Code" />
   <FieldDateTime path="openDate" labelText="Open Date" required defaultValue={new Date().toISOString()} />

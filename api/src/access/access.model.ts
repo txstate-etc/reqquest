@@ -12,6 +12,7 @@ export class AccessUser {
     this.login = row.login
     this.fullname = row.fullname
     this.otherInfo = safeParse(row.otherInfo)
+    this.stillValid = !!row.stillValid
   }
 
   internalId: number
@@ -24,6 +25,9 @@ export class AccessUser {
 
   @Field(type => JsonData, { nullable: true, description: 'A JSON object containing any information about the user that the implementing application wants to store. Could be useful for constructing personalized UI.' })
   otherInfo?: any
+
+  @Field({ description: 'True as long as the lookupUser.byLogins function still returns this user. False otherwise. Likely this user has been deactivated.' })
+  stillValid: boolean
 }
 
 @InputType({ description: 'A label and ID pair for an external user unique ID. For example, { label: "Student ID", id: "123456" }' })

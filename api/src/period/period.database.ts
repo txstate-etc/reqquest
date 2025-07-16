@@ -10,8 +10,7 @@ export interface PeriodRow {
   openDate: Date
   closeDate: Date | null
   archiveDate: Date | null
-  createdAt: Date
-  updatedAt: Date
+  reviewed: 0 | 1
 }
 
 export interface PeriodConfigurationRow {
@@ -159,6 +158,10 @@ export async function createPeriod (period: PeriodUpdate) {
     await ensureConfigurationRecords([periodId], db)
     return periodId
   })
+}
+
+export async function markPeriodReviewed (periodId: number | string) {
+  await db.update('UPDATE periods SET reviewed = 1 WHERE id = ?', [periodId])
 }
 
 export async function updatePeriod (id: string, period: PeriodUpdate) {

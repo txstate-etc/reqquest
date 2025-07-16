@@ -23,6 +23,9 @@ export class Period {
   @Field({ nullable: true, description: 'This is useful for filtering out periods that are no longer useful. For instance, a window might close applications after 2 weeks but the reviewers could be working.' })
   archiveDate?: DateTime
 
+  @Field({ description: 'Whether this period\'s configurations have been reviewed by an administrator. Newly created periods must be reviewed before they will accept new app requests, even if the open date has passed.' })
+  reviewed: boolean
+
   internalId: number
 
   constructor (row: PeriodRow) {
@@ -33,6 +36,7 @@ export class Period {
     this.openDate = DateTime.fromJSDate(row.openDate)
     this.closeDate = row.closeDate != null ? DateTime.fromJSDate(row.closeDate) : undefined
     this.archiveDate = row.archiveDate != null ? DateTime.fromJSDate(row.archiveDate) : undefined
+    this.reviewed = !!row.reviewed
   }
 }
 

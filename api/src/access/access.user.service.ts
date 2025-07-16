@@ -9,6 +9,13 @@ const accessUsersByIdLoader = new PrimaryKeyLoader({
   extractId: 'internalId'
 })
 
+const accessUsersByLoginLoader = new PrimaryKeyLoader({
+  fetch: async (logins: string[]) => await database.getAccessUsers({ logins }),
+  extractId: 'login',
+  idLoader: accessUsersByIdLoader
+})
+accessUsersByIdLoader.addIdLoader(accessUsersByLoginLoader)
+
 const otherIdentifiersByUserIdLoader = new OneToManyLoader({
   fetch: async (userInternalIds: number[]) => await database.getOtherIdentifiersByUserIds(userInternalIds),
   extractKey: row => row.userInternalId
@@ -25,13 +32,16 @@ export class AccessUserService extends AuthService<AccessUser> {
       filter.internalIds = intersect({ skipEmpty: true }, filter.internalIds, [this.user.internalId])
     }
     const users = await database.getAccessUsers(filter)
-    const primaryLoader = this.loaders.get(accessUsersByIdLoader)
-    for (const user of users) primaryLoader.prime(user.internalId, user)
+    this.loaders.prime(accessUsersByIdLoader, users)
     return users
   }
 
   async findByInternalId (internalUserId: number) {
     return await this.loaders.get(accessUsersByIdLoader).load(internalUserId)
+  }
+
+  async findByLogin (login: string) {
+    return await this.loaders.get(accessUsersByLoginLoader).load(login)
   }
 
   async getOtherIdentifiers (internalUserId: number) {

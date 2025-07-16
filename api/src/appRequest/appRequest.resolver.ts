@@ -79,6 +79,11 @@ export class AppRequestResolver {
     return await ctx.svc(RequirementPromptService).update(prompt, data, validateOnly)
   }
 
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Create a new app request.' })
+  async createAppRequest (@Ctx() ctx: RQContext, @Arg('periodId', type => ID) periodId: string, @Arg('login', type => String) login: string, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
+    return await ctx.svc(AppRequestService).create(periodId, login, validateOnly)
+  }
+
   @Mutation(returns => ValidatedAppRequestResponse, { description: 'Submit the app request.' })
   async submitAppRequest (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
     const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
