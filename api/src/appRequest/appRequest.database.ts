@@ -127,35 +127,35 @@ function processFilters (filter?: AppRequestFilter) {
   }
   if (filter?.createdAfter) {
     where.push('ar.createdAt >= ?')
-    binds.push(filter.createdAfter)
+    binds.push(filter.createdAfter.toJSDate())
   }
   if (filter?.createdBefore) {
     where.push('ar.createdAt <= ?')
-    binds.push(filter.createdBefore)
+    binds.push(filter.createdBefore.toJSDate())
   }
   if (filter?.updatedAfter) {
     where.push('ar.updatedAt >= ?')
-    binds.push(filter.updatedAfter)
+    binds.push(filter.updatedAfter.toJSDate())
   }
   if (filter?.updatedBefore) {
     where.push('ar.updatedAt <= ?')
-    binds.push(filter.updatedBefore)
+    binds.push(filter.updatedBefore.toJSDate())
   }
   if (filter?.submittedAfter) {
     where.push('ar.submittedAt >= ?')
-    binds.push(filter.submittedAfter)
+    binds.push(filter.submittedAfter.toJSDate())
   }
   if (filter?.submittedBefore) {
     where.push('ar.submittedAt <= ?')
-    binds.push(filter.submittedBefore)
+    binds.push(filter.submittedBefore.toJSDate())
   }
   if (filter?.closedAfter) {
     where.push('ar.closedAt >= ?')
-    binds.push(filter.closedAfter)
+    binds.push(filter.closedAfter.toJSDate())
   }
   if (filter?.closedBefore) {
     where.push('ar.closedAt <= ?')
-    binds.push(filter.closedBefore)
+    binds.push(filter.closedBefore.toJSDate())
   }
   return { joins, where, binds }
 }

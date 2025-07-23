@@ -7,7 +7,6 @@ const config = {
 	// Consult https://github.com/sveltejs/svelte-preprocess
 	// for more information about preprocessors
 	preprocess: [vitePreprocess(), optimizeImports()],
-	compilerOptions: { enableSourcemap: true },
 	kit: {
 		adapter: adapter({
 			fallback: 'index.html',
