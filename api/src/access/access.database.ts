@@ -232,7 +232,7 @@ export namespace AccessDatabase {
   export async function getGroupsByUserIds (userInternalIds: number[]) {
     const params: any[] = []
     const rows = await db.getall<{ userId: number, groupName: string }>(`
-      SELECT aug.userId, ag.groupName
+      SELECT aug.userId, aug.groupName
       FROM accessUserGroups aug
       WHERE aug.userId IN (${db.in(params, userInternalIds)})
     `, params)
