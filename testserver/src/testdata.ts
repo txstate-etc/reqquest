@@ -24,11 +24,8 @@ export const testMigrations: DatabaseMigration[] = [
     id: '20250722104300', // playwright test init support
     execute: async (db, installTestData) => {
       if (!installTestData) return
-      await AccessDatabase.upsertAccessUser({ login: 'su01', fullname: 'Super User 1 Admin', groups: ['administrators'] })
+      await AccessDatabase.upsertAccessUser({ login: 'admin_01', fullname: 'Super User 1 Admin', groups: ['administrators'] })
       const su01 = await db.getrow<{ id: number, login: string }>('SELECT * FROM accessUsers WHERE login = ?', ['su01'])
-      await AccessDatabase.upsertAccessUser({ login: 'su02', fullname: 'Super User 2 Admin', groups: ['administrators'] })
-      const su02 = await db.getrow<{ id: number, login: string }>('SELECT * FROM accessUsers WHERE login = ?', ['su02'])
-      if (!su02) return
 
       // await submitAppRequest(appRequestId)
     }

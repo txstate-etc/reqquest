@@ -14,7 +14,6 @@ services:
       MYSQL_DATABASE: default_database
       MYSQL_USER: user
       MYSQL_PASS: password
-      MOTION_URL: http://motion-mock:3000/graphql
       JWT_TRUSTED_ISSUERS: '[{ "iss": "unified-auth", "url": "http://fakeauth/jwks" }]'
       JWT_TRUSTED_CLIENTIDS: reqquest
       RESET_DB_ON_STARTUP: 'true'

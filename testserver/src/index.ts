@@ -1,7 +1,6 @@
 import { RQServer } from '@reqquest/api'
 import { analyticsPlugin, unifiedAuthenticate } from 'fastify-txstate'
 import { have_yard_prompt, adopt_a_dog_program, have_big_yard_req, have_adequate_personal_space_req, adopt_a_cat_program, cat_tower_req, not_allergic_to_tuna_req, have_a_cat_tower_prompt, not_allergic_to_tuna_prompt, applicant_seems_nice_req, applicant_seems_nice_prompt, must_exercise_your_dog_req, must_exercise_your_dog_prompt, which_state_req, which_state_prompt } from './definitions/index.js'
-import { AccessDatabase as database } from '@reqquest/api'
 import { testMigrations } from './testdata.js'
 
 async function main () {
@@ -12,16 +11,18 @@ async function main () {
 
   await server.app.register(analyticsPlugin, { appName: 'reqquest', authorize: req => !!req.auth?.username.length })
 
+  const groups: Record<string, string[]> = {
+    admin: ['administrators'],
+    reviewer: ['reviewers'],
+    applicant: ['applicants']
+  }
+  const userPrefixes = Object.keys(groups)
+
   await server.start({
     appConfig: {
       userLookups: {
         byLogins: async (logins: any[], applicableGroups: any) => {
-          let credents = []
-          const users = await database.getAccessUsers({ logins })
-          for (const user of users) {
-            credents.push({login: user.login, fullname: user.fullname, groups: (await database.getGroupsByUserIds([user.internalId])).map((group: { value: string }) => group.value)})
-          }
-          return credents
+          return logins.filter(login => userPrefixes.some(p => login.startsWith(p))).map(login => ({ login, fullname: login, groups: groups[userPrefixes.find(p => login.startsWith(p))!] }))
         }
       }
     },
