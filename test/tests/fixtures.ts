@@ -23,20 +23,13 @@ export type MyOptions = {
 }
 
 type MyFixtures = {
-  adminPage: Page
-  adminRequest: RequestHelpers
-}
-
-/*
-type MyFixtures = {
-  adminPage: Page
+  loginPage: Page
   reviewerPage: Page
   applicantPage: Page
   adminRequest: RequestHelpers
   reviewerRequest: RequestHelpers
   applicantRequest: RequestHelpers
 }
-  */
 
 function getWithRequest (request: APIRequestContext, token: string) {
   return async <T = any>(path: string) => {
