@@ -78,11 +78,11 @@ export const test = base.extend<{}, MyOptions & MyFixtures>({
     await use(loginPage)
     await context.close()
   }, { scope: 'test' }],
-  adminRequest: [async ({ loginPage }, use) => {
+  request: [async ({ loginPage }, use) => {
     const token = (await loginPage.evaluate(() => sessionStorage.getItem('token')))!
-    const adminRequest = await loginPage.context().request
-    const post = postWithRequest(adminRequest, token)
-    await use({ request: adminRequest, get: getWithRequest(adminRequest, token), post, graphql: graphqlWithPost(post) })
+    const request = await loginPage.context().request
+    const post = postWithRequest(request, token)
+    await use({ request: request, get: getWithRequest(request, token), post, graphql: graphqlWithPost(post) })
   }, { scope: 'test' }],
   reviewerPage: [async ({ browser }, use) => {
     const context = await browser.newContext()

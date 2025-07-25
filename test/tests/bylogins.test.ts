@@ -3,8 +3,8 @@ import { expect, test } from './fixtures.js'
 test.describe('ByLogins admin flow', () => {
   const uniqueAdmin: string = 'admin_01'
   test.use({ login: uniqueAdmin })
-  test('Account details should be updated from seed data post upsert', async ({ adminRequest }) => {
-    const { accessUsers } = await adminRequest.graphql<{ accessUsers: { login: string }[] }>(`
+  test('Account details should be updated from seed data post upsert', async ({ request }) => {
+    const { accessUsers } = await request.graphql<{ accessUsers: { login: string }[] }>(`
       {
         accessUsers (filter: { self: true }) {
           login
