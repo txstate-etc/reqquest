@@ -170,7 +170,7 @@ export async function updatePeriod (id: string, period: PeriodUpdate) {
     UPDATE periods
     SET code = ?, name = ?, openDate = ?, closeDate = ?, archiveDate = ?
     WHERE id = ?
-  `, [code, name, openDate, closeDate, archiveDate, id])
+  `, [code, name, openDate.toJSDate(), closeDate?.toJSDate(), archiveDate?.toJSDate(), id])
 }
 
 export async function deletePeriod (id: string) {

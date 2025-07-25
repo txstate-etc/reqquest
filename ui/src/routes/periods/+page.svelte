@@ -28,17 +28,21 @@
   let deleteDialog = false
   let deletingPeriod: Period | undefined
 
-  async function validate (period: PeriodUpdate) {
-    const response = editingPeriod ? await api.updatePeriod(editingPeriod.id, period, true) : await api.createPeriod(period, true)
+  async function validate (period: Period) {
+    const response = editingPeriod ? await api.updatePeriod(editingPeriod.id, periodToPeriodUpdate(period), true) : await api.createPeriod(periodToPeriodUpdate(period), true)
     return response.messages
   }
 
-  async function submit (period: PeriodUpdate) {
-    const response = editingPeriod ? await api.updatePeriod(editingPeriod.id, period, false) : await api.createPeriod(period, false)
+  async function submit (period: Period) {
+    const response = editingPeriod ? await api.updatePeriod(editingPeriod.id, periodToPeriodUpdate(period), false) : await api.createPeriod(periodToPeriodUpdate(period), false)
     return {
       ...response,
       data: period
     }
+  }
+
+  function periodToPeriodUpdate (period: Period): PeriodUpdate {
+    return { name: period.name, code: period.code, openDate: period.openDate, closeDate: period.closeDate, archiveDate: period.archiveDate }
   }
 
   function closeDialog () {

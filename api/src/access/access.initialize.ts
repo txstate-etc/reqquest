@@ -57,7 +57,7 @@ export const accessMigrations: DatabaseMigration[] = [{
       id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       login VARCHAR(128) NOT NULL,
       fullname VARCHAR(255) NOT NULL,
-      otherInfo TEXT,
+      otherInfo JSON,
       lastUpdated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       stillValid TINYINT(1) DEFAULT 1,
       UNIQUE (login)
