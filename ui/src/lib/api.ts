@@ -479,7 +479,6 @@ class API extends APIBase {
   }
 
   async updatePeriod (periodId: string, period: PeriodUpdate, validateOnly: boolean) {
-    console.log(`****Updating period of ${JSON.stringify(period)}`)
     const response = await this.client.mutation({
       __name: 'UpdatePeriod',
       updatePeriod: {
