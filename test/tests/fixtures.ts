@@ -18,6 +18,16 @@ interface RequestHelpers {
   request: APIRequestContext
 }
 
+export type MyOptions = {
+  login: string
+}
+
+type MyFixtures = {
+  adminPage: Page
+  adminRequest: RequestHelpers
+}
+
+/*
 type MyFixtures = {
   adminPage: Page
   reviewerPage: Page
@@ -26,6 +36,7 @@ type MyFixtures = {
   reviewerRequest: RequestHelpers
   applicantRequest: RequestHelpers
 }
+  */
 
 function getWithRequest (request: APIRequestContext, token: string) {
   return async <T = any>(path: string) => {
@@ -65,20 +76,21 @@ function graphqlWithPost (post: (<T = any>(path: string, body: any) => Promise<T
   }
 }
 
-export const test = base.extend<{}, MyFixtures>({
-  adminPage: [async ({ browser }, use) => {
+export const test = base.extend<{}, MyOptions & MyFixtures>({
+  login: ['applicant', {option: true}], // default to applicant login
+  loginPage: [async ({ browser, login }, use) => {
     const context = await browser.newContext()
-    const adminPage = await context.newPage()
-    await loginAs(adminPage, 'admin')
-    await use(adminPage)
+    const loginPage = await context.newPage()
+    await loginAs(loginPage, login)
+    await use(loginPage)
     await context.close()
-  }, { scope: 'worker' }],
-  adminRequest: [async ({ adminPage }, use) => {
-    const token = (await adminPage.evaluate(() => sessionStorage.getItem('token')))!
-    const adminRequest = await adminPage.context().request
+  }, { scope: 'test' }],
+  adminRequest: [async ({ loginPage }, use) => {
+    const token = (await loginPage.evaluate(() => sessionStorage.getItem('token')))!
+    const adminRequest = await loginPage.context().request
     const post = postWithRequest(adminRequest, token)
     await use({ request: adminRequest, get: getWithRequest(adminRequest, token), post, graphql: graphqlWithPost(post) })
-  }, { scope: 'worker' }],
+  }, { scope: 'test' }],
   reviewerPage: [async ({ browser }, use) => {
     const context = await browser.newContext()
     const reviewerPage = await context.newPage()

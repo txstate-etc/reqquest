@@ -11,7 +11,7 @@ export class AccessUser {
     this.internalId = row.id
     this.login = row.login
     this.fullname = row.fullname
-    this.otherInfo = safeParse(row.otherInfo)
+    this.otherInfo = row.otherInfo
     this.stillValid = !!row.stillValid
   }
 
