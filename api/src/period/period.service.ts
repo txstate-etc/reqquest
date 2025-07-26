@@ -59,10 +59,12 @@ export class PeriodService extends AuthService<Period> {
     return this.hasControl('Period', 'delete')
   }
 
-  async validate (period: PeriodUpdate) {
+  async validate (period: PeriodUpdate, id?: string) {
     const response = new ValidatedPeriodResponse({ success: true })
     const existing = period.code ? await getPeriods({ codes: [period.code] }) : []
-    if (existing.length) response.addMessage('Code is already in use.', 'period.code')
+    if (id) {
+      if (existing.length && !existing.find(p => p.id === id)) response.addMessage('Code is already in use.', 'period.code')
+    } else if (existing.length) response.addMessage('Code is already in use.', 'period.code')
     if (isBlank(period.name)) response.addMessage('Name is required.', 'period.name')
     if (period.openDate == null) response.addMessage('Open date is required.', 'period.openDate')
     if (period.closeDate != null && period.closeDate < period.openDate) {
@@ -95,7 +97,7 @@ export class PeriodService extends AuthService<Period> {
     const period = await this.findById(id)
     if (!period) throw new Error('Period not found')
     if (!this.mayUpdate(period)) throw new Error('You are not allowed to update this period.')
-    const response = await this.validate(update)
+    const response = await this.validate(update, id)
     if (validateOnly || response.hasErrors()) return response
     await updatePeriod(id, update)
     this.loaders.clear()
