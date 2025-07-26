@@ -63,7 +63,7 @@ function graphqlWithPost (post: (<T = any>(path: string, body: any) => Promise<T
   return async <T = any>(query: string, variables?: Record<string, any>) => {
     const resp = await post<{ data: T, errors?: string[] }>('/graphql', { query, variables })
     if (resp.errors) {
-      throw new Error(`GraphQL errors: ${resp.errors.join(', ')}`)
+      throw new Error(`GraphQL errors: ${JSON.stringify(resp.errors)}`)
     }
     return resp.data as T
   }
