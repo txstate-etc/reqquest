@@ -70,7 +70,7 @@ function graphqlWithPost (post: (<T = any>(path: string, body: any) => Promise<T
 }
 
 export const test = base.extend<{}, MyOptions & MyFixtures>({
-  login: ['applicant', {option: true}], // default to applicant login
+  login: ['applicant', { option: true }], // default to applicant login
   loginPage: [async ({ browser, login }, use) => {
     const context = await browser.newContext()
     const loginPage = await context.newPage()
