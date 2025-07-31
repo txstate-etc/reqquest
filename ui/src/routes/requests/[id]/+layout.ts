@@ -7,5 +7,5 @@ export const load: LayoutLoad = async input => {
   console.log('Basic Request Data:', appRequest)
   input.depends('request:id')
   if (!appRequest) throw error(404, 'App Request not found. It may have been deleted or you do not have permission to view it.')
-  return { basicRequestData: appRequest }
+  return { basicRequestData: appRequest, requestId: input.params.id }
 }

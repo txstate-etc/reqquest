@@ -58,6 +58,8 @@ export class PeriodProgramFilters {
 
   @Field(() => [ID], { nullable: true })
   periodIds?: string[]
+
+  periodKeys?: { periodId: string, key: string }[]
 }
 
 @ObjectType()

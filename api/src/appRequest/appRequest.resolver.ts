@@ -73,10 +73,10 @@ export class AppRequestResolver {
   }
 
   @Mutation(returns => ValidatedAppRequestResponse, { description: 'Update the data for a prompt in this app request.' })
-  async updatePrompt (@Ctx() ctx: RQContext, @Arg('promptId', type => ID) promptId: string, @Arg('data', type => JsonData) data: any, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
+  async updatePrompt (@Ctx() ctx: RQContext, @Arg('promptId', type => ID) promptId: string, @Arg('data', type => JsonData) data: any, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean, @Arg('dataVersion', { nullable: true, description: 'The data version of the app request at the time this prompt was loaded. If provided, the API will perform an optimistic concurrency check and fail the update if someone else has updated the data in the meantime.' }) dataVersion?: number) {
     const prompt = await ctx.svc(RequirementPromptService).findById(promptId)
     if (!prompt) throw new Error('Prompt not found.')
-    return await ctx.svc(RequirementPromptService).update(prompt, data, validateOnly)
+    return await ctx.svc(RequirementPromptService).update(prompt, data, validateOnly, dataVersion)
   }
 
   @Mutation(returns => ValidatedAppRequestResponse, { description: 'Create a new app request.' })

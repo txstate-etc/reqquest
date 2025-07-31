@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon'
-import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
+import { Field, ID, InputType, Int, ObjectType, registerEnumType } from 'type-graphql'
 import { AppRequestActivityRow, AppRequestRow, AppRequestStatusDB, JsonData, PromptTagDefinition } from '../internal.js'
 import { ValidatedResponse } from '@txstate-mws/graphql-server'
 
@@ -54,6 +54,7 @@ export class AppRequest {
     this.periodArchivesAt = row.periodArchivesAt ? DateTime.fromJSDate(row.periodArchivesAt) : undefined
     this.periodOpensAt = DateTime.fromJSDate(row.periodOpensAt)
     this.tags = tags ?? {}
+    this.dataVersion = row.dataVersion
   }
 
   @Field(type => ID)
@@ -70,6 +71,9 @@ export class AppRequest {
 
   @Field({ nullable: true, description: 'Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date.' })
   closedAt?: DateTime
+
+  @Field(type => Int, { description: 'The version of the data for this app request. This is incremented every time the data is updated. If you provide it with your update requests, the API will perform an optimistic concurrency check and fail the update if someone else has updated the data in the meantime.' })
+  dataVersion: number
 
   periodClosesAt?: DateTime
   periodArchivesAt?: DateTime

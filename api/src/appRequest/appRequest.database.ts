@@ -44,6 +44,7 @@ export interface AppRequestRow {
   createdAt: Date
   updatedAt: Date
   closedAt: Date
+  dataVersion: number
   periodClosesAt?: Date
   periodArchivesAt?: Date
   periodOpensAt: Date
@@ -163,8 +164,8 @@ function processFilters (filter?: AppRequestFilter) {
 export async function getAppRequests (filter?: AppRequestFilter, tdb: Queryable = db) {
   const { joins, where, binds } = processFilters(filter)
   const rows = await tdb.getall<AppRequestRow>(`
-    SELECT DISTINCT ar.id, ar.periodId, ar.userId, ar.status, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt,
-           p.closeDate AS periodClosesAt, p.archiveDate AS periodArchivesAt, p.openDate AS periodOpensAt
+    SELECT DISTINCT ar.id, ar.periodId, ar.userId, ar.status, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt, ar.dataVersion,
+      p.closeDate AS periodClosesAt, p.archiveDate AS periodArchivesAt, p.openDate AS periodOpensAt
     FROM app_requests ar
     INNER JOIN periods p ON p.id = ar.periodId
     ${Array.from(joins.values()).join('\n')}
@@ -212,23 +213,27 @@ export async function createAppRequest (periodId: number, userId: number) {
   return appRequestId
 }
 
-export async function updateAppRequestData (appRequestId: number, data: AppRequestData) {
-  await db.execute('UPDATE app_requests SET data = ? WHERE id = ?', [JSON.stringify(data), appRequestId])
+export async function updateAppRequestData (appRequestId: number, data: AppRequestData, dataVersion?: number) {
+  const where = dataVersion != null ? ' AND dataVersion = ?' : ''
+  const binds: any[] = [JSON.stringify(data), appRequestId]
+  if (dataVersion != null) binds.push(dataVersion)
+  const rowsAffected = await db.update('UPDATE app_requests SET data = ?, dataVersion = dataVersion + 1 WHERE id = ?' + where, binds)
+  if (!rowsAffected) throw new Error('Someone else is working on the same request and made changes since you loaded. Copy any unsaved work into another document and reload the page to see what has changed.')
   await evaluateAppRequest(appRequestId)
 }
 
 export async function submitAppRequest (appRequestId: number) {
-  await db.execute('UPDATE app_requests SET status = ?, submittedData = data, submittedAt=NOW() WHERE id = ?', [AppRequestStatusDB.SUBMITTED, appRequestId])
+  await db.update('UPDATE app_requests SET status = ?, submittedData = data, submittedAt=NOW() WHERE id = ?', [AppRequestStatusDB.SUBMITTED, appRequestId])
   await evaluateAppRequest(appRequestId)
 }
 
 export async function returnAppRequest (appRequestId: number) {
-  await db.execute('UPDATE app_requests SET status = ?, submittedAt = NULL WHERE id = ?', [AppRequestStatusDB.STARTED, appRequestId])
+  await db.update('UPDATE app_requests SET status = ?, submittedAt = NULL WHERE id = ?', [AppRequestStatusDB.STARTED, appRequestId])
   await evaluateAppRequest(appRequestId)
 }
 
 export async function restoreAppRequest (appRequestId: number) {
-  await db.execute('UPDATE app_requests SET status = ?, data = submittedData WHERE id = ?', [AppRequestStatusDB.SUBMITTED, appRequestId])
+  await db.update('UPDATE app_requests SET status = ?, data = submittedData WHERE id = ?', [AppRequestStatusDB.SUBMITTED, appRequestId])
   await evaluateAppRequest(appRequestId)
 }
 

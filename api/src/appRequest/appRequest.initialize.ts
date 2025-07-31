@@ -18,6 +18,7 @@ export const appRequestMigrations: DatabaseMigration[] = [
           closedAt DATETIME,
           data LONGTEXT,
           submittedData LONGTEXT,
+          dataVersion INT UNSIGNED NOT NULL DEFAULT 0,
           FOREIGN KEY (userId) REFERENCES accessUsers (id),
           FOREIGN KEY (periodId) REFERENCES periods (id),
           INDEX (status),

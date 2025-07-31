@@ -8,6 +8,7 @@ export type Scalars = {
     DateTime: string,
     Float: number,
     ID: string,
+    Int: number,
     JsonData: Record<string, any>,
     String: string,
 }
@@ -167,6 +168,8 @@ export interface AppRequest {
     createdAt: Scalars['DateTime']
     /** All data that has been gathered from the user for this request. It is a Record whose properties are the prompt keys and values are the data gathered by the corresponding prompt dialog. */
     data: Scalars['JsonData']
+    /** The version of the data for this app request. This is incremented every time the data is updated. If you provide it with your update requests, the API will perform an optimistic concurrency check and fail the update if someone else has updated the data in the meantime. */
+    dataVersion: Scalars['Int']
     id: Scalars['ID']
     /** Indexes associated with the App Request. These are pieces of data extracted from the App Request by individual prompts in the ReqQuest project. They have several uses such as filtering App Requests and enriching list views. */
     indexCategories: AppRequestIndexCategory[]
@@ -255,6 +258,8 @@ export interface Application {
     id: Scalars['ID']
     /** The navigation title of the program this application is for. */
     navTitle: Scalars['String']
+    /** The program key this application corresponds to. */
+    programKey: Scalars['String']
     requirements: ApplicationRequirement[]
     status: ApplicationStatus
     /** When one of the application's requirements is failing or throwing a warning, its reason will be copied here for convenience. If there is a warning and then later a failure, the failure reason will win. */
@@ -797,6 +802,8 @@ export interface AppRequestGenqlSelection{
     data?: { __args: {
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
+    /** The version of the data for this app request. This is incremented every time the data is updated. If you provide it with your update requests, the API will perform an optimistic concurrency check and fail the update if someone else has updated the data in the meantime. */
+    dataVersion?: boolean | number
     id?: boolean | number
     /** Indexes associated with the App Request. These are pieces of data extracted from the App Request by individual prompts in the ReqQuest project. They have several uses such as filtering App Requests and enriching list views. */
     indexCategories?: (AppRequestIndexCategoryGenqlSelection & { __args?: {
@@ -926,6 +933,8 @@ export interface ApplicationGenqlSelection{
     id?: boolean | number
     /** The navigation title of the program this application is for. */
     navTitle?: boolean | number
+    /** The program key this application corresponds to. */
+    programKey?: boolean | number
     requirements?: ApplicationRequirementGenqlSelection
     status?: boolean | number
     /** When one of the application's requirements is failing or throwing a warning, its reason will be copied here for convenience. If there is a warning and then later a failure, the failure reason will win. */
@@ -1048,7 +1057,9 @@ export interface MutationGenqlSelection{
     updateConfiguration?: (ValidatedConfigurationResponseGenqlSelection & { __args: {data: Scalars['JsonData'], key: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     updatePeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {periodId: Scalars['ID'], update: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
     /** Update the data for a prompt in this app request. */
-    updatePrompt?: (ValidatedAppRequestResponseGenqlSelection & { __args: {data: Scalars['JsonData'], promptId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
+    updatePrompt?: (ValidatedAppRequestResponseGenqlSelection & { __args: {data: Scalars['JsonData'], 
+    /** The data version of the app request at the time this prompt was loaded. If provided, the API will perform an optimistic concurrency check and fail the update if someone else has updated the data in the meantime. */
+    dataVersion?: (Scalars['Float'] | null), promptId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     __typename?: boolean | number
     __scalar?: boolean | number
 }

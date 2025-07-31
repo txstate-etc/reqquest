@@ -1,7 +1,7 @@
 import { PUBLIC_API_BASE, PUBLIC_AUTH_REDIRECT } from '$env/static/public'
 import { APIBase } from '@txstate-mws/sveltekit-utils'
 import type { Feedback } from '@txstate-mws/svelte-forms'
-import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleInput, type AppRequestActivityFilters, type AppRequestFilter, type PeriodUpdate } from './typed-client/index.js'
+import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleInput, type AppRequestActivityFilters, type AppRequestFilter, type PeriodUpdate, type PromptVisibility } from './typed-client/index.js'
 import { DateTime } from 'luxon'
 
 class API extends APIBase {
@@ -132,6 +132,7 @@ class API extends APIBase {
       appRequests: {
         __args: { filter: { ids: [appRequestId] } },
         data: true,
+        dataVersion: true,
         applications: {
           id: true,
           requirements: {
@@ -158,14 +159,14 @@ class API extends APIBase {
         }
       }
     }
-    return { appRequestData: appRequest.data }
+    return { appRequestData: appRequest.data, dataVersion: appRequest.dataVersion }
   }
 
-  async updatePrompt (promptId: string, data: any, validateOnly: boolean) {
+  async updatePrompt (promptId: string, data: any, validateOnly: boolean, dataVersion?: number) {
     const response = await this.client.mutation({
       __name: 'UpdatePrompt',
       updatePrompt: {
-        __args: { promptId, data, validateOnly },
+        __args: { promptId, data, validateOnly, dataVersion },
         success: true,
         messages: {
           message: true,
@@ -334,6 +335,11 @@ class API extends APIBase {
         period: {
           id: true,
           name: true
+        },
+        applications: {
+          id: true,
+          navTitle: true,
+          programKey: true
         }
       }
     })
@@ -341,7 +347,7 @@ class API extends APIBase {
     return response.appRequests[0]
   }
 
-  async getReviewData (appRequestId: string) {
+  async getReviewData (appRequestId: string, visibilities: PromptVisibility[] = [enumPromptVisibility.AVAILABLE, enumPromptVisibility.REQUEST_DUPE]) {
     const response = await this.client.query({
       __name: 'GetReviewData',
       appRequests: {
@@ -355,6 +361,7 @@ class API extends APIBase {
           statusReason: true,
           title: true,
           navTitle: true,
+          programKey: true,
           requirements: {
             id: true,
             type: true,
@@ -369,6 +376,8 @@ class API extends APIBase {
               navTitle: true,
               answered: true,
               visibility: true,
+              configurationRelatedData: true,
+              fetchedData: true,
               actions: {
                 update: true
               }
@@ -379,7 +388,7 @@ class API extends APIBase {
     })
     if (response.appRequests.length === 0) return undefined
     const appRequest = response.appRequests[0]
-    return { ...appRequest, applications: appRequest.applications.map(a => ({ ...a, requirements: a.requirements.filter(r => r.reachable).map(r => ({ ...r, prompts: r.prompts.filter(p => p.visibility !== enumPromptVisibility.UNREACHABLE) })) })) }
+    return { ...appRequest, applications: appRequest.applications.map(a => ({ ...a, requirements: a.requirements.filter(r => r.reachable).map(r => ({ ...r, prompts: r.prompts.filter(p => visibilities.includes(p.visibility)) })) })) }
   }
 
   async getRequestActivity (appRequestId: string, filters?: AppRequestActivityFilters) {

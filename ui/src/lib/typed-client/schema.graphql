@@ -271,6 +271,11 @@ type AppRequest {
     """
     schemaVersion: String
   ): JsonData!
+
+  """
+  The version of the data for this app request. This is incremented every time the data is updated. If you provide it with your update requests, the API will perform an optimistic concurrency check and fail the update if someone else has updated the data in the meantime.
+  """
+  dataVersion: Int!
   id: ID!
 
   """
@@ -569,6 +574,9 @@ type Application {
 
   """The navigation title of the program this application is for."""
   navTitle: String!
+
+  """The program key this application corresponds to."""
+  programKey: String!
   requirements: [ApplicationRequirement!]!
   status: ApplicationStatus!
 
@@ -813,7 +821,16 @@ type Mutation {
   updatePeriod(periodId: ID!, update: PeriodUpdate!, validateOnly: Boolean): ValidatedPeriodResponse!
 
   """Update the data for a prompt in this app request."""
-  updatePrompt(data: JsonData!, promptId: ID!, validateOnly: Boolean): ValidatedAppRequestResponse!
+  updatePrompt(
+    data: JsonData!
+
+    """
+    The data version of the app request at the time this prompt was loaded. If provided, the API will perform an optimistic concurrency check and fail the update if someone else has updated the data in the meantime.
+    """
+    dataVersion: Float
+    promptId: ID!
+    validateOnly: Boolean
+  ): ValidatedAppRequestResponse!
 }
 
 type MutationMessage {

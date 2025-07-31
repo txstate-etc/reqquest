@@ -82,13 +82,15 @@ export class Application {
   @Field({ description: 'The navigation title of the program this application is for.' })
   navTitle: string
 
+  @Field({ description: 'The program key this application corresponds to.' })
+  programKey: string
+
   internalId: number
   appRequestInternalId: number
   appRequestId: string
   appRequestTags?: Record<string, string[]>
   userInternalId: number
   periodId: string
-  programKey: string
   program: ProgramDefinition
   authorizationKeys: Record<string, string[]>
 }

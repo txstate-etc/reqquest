@@ -10,6 +10,9 @@ function processFilters (filters?: PeriodProgramFilters) {
   if (filters?.keys?.length) {
     where.push(`pp.programKey IN (${db.in(binds, filters.keys)})`)
   }
+  if (filters?.periodKeys?.length) {
+    where.push(`(pp.periodId, pp.programKey) IN (${db.in(binds, filters.periodKeys.map(pk => [pk.periodId, pk.key]))})`)
+  }
   return { where, binds }
 }
 

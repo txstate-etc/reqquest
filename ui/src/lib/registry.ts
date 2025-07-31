@@ -38,12 +38,32 @@ export interface PromptDefinition {
    */
   formComponent: typeof SvelteComponent<any>
   /**
+   * Control the size of the area the formComponent will be rendered in.
+   * - 'small' will render the form in a small area (about 8 lines or less at 320px width).
+   * - 'large' will render the form in a large area (about 32 lines or less at 800px width) (still has to be responsive down to 320px).
+   * - 'full' will render the form in a modal that takes up the full screen (still has to be responsive down to 320px).
+   * Defaults to 'small'.
+   */
+  formMode?: 'small' | 'large' | 'full'
+  /**
    * A component that displays the data collected from this prompt instead of collecting
    * it. Should be as compact as possible, as it will be displayed in a big list of prompts.
    */
   displayComponent: typeof SvelteComponent<any>
   /**
+   * Control the size of the area the displayComponent will be rendered in.
+   * - 'small' will render the component in a small area (about 8 lines or less at 320px width).
+   * - 'large' will render the component in a large area (about 32 lines or less at 800px width) (still has to be responsive down to 320px).
+   * Defaults to 'small'.
+   *
+   * There is no 'full' mode for displayComponent, since we always want to be able to print the
+   * full information dump on a one-pager.
+   */
+  displayMode?: 'small' | 'large'
+  /**
    * A component that will be used to render the form for this prompt's configuration, if applicable.
+   *
+   * Configuration forms are always rendered in a modal that takes up (up to) the full screen.
    */
   configureComponent?: typeof SvelteComponent<any>
   /**

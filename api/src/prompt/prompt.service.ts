@@ -1,5 +1,6 @@
 import { BaseService } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
+import { equal } from 'txstate-utils'
 import {
   AppRequestService, ApplicationRequirement, AuthService, Prompt, RequirementPrompt,
   promptRegistry, getRequirementPrompts, ValidatedAppRequestResponse,
@@ -121,21 +122,27 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     return this.hasControl('PromptAnswer', 'update_anytime', { ...prompt.authorizationKeys, ...prompt.appRequestTags })
   }
 
-  async update (prompt: RequirementPrompt, data: any, validateOnly = false) {
+  async update (prompt: RequirementPrompt, data: any, validateOnly = false, dataVersion?: number) {
     if (!this.mayUpdate(prompt)) throw new Error('You are not allowed to update this prompt.')
     const response = new ValidatedAppRequestResponse({ success: true })
     const allConfigData = await this.svc(ConfigurationService).getRelatedData(prompt.periodId, prompt.key)
     for (const message of await prompt.definition.validate?.(data, allConfigData[prompt.key] ?? {}, allConfigData) ?? []) response.addMessage(message.message, message.arg, message.type)
-    if (response.hasErrors() || validateOnly) return response
     const [appRequest, appRequestData] = await Promise.all([
       this.svc(AppRequestService).findByInternalId(prompt.appRequestInternalId),
       this.svc(AppRequestService).getData(prompt.appRequestInternalId)
     ])
     if (!appRequest) throw new Error('AppRequest not found')
-    appRequestData[prompt.key] = prompt.definition.preProcessData ? await prompt.definition.preProcessData(appRequest, data, this.ctx) : data
-    await updateAppRequestData(appRequest.internalId, appRequestData)
+    if (dataVersion != null && appRequest.dataVersion !== dataVersion) {
+      throw new Error('Someone else is working on the same request and made changes since you loaded. Copy any unsaved work into another document and reload the page to see what has changed.')
+    }
+    if (response.hasErrors() || validateOnly) return response
+    const newData = prompt.definition.preProcessData ? await prompt.definition.preProcessData(appRequest, data, this.ctx) : data
+    if (!equal(appRequestData[prompt.key], newData)) {
+      appRequestData[prompt.key] = newData
+      await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion)
+      this.svc(AppRequestService).recordActivity(appRequest, 'Prompt Updated', { data, description: prompt.title })
+    }
     await setRequirementPromptValid(prompt)
-    this.svc(AppRequestService).recordActivity(appRequest, 'Prompt Updated', { data, description: prompt.title })
     this.loaders.clear()
     const updatedAppRequest = (await this.svc(AppRequestService).findByInternalId(appRequest.internalId))!
     response.appRequest = updatedAppRequest

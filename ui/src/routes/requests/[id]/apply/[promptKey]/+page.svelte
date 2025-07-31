@@ -19,14 +19,14 @@
   import type { PageData } from './$types.js'
 
   export let data: PageData
-  $: ({ prompt, appRequestData } = data)
+  $: ({ prompt, appRequestData, dataVersion } = data)
   $: def = uiRegistry.getPrompt($page.params.promptKey)
 
   let store: FormStore | undefined
   let continueAfterSave = false
 
   async function onSubmit (data: any) {
-    const { success, messages } = await api.updatePrompt(prompt.id, data, false)
+    const { success, messages } = await api.updatePrompt(prompt.id, data, false, dataVersion)
     return {
       success,
       messages,
