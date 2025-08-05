@@ -26,9 +26,10 @@ type MyFixtures = {
   loginPage: Page
   reviewerPage: Page
   applicantPage: Page
-  adminRequest: RequestHelpers
+  adminPage: Page
   reviewerRequest: RequestHelpers
   applicantRequest: RequestHelpers
+  adminRequest: RequestHelpers
 }
 
 function getWithRequest (request: APIRequestContext, token: string) {
@@ -62,15 +63,13 @@ function postWithRequest (request: APIRequestContext, token: string) {
 function graphqlWithPost (post: (<T = any>(path: string, body: any) => Promise<T>)) {
   return async <T = any>(query: string, variables?: Record<string, any>) => {
     const resp = await post<{ data: T, errors?: string[] }>('/graphql', { query, variables })
-    if (resp.errors) {
-      throw new Error(`GraphQL errors: ${JSON.stringify(resp.errors)}`)
-    }
+    if (resp.errors) return resp
     return resp.data as T
   }
 }
 
 export const test = base.extend<{}, MyOptions & MyFixtures>({
-  login: ['applicant', { option: true }], // default to applicant login
+  login: ['applicant', { scope: 'test', option: true }], // default to applicant login
   loginPage: [async ({ browser, login }, use) => {
     const context = await browser.newContext()
     const loginPage = await context.newPage()
@@ -107,6 +106,19 @@ export const test = base.extend<{}, MyOptions & MyFixtures>({
   applicantRequest: [async ({ applicantPage }, use) => {
     const token = (await applicantPage.evaluate(() => sessionStorage.getItem('token')))!
     const applicantRequest = await applicantPage.context().request
+    const post = postWithRequest(applicantRequest, token)
+    await use({ request: applicantRequest, get: getWithRequest(applicantRequest, token), post, graphql: graphqlWithPost(post) })
+  }, { scope: 'worker' }],
+  adminPage: [async ({ browser }, use) => {
+    const context = await browser.newContext()
+    const adminPage = await context.newPage()
+    await loginAs(adminPage, 'admin')
+    await use(adminPage)
+    await context.close()
+  }, { scope: 'worker' }],
+  adminRequest: [async ({ adminPage }, use) => {
+    const token = (await adminPage.evaluate(() => sessionStorage.getItem('token')))!
+    const applicantRequest = await adminPage.context().request
     const post = postWithRequest(applicantRequest, token)
     await use({ request: applicantRequest, get: getWithRequest(applicantRequest, token), post, graphql: graphqlWithPost(post) })
   }, { scope: 'worker' }]
