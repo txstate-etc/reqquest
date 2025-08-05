@@ -69,7 +69,7 @@ function graphqlWithPost (post: (<T = any>(path: string, body: any) => Promise<T
 }
 
 export const test = base.extend<{}, MyOptions & MyFixtures>({
-  login: ['applicant', { scope: 'test', option: true }], // default to applicant login
+  login: ['applicant', { option: true }], // default to applicant login
   loginPage: [async ({ browser, login }, use) => {
     const context = await browser.newContext()
     const loginPage = await context.newPage()
@@ -81,7 +81,7 @@ export const test = base.extend<{}, MyOptions & MyFixtures>({
     const token = (await loginPage.evaluate(() => sessionStorage.getItem('token')))!
     const request = await loginPage.context().request
     const post = postWithRequest(request, token)
-    await use({ request: request, get: getWithRequest(request, token), post, graphql: graphqlWithPost(post) })
+    await use({ request, get: getWithRequest(request, token), post, graphql: graphqlWithPost(post) })
   }, { scope: 'test' }],
   reviewerPage: [async ({ browser }, use) => {
     const context = await browser.newContext()

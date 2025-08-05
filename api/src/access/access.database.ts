@@ -303,7 +303,7 @@ export namespace AccessDatabase {
         const ibinds: any[] = []
         await db.insert(`
           INSERT INTO accessRoleGroups (roleId, groupName)
-          VALUES ${db.in(ibinds, role.groups.map((g: any) => [id, g]))}
+          VALUES ${db.in(ibinds, role.groups.filter(g => String(g).trim()).map((g: any) => [id, g]))}
           ON DUPLICATE KEY UPDATE roleId = roleId
         `, ibinds)
         const dbinds: any[] = [id]
