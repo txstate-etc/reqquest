@@ -1,8 +1,8 @@
 import { expect, test } from './fixtures.js'
 
 test.describe('Manage periods', () => {
-  const name = 'Auto 2025'
-  const code = '25'
+  const name = '2025 Per'
+  const code = 'PER-255'
   const openDate = '2025-09-01T00:00:00.000-05:00'
   let periodId = 0
   test('Admin - Create new period', async ({ adminRequest }) => {
@@ -14,6 +14,7 @@ test.describe('Manage periods', () => {
             name
             code
             openDate
+            reviewed
           }
           messages {
             message
@@ -22,11 +23,12 @@ test.describe('Manage periods', () => {
       }
     `
     const variables = { name, code, openDate }
-    const { createPeriod } = await adminRequest.graphql<{ createPeriod: { period: { id: number, name: string, code: string, openDate: string }, messages: { message: string }[] } }>(query, variables)
+    const { createPeriod } = await adminRequest.graphql<{ createPeriod: { period: { id: number, name: string, code: string, openDate: string, reviewed: boolean }, messages: { message: string }[] } }>(query, variables)
     periodId = createPeriod.period.id
     expect(createPeriod.period.name).toEqual(name)
     expect(createPeriod.period.code).toEqual(code)
     expect(createPeriod.period.openDate).toEqual(openDate)
+    expect(createPeriod.period.reviewed).toEqual(false)
   })
   const closeDate = '2026-09-01T00:00:00.000-05:00'
   const archiveDate = '2026-09-02T00:00:00.000-05:00'
@@ -128,7 +130,7 @@ test.describe('Manage periods', () => {
         }
       }
     `
-    const variables = { name: 'Applicant Period', code: '99', openDate }
+    const variables = { name: 'Applicant Period', code: 'PER-99', openDate }
     const response = await applicantRequest.graphql<{ errors: { message: string }[] }>(query, variables)
     expect(response.errors[0].message).toEqual('You are not allowed to create a period.')
   })
@@ -183,7 +185,7 @@ test.describe('Manage periods', () => {
         }
       }
     `
-    const variables = { name: 'Applicant Period', code: '99', openDate }
+    const variables = { name: 'Applicant Period', code: 'PER-99', openDate }
     const response = await reviewerRequest.graphql<{ errors: { message: string }[] }>(query, variables)
     expect(response.errors[0].message).toEqual('You are not allowed to create a period.')
   })
