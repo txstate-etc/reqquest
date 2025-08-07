@@ -151,7 +151,7 @@ test.describe('Manage periods', () => {
         }
       }
     `
-    const variables = { periodId: 5, name, code: '100', openDate, closeDate, archiveDate }
+    const variables = { periodId, name, code: '100', openDate, closeDate, archiveDate }
     const response = await applicantRequest.graphql<{ errors: { message: string }[] }>(query, variables)
     expect(response.errors[0].message).toEqual('You are not allowed to update this period.')
   })
@@ -165,7 +165,7 @@ test.describe('Manage periods', () => {
         }
       }
     `
-    const variables = { periodId: 5 }
+    const variables = { periodId }
     const response = await applicantRequest.graphql<{ errors: { message: string }[] }>(query, variables)
     expect(response.errors[0].message).toEqual('You are not allowed to delete this period.')
   })
@@ -206,7 +206,7 @@ test.describe('Manage periods', () => {
         }
       }
     `
-    const variables = { periodId: 5, name, code: '100', openDate, closeDate, archiveDate }
+    const variables = { periodId, name, code: '100', openDate, closeDate, archiveDate }
     const response = await reviewerRequest.graphql<{ errors: { message: string }[] }>(query, variables)
     expect(response.errors[0].message).toEqual('You are not allowed to update this period.')
   })
@@ -220,7 +220,7 @@ test.describe('Manage periods', () => {
         }
       }
     `
-    const variables = { periodId: 5 }
+    const variables = { periodId }
     const response = await reviewerRequest.graphql<{ errors: { message: string }[] }>(query, variables)
     expect(response.errors[0].message).toEqual('You are not allowed to delete this period.')
   })

@@ -1,6 +1,6 @@
 import { expect, test } from './fixtures.js'
 test.describe('App Request workflows', () => {
-  const name = '2025 Request'
+  const name = '2025 app-req'
   const code = 'APP_REQ_PER-255'
   const openDate = '2025-07-01T00:00:00.000-05:00'
   const closeDate = '2025-09-01T00:00:00.000-05:00'

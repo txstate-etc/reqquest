@@ -1,6 +1,7 @@
 import type { PlaywrightTestConfig } from '@playwright/test'
 
 const config: PlaywrightTestConfig = {
+	workers: 1,
 	webServer: {
 		command: 'while true; do sleep 600; done',
 		url: 'http://api/health',
