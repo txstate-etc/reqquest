@@ -89,6 +89,9 @@ export class PeriodUpdate {
 
   @Field({ nullable: true })
   archiveDate?: DateTime
+
+  @Field({ nullable: true })
+  reviewed?: Boolean
 }
 
 @ObjectType()

@@ -147,13 +147,13 @@ export async function copyConfigurations (fromPeriodId: number | string | undefi
 }
 
 export async function createPeriod (period: PeriodUpdate) {
-  const { code, name, openDate, closeDate, archiveDate } = period
+  const { code, name, openDate, closeDate, archiveDate, reviewed } = period
   const prevId = await db.getval<number>('SELECT id FROM periods ORDER BY id DESC LIMIT 1')
   return await db.transaction(async db => {
     const periodId = await db.insert(`
-      INSERT INTO periods (code, name, openDate, closeDate, archiveDate)
-      VALUES (?, ?, ?, ?, ?)
-    `, [code, name, openDate?.toJSDate(), closeDate?.toJSDate(), archiveDate?.toJSDate()])
+      INSERT INTO periods (code, name, openDate, closeDate, archiveDate, reviewed)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [code, name, openDate?.toJSDate(), closeDate?.toJSDate(), archiveDate?.toJSDate(), !!reviewed])
     await copyConfigurations(prevId, periodId, db)
     await ensureConfigurationRecords([periodId], db)
     return periodId
@@ -165,12 +165,12 @@ export async function markPeriodReviewed (periodId: number | string) {
 }
 
 export async function updatePeriod (id: string, period: PeriodUpdate) {
-  const { code, name, openDate, closeDate, archiveDate } = period
+  const { code, name, openDate, closeDate, archiveDate, reviewed } = period
   await db.update(`
     UPDATE periods
-    SET code = ?, name = ?, openDate = ?, closeDate = ?, archiveDate = ?
+    SET code = ?, name = ?, openDate = ?, closeDate = ?, archiveDate = ?, reviewed = ?
     WHERE id = ?
-  `, [code, name, openDate.toJSDate(), closeDate?.toJSDate(), archiveDate?.toJSDate(), id])
+  `, [code, name, openDate.toJSDate(), closeDate?.toJSDate(), archiveDate?.toJSDate(), !!reviewed, id])
 }
 
 export async function deletePeriod (id: string) {

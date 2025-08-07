@@ -27,9 +27,12 @@ type MyFixtures = {
   reviewerPage: Page
   applicantPage: Page
   adminPage: Page
+  suPage: Page
+  request: RequestHelpers
   reviewerRequest: RequestHelpers
   applicantRequest: RequestHelpers
   adminRequest: RequestHelpers
+  suRequest: RequestHelpers
 }
 
 function getWithRequest (request: APIRequestContext, token: string) {
@@ -118,9 +121,22 @@ export const test = base.extend<{}, MyOptions & MyFixtures>({
   }, { scope: 'worker' }],
   adminRequest: [async ({ adminPage }, use) => {
     const token = (await adminPage.evaluate(() => sessionStorage.getItem('token')))!
-    const applicantRequest = await adminPage.context().request
-    const post = postWithRequest(applicantRequest, token)
-    await use({ request: applicantRequest, get: getWithRequest(applicantRequest, token), post, graphql: graphqlWithPost(post) })
+    const adminRequest = await adminPage.context().request
+    const post = postWithRequest(adminRequest, token)
+    await use({ request: adminRequest, get: getWithRequest(adminRequest, token), post, graphql: graphqlWithPost(post) })
+  }, { scope: 'worker' }],
+  suPage: [async ({ browser }, use) => {
+    const context = await browser.newContext()
+    const suPage = await context.newPage()
+    await loginAs(suPage, 'su')
+    await use(suPage)
+    await context.close()
+  }, { scope: 'worker' }],
+  suRequest: [async ({ suPage }, use) => {
+    const token = (await suPage.evaluate(() => sessionStorage.getItem('token')))!
+    const suRequest = await suPage.context().request
+    const post = postWithRequest(suRequest, token)
+    await use({ request: suRequest, get: getWithRequest(suRequest, token), post, graphql: graphqlWithPost(post) })
   }, { scope: 'worker' }]
 })
 
