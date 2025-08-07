@@ -12,6 +12,7 @@ async function main () {
   await server.app.register(analyticsPlugin, { appName: 'reqquest', authorize: req => !!req.auth?.username.length })
 
   const userTypes: Record<string, { groups: string[], otherInfo: { email: {} } }> = {
+    su: { groups: ['sudoers'], otherInfo: { email: {} } },
     admin: { groups: ['administrators'], otherInfo: { email: {} } },
     reviewer: { groups: ['reviewers'], otherInfo: { email: {} } },
     applicant: { groups: ['applicants'], otherInfo: { email: {} } }
