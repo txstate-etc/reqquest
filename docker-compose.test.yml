@@ -6,7 +6,7 @@ services:
     build:
       context: .
       dockerfile: testserver/Dockerfile
-    attach: false
+    # attach: false
     environment:
       TZ: America/Chicago
       NODE_ENV: development
@@ -28,7 +28,7 @@ services:
     build:
       context: .
       dockerfile: ui/Dockerfile
-    attach: false
+    # attach: false
     environment:
       PUBLIC_API_BASE: http://api
       PUBLIC_AUTH_REDIRECT: http://fakeauth/login?clientId=reqquest&returnUrl=http%3A%2F%2Fui
@@ -43,20 +43,27 @@ services:
         condition: service_healthy
       api:
         condition: service_healthy
+      fakeauth:
+        condition: service_healthy
     build:
       context: .
       dockerfile: test/Dockerfile
-    attach: true
+    # attach: true
     environment:
       AUTH_REDIRECT: http://fakeauth/login?clientId=reqquest&returnUrl=http%3A%2F%2Fui
     volumes:
       - ./test/test-results:/test-results
   fakeauth:
     image: registry.its.txstate.edu/unified-auth-stub:dev
-    attach: false
+    # attach: false
+    healthcheck:
+      test: ["CMD", "wget", "-q", "http://127.0.0.1/health"]
+      interval: 2s
+      timeout: 0.5s
+      retries: 500
   mysql:
     image: percona/percona-server:8.4
-    attach: false
+    # attach: false
     environment:
       MYSQL_ROOT_PASSWORD: secret
       MYSQL_DATABASE: default_database
