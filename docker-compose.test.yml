@@ -19,6 +19,11 @@ services:
       RESET_DB_ON_STARTUP: 'true'
       ELASTIC_APM_ACTIVE: 'false'
       VALID_ORIGIN_HOSTS: ui
+    healthcheck:
+      test: ["CMD", "wget", "-q", "http://127.0.0.1/health"]
+      interval: 2s
+      timeout: 0.5s
+      retries: 500
   ui:
     build:
       context: .
@@ -27,7 +32,17 @@ services:
     environment:
       PUBLIC_API_BASE: http://api
       PUBLIC_AUTH_REDIRECT: http://fakeauth/login?clientId=reqquest&returnUrl=http%3A%2F%2Fui
+    healthcheck:
+      test: ["CMD", "wget", "-q", "http://127.0.0.1/"]
+      interval: 2s
+      timeout: 0.5s
+      retries: 500
   testing-container:
+    depends_on:
+      ui:
+        condition: service_healthy
+      api:
+        condition: service_healthy
     build:
       context: .
       dockerfile: test/Dockerfile
