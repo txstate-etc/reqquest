@@ -207,7 +207,7 @@ test.describe('App Request workflows', () => {
   /** TEST: 'Applicant - update available prompt' is a large recurring test that exercises prompts that are not answered and become available */
   let availableUnasweredPromptsExist = true
   let promptIteration = 0
-  while (availableUnasweredPromptsExist) {
+  while (availableUnasweredPromptsExist && (promptIteration < promptMapPass.size)) {
     test(`Applicant - update available and not answered prompt ${promptIteration} with passing data`, async ({ applicantRequest }) => {
       promptIteration++
       const query_get_prompts = `
@@ -251,7 +251,7 @@ test.describe('App Request workflows', () => {
       // update unanswered available prompts
       for (const availablePrompt of allAvailableUnansweredPrompts) {
         const promptMap = promptMapPass.get(availablePrompt.key)
-        if (promptMap) {
+        if (promptMap) { // only test if map to valid prompt data exists
           for (const [key, value] of Object.entries(promptMap)) {
             const query_update_prompt_variables = { promptId: availablePrompt.id, data: value, validateOnly: false }
             const { updatePrompt } = await applicantRequest.graphql<{ updatePrompt: { success: boolean, messages: { message: string }[] } }>(query_update_prompt, query_update_prompt_variables)
