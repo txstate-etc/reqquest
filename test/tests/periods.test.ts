@@ -112,7 +112,7 @@ test.describe('Manage periods', () => {
     `
     const variables = { name, code, openDate }
     const { createPeriod } = await adminRequest.graphql<{ createPeriod: { period: { id: string, name: string, code: string, openDate: string }, messages: { message: string }[] } }>(query, variables)
-    expect(createPeriod.messages[0].message).toEqual('Code is already in use.')
+    expect(createPeriod.messages[0].message).toEqual('Name is already in use.')
   })
   test('Applicant - Create new period', async ({ applicantRequest }) => {
     const query = `
