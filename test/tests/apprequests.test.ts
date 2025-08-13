@@ -207,8 +207,9 @@ test.describe('App Request workflows', () => {
   /** TEST: 'Applicant - update available prompt' is a large recurring test that exercises prompts that are not answered and become available */
   let availableUnasweredPromptsExist = true
   let promptIteration = 0
-  while (availableUnasweredPromptsExist && (promptIteration < promptMapPass.size)) {
-    test(`Applicant - update available and not answered prompt ${promptIteration} with passing data`, async ({ applicantRequest }) => {
+  // while (availableUnasweredPromptsExist && (promptIteration < promptMapPass.size)) {
+  test('Applicant - recurring update next available and not answered prompts with passing data', async ({ applicantRequest }) => {
+    while (availableUnasweredPromptsExist && (promptIteration < promptMapPass.size)) {
       promptIteration++
       const query_get_prompts = `
         query GetPromptsForRequest($appRequestIds: [ID!]) {
@@ -259,6 +260,6 @@ test.describe('App Request workflows', () => {
           }
         }
       }
-    })
-  }
+    }
+  })
 })
