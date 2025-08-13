@@ -21,6 +21,7 @@ async function main () {
 
   await server.start({
     appConfig: {
+      multipleRequestsPerPeriod: true,
       userLookups: {
         byLogins: async (logins: any[], applicableGroups: any) => {
           return logins.filter(login => userTypePrefixes.some(p => login.startsWith(p))).map(login => ({ login, fullname: `${login} Full Name`, groups: userTypes[userTypePrefixes.find(p => login.startsWith(p))!].groups, otherInfo: { email: `${login}@txstate.edu` } }))

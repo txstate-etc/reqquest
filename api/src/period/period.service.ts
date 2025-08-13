@@ -61,10 +61,15 @@ export class PeriodService extends AuthService<Period> {
 
   async validate (period: PeriodUpdate, id?: string) {
     const response = new ValidatedPeriodResponse({ success: true })
-    const existing = period.code ? await getPeriods({ codes: [period.code] }) : []
+    const existingName = period.name ? await getPeriods({ names: [period.name] }) : []
+    const existingCode = period.code ? await getPeriods({ codes: [period.code] }) : []
     if (id) {
-      if (existing.length && !existing.find(p => p.id === id)) response.addMessage('Code is already in use.', 'period.code')
-    } else if (existing.length) response.addMessage('Code is already in use.', 'period.code')
+      if (existingName.length && !existingName.find(p => p.id === id)) response.addMessage('Name is already in use.', 'period.name')
+      if (existingCode.length && !existingCode.find(p => p.id === id)) response.addMessage('Code is already in use.', 'period.code')
+    } else {
+      if (existingName.length) response.addMessage('Name is already in use.', 'period.name')
+      if (existingCode.length) response.addMessage('Code is already in use.', 'period.code')
+    }
     if (isBlank(period.name)) response.addMessage('Name is required.', 'period.name')
     if (period.openDate == null) response.addMessage('Open date is required.', 'period.openDate')
     if (period.closeDate != null && period.closeDate < period.openDate) {
@@ -87,7 +92,7 @@ export class PeriodService extends AuthService<Period> {
       this.loaders.clear()
       response.period = await this.findById(String(id))
     } catch (e: any) {
-      if (e.errno === 1022) response.addMessage('Code is already in use.', 'update.code')
+      if (e.errno === 1022) response.addMessage(e.message)
       else throw e
     }
     return response

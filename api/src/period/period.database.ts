@@ -40,6 +40,9 @@ function processFilters (filters?: PeriodFilters) {
   if (filters?.ids?.length) {
     where.push(`p.id IN (${db.in(binds, filters.ids)})`)
   }
+  if (filters?.names?.length) {
+    where.push(`p.name IN (${db.in(binds, filters.names)})`)
+  }
   if (filters?.codes?.length) {
     where.push(`p.code IN (${db.in(binds, filters.codes)})`)
   }
