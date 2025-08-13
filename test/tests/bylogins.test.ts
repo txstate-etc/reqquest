@@ -4,7 +4,7 @@ test.describe('ByLogins admin flow', () => {
   const uniqueAdmin: string = 'admin_01'
   test.use({ login: uniqueAdmin })
   test('Account details should be updated from seed data post upsert', async ({ request }) => {
-    const { accessUsers } = await request.graphql<{ accessUsers: { login: string }[] }>(`
+    const { accessUsers } = await request.graphql<{ accessUsers: { login: string, fullname: string, otherInfo: { email: string } }[] }>(`
       {
         accessUsers (filter: { self: true }) {
           login
