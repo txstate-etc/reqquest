@@ -66,6 +66,9 @@ export class PeriodFilters {
   @Field({ nullable: true, description: 'Return periods that were archived before this date.' })
   archiveBefore?: DateTime
 
+  @Field(() => [String], { nullable: true, description: 'Return periods that have any of these names.' })
+  names?: string[]
+
   @Field(() => [String], { nullable: true, description: 'Return periods that have any of these codes.' })
   codes?: string[]
 
