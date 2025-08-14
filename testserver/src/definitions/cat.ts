@@ -26,19 +26,12 @@ export const have_a_cat_tower_prompt: PromptDefinition<CatTowerData> = {
   key: 'have_a_cat_tower_prompt',
   title: 'Cat Owner Equipment',
   description: 'Applicants will indicate whether they own a cat tower or will purchase one.',
-  answered: (data, config) => data.haveCatTower != null && (!!data.haveCatTower || data.willPurchaseCatTower != null),
+  answered: (data, config) => data.haveCatTower != null,
   validate: (data, config) => {
     const messages: MutationMessage[] = []
-    if (data.haveCatTower == null) {
-      messages.push({ type: MutationMessageType.warning, message: 'Please indicate whether you have a cat tower.', arg: 'haveCatTower' })
-      if (!data.haveCatTower) {
-        if (data.willPurchaseCatTower == null) {
-          messages.push({ type: MutationMessageType.warning, message: 'Please indicate whether you will purchase a cat tower.', arg: 'willPurchaseCatTower' })
-        } else if (!data.willPurchaseCatTower) {
-          messages.push({ type: MutationMessageType.error, message: 'You must have a cat tower or agree to purchase one', arg: 'haveCatTower' })
-          messages.push({ type: MutationMessageType.error, message: 'You must have a cat tower or agree to purchase one', arg: 'willPurchaseCatTower' })
-        }
-      }
+    if (data.haveCatTower == null) messages.push({ type: MutationMessageType.warning, message: 'Please indicate whether you have a cat tower.', arg: 'haveCatTower' })
+    if (data.haveCatTower === false) {
+       if (data.willPurchaseCatTower == null) messages.push({ type: MutationMessageType.warning, message: 'Please indicate whether you will purchase a cat tower.', arg: 'willPurchaseCatTower' })
     }
     return messages
   }

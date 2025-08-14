@@ -76,7 +76,7 @@ export const which_state_prompt: PromptDefinition = {
   title: 'Where do you live?',
   description: 'Applicants will enter the state they live in.',
   fetch: async (data, config) => ({ stateList }),
-  answered: (data, config) => data.state !== null && !!stateList.find(list => list.value.localeCompare(data.state) === 0),
+  answered: (data, config) => data.state != null,
   validate: (data, config) => {
     const messages: MutationMessage[] = []
     if (data.state == null) {
