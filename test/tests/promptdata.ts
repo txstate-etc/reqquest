@@ -14,7 +14,7 @@ export const promptMapPass: Map<string, Map<string, any>> = new Map([
 export const promptMapFail: Map<string, Map<string, any>> = new Map([
   ['which_state_prompt', new Map<string, any>([['fail_0', { state: 'TT' }]])],
   ['have_yard_prompt', new Map<string, YardData>([['fail_0', { haveYard: false }]])],
-  ['have_a_cat_tower_prompt', new Map<string, CatTowerData>([['fail_0', { haveCatTower: 5, willPurchaseCatTower: false }]])],
+  ['have_a_cat_tower_prompt', new Map<string, CatTowerData>([['fail_0', { haveCatTower: false, willPurchaseCatTower: false }]])],
   ['not_allergic_to_tuna_prompt', new Map<string, TunaAllergyData>([['fail_0', { allergicToTuna: true }]])],
   ['must_exercise_your_dog_prompt', new Map<string, ExerciseData>([['fail_0', { exerciseHours: 1 }]])],
   ['applicant_seems_nice_prompt', new Map<string, NiceData>([['fail_0', { seemsNice: false }]])]
