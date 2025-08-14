@@ -17,7 +17,7 @@ export const which_state_req: RequirementDefinition = {
   }
 }
 
-const stateList = [
+const stateList:{ value: string, label:string }[] = [
   { value: 'AL', label: 'Alabama' },
   { value: 'AK', label: 'Alaska' },
   { value: 'AZ', label: 'Arizona' },
@@ -75,15 +75,18 @@ export const which_state_prompt: PromptDefinition = {
   key: 'which_state_prompt',
   title: 'Where do you live?',
   description: 'Applicants will enter the state they live in.',
-  answered: (data, config) => data.state != null,
+  fetch: async (data, config) => ({ stateList }),
+  answered: (data, config) => data.state !== null && !!stateList.find(list => list.value.localeCompare(data.state) === 0),
   validate: (data, config) => {
     const messages: MutationMessage[] = []
     if (data.state == null) {
       messages.push({ type: MutationMessageType.warning, message: 'Please enter the state you live in.', arg: 'state' })
+    } else {
+      if (!stateList.find(list => list.value.localeCompare(data.state) === 0)) messages.push({ type: MutationMessageType.error, message: 'Invalid state entered', arg: 'state' })
     }
+
     return messages
   },
-  fetch: async (data, config) => ({ stateList }),
   tags: [{
     category: 'state',
     categoryLabel: 'State',

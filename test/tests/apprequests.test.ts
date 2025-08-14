@@ -193,6 +193,66 @@ test.describe('App Request workflows', () => {
     expect(createAppRequest.messages[0].message.includes('A request already exists in')).toEqual(true)
   })
 
+  test('Applicant - recurring update all available prompts with FAILING data', async ({ applicantRequest }) => {
+    let promptsExist = true
+    let promptIteration = 0
+    while (promptsExist && (promptIteration < promptMapPass.size)) {
+      promptIteration++
+      const query_get_prompts = `
+        query GetPromptsForRequest($appRequestIds: [ID!]) {
+          appRequests(filter: {ids:$appRequestIds}) {
+            applications {
+              programKey
+              requirements {
+                smartTitle
+                prompts {
+                  id
+                  key
+                  title
+                  navTitle
+                  answered
+                  visibility
+                }
+              }
+            }
+          }
+        }
+      `
+      const query_update_prompt = `
+        mutation UpdatePrompt($promptId: ID!,$data: JsonData!,$validateOnly: Boolean, $dataVersion: Float){
+          updatePrompt(promptId:$promptId, data:$data, validateOnly:$validateOnly, dataVersion: $dataVersion){
+            success
+            messages {
+              message
+              type
+              arg
+            }
+          }
+        }
+      `
+      const query_get_prompt_variables = { appRequestIds: [appRequestId] }
+      const { appRequests } = await applicantRequest.graphql<{ appRequests: { applications: { programKey: string, requirements: { smartTitle: string, prompts: { id: number, key: string, answered: string, visibility: string }[] }[] }[] }[] }>(query_get_prompts, query_get_prompt_variables)
+      expect(appRequests[0].applications.length).toBeGreaterThanOrEqual(1)
+
+      const allPrompts = appRequests.flatMap(appReq => appReq.applications.flatMap(app => app.requirements.flatMap(req => req.prompts.filter(prompt => prompt.visibility === 'AVAILABLE'))))
+      if (allPrompts.length < 1) promptsExist = false
+      // update unanswered available prompts
+      for (const availablePrompt of allPrompts) {
+        const promptMap = promptMapFail.get(availablePrompt.key)
+        if (promptMap) { // only test if map to valid prompt data exists
+          for (const value of promptMap) {
+            console.log(`***Fail data ${JSON.stringify(value[1])}`)
+            console.log(`***Add fail data to prompt ${availablePrompt.key}`)
+            const query_update_prompt_variables = { promptId: availablePrompt.id, data: value[1], validateOnly: false }
+            const response = await applicantRequest.graphql<{ updatePrompt: { success: boolean, messages: { message: string }[] } }>(query_update_prompt, query_update_prompt_variables)
+            console.log(`Fail response: ${JSON.stringify(response)}`)
+            expect(response.updatePrompt.success).toEqual(false)
+          }
+        }
+      }
+    }
+  })
+
   test('Applicant - recurring update next available and not answered prompts with passing data', async ({ applicantRequest }) => {
     let availableUnasweredPromptsExist = true
     let promptIteration = 0
@@ -231,76 +291,21 @@ test.describe('App Request workflows', () => {
         }
       `
       const query_get_prompt_variables = { appRequestIds: [appRequestId] }
-      const { appRequests } = await applicantRequest.graphql<{ appRequests: { applications: { programKey: string, requirements: { smartTitle: string, prompts: { id: number, key: string, answered: string, visibility: string }[] }[] }[] }[] }>(query_get_prompts, query_get_prompt_variables)
-      expect(appRequests[0].applications.length).toBeGreaterThanOrEqual(1)
+      const response = await applicantRequest.graphql<{ appRequests: { applications: { programKey: string, requirements: { smartTitle: string, prompts: { id: number, key: string, answered: string, visibility: string }[] }[] }[] }[] }>(query_get_prompts, query_get_prompt_variables)
+      console.log(`Success response: ${JSON.stringify(response)}`)
+      expect(response.appRequests[0].applications.length).toBeGreaterThanOrEqual(1)
 
-      const allAvailableUnansweredPrompts = appRequests.flatMap(appReq => appReq.applications.flatMap(app => app.requirements.flatMap(req => req.prompts.filter(prompt => !prompt.answered && prompt.visibility === 'AVAILABLE'))))
+      const allAvailableUnansweredPrompts = response.appRequests.flatMap(appReq => appReq.applications.flatMap(app => app.requirements.flatMap(req => req.prompts.filter(prompt => !prompt.answered && prompt.visibility === 'AVAILABLE'))))
       if (allAvailableUnansweredPrompts.length < 1) availableUnasweredPromptsExist = false
       // update unanswered available prompts
       for (const availablePrompt of allAvailableUnansweredPrompts) {
         const promptMap = promptMapPass.get(availablePrompt.key)
         if (promptMap) { // only test if map to valid prompt data exists
           for (const value of promptMap) {
+            console.log(`***Add pass data to prompt ${availablePrompt.key}`)
             const query_update_prompt_variables = { promptId: availablePrompt.id, data: value[1], validateOnly: false }
             const { updatePrompt } = await applicantRequest.graphql<{ updatePrompt: { success: boolean, messages: { message: string }[] } }>(query_update_prompt, query_update_prompt_variables)
             expect(updatePrompt.success).toEqual(true)
-          }
-        }
-      }
-    }
-  })
-
-  test('Applicant - recurring update next available and not answered prompts with FAILING data', async ({ applicantRequest }) => {
-    let availableUnasweredPromptsExist = true
-    let promptIteration = 0
-    while (availableUnasweredPromptsExist && (promptIteration < promptMapPass.size)) {
-      promptIteration++
-      const query_get_prompts = `
-        query GetPromptsForRequest($appRequestIds: [ID!]) {
-          appRequests(filter: {ids:$appRequestIds}) {
-            applications {
-              programKey
-              requirements {
-                smartTitle
-                prompts {
-                  id
-                  key
-                  title
-                  navTitle
-                  answered
-                  visibility
-                }
-              }
-            }
-          }
-        }
-      `
-      const query_update_prompt = `
-        mutation UpdatePrompt($promptId: ID!,$data: JsonData!,$validateOnly: Boolean, $dataVersion: Float){
-          updatePrompt(promptId:$promptId, data:$data, validateOnly:$validateOnly, dataVersion: $dataVersion){
-            success
-            messages {
-              message
-              type
-              arg
-            }
-          }
-        }
-      `
-      const query_get_prompt_variables = { appRequestIds: [appRequestId] }
-      const { appRequests } = await applicantRequest.graphql<{ appRequests: { applications: { programKey: string, requirements: { smartTitle: string, prompts: { id: number, key: string, answered: string, visibility: string }[] }[] }[] }[] }>(query_get_prompts, query_get_prompt_variables)
-      expect(appRequests[0].applications.length).toBeGreaterThanOrEqual(1)
-
-      const allAvailableUnansweredPrompts = appRequests.flatMap(appReq => appReq.applications.flatMap(app => app.requirements.flatMap(req => req.prompts.filter(prompt => !prompt.answered && prompt.visibility === 'AVAILABLE'))))
-      if (allAvailableUnansweredPrompts.length < 1) availableUnasweredPromptsExist = false
-      // update unanswered available prompts
-      for (const availablePrompt of allAvailableUnansweredPrompts) {
-        const promptMap = promptMapFail.get(availablePrompt.key)
-        if (promptMap) { // only test if map to valid prompt data exists
-          for (const value of promptMap) {
-            const query_update_prompt_variables = { promptId: availablePrompt.id, data: value[1], validateOnly: false }
-            const { updatePrompt } = await applicantRequest.graphql<{ updatePrompt: { success: boolean, messages: { message: string }[] } }>(query_update_prompt, query_update_prompt_variables)
-            expect(updatePrompt.success).toEqual(false)
           }
         }
       }
