@@ -25,6 +25,8 @@ export const have_yard_prompt: PromptDefinition<YardData, YardData> = {
       else if (data.totalPets < 1) {
         messages.push({ type: MutationMessageType.error, message: 'Please enter a valid number of pets.' + (data.totalPets === 0 ? ' Remember to include this pet in your total.' : ''), arg: 'totalPets' })
       }
+    } else {
+      messages.push({ type: MutationMessageType.error, message: 'You must have a yard.', arg: 'haveYard' })
     }
     return messages
   }
