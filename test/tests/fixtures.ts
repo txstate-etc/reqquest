@@ -26,11 +26,13 @@ type MyFixtures = {
   loginPage: Page
   reviewerPage: Page
   applicantPage: Page
+  applicant2Page: Page
   adminPage: Page
   suPage: Page
   request: RequestHelpers
   reviewerRequest: RequestHelpers
   applicantRequest: RequestHelpers
+  applicant2Request: RequestHelpers
   adminRequest: RequestHelpers
   suRequest: RequestHelpers
 }
@@ -111,6 +113,19 @@ export const test = base.extend<{}, MyOptions & MyFixtures>({
     const applicantRequest = await applicantPage.context().request
     const post = postWithRequest(applicantRequest, token)
     await use({ request: applicantRequest, get: getWithRequest(applicantRequest, token), post, graphql: graphqlWithPost(post) })
+  }, { scope: 'worker' }],
+  applicant2Page: [async ({ browser }, use) => {
+    const context = await browser.newContext()
+    const applicantPage = await context.newPage()
+    await loginAs(applicantPage, 'applicant2')
+    await use(applicantPage)
+    await context.close()
+  }, { scope: 'worker' }],
+  applicant2Request: [async ({ applicant2Page }, use) => {
+    const token = (await applicant2Page.evaluate(() => sessionStorage.getItem('token')))!
+    const applicant2Request = await applicant2Page.context().request
+    const post = postWithRequest(applicant2Request, token)
+    await use({ request: applicant2Request, get: getWithRequest(applicant2Request, token), post, graphql: graphqlWithPost(post) })
   }, { scope: 'worker' }],
   adminPage: [async ({ browser }, use) => {
     const context = await browser.newContext()
