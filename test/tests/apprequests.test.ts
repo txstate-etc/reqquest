@@ -9,6 +9,7 @@ test.describe('App Request workflows', () => {
   const openDate = '2025-07-01T00:00:00.000-05:00'
   const closeDate = '2025-09-01T00:00:00.000-05:00'
   const applicantLogin = 'applicant'
+  const applicant2Login = 'applicant2'
   const timeZone = 'America/Chicago'
   let periodId = 0
   test('Admin - Create new period for appRequests', async ({ adminRequest }) => {
@@ -250,6 +251,26 @@ test.describe('App Request workflows', () => {
     }
   })
 
+  // Submit with non passing data
+  test('Applicant - submit app request with non passing data', async ({ applicantRequest }) => {
+    const query = `
+      mutation SubmitAppRequest($appRequestId:ID!) {
+        submitAppRequest(appRequestId: $appRequestId) {
+          success
+          messages{
+            message
+            arg
+            type
+          }
+        }
+      }
+    `
+    const variables = { appRequestId }
+    const response = await applicantRequest.graphql<{ errors: { message: string }[] }>(query, variables)
+    expect(response.errors[0].message.includes('You may not submit this app request.')).toEqual(true)
+  })
+
+  // Note: this next test should actually result in no updates to answers as all previously AVAILABLE and unanswered prompts have non passing data
   test('Applicant - recurring update next available and not answered prompts with passing data', async ({ applicantRequest }) => {
     let availableUnasweredPromptsExist = true
     let promptIteration = 0
@@ -305,5 +326,145 @@ test.describe('App Request workflows', () => {
         }
       }
     }
+  })
+
+  // Submit with non passing data
+  test('Applicant - submit app request with non updated and non passing data', async ({ applicantRequest }) => {
+    const query = `
+      mutation SubmitAppRequest($appRequestId:ID!) {
+        submitAppRequest(appRequestId: $appRequestId) {
+          success
+          messages{
+            message
+            arg
+            type
+          }
+        }
+      }
+    `
+    const variables = { appRequestId }
+    const response = await applicantRequest.graphql<{ errors: { message: string }[] }>(query, variables)
+    expect(response.errors[0].message.includes('You may not submit this app request.')).toEqual(true)
+  })
+
+  test('Applicant 2 - create app request for applicant 1 in reviewed period', async ({ applicant2Request }) => {
+    const query = `
+      mutation CreateAppRequest($login:String!, $periodId: ID!, $validateOnly: Boolean) {
+        createAppRequest(login: $login, periodId:$periodId, validateOnly: $validateOnly) {
+          appRequest {
+            id
+            applicant {
+              login
+            }
+          }
+          messages{
+            message
+          }
+        }
+      }
+    `
+    const variables = { login: applicantLogin, periodId, validateOnly: false }
+    const response = await applicant2Request.graphql<{ errors: { message: string }[] }>(query, variables)
+    expect(response.errors[0].message).toEqual('You may not create requests for other people.')
+  })
+
+  // New app request as second applicant
+  let appRequest2Id = 0
+  test('Applicant 2 - create app request in reviewed period', async ({ applicant2Request }) => {
+    const query = `
+      mutation CreateAppRequest($login:String!, $periodId: ID!, $validateOnly: Boolean) {
+        createAppRequest(login: $login, periodId:$periodId, validateOnly: $validateOnly) {
+          appRequest {
+            id
+            applicant {
+              login
+            }
+          }
+          messages{
+            message
+          }
+        }
+      }
+    `
+    const variables = { login: applicant2Login, periodId, validateOnly: false }
+    const response = await applicant2Request.graphql<{ createAppRequest: { appRequest: { id: number, applicant: { login: string } }, messages: { message: string }[] } }>(query, variables)
+    appRequest2Id = response.createAppRequest.appRequest.id
+    expect(response.createAppRequest.appRequest.applicant.login).toEqual(applicant2Login)
+  })
+
+  test('Applicant 2 - recurring update next available and not answered prompts with passing data', async ({ applicant2Request }) => {
+    let availableUnasweredPromptsExist = true
+    let promptIteration = 0
+    while (availableUnasweredPromptsExist && (promptIteration < promptMapPass.size)) {
+      promptIteration++
+      const query_get_prompts = `
+        query GetPromptsForRequest($appRequestIds: [ID!]) {
+          appRequests(filter: {ids:$appRequestIds}) {
+            applications {
+              programKey
+              requirements {
+                smartTitle
+                prompts {
+                  id
+                  key
+                  title
+                  navTitle
+                  answered
+                  visibility
+                }
+              }
+            }
+          }
+        }
+      `
+      const query_update_prompt = `
+        mutation UpdatePrompt($promptId: ID!,$data: JsonData!,$validateOnly: Boolean, $dataVersion: Float){
+          updatePrompt(promptId:$promptId, data:$data, validateOnly:$validateOnly, dataVersion: $dataVersion){
+            success
+            messages {
+              message
+              type
+              arg
+            }
+          }
+        }
+      `
+      const query_get_prompt_variables = { appRequestIds: [appRequest2Id] }
+      const response = await applicant2Request.graphql<{ appRequests: { applications: { programKey: string, requirements: { smartTitle: string, prompts: { id: number, key: string, answered: string, visibility: string }[] }[] }[] }[] }>(query_get_prompts, query_get_prompt_variables)
+      expect(response.appRequests[0].applications.length).toBeGreaterThanOrEqual(1)
+
+      const allAvailableUnansweredPrompts = response.appRequests.flatMap(appReq => appReq.applications.flatMap(app => app.requirements.flatMap(req => req.prompts.filter(prompt => !prompt.answered && prompt.visibility === 'AVAILABLE'))))
+      if (allAvailableUnansweredPrompts.length < 1) availableUnasweredPromptsExist = false
+      // update unanswered available prompts
+      for (const availablePrompt of allAvailableUnansweredPrompts) {
+        const promptMap = promptMapPass.get(availablePrompt.key)
+        if (promptMap) { // only test if map to valid prompt data exists
+          for (const value of promptMap) {
+            const query_update_prompt_variables = { promptId: availablePrompt.id, data: value[1], validateOnly: false }
+            const { updatePrompt } = await applicant2Request.graphql<{ updatePrompt: { appRequest: { data: any }, success: boolean, messages: { message: string }[] } }>(query_update_prompt, query_update_prompt_variables)
+            expect(updatePrompt.success).toEqual(true)
+          }
+        }
+      }
+    }
+  })
+  // Submit with passing data
+  test('Applicant 2 - submit app request with passing data', async ({ applicant2Request }) => {
+    const query = `
+      mutation SubmitAppRequest($appRequestId:ID!) {
+        submitAppRequest(appRequestId: $appRequestId) {
+          success
+          messages{
+            message
+            arg
+            type
+          }
+        }
+      }
+    `
+    const variables = { appRequestId: appRequest2Id }
+    const response = await applicant2Request.graphql<{ submitAppRequest: { appRequest: { id: string, status: string }, messages: { arg: String, message: string, type: string }[], success: boolean } }>(query, variables)
+    console.log(`Applicant 2 submit app request ${JSON.stringify(response)}`)
+    expect(response.submitAppRequest.success).toEqual(true)
   })
 })
