@@ -16,7 +16,7 @@ export const which_state_req: RequirementDefinition = {
   }
 }
 
-const stateList:{ value: string, label:string }[] = [
+const stateList: { value: string, label: string }[] = [
   { value: 'AL', label: 'Alabama' },
   { value: 'AK', label: 'Alaska' },
   { value: 'AZ', label: 'Arizona' },

@@ -31,7 +31,7 @@ export const have_a_cat_tower_prompt: PromptDefinition<CatTowerData> = {
     const messages: MutationMessage[] = []
     if (data.haveCatTower == null) messages.push({ type: MutationMessageType.warning, message: 'Please indicate whether you have a cat tower.', arg: 'haveCatTower' })
     if (data.haveCatTower === false) {
-       if (data.willPurchaseCatTower == null) messages.push({ type: MutationMessageType.warning, message: 'Please indicate whether you will purchase a cat tower.', arg: 'willPurchaseCatTower' })
+      if (data.willPurchaseCatTower == null) messages.push({ type: MutationMessageType.warning, message: 'Please indicate whether you will purchase a cat tower.', arg: 'willPurchaseCatTower' })
     }
     return messages
   }
