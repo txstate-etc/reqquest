@@ -1,51 +1,85 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
-import { ApplicationRow, AppRequest, ProgramDefinition, programRegistry } from '../internal.js'
+import { ApplicationRow, ProgramDefinition, programRegistry } from '../internal.js'
 
 export enum ApplicationStatus {
-  PREQUAL = 'PREQUAL',
-  FAILED_PREQUAL = 'FAILED_PREQUAL',
-  QUALIFICATION = 'QUALIFICATION',
-  FAILED_QUALIFICATION = 'FAILED_QUALIFICATION',
-  READY_TO_SUBMIT = 'READY_TO_SUBMIT',
-  PREAPPROVAL = 'PREAPPROVAL',
-  APPROVAL = 'APPROVAL',
-  APPROVED = 'APPROVED',
-  NOT_APPROVED = 'NOT_APPROVED',
-  ACCEPTANCE = 'ACCEPTANCE',
+  PENDING = 'PENDING',
+  ELIGIBLE = 'ELIGIBLE',
+  INELIGIBLE = 'INELIGIBLE',
   ACCEPTED = 'ACCEPTED',
-  NOT_ACCEPTED = 'NOT_ACCEPTED',
-  CANCELLED = 'CANCELLED',
-  WITHDRAWN = 'WITHDRAWN'
+  REJECTED = 'REJECTED'
 }
 registerEnumType(ApplicationStatus, {
   name: 'ApplicationStatus',
   description: `
     The status of an application. This is usually a computed field, not stored in the database. The status
     is computed based on the status of the appRequest and of the requirements for the program. If
-    the appRequest is CLOSED, the status should permanently match the ApplicationStatusDB instead of being
-    computed. If the appRequest is CANCELLED, all applications should be CANCELLED as well.
+    the appRequest is CLOSED or CANCELLED, this status will remain frozen wherever it was before the
+    closure / cancellation.
   `,
   valuesConfig: {
-    PREQUAL: { description: 'The appRequest has not finished pre-qualification yet. This application does not quite exist yet and probably should not appear in the UI.' },
-    QUALIFICATION: { description: 'The application has been pre-qualified and is awaiting further input from the applicant.' },
-    READY_TO_SUBMIT: { description: 'All requirements have been evaluated as MET or NOT_APPLICABLE. The application is ready to be submitted.' },
-    PREAPPROVAL: { description: 'The application has been submitted and is awaiting preapproval.' },
-    APPROVAL: { description: 'The application has been submitted, has passed preapproval, and is awaiting approval.' },
-    APPROVED: { description: 'The application has been approved.' },
-    FAILED_PREQUAL: { description: 'The applicant is ineligible for the program according to the pre-qual requirements. The application/program should no longer be visible in the UI for this appRequest.' },
-    FAILED_QUALIFICATION: { description: 'The applicant is ineligible for the program according to the qualification requirements. The application/program should remain visible in the UI and any applicable statusReason from the associated requirements should be displayed.' },
-    NOT_APPROVED: { description: 'The application has not been approved.' },
-    ACCEPTANCE: { description: 'The application has been approved and an offer has been submitted for applicant acceptance. This status is only possible for programs with at least one ACCEPTANCE requirement.' },
-    ACCEPTED: { description: 'The application\'s benefit has been accepted by the applicant. This status is only possible for programs with at least one ACCEPTANCE requirement.' },
-    NOT_ACCEPTED: { description: 'The application\'s benefit was rejected by the applicant. This status is only possible for programs with at least one ACCEPTANCE requirement.' },
-    WITHDRAWN: { description: 'The appRequest (and thus the application inside it) was withdrawn after being submitted. If it is re-opened, it will re-open in submitted state.' },
-    CANCELLED: { description: `
-      The appRequest (and thus the application inside it) has been cancelled by the applicant. In
-      some cases, individual programs may have a requirement that the applicant agrees that they
-      desire to apply. In that case the appRequest status is not CANCELLED, and neither is the application
-      status. It will actually be FAILED_PREQUAL or FAILED_QUALIFICATION, and the statusReason of the
-      requirement will explain that the applicant did not wish to pursue the application.
-    ` }
+    PENDING: { description: 'The application status has not yet been determined. Further prompts must be answered.' },
+    ELIGIBLE: { description: 'All application requirements up to and including WORKFLOW_BLOCKING requirements are resolving as MET (or NOT_APPLICABLE or WARNING). If there is an acceptance phase, the acceptance is still pending.' },
+    INELIGIBLE: { description: 'At least one application requirement up to and including WORKFLOW_BLOCKING requirements is not met. The review cannot proceed, but the first or current stage of the workflow should still continue.' },
+    ACCEPTED: { description: 'An offer was made to the applicant and all ACCEPTANCE requirements are met (the applicant accepted the offer).' },
+    REJECTED: { description: 'An offer was made to the applicant and at least one ACCEPTANCE requirement is not met (the applicant rejected the offer).' }
+  }
+})
+
+export enum ApplicationPhase {
+  PREQUAL = 'PREQUAL',
+  QUALIFICATION = 'QUALIFICATION',
+  READY_TO_SUBMIT = 'READY_TO_SUBMIT',
+  PREAPPROVAL = 'PREAPPROVAL',
+  APPROVAL = 'APPROVAL',
+  READY_FOR_WORKFLOW = 'READY_FOR_WORKFLOW',
+  WORKFLOW_BLOCKING = 'WORKFLOW_BLOCKING',
+  READY_FOR_OFFER = 'READY_FOR_OFFER',
+  ACCEPTANCE = 'ACCEPTANCE',
+  READY_TO_ACCEPT = 'READY_TO_ACCEPT',
+  WORKFLOW_NONBLOCKING = 'WORKFLOW_NONBLOCKING',
+  COMPLETE = 'COMPLETE'
+}
+
+registerEnumType(ApplicationPhase, {
+  name: 'ApplicationPhase',
+  description: `
+    The phase of the application. This is usually a computed field, not stored in the database. The phase
+    is computed based on the status of the appRequest and of the requirements for the program.
+  `,
+  valuesConfig: {
+    PREQUAL: { description: 'The appRequest has not finished pre-qual yet. The application doesn\'t properly exist yet.' },
+    QUALIFICATION: { description: 'The applicant is filling out their portion of prompts and has not yet finished.' },
+    READY_TO_SUBMIT: { description: 'The applicant has filled out their portion of the prompts but has not yet submitted for review.' },
+    PREAPPROVAL: { description: 'The applicant has submitted the application, but there are automated prompts that need to be filled in before the application will appear on a reviewer\'s dashboard.' },
+    APPROVAL: { description: 'The applicant has submitted the application and any PREAPPROVAL requirements are passing. The application is under review.' },
+    READY_FOR_WORKFLOW: { description: 'No application requirements are PENDING. The application is ready for the first workflow stage, but a reviewer must manually advance the phase. This phase will be automatically skipped if there are no workflow stages configured/enabled.' },
+    WORKFLOW_BLOCKING: { description: 'The application review has been completed and now there is a workflow process to audit the review BEFORE marking the application status as eligible or ineligible. It should remain pending until the blocking workflow stages have been completed. Workflow stages that evaluate to INELIGIBLE will also make the application status INELIGIBLE. Prompts from the applicant and review phases are locked.' },
+    READY_FOR_OFFER: { description: 'The application has been reviewed and any blocking workflow stages have been completed. The application is ready for an offer to be made to the applicant. A reviewer must manually advanced the phase, and will do so for the whole appRequest, not one application at a time. So the application will sit in this state until all applications are ready for offer. If there is no acceptance phase (because there are no acceptance requirements), the makeOffer prompt will move the phase to WORKFLOW_NONBLOCKING or COMPLETE.' },
+    ACCEPTANCE: { description: 'The application has been reviewed and an offer has been made to the applicant. The applicant must accept the offer.' },
+    READY_TO_ACCEPT: { description: 'An offer has been made to the applicant. The acceptance requirements are no longer pending, the application is ready to be finalized.' },
+    WORKFLOW_NONBLOCKING: { description: 'The application has been offered and accepted and now there is a workflow process to audit the review AFTER marking the application status as eligible or ineligible. Requirements from non-blocking workflow states cannot affect the application status, but the application will not proceed to the complete phase until all workflow stages are non-PENDING.' },
+    COMPLETE: { description: 'The application has been reviewed. If there was a workflow, it is complete. If there was an acceptance phase, the offer was accepted or rejected.' }
+  }
+})
+
+export enum IneligiblePhases {
+  PREQUAL = 'PREQUAL',
+  QUALIFICATION = 'QUALIFICATION',
+  PREAPPROVAL = 'PREAPPROVAL',
+  APPROVAL = 'APPROVAL',
+  WORKFLOW = 'WORKFLOW',
+  ACCEPTANCE = 'ACCEPTANCE'
+}
+
+registerEnumType(IneligiblePhases, {
+  name: 'IneligiblePhases',
+  valuesConfig: {
+    PREQUAL: { description: 'The application became ineligible in the pre-qualification phase.' },
+    QUALIFICATION: { description: 'The application became ineligible in the qualification phase.' },
+    PREAPPROVAL: { description: 'The application became ineligible in the pre-approval phase.' },
+    APPROVAL: { description: 'The application became ineligible in the approval phase.' },
+    WORKFLOW: { description: 'The application became ineligible during blocking workflow.' },
+    ACCEPTANCE: { description: 'The application became ineligible in the acceptance phase.' }
   }
 })
 
@@ -60,6 +94,9 @@ export class Application {
     this.userInternalId = row.userId
     this.periodId = String(row.periodId)
     this.programKey = row.programKey
+    this.phase = row.computedPhase
+    this.ineligiblePhase = row.computedIneligiblePhase
+    this.workflowStageKey = row.workflowStage
     this.status = row.computedStatus
     this.statusReason = row.computedStatusReason
     this.title = this.program.title
@@ -69,6 +106,12 @@ export class Application {
 
   @Field(() => ID)
   id: string
+
+  @Field(type => ApplicationPhase, { description: 'The phase of the application. This is usually a computed field, not stored in the database.' })
+  phase: ApplicationPhase
+
+  @Field(type => IneligiblePhases, { nullable: true, description: 'The phase in which this application became ineligible for benefits. Useful for reporting / filtering. Null if the application is not (yet) ineligible.' })
+  ineligiblePhase?: IneligiblePhases
 
   @Field(() => ApplicationStatus)
   status: ApplicationStatus
@@ -93,6 +136,7 @@ export class Application {
   periodId: string
   program: ProgramDefinition
   authorizationKeys: Record<string, string[]>
+  workflowStageKey?: string
 }
 
 @ObjectType()

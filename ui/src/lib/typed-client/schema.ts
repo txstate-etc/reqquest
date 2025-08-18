@@ -249,15 +249,19 @@ export type AppRequestIndexDestination = 'APPLICANT_DASHBOARD' | 'APP_REQUEST_LI
  *     the database and the status of each application.
  *   
  */
-export type AppRequestStatus = 'ACCEPTANCE' | 'ACCEPTED' | 'APPROVAL' | 'APPROVED' | 'CANCELLED' | 'DISQUALIFIED' | 'NOT_ACCEPTED' | 'NOT_APPROVED' | 'PREAPPROVAL' | 'READY_TO_SUBMIT' | 'STARTED' | 'WITHDRAWN'
+export type AppRequestStatus = 'ACCEPTANCE' | 'ACCEPTED' | 'APPROVAL' | 'APPROVED' | 'CANCELLED' | 'DISQUALIFIED' | 'NOT_ACCEPTED' | 'NOT_APPROVED' | 'PREAPPROVAL' | 'READY_TO_ACCEPT' | 'READY_TO_SUBMIT' | 'STARTED' | 'WITHDRAWN'
 
 
 /** An application represents the applicant applying to a specific program. Each appRequest has multiple applications - one per program defined in the system. Some applications are mutually exclusive and/or will be eliminated early based on PREQUAL requirements, but they all technically exist in the data model - there is no concept of picking one application over another, just two applications where one dies and the other survives. */
 export interface Application {
     actions: ApplicationActions
     id: Scalars['ID']
+    /** The phase in which this application became ineligible for benefits. Useful for reporting / filtering. Null if the application is not (yet) ineligible. */
+    ineligiblePhase: (IneligiblePhases | null)
     /** The navigation title of the program this application is for. */
     navTitle: Scalars['String']
+    /** The phase of the application. This is usually a computed field, not stored in the database. */
+    phase: ApplicationPhase
     /** The program key this application corresponds to. */
     programKey: Scalars['String']
     requirements: ApplicationRequirement[]
@@ -266,6 +270,8 @@ export interface Application {
     statusReason: (Scalars['String'] | null)
     /** The title of the program this application is for. */
     title: Scalars['String']
+    /** If the program has workflow, it may be divided into multiple stages of audit, each with their own requirements/prompts. This indicates which stage we are currently evaluating, or null if we are not in the workflow phase. An application with no workflow defined will never be in the workflow phase. Starts at 1. */
+    workflowStage: (PeriodWorkflowStage | null)
     __typename: 'Application'
 }
 
@@ -273,6 +279,15 @@ export interface ApplicationActions {
     viewAsReviewer: Scalars['Boolean']
     __typename: 'ApplicationActions'
 }
+
+
+/**
+ * 
+ *     The phase of the application. This is usually a computed field, not stored in the database. The phase
+ *     is computed based on the status of the appRequest and of the requirements for the program.
+ *   
+ */
+export type ApplicationPhase = 'ACCEPTANCE' | 'APPROVAL' | 'COMPLETE' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION' | 'READY_FOR_OFFER' | 'READY_FOR_WORKFLOW' | 'READY_TO_ACCEPT' | 'READY_TO_SUBMIT' | 'WORKFLOW_BLOCKING' | 'WORKFLOW_NONBLOCKING'
 
 
 /** The specific instance of a requirement on a particular application. Stores the status of the requirement, e.g. being satisfied or not. */
@@ -288,8 +303,6 @@ export interface ApplicationRequirement {
     /** A human readable title for the requirement in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
     navTitle: Scalars['String']
     prompts: RequirementPrompt[]
-    /** When true, means that the requirement has not been made moot by an earlier requirement failing. It may still need to be hidden from navigation based on evaluatedInEarlierApplication. */
-    reachable: Scalars['Boolean']
     /** The smart title for this requirement in the app request's period. For instance, might be "Applicant must have GPA over 3.4" instead of the regular title "Applicant must meet GPA requirement". Will fall back to the regular title for any requirement that does not provide a smart title. */
     smartTitle: Scalars['String']
     /** The status of the requirement. This is what will be shown to users. */
@@ -300,6 +313,8 @@ export interface ApplicationRequirement {
     title: Scalars['String']
     /** The type of requirement. This determines when the requirement is evaluated and who can see the requirement. */
     type: RequirementType
+    /** The stage of the workflow for this requirement. Null if not part of a workflow stage */
+    workflowStage: (PeriodWorkflowStage | null)
     __typename: 'ApplicationRequirement'
 }
 
@@ -308,11 +323,11 @@ export interface ApplicationRequirement {
  * 
  *     The status of an application. This is usually a computed field, not stored in the database. The status
  *     is computed based on the status of the appRequest and of the requirements for the program. If
- *     the appRequest is CLOSED, the status should permanently match the ApplicationStatusDB instead of being
- *     computed. If the appRequest is CANCELLED, all applications should be CANCELLED as well.
+ *     the appRequest is CLOSED or CANCELLED, this status will remain frozen wherever it was before the
+ *     closure / cancellation.
  *   
  */
-export type ApplicationStatus = 'ACCEPTANCE' | 'ACCEPTED' | 'APPROVAL' | 'APPROVED' | 'CANCELLED' | 'FAILED_PREQUAL' | 'FAILED_QUALIFICATION' | 'NOT_ACCEPTED' | 'NOT_APPROVED' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION' | 'READY_TO_SUBMIT' | 'WITHDRAWN'
+export type ApplicationStatus = 'ACCEPTED' | 'ELIGIBLE' | 'INELIGIBLE' | 'PENDING' | 'REJECTED'
 
 export interface Configuration {
     actions: ConfigurationAccess
@@ -352,15 +367,29 @@ export interface IndexValue {
     __typename: 'IndexValue'
 }
 
+export type IneligiblePhases = 'ACCEPTANCE' | 'APPROVAL' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION' | 'WORKFLOW'
+
 export interface Mutation {
+    /** This is for the applicant to accept or reject the offer that was made based on their app request. The difference between accept and reject is determined by the status of the acceptance requirements. They will still "accept offer" after they answer that they do not want the offer. If there is non-blocking workflow on any applications, the first one in each will begin. Applications without non-blocking workflow will be advanced to the COMPLETE phase. If all applications are complete, the app request will be closed. */
+    acceptOffer: ValidatedAppRequestResponse
     /** Add a note to the app request. */
     addNote: ValidatedAppRequestResponse
+    /** Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to READY_FOR_OFFER. If all applications are READY_FOR_OFFER, automatically triggers the app request makeOffer mutation. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation. */
+    advanceWorkflow: ValidatedAppRequestResponse
+    /** Cancel or withdraw the app request, depending on its current phase. This is only available if the app request is in a cancellable state. */
+    cancelAppRequest: ValidatedAppRequestResponse
+    /** Close the app request. Generally this is always available and will freeze the request/applications in their current phase/status. */
+    closeAppRequest: ValidatedAppRequestResponse
     /** Create a new app request. */
     createAppRequest: ValidatedAppRequestResponse
     createPeriod: ValidatedPeriodResponse
     deletePeriod: ValidatedResponse
-    /** Make an offer on the app request. */
+    /** Make an offer on the app request. If all applications are ineligible, or if there are no acceptance requirements, the applications will advance to the non-blocking workflow, or absent that, be marked complete. */
     offerAppRequest: ValidatedAppRequestResponse
+    /** Reopen the app request. This is only available if the app request is in a state that allows reopening. */
+    reopenAppRequest: ValidatedAppRequestResponse
+    /** Return the app request to the applicant phase. This is only available if the app request is in a state that allows returning. */
+    returnAppRequest: ValidatedAppRequestResponse
     roleAddGrant: AccessRoleValidatedResponse
     roleCreate: AccessRoleValidatedResponse
     roleDelete: ValidatedResponse
@@ -469,6 +498,14 @@ export interface PeriodPrompt {
     __typename: 'PeriodPrompt'
 }
 
+export interface PeriodWorkflowStage {
+    /** Whether this stage is blocking. If true, the application cannot be completed and shown to the applicant until all requirements in this stage are satisfied. */
+    blocking: Scalars['Boolean']
+    /** A human readable title for the workflow stage. */
+    title: Scalars['String']
+    __typename: 'PeriodWorkflowStage'
+}
+
 export interface Program {
     key: Scalars['ID']
     navTitle: Scalars['String']
@@ -554,7 +591,7 @@ export interface RequirementPromptActions {
 
 export type RequirementStatus = 'DISQUALIFYING' | 'MET' | 'NOT_APPLICABLE' | 'PENDING' | 'WARNING'
 
-export type RequirementType = 'ACCEPTANCE' | 'APPROVAL' | 'POSTQUAL' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION'
+export type RequirementType = 'ACCEPTANCE' | 'APPROVAL' | 'POSTQUAL' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION' | 'WORKFLOW'
 
 export interface RoleActions {
     delete: Scalars['Boolean']
@@ -931,8 +968,12 @@ export interface AppRequestIndexFilter {category: Scalars['String'],tags: Scalar
 export interface ApplicationGenqlSelection{
     actions?: ApplicationActionsGenqlSelection
     id?: boolean | number
+    /** The phase in which this application became ineligible for benefits. Useful for reporting / filtering. Null if the application is not (yet) ineligible. */
+    ineligiblePhase?: boolean | number
     /** The navigation title of the program this application is for. */
     navTitle?: boolean | number
+    /** The phase of the application. This is usually a computed field, not stored in the database. */
+    phase?: boolean | number
     /** The program key this application corresponds to. */
     programKey?: boolean | number
     requirements?: ApplicationRequirementGenqlSelection
@@ -941,6 +982,8 @@ export interface ApplicationGenqlSelection{
     statusReason?: boolean | number
     /** The title of the program this application is for. */
     title?: boolean | number
+    /** If the program has workflow, it may be divided into multiple stages of audit, each with their own requirements/prompts. This indicates which stage we are currently evaluating, or null if we are not in the workflow phase. An application with no workflow defined will never be in the workflow phase. Starts at 1. */
+    workflowStage?: PeriodWorkflowStageGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -965,8 +1008,6 @@ export interface ApplicationRequirementGenqlSelection{
     /** A human readable title for the requirement in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
     navTitle?: boolean | number
     prompts?: RequirementPromptGenqlSelection
-    /** When true, means that the requirement has not been made moot by an earlier requirement failing. It may still need to be hidden from navigation based on evaluatedInEarlierApplication. */
-    reachable?: boolean | number
     /** The smart title for this requirement in the app request's period. For instance, might be "Applicant must have GPA over 3.4" instead of the regular title "Applicant must meet GPA requirement". Will fall back to the regular title for any requirement that does not provide a smart title. */
     smartTitle?: boolean | number
     /** The status of the requirement. This is what will be shown to users. */
@@ -977,6 +1018,8 @@ export interface ApplicationRequirementGenqlSelection{
     title?: boolean | number
     /** The type of requirement. This determines when the requirement is evaluated and who can see the requirement. */
     type?: boolean | number
+    /** The stage of the workflow for this requirement. Null if not part of a workflow stage */
+    workflowStage?: PeriodWorkflowStageGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -1036,16 +1079,30 @@ export interface IndexValueGenqlSelection{
 }
 
 export interface MutationGenqlSelection{
+    /** This is for the applicant to accept or reject the offer that was made based on their app request. The difference between accept and reject is determined by the status of the acceptance requirements. They will still "accept offer" after they answer that they do not want the offer. If there is non-blocking workflow on any applications, the first one in each will begin. Applications without non-blocking workflow will be advanced to the COMPLETE phase. If all applications are complete, the app request will be closed. */
+    acceptOffer?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Add a note to the app request. */
     addNote?: (ValidatedAppRequestResponseGenqlSelection & { __args: {content: Scalars['String'], 
     /** If true, the note will be marked as internal and only visible to reviewers. */
     internal: Scalars['Boolean']} })
+    /** Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to READY_FOR_OFFER. If all applications are READY_FOR_OFFER, automatically triggers the app request makeOffer mutation. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation. */
+    advanceWorkflow?: (ValidatedAppRequestResponseGenqlSelection & { __args: {applicationId: Scalars['ID']} })
+    /** Cancel or withdraw the app request, depending on its current phase. This is only available if the app request is in a cancellable state. */
+    cancelAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID'], 
+    /** If the user is currently viewing some of the app request details, include the dataVersion here to make the cancellation fail when the app request has been updated by another user. */
+    dataVersion?: (Scalars['Int'] | null)} })
+    /** Close the app request. Generally this is always available and will freeze the request/applications in their current phase/status. */
+    closeAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Create a new app request. */
     createAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {login: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     createPeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {period: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
     deletePeriod?: (ValidatedResponseGenqlSelection & { __args: {periodId: Scalars['ID']} })
-    /** Make an offer on the app request. */
+    /** Make an offer on the app request. If all applications are ineligible, or if there are no acceptance requirements, the applications will advance to the non-blocking workflow, or absent that, be marked complete. */
     offerAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
+    /** Reopen the app request. This is only available if the app request is in a state that allows reopening. */
+    reopenAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
+    /** Return the app request to the applicant phase. This is only available if the app request is in a state that allows returning. */
+    returnAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     roleAddGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grant: AccessRoleGrantCreate, roleId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     roleCreate?: (AccessRoleValidatedResponseGenqlSelection & { __args: {role: AccessRoleInput, validateOnly?: (Scalars['Boolean'] | null)} })
     roleDelete?: (ValidatedResponseGenqlSelection & { __args: {roleId: Scalars['ID']} })
@@ -1183,6 +1240,15 @@ export interface PeriodPromptGenqlSelection{
 }
 
 export interface PeriodUpdate {archiveDate?: (Scalars['DateTime'] | null),closeDate?: (Scalars['DateTime'] | null),code?: (Scalars['String'] | null),name: Scalars['String'],openDate: Scalars['DateTime']}
+
+export interface PeriodWorkflowStageGenqlSelection{
+    /** Whether this stage is blocking. If true, the application cannot be completed and shown to the applicant until all requirements in this stage are satisfied. */
+    blocking?: boolean | number
+    /** A human readable title for the workflow stage. */
+    title?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
 
 export interface ProgramGenqlSelection{
     key?: boolean | number
@@ -1571,6 +1637,14 @@ export interface ValidatedResponseGenqlSelection{
     
 
 
+    const PeriodWorkflowStage_possibleTypes: string[] = ['PeriodWorkflowStage']
+    export const isPeriodWorkflowStage = (obj?: { __typename?: any } | null): obj is PeriodWorkflowStage => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPeriodWorkflowStage"')
+      return PeriodWorkflowStage_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const Program_possibleTypes: string[] = ['Program']
     export const isProgram = (obj?: { __typename?: any } | null): obj is Program => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isProgram"')
@@ -1667,26 +1741,42 @@ export const enumAppRequestStatus = {
    NOT_ACCEPTED: 'NOT_ACCEPTED' as const,
    NOT_APPROVED: 'NOT_APPROVED' as const,
    PREAPPROVAL: 'PREAPPROVAL' as const,
+   READY_TO_ACCEPT: 'READY_TO_ACCEPT' as const,
    READY_TO_SUBMIT: 'READY_TO_SUBMIT' as const,
    STARTED: 'STARTED' as const,
    WITHDRAWN: 'WITHDRAWN' as const
 }
 
-export const enumApplicationStatus = {
+export const enumApplicationPhase = {
    ACCEPTANCE: 'ACCEPTANCE' as const,
-   ACCEPTED: 'ACCEPTED' as const,
    APPROVAL: 'APPROVAL' as const,
-   APPROVED: 'APPROVED' as const,
-   CANCELLED: 'CANCELLED' as const,
-   FAILED_PREQUAL: 'FAILED_PREQUAL' as const,
-   FAILED_QUALIFICATION: 'FAILED_QUALIFICATION' as const,
-   NOT_ACCEPTED: 'NOT_ACCEPTED' as const,
-   NOT_APPROVED: 'NOT_APPROVED' as const,
+   COMPLETE: 'COMPLETE' as const,
    PREAPPROVAL: 'PREAPPROVAL' as const,
    PREQUAL: 'PREQUAL' as const,
    QUALIFICATION: 'QUALIFICATION' as const,
+   READY_FOR_OFFER: 'READY_FOR_OFFER' as const,
+   READY_FOR_WORKFLOW: 'READY_FOR_WORKFLOW' as const,
+   READY_TO_ACCEPT: 'READY_TO_ACCEPT' as const,
    READY_TO_SUBMIT: 'READY_TO_SUBMIT' as const,
-   WITHDRAWN: 'WITHDRAWN' as const
+   WORKFLOW_BLOCKING: 'WORKFLOW_BLOCKING' as const,
+   WORKFLOW_NONBLOCKING: 'WORKFLOW_NONBLOCKING' as const
+}
+
+export const enumApplicationStatus = {
+   ACCEPTED: 'ACCEPTED' as const,
+   ELIGIBLE: 'ELIGIBLE' as const,
+   INELIGIBLE: 'INELIGIBLE' as const,
+   PENDING: 'PENDING' as const,
+   REJECTED: 'REJECTED' as const
+}
+
+export const enumIneligiblePhases = {
+   ACCEPTANCE: 'ACCEPTANCE' as const,
+   APPROVAL: 'APPROVAL' as const,
+   PREAPPROVAL: 'PREAPPROVAL' as const,
+   PREQUAL: 'PREQUAL' as const,
+   QUALIFICATION: 'QUALIFICATION' as const,
+   WORKFLOW: 'WORKFLOW' as const
 }
 
 export const enumMutationMessageType = {
@@ -1717,5 +1807,6 @@ export const enumRequirementType = {
    POSTQUAL: 'POSTQUAL' as const,
    PREAPPROVAL: 'PREAPPROVAL' as const,
    PREQUAL: 'PREQUAL' as const,
-   QUALIFICATION: 'QUALIFICATION' as const
+   QUALIFICATION: 'QUALIFICATION' as const,
+   WORKFLOW: 'WORKFLOW' as const
 }

@@ -2,7 +2,7 @@ import { BaseService, MutationMessageType } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { DateTime } from 'luxon'
 import { isBlank, someAsync } from 'txstate-utils'
-import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer, getAppRequestTags, closedStatuses, ApplicationRequirementService, recordAppRequestActivity, addAppRequestNote, closeAppRequest, getAppRequestActivity, AppRequestActivityFilters, PeriodService, createAppRequest, Period, appConfig, AccessUser, ReqquestUser, AccessDatabase } from '../internal.js'
+import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer, getAppRequestTags, closedStatuses, ApplicationRequirementService, recordAppRequestActivity, addAppRequestNote, closeAppRequest, getAppRequestActivity, AppRequestActivityFilters, PeriodService, createAppRequest, Period, appConfig, AccessUser, ReqquestUser, AccessDatabase, cancelAppRequest, reopenAppRequest, returnAppRequest, acceptOffer } from '../internal.js'
 
 const appReqByIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -256,6 +256,10 @@ export class AppRequestService extends AuthService<AppRequest> {
     return this.hasControl('AppRequest', 'offer', appRequest.tags)
   }
 
+  mayAccept (appRequest: AppRequest) {
+    return this.maySubmit(appRequest)
+  }
+
   async create (periodId: string, login: string, validateOnly?: boolean) {
     if (!this.user) throw new Error('You must be logged in to create an app request.')
     if (login !== this.login) return await this.createOther(periodId, login, validateOnly)
@@ -344,6 +348,50 @@ export class AppRequestService extends AuthService<AppRequest> {
     if (response.hasErrors()) return response
     await addAppRequestNote(appRequest.internalId, this.user!.internalId, note, internal)
     await this.recordActivity(appRequest, 'Added Note', { description: note })
+    this.loaders.clear()
+    response.appRequest = (await this.findById(appRequest.id))!
+    return response
+  }
+
+  async cancelRequest (appRequest: AppRequest, dataVersion?: number) {
+    if (!this.mayCancel(appRequest)) throw new Error('You may not cancel this app request.')
+    const response = new ValidatedAppRequestResponse()
+    if (response.hasErrors()) return response
+    const withdrawn = await cancelAppRequest(appRequest.internalId, dataVersion)
+    await this.recordActivity(appRequest, withdrawn ? 'Withdrew' : 'Cancelled')
+    this.loaders.clear()
+    response.appRequest = (await this.findById(appRequest.id))!
+    return response
+  }
+
+  async reopen (appRequest: AppRequest) {
+    if (!this.mayReopen(appRequest)) throw new Error('You may not reopen this app request.')
+    const response = new ValidatedAppRequestResponse()
+    if (response.hasErrors()) return response
+    await reopenAppRequest(appRequest.internalId)
+    await this.recordActivity(appRequest, 'Reopened')
+    this.loaders.clear()
+    response.appRequest = (await this.findById(appRequest.id))!
+    return response
+  }
+
+  async returnToApplicant (appRequest: AppRequest, dataVersion?: number) {
+    if (!this.mayReturn(appRequest)) throw new Error('You may not return this app request.')
+    const response = new ValidatedAppRequestResponse()
+    if (response.hasErrors()) return response
+    await returnAppRequest(appRequest.internalId, dataVersion)
+    await this.recordActivity(appRequest, 'Returned to applicant')
+    this.loaders.clear()
+    response.appRequest = (await this.findById(appRequest.id))!
+    return response
+  }
+
+  async acceptOffer (appRequest: AppRequest, dataVersion?: number) {
+    if (!this.mayAccept(appRequest)) throw new Error('You may not accept an offer on this app request.')
+    const response = new ValidatedAppRequestResponse()
+    if (response.hasErrors()) return response
+    await acceptOffer(appRequest.internalId, dataVersion)
+    await this.recordActivity(appRequest, 'Accepted')
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
     return response

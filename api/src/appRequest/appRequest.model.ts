@@ -12,6 +12,7 @@ export enum AppRequestStatus {
   ACCEPTANCE = 'ACCEPTANCE',
   NOT_APPROVED = 'NOT_APPROVED',
   APPROVED = 'APPROVED',
+  READY_TO_ACCEPT = 'READY_TO_ACCEPT',
   ACCEPTED = 'ACCEPTED',
   NOT_ACCEPTED = 'NOT_ACCEPTED',
   WITHDRAWN = 'WITHDRAWN',
@@ -32,6 +33,7 @@ registerEnumType(AppRequestStatus, {
     [AppRequestStatus.ACCEPTANCE]: { description: 'Reviewer has approved an offer and we are waiting for the applicant to accept. This status is unreachable if the period has no ACCEPTANCE requirements.' },
     [AppRequestStatus.APPROVED]: { description: 'Applicant has submitted, at least one application is in an approved state, and no applications are pending.' },
     [AppRequestStatus.NOT_APPROVED]: { description: 'Applicant has submitted, and ALL applications have been disqualified, no applications are pending.' },
+    [AppRequestStatus.READY_TO_ACCEPT]: { description: 'Applicant has been offered, satisfied all acceptance requirements and is ready to accept. This status is unreachable if the period has no ACCEPTANCE requirements.' },
     [AppRequestStatus.ACCEPTED]: { description: 'Applicant has accepted an offer on at least one application and no applications are still pending acceptance.' },
     [AppRequestStatus.WITHDRAWN]: { description: 'Applicant withdrew the request after submitting. The request must be re-opened (if eligible) to be edited again.' },
     [AppRequestStatus.CANCELLED]: { description: 'Applicant cancelled the request before submitting. The applicant may be permitted to uncancel and continue, if the period is still open.' }

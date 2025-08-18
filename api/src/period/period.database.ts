@@ -1,7 +1,7 @@
 import db from 'mysql2-async/db'
 import type { Queryable } from 'mysql2-async'
 import { Configuration, ConfigurationFilters, ensureAppRequestRecords, getAppRequests, Period, PeriodFilters, PeriodUpdate, programRegistry, promptRegistry, requirementRegistry, RequirementType } from '../internal.js'
-import { stringify } from 'txstate-utils'
+import { keyby, stringify } from 'txstate-utils'
 
 export interface PeriodRow {
   id: number
@@ -31,7 +31,17 @@ export interface PeriodProgramRequirementRow {
   periodId: number
   programKey: string
   requirementKey: string
+  workflowStage?: string
   disabled: 0 | 1
+}
+
+export interface PeriodWorkflowRow {
+  periodId: number
+  stageKey: string
+  programKey: string
+  title: string
+  blocking: 0 | 1
+  evaluationOrder: number
 }
 
 function processFilters (filters?: PeriodFilters) {
@@ -112,7 +122,8 @@ export async function copyConfigurations (fromPeriodId: number | string | undefi
   await Promise.all([
     db.delete('DELETE FROM period_configurations WHERE periodId = ?', [toPeriodId]),
     db.delete('DELETE FROM period_programs WHERE periodId = ?', [toPeriodId]),
-    db.delete('DELETE FROM period_program_requirements WHERE periodId = ?', [toPeriodId])
+    db.delete('DELETE FROM period_program_requirements WHERE periodId = ?', [toPeriodId]),
+    db.delete('DELETE FROM period_workflow_stages WHERE periodId = ?', [toPeriodId])
   ])
   const reachableConfigKeys = [...promptRegistry.reachable.map(p => p.key), ...requirementRegistry.reachable.map(r => r.key)]
   const configBinds: any[] = [toPeriodId, fromPeriodId]
@@ -133,7 +144,35 @@ export async function copyConfigurations (fromPeriodId: number | string | undefi
     `, binds)
   }
 
-  const reachableRequirementKeys = requirementRegistry.reachable.map(r => r.key)
+  const reachableWorkflowStages = programRegistry.reachable.flatMap(p => p.workflowStages?.map(stage => stage.key))
+  if (reachableWorkflowStages.length) {
+    const binds: any[] = [fromPeriodId]
+    const stagesToCopy = await db.getall<PeriodWorkflowRow>(`
+      SELECT * FROM period_workflow_stages WHERE periodId = ? AND stageKey IN (${db.in(binds, reachableWorkflowStages)})
+      ORDER BY evaluationOrder
+    `, binds)
+    const stagesToCopyByKey = keyby(stagesToCopy, s => `${s.stageKey}-${s.programKey}`)
+    const stagesExisting = new Set(stagesToCopy.map(s => `${s.stageKey}-${s.programKey}`))
+    let idx = 0
+    for (const program of programRegistry.reachable) {
+      for (const stage of program.workflowStages ?? []) {
+        if (!stagesExisting.has(`${stage.key}-${program.key}`)) {
+          await db.insert(`
+            INSERT INTO period_workflow_stages (periodId, stageKey, programKey, title, blocking, evaluationOrder)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `, [toPeriodId, stage.key, program.key, stage.title, stage.nonBlocking ? 0 : 1, idx++])
+        } else {
+          const row = stagesToCopyByKey[`${stage.key}-${program.key}`]
+          await db.insert(`
+            INSERT INTO period_workflow_stages (periodId, stageKey, programKey, title, blocking, evaluationOrder)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `, [toPeriodId, stage.key, program.key, row.title, row.blocking, idx++])
+        }
+      }
+    }
+  }
+
+  const reachableRequirementKeys = [...requirementRegistry.reachable.map(r => r.key), ...programRegistry.reachable.flatMap(p => p.workflowStages?.flatMap(stage => stage.requirementKeys ?? []) ?? [])]
   const disabledRequirementKeys = await db.getall<{ requirementKey: string, programKey: string }>('SELECT requirementKey, programKey FROM period_program_requirements WHERE periodId = ? AND disabled = 1', [fromPeriodId])
   const disabledByRequirementKeyAndProgramKey = disabledRequirementKeys.reduce((acc, { requirementKey, programKey }) => {
     acc[requirementKey] ??= {}
@@ -292,6 +331,46 @@ export async function ensureConfigurationRecords (periodIds?: number[], tdb?: Qu
       `, binds)
     }
 
+    const workflow_rows = await db.getall<PeriodWorkflowRow>(`SELECT * FROM period_workflow_stages WHERE periodId IN (${db.in([], futurePeriodIds)})`, futurePeriodIds)
+    const workflowByKey = keyby(workflow_rows, row => `${row.periodId}-${row.stageKey}-${row.programKey}`)
+    const workflowRecords: (PeriodWorkflowRow & { insert: boolean })[] = []
+    const workflowKeys = new Set()
+    for (const periodId of futurePeriodIds) {
+      let idx = 0
+      for (const program of programRegistry.reachable) {
+        for (const stage of program.workflowStages ?? []) {
+          const key = `${periodId}-${stage.key}-${program.key}`
+          workflowKeys.add(key)
+          if (!workflowByKey[key]) workflowRecords.push({ periodId, stageKey: stage.key, programKey: program.key, title: stage.title, blocking: stage.nonBlocking ? 0 : 1, evaluationOrder: idx++, insert: true })
+          else workflowRecords.push({ ...workflowByKey[key], evaluationOrder: idx++, insert: false })
+        }
+      }
+    }
+    const workflowToInsert = workflowRecords.filter(r => r.insert)
+    const workflowToUpdate = workflowRecords.filter(r => !r.insert)
+    const workflowToDelete = workflow_rows.filter(row => !workflowKeys.has(`${row.periodId}-${row.stageKey}-${row.programKey}`))
+    if (workflowToInsert.length) {
+      const binds: any[] = []
+      await db.insert(`
+        INSERT INTO period_workflow_stages (periodId, stageKey, programKey, title, blocking, evaluationOrder)
+        VALUES ${db.in(binds, workflowToInsert.map(w => [w.periodId, w.stageKey, w.programKey, w.title, w.blocking, w.evaluationOrder]))}
+      `, binds)
+    }
+    for (const row of workflowToUpdate) {
+      await db.update(`
+        UPDATE period_workflow_stages
+        SET title = ?, blocking = ?, evaluationOrder = ?
+        WHERE periodId = ? AND stageKey = ? AND programKey = ?
+      `, [row.title, row.blocking, row.evaluationOrder, row.periodId, row.stageKey, row.programKey])
+    }
+    if (workflowToDelete.length) {
+      const binds: any[] = []
+      await db.delete(`
+        DELETE FROM period_workflow_stages
+        WHERE (periodId, stageKey, programKey) IN (${db.in(binds, workflowToDelete.map(row => [row.periodId, row.stageKey, row.programKey]))})
+      `, binds)
+    }
+
     const requirement_rows = await db.getall<{ periodId: number, programKey: string, requirementKey: string }>(`SELECT periodId, programKey, requirementKey FROM period_program_requirements WHERE periodId IN (${db.in([], futurePeriodIds)})`, futurePeriodIds)
     const requirementMap: Record<string, Record<string, Set<string>>> = {}
     for (const { periodId, programKey, requirementKey } of requirement_rows) {
@@ -302,7 +381,7 @@ export async function ensureConfigurationRecords (periodIds?: number[], tdb?: Qu
     const reachablePairs: Record<string, Record<string, boolean>> = {}
     const requirementsToInsert: { periodId: number, programKey: string, requirementKey: string }[] = []
     for (const program of programRegistry.reachable) {
-      for (const requirementKey of program.requirementKeys) {
+      for (const requirementKey of programRegistry.allRequirementKeys[program.key] ?? []) {
         reachablePairs[program.key] ??= {}
         reachablePairs[program.key][requirementKey] = true
         for (const periodId of futurePeriodIds) {

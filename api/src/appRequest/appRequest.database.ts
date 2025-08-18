@@ -3,8 +3,8 @@ import type { FastifyTxStateAuthInfo } from 'fastify-txstate'
 import type { GraphQLError } from 'graphql'
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { clone, groupby, isNotBlank, omit, stringify } from 'txstate-utils'
-import { ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter, AppRequestStatus, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, RequirementStatus, RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
+import { clone, groupby, isNotBlank, keyby, omit, stringify } from 'txstate-utils'
+import { ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter, AppRequestStatus, getPeriodWorkflowStages, IneligiblePhases, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, RequirementStatus, RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
 
 /**
  * This is the status of the whole appRequest as stored in the database. Each application
@@ -14,11 +14,16 @@ import { ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivi
 export enum AppRequestStatusDB {
   // The request has been started but not yet submitted.
   STARTED = 'STARTED',
-  // The request has been submitted for review.
+  // The request has been submitted for review. Reviewers and blocking-workflow auditors
+  // need to finish their work before an offer is made to the applicant.
   SUBMITTED = 'SUBMITTED',
   // At least one application has been approved by the reviewer and the reviewer
   // moved it to this state where we are waiting for the applicant to accept the offer(s).
   ACCEPTANCE = 'ACCEPTANCE',
+  // The request has moved past ACCEPTANCE and is ready for each application to begin
+  // its non-blocking workflow. If there is no non-blocking workflow, the applications should
+  // be marked complete and this status should move to CLOSED.
+  WORKFLOW_NONBLOCKING = 'WORKFLOW_NONBLOCKING',
   // The request has been closed.
   CLOSED = 'CLOSED',
   // The request has been cancelled.
@@ -227,9 +232,15 @@ export async function submitAppRequest (appRequestId: number) {
   await evaluateAppRequest(appRequestId)
 }
 
-export async function returnAppRequest (appRequestId: number) {
-  await db.update('UPDATE app_requests SET status = ?, submittedAt = NULL WHERE id = ?', [AppRequestStatusDB.STARTED, appRequestId])
-  await evaluateAppRequest(appRequestId)
+export async function returnAppRequest (appRequestId: number, dataVersion?: number) {
+  await appRequestTransaction(appRequestId, async db => {
+    const where = dataVersion != null ? ' AND dataVersion = ?' : ''
+    const binds: any[] = [AppRequestStatusDB.STARTED, appRequestId]
+    if (dataVersion != null) binds.push(dataVersion)
+    const updated = await db.update('UPDATE app_requests SET status = ?, submittedAt = NULL WHERE id = ?' + where, binds)
+    if (!updated) throw new Error('Someone else is working on the same request and made changes since you loaded. Reload the page to try again.')
+    await evaluateAppRequest(appRequestId, db)
+  })
 }
 
 export async function restoreAppRequest (appRequestId: number) {
@@ -243,15 +254,50 @@ export async function closeAppRequest (appRequestId: number) {
   ])
 }
 
-export async function cancelAppRequest (appRequestId: number) {
-  await db.transaction(async db => {
-    const dbStatus = await db.getval<AppRequestStatusDB>('SELECT status FROM app_requests WHERE id = ? FOR UPDATE', [appRequestId])
-    const withdrawn = dbStatus === AppRequestStatusDB.SUBMITTED
+export async function cancelAppRequest (appRequestId: number, existingDataVersion?: number) {
+  return await db.transaction(async db => {
+    const row = await db.getrow<Pick<AppRequestRow, 'status' | 'dataVersion'>>('SELECT status, dataVersion FROM app_requests WHERE id = ? FOR UPDATE', [appRequestId])
+    if (!row) throw new Error(`AppRequest ${appRequestId} not found`)
+    if (existingDataVersion && row.dataVersion !== existingDataVersion) throw new Error(`AppRequest ${appRequestId} has been modified by another user. Reload the page and try cancelling again if it is still eligible.`)
+    const withdrawn = row.status === AppRequestStatusDB.SUBMITTED
     await db.update('UPDATE app_requests SET status = ?, computedStatus = ? WHERE id = ?', [
       withdrawn ? AppRequestStatusDB.WITHDRAWN : AppRequestStatusDB.CANCELLED,
       withdrawn ? AppRequestStatus.WITHDRAWN : AppRequestStatus.CANCELLED,
       appRequestId
     ])
+    return withdrawn
+  })
+}
+
+export async function reopenAppRequest (appRequestId: number) {
+  return await db.transaction(async db => {
+    const dbStatus = await db.getval<AppRequestStatusDB>('SELECT status FROM app_requests WHERE id = ? FOR UPDATE', [appRequestId])
+    if (!dbStatus) throw new Error(`AppRequest ${appRequestId} not found`)
+    if (![AppRequestStatusDB.CANCELLED, AppRequestStatusDB.WITHDRAWN, AppRequestStatusDB.CLOSED].includes(dbStatus)) throw new Error(`AppRequest ${appRequestId} is already open.`)
+    const newStatus = dbStatus === AppRequestStatusDB.CANCELLED
+      ? AppRequestStatusDB.STARTED
+      : AppRequestStatusDB.SUBMITTED
+    await db.update('UPDATE app_requests SET status = ?, closedAt = NULL WHERE id = ?', [newStatus, appRequestId])
+    await evaluateAppRequest(appRequestId, db)
+  })
+}
+
+export async function acceptOffer (appRequestId: number, existingDataVersion?: number) {
+  return await appRequestTransaction(appRequestId, async db => {
+    const row = await db.getrow<{ computedStatus: AppRequestStatus, dataVersion: number, periodId: number }>('SELECT computedStatus, dataVersion, periodId FROM app_requests WHERE id = ?', [appRequestId])
+    if (!row) throw new Error(`AppRequest ${appRequestId} not found`)
+    if (existingDataVersion && row.dataVersion !== existingDataVersion) throw new Error('Someone else is working on the same request and made changes since you loaded. Reload the page to try again.')
+    if (row.computedStatus !== AppRequestStatus.READY_TO_ACCEPT) throw new Error(`AppRequest ${appRequestId} is not ready to accept.`)
+    const nonblockingWorkflows = await db.getvals<string>('SELECT DISTINCT stageKey FROM period_workflow_stages WHERE periodId = ? AND blocking = 0', [row.periodId])
+    let newStatus: AppRequestStatusDB
+    if (nonblockingWorkflows.length) {
+      newStatus = AppRequestStatusDB.WORKFLOW_NONBLOCKING
+    } else {
+      newStatus = AppRequestStatusDB.CLOSED
+      await db.update('UPDATE applications SET computedPhase = ? WHERE appRequestId = ?', [ApplicationPhase.COMPLETE, appRequestId])
+    }
+    await db.update('UPDATE app_requests SET status = ?, computedStatus = ? WHERE id = ?', [newStatus, AppRequestStatus.ACCEPTED, appRequestId])
+    await evaluateAppRequest(appRequestId, db)
   })
 }
 
@@ -278,6 +324,11 @@ export async function ensureAppRequestRecords (appRequest: AppRequest, db: Query
         reqKeyLookup[program.key].add(rkey)
       }
     }
+    for (const rkey of program.workflowStages?.flatMap(stage => stage.requirementKeys) ?? []) {
+      if (!disabledRequirementLookup[program.key]?.[rkey]) {
+        reqKeyLookup[program.key].add(rkey)
+      }
+    }
   }
   const applications = await syncApplications(appRequest.internalId, new Set(programs.map(p => p.key)), db)
   const allRequirements: ApplicationRequirement[] = []
@@ -294,24 +345,6 @@ export async function ensureAppRequestRecords (appRequest: AppRequest, db: Query
   return { applications, requirements: allRequirements, prompts: allPrompts }
 }
 
-const failureStatusLookup = {
-  [RequirementType.PREQUAL]: ApplicationStatus.FAILED_PREQUAL,
-  [RequirementType.QUALIFICATION]: ApplicationStatus.FAILED_QUALIFICATION,
-  [RequirementType.POSTQUAL]: ApplicationStatus.FAILED_QUALIFICATION,
-  [RequirementType.PREAPPROVAL]: ApplicationStatus.NOT_APPROVED,
-  [RequirementType.APPROVAL]: ApplicationStatus.NOT_APPROVED,
-  [RequirementType.ACCEPTANCE]: ApplicationStatus.NOT_ACCEPTED
-}
-
-const metStatusLookup = {
-  [RequirementType.PREQUAL]: ApplicationStatus.PREQUAL,
-  [RequirementType.QUALIFICATION]: ApplicationStatus.QUALIFICATION,
-  [RequirementType.POSTQUAL]: ApplicationStatus.QUALIFICATION,
-  [RequirementType.PREAPPROVAL]: ApplicationStatus.PREAPPROVAL,
-  [RequirementType.APPROVAL]: ApplicationStatus.APPROVED,
-  [RequirementType.ACCEPTANCE]: ApplicationStatus.ACCEPTED
-}
-
 export const applicantRequirementTypes = new Set<RequirementType>([
   RequirementType.PREQUAL,
   RequirementType.QUALIFICATION,
@@ -319,15 +352,42 @@ export const applicantRequirementTypes = new Set<RequirementType>([
   RequirementType.ACCEPTANCE
 ])
 
-export async function evaluateAppRequest (appRequestInternalId: number) {
+export async function tagAppRequest (appRequestInternalId: number, data: AppRequestData, prompts: RequirementPrompt[], tdb: Queryable = db) {
+  const tagRows = []
+  const seenPrompts = new Set<string>()
+  for (const prompt of prompts) {
+    if (seenPrompts.has(prompt.key)) continue
+    seenPrompts.add(prompt.key)
+    for (const category of prompt.definition.tags ?? []) {
+      for (const tag of category.extract(data)) tagRows.push({ category: category.category, tag: tag, indexOnly: 0 })
+    }
+    for (const index of prompt.definition.indexes ?? []) {
+      for (const idx of index.extract(data)) tagRows.push({ category: index.category, tag: idx, indexOnly: 1 })
+    }
+  }
+
+  if (tagRows.length > 0) {
+    const ibinds: any[] = []
+    await tdb.insert(`
+      INSERT INTO app_request_tags (appRequestId, indexOnly, category, tag)
+      VALUES ${tdb.in(ibinds, tagRows.map(r => [appRequestInternalId, r.indexOnly, r.category, r.tag]))}
+      ON DUPLICATE KEY UPDATE appRequestId = appRequestId
+    `, ibinds)
+    const dbinds: any[] = [appRequestInternalId]
+    await tdb.delete(`
+      DELETE FROM app_request_tags
+      WHERE appRequestId = ? AND (category, tag) NOT IN (${tdb.in(dbinds, tagRows.map(r => [r.category, r.tag]))})
+    `, dbinds)
+  } else {
+    await tdb.delete('DELETE FROM app_request_tags WHERE appRequestId = ?', [appRequestInternalId])
+  }
+}
+
+export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Queryable) {
   // after an appRequest is created and each time it is modified, we will evaluate
   // requirement status and update application and appRequest status accordingly, then
   // save all those results to the database for indexing and querying
-
-  return await db.transaction(async db => {
-    // lock the appRequest while we evaluate
-    await db.getval('SELECT id FROM app_requests WHERE id = ? FOR UPDATE', [appRequestInternalId])
-
+  async function action (db: Queryable) {
     const appRequest = (await getAppRequests({ internalIds: [appRequestInternalId] }, db))[0]
     if (!appRequest) throw new Error(`AppRequest ${appRequestInternalId} not found`)
 
@@ -342,45 +402,37 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
     const { applications, requirements, prompts } = await ensureAppRequestRecords(appRequest, db)
     const reqLookup = groupby(requirements, 'applicationId')
     const promptLookup = groupby(prompts, 'requirementId')
+    const workflowStageKeys = applications.map(app => app.workflowStageKey).filter(isNotBlank) as string[]
+    const workflowStages = await getPeriodWorkflowStages({ periodIds: [appRequest.periodId], workflowKeys: workflowStageKeys }, db)
+    const workflowStageLookup = keyby(workflowStages, 'key')
+    const workflowStagesByProgramKey = groupby(workflowStages, 'programKey')
 
-    const tagRows = []
-    const seenPrompts = new Set<string>()
-    for (const prompt of prompts) {
-      if (seenPrompts.has(prompt.key)) continue
-      seenPrompts.add(prompt.key)
-      for (const category of prompt.definition.tags ?? []) {
-        for (const tag of category.extract(data)) tagRows.push({ category: category.category, tag: tag, indexOnly: 0 })
-      }
-      for (const index of prompt.definition.indexes ?? []) {
-        for (const idx of index.extract(data)) tagRows.push({ category: index.category, tag: idx, indexOnly: 1 })
-      }
-    }
-
-    if (tagRows.length > 0) {
-      const ibinds: any[] = []
-      await db.insert(`
-        INSERT INTO app_request_tags (appRequestId, indexOnly, category, tag)
-        VALUES ${db.in(ibinds, tagRows.map(r => [appRequestInternalId, r.indexOnly, r.category, r.tag]))}
-        ON DUPLICATE KEY UPDATE appRequestId = appRequestId
-      `, ibinds)
-      const dbinds: any[] = [appRequestInternalId]
-      await db.delete(`
-        DELETE FROM app_request_tags
-        WHERE appRequestId = ? AND (category, tag) NOT IN (${db.in(dbinds, tagRows.map(r => [r.category, r.tag]))})
-      `, dbinds)
-    } else {
-      await db.delete('DELETE FROM app_request_tags WHERE appRequestId = ?', [appRequestInternalId])
-    }
+    await tagAppRequest(appRequest.internalId, data, prompts, db)
 
     // grab all the prompt and requirement configurations from this apprequest's period
     const configurations = await db.getall<{ definitionKey: string, data: string }>('SELECT definitionKey, data FROM period_configurations WHERE periodId = ?', [appRequest.periodId])
     const configLookup: Record<string, any> = configurations.map(c => ({ ...c, data: JSON.parse(c.data ?? '{}') })).reduce((acc, c) => ({ ...acc, [c.definitionKey]: c.data }), {})
 
-    // keeping track of which prompts have been evaluated so that we can avoid evaluating them twice
-    const promptEvaluations: Record<string, boolean> = {}
-
+    const promptsSeenInRequest = new Set<string>()
     for (const application of applications) {
       const requirements = reqLookup[application.id] ?? []
+      const workflowStages = workflowStagesByProgramKey[application.programKey] ?? []
+      const activeWorkflowStage = application.workflowStageKey ? workflowStageLookup[application.workflowStageKey] : undefined
+      const previousWorkflowStages = []
+      for (const stage of workflowStages) {
+        if (stage.key === application.workflowStageKey) break
+        previousWorkflowStages.push(stage)
+      }
+
+      const phase = appRequest.dbStatus === AppRequestStatusDB.STARTED
+        ? 'applicant'
+        : appRequest.dbStatus === AppRequestStatusDB.ACCEPTANCE
+          ? 'acceptance'
+          : application.workflowStageKey
+            ? activeWorkflowStage?.blocking
+              ? 'blocking'
+              : 'nonblocking'
+            : 'review'
 
       // in the reviewer's view, we will often want related requirements to be grouped together,
       // so we will probably have a mixed overall order like:
@@ -392,174 +444,133 @@ export async function evaluateAppRequest (appRequestInternalId: number) {
       // precede all approvals, etc. Instead, we will sort them here.
       const prequalRequirements = requirements.filter(req => req.definition.type === 'PREQUAL')
       const qualificationRequirements = requirements.filter(req => req.definition.type === 'QUALIFICATION')
+      const postqualRequirements = requirements.filter(req => req.definition.type === 'POSTQUAL')
       const preapprovalRequirements = requirements.filter(req => req.definition.type === 'PREAPPROVAL')
       const approvalRequirements = requirements.filter(req => req.definition.type === 'APPROVAL')
       const acceptanceRequirements = requirements.filter(req => req.definition.type === 'ACCEPTANCE')
+      const blockingWorkflowRequirements = requirements.filter(req => req.workflowStageKey ? workflowStageLookup[req.workflowStageKey]?.blocking : false)
+      const currentWorkflowRequirements = requirements.filter(req => req.workflowStageKey === application.workflowStageKey)
 
       // if we are in applicant phase, we only need to evaluate prequal and qualification requirements
       // or perhaps acceptance requirements if we are in acceptance phase
-      const sortedRequirements = appRequest.dbStatus === AppRequestStatusDB.STARTED
-        ? [...prequalRequirements, ...qualificationRequirements]
-        : appRequest.dbStatus === AppRequestStatusDB.ACCEPTANCE
+      const sortedRequirements = phase === 'applicant'
+        ? [...prequalRequirements, ...qualificationRequirements, ...postqualRequirements]
+        : phase === 'acceptance'
           ? acceptanceRequirements
-          : [...prequalRequirements, ...qualificationRequirements, ...preapprovalRequirements, ...approvalRequirements]
+          : phase === 'blocking' || phase === 'nonblocking'
+            ? currentWorkflowRequirements
+            : [...prequalRequirements, ...qualificationRequirements, ...preapprovalRequirements, ...approvalRequirements, ...blockingWorkflowRequirements]
 
-      // initialize some tracking variables that we will update during this process
-      application.status = appRequest.dbStatus === AppRequestStatusDB.STARTED
-        ? ApplicationStatus.PREQUAL
-        : appRequest.dbStatus === AppRequestStatusDB.SUBMITTED
-          ? ApplicationStatus.PREAPPROVAL
-          : ApplicationStatus.ACCEPTANCE
-      application.statusReason = undefined
-      let hasPending = false
-      let hasIneligible = false
-      let reqEvaluationBroken = false
+      for (const prompt of prompts) {
+        prompt.answered = prompt.definition.answered?.(data[prompt.key] ?? {}, configLookup[prompt.key] ?? {}) ?? false
+      }
+
       const promptsSeenInApplication = new Set<string>()
-      const unreachablePrompts = new Set<string>()
-      let lastType: RequirementType | undefined
       for (const requirement of sortedRequirements) {
-        requirement.status = RequirementStatus.PENDING
-        if (requirement.definition.visiblePromptKeys.some(key => unreachablePrompts.has(key))) reqEvaluationBroken = true
-
-        // we use reqEvaluationBroken instead of a loop break because we need to set
-        // the reachable status on all requirements/prompts, so we have to continue looping and
-        // setting all remaining unevaluated requirements and their prompts to unreachable
-        if (reqEvaluationBroken) {
-          requirement.reachable = false
-          for (const prompt of promptLookup[requirement.id] ?? []) {
-            prompt.visibility = PromptVisibility.UNREACHABLE
-            prompt.answered = false
-          }
-          continue
-        } else {
-          requirement.reachable = true
-        }
-
-        const requirementConfig = configLookup[requirement.definition.key] ?? {}
-
-        // this requirement has not been evaluated yet, so we need to do that; we
-        // don't want to `continue` the loop because we need to update the status
-        // of the application based on the result, even if we calculated that result
-        // processing an earlier application
-        const prompts = promptLookup[requirement.id] ?? []
-        let promptEvaluationBroken = false
-        let allPromptsAnswered = true
-        const dataRequired = {} as AppRequestData
-        for (const prompt of prompts) {
-          if (requirement.status !== RequirementStatus.PENDING) {
-            promptEvaluationBroken = true
-            allPromptsAnswered = false
-          }
-          if (promptEvaluationBroken) {
-            prompt.visibility = PromptVisibility.UNREACHABLE
-            prompt.answered = false
-            continue
-          } else prompt.visibility = requirement.definition.noDisplayPromptKeySet.has(prompt.key) ? PromptVisibility.AUTOMATION : PromptVisibility.AVAILABLE
-          if (promptEvaluations[prompt.key] != null) prompt.visibility = PromptVisibility.REQUEST_DUPE
-          if (promptEvaluations[prompt.key] == null) {
-            const promptConfig = configLookup[prompt.key] ?? {}
-            promptEvaluations[prompt.key] = prompt.invalidated ? false : prompt.definition.answered?.(data[prompt.key] ?? {}, promptConfig) ?? true
-          }
-          prompt.answered = promptEvaluations[prompt.key]
-          if (!prompt.answered) allPromptsAnswered = false
-          if (promptsSeenInApplication.has(prompt.key)) prompt.visibility = PromptVisibility.APPLICATION_DUPE
-          promptsSeenInApplication.add(prompt.key)
-
-          // only include data from completed prompts, but go ahead and evaluate requirements
-          // with unanswered prompts in case they can make early determinations (as long as
-          // they don't depend on partial answers to unanswered prompts)
-          if (promptEvaluations[prompt.key]) {
-            dataRequired[prompt.key] = data[prompt.key]
-            // If we have anyOrder prompts, we can't evaluate the requirement with partial data
-            // because we could end up making one of them moot after it's already out and on display
-            // to the user - we don't want to have it disappear suddenly.
-            // So we will avoid calling resolve on anyOrder prompts as we loop through
-            // See RequirementDefinition.promptsAnyOrder for more information
+        const requiredData = {} as AppRequestData
+        let resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
+        for (const prompt of promptLookup[requirement.id] ?? []) {
+          if (resolveInfo.status !== RequirementStatus.PENDING) prompt.visibility = PromptVisibility.UNREACHABLE
+          else {
+            if (promptsSeenInApplication.has(prompt.key)) prompt.visibility = PromptVisibility.APPLICATION_DUPE
+            else if (promptsSeenInRequest.has(prompt.key)) prompt.visibility = PromptVisibility.REQUEST_DUPE
+            else prompt.visibility = PromptVisibility.AVAILABLE
+            promptsSeenInApplication.add(prompt.key)
+            promptsSeenInRequest.add(prompt.key)
+            if (prompt.answered) requiredData[prompt.key] = data[prompt.key]
             if (!requirement.definition.anyOrderPromptKeySet.has(prompt.key)) {
-              const { status, reason } = requirement.definition.resolve(dataRequired, requirementConfig, configLookup)
-              requirement.status = status
-              requirement.statusReason = reason
+              resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
             }
-          } else if (!requirement.definition.anyOrderPromptKeySet.has(prompt.key)) promptEvaluationBroken = true
-        }
-
-        // now that we have evaluated all prompts, if they are all answered, we can
-        // evaluate our requirement with all the data (including data from anyOrder prompts)
-        if (requirement.definition.anyOrderPromptKeySet.size > 0 && allPromptsAnswered) {
-          const { status, reason } = requirement.definition.resolve(dataRequired, requirementConfig, configLookup)
-          requirement.status = status
-          requirement.statusReason = reason
-        }
-
-        // now we have the requirement status (either cached or fresh), so we can update the
-        // application status
-        if (requirement.status === RequirementStatus.DISQUALIFYING) {
-          // if this requirement was disqualifying, we need to stop processing and give the
-          // application one of the failure statuses
-          application.status = failureStatusLookup[requirement.definition.type]
-          application.statusReason = requirement.statusReason
-          hasIneligible = true
-          reqEvaluationBroken = true
-        } else if ([RequirementStatus.MET, RequirementStatus.NOT_APPLICABLE, RequirementStatus.WARNING].includes(requirement.status)) {
-          // if this is one of the met statuses, we will upgrade the application status to at least match
-          // the requirement that just passed... we do need another piece of code to upgrade the status if
-          // all requirements of the previous type have passed and the first requirement of the next type is
-          // pending
-          application.status = metStatusLookup[requirement.definition.type]
-        } else { // PENDING
-          // this is that code I spoke of a few lines above that upgrades the application status
-          // if the first requirement of a certain type is pending
-          if (requirement.definition.type !== lastType) {
-            application.status = metStatusLookup[requirement.definition.type]
-          }
-          application.statusReason = requirement.statusReason
-          lastType = requirement.definition.type
-          hasPending = true
-          // allow the user to continue to the next requirement if this one is neverDisqualifying and
-          // either all of its prompts are reachable, or later requirements do not depend on any of the
-          // unreachable prompts
-          // we need this logic to avoid having prompts move from later in the application to earlier
-          // in the application as the user answers things out of order
-          // it's still possible for a prompt to move earlier if the user is changing answers, but we
-          // can't avoid that, and it's less disturbing than having navigation change as they are just
-          // filling things in rather than making big changes
-          if (requirement.definition.neverDisqualifying) {
-            for (const prompt of prompts) {
-              if (prompt.visibility === PromptVisibility.UNREACHABLE) unreachablePrompts.add(prompt.key)
-            }
-          } else {
-            reqEvaluationBroken = true
           }
         }
+        requirement.status = resolveInfo.status
+        requirement.statusReason = resolveInfo.reason
       }
-      // upgrade application to approved if all requirements are met
-      if (application.status === ApplicationStatus.APPROVAL && !hasPending && !hasIneligible) {
-        application.status = ApplicationStatus.APPROVED
-      }
-      if (application.status === ApplicationStatus.QUALIFICATION && !hasPending && !hasIneligible) {
-        application.status = ApplicationStatus.READY_TO_SUBMIT
+
+      const firstFailingRequirement = sortedRequirements.find(r => r.status === RequirementStatus.DISQUALIFYING)
+      const firstPendingRequirement = sortedRequirements.find(r => r.status === RequirementStatus.PENDING)
+      const nonPassingRequirement = firstFailingRequirement ?? firstPendingRequirement
+      const requirementsResolution = firstPendingRequirement != null
+        ? 'pending'
+        : firstFailingRequirement != null
+          ? 'fail'
+          : 'pass'
+
+      application.status = phase === 'nonblocking'
+        ? application.status
+        : phase === 'acceptance'
+          ? requirementsResolution === 'pass'
+            ? ApplicationStatus.ACCEPTED
+            : requirementsResolution === 'fail'
+              ? ApplicationStatus.REJECTED
+              : ApplicationStatus.ELIGIBLE
+          : requirementsResolution === 'pending'
+            ? ApplicationStatus.PENDING
+            : requirementsResolution === 'fail'
+              ? ApplicationStatus.INELIGIBLE
+              : ApplicationStatus.ELIGIBLE
+
+      application.statusReason = firstFailingRequirement?.statusReason ?? firstPendingRequirement?.statusReason
+
+      application.phase = phase === 'nonblocking'
+        ? application.phase
+        : phase === 'acceptance'
+          ? requirementsResolution !== 'pending'
+            ? ApplicationPhase.READY_TO_ACCEPT
+            : ApplicationPhase.ACCEPTANCE
+          : phase === 'applicant'
+            ? requirementsResolution === 'pass'
+              ? ApplicationPhase.READY_TO_SUBMIT
+              : nonPassingRequirement?.type === RequirementType.PREQUAL
+                ? ApplicationPhase.PREQUAL
+                : ApplicationPhase.QUALIFICATION
+            : phase === 'review'
+              ? requirementsResolution !== 'pending'
+                ? ApplicationPhase.READY_FOR_WORKFLOW
+                : nonPassingRequirement?.type === RequirementType.PREAPPROVAL
+                  ? ApplicationPhase.PREAPPROVAL
+                  : ApplicationPhase.APPROVAL
+              : requirementsResolution === 'pass' // phase === 'blocking'
+                ? ApplicationPhase.READY_FOR_WORKFLOW
+                : ApplicationPhase.WORKFLOW_BLOCKING
+
+      if (application.phase === ApplicationPhase.READY_FOR_WORKFLOW && (!workflowStages.length || workflowStages[workflowStages.length - 1].key === application.workflowStageKey)) {
+        application.phase = ApplicationPhase.READY_FOR_OFFER
+      } else if (requirementsResolution === 'fail') {
+        if (phase === 'acceptance') application.ineligiblePhase = IneligiblePhases.ACCEPTANCE
+        else if (phase === 'applicant') application.ineligiblePhase = application.phase === ApplicationPhase.PREQUAL ? IneligiblePhases.PREQUAL : IneligiblePhases.QUALIFICATION
+        else if (phase === 'review') application.ineligiblePhase = application.phase === ApplicationPhase.PREAPPROVAL ? IneligiblePhases.PREAPPROVAL : IneligiblePhases.APPROVAL
+        else if (phase === 'blocking') application.ineligiblePhase ??= IneligiblePhases.WORKFLOW
       }
     }
 
     // determine appRequest status based on the application statuses
-    // no need to check for closed status, we don't evaluate closed appRequests
-    if (applications.some(a => a.status === ApplicationStatus.PREQUAL || a.status === ApplicationStatus.QUALIFICATION)) appRequest.status = AppRequestStatus.STARTED
-    else if (applications.some(a => a.status === ApplicationStatus.READY_TO_SUBMIT)) appRequest.status = AppRequestStatus.READY_TO_SUBMIT
-    else if (applications.some(a => a.status === ApplicationStatus.PREAPPROVAL)) appRequest.status = AppRequestStatus.PREAPPROVAL
-    else if (applications.some(a => a.status === ApplicationStatus.APPROVAL)) appRequest.status = AppRequestStatus.APPROVAL
-    else if (applications.some(a => a.status === ApplicationStatus.APPROVED)) appRequest.status = AppRequestStatus.APPROVED
-    else if (applications.some(a => a.status === ApplicationStatus.ACCEPTANCE)) appRequest.status = AppRequestStatus.ACCEPTANCE
-    else if (applications.some(a => a.status === ApplicationStatus.ACCEPTED)) appRequest.status = AppRequestStatus.ACCEPTED
-    else if (applications.some(a => a.status === ApplicationStatus.NOT_ACCEPTED)) appRequest.status = AppRequestStatus.NOT_ACCEPTED
-    else if (applications.some(a => a.status === ApplicationStatus.NOT_APPROVED)) appRequest.status = AppRequestStatus.NOT_APPROVED
-    else appRequest.status = AppRequestStatus.DISQUALIFIED
+    if (appRequest.dbStatus === AppRequestStatusDB.WITHDRAWN) appRequest.status = AppRequestStatus.WITHDRAWN
+    else if (appRequest.dbStatus === AppRequestStatusDB.CANCELLED) appRequest.status = AppRequestStatus.CANCELLED
+    else if (applications.every(a => a.status === ApplicationStatus.INELIGIBLE || a.status === ApplicationStatus.REJECTED)) {
+      if (applications.some(a => a.ineligiblePhase === IneligiblePhases.ACCEPTANCE)) appRequest.status = AppRequestStatus.NOT_ACCEPTED
+      else if (applications.some(a => a.ineligiblePhase === IneligiblePhases.APPROVAL || a.ineligiblePhase === IneligiblePhases.WORKFLOW)) appRequest.status = AppRequestStatus.NOT_APPROVED
+      else appRequest.status = AppRequestStatus.DISQUALIFIED
+    } else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_SUBMIT) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.READY_TO_SUBMIT
+    else if (applications.some(a => a.phase === ApplicationPhase.READY_FOR_OFFER) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.APPROVED
+    else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_ACCEPT) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.READY_TO_ACCEPT
+    else if (applications.some(a => a.phase === ApplicationPhase.ACCEPTANCE)) appRequest.status = AppRequestStatus.ACCEPTANCE
+    else if (applications.some(a => a.phase === ApplicationPhase.PREAPPROVAL)) appRequest.status = AppRequestStatus.PREAPPROVAL
+    else if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_BLOCKING)) appRequest.status = AppRequestStatus.APPROVAL
+    else if (applications.some(a => a.phase === ApplicationPhase.APPROVAL)) appRequest.status = AppRequestStatus.APPROVAL
+    else if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_NONBLOCKING)) appRequest.status = AppRequestStatus.APPROVED
+    else if (applications.every(a => a.phase === ApplicationPhase.COMPLETE)) appRequest.status = AppRequestStatus.APPROVED
+    else appRequest.status = AppRequestStatus.STARTED
 
     // save the results of the evaluation to the database
     await updateAppRequestComputed(appRequest, db)
     await updateApplicationsComputed(applications, db)
     await updateRequirementComputed(requirements, db)
     await updatePromptComputed(prompts, db)
-  }, { retries: 2 })
+  }
+
+  if (tdb) return await action(tdb)
+  return await appRequestTransaction(appRequestInternalId, action)
 }
 
 export async function recordAppRequestActivity (appRequestId: number, userId: number, action: string, info?: { description?: string, data?: any, impersonatedBy?: number }) {
@@ -645,4 +656,12 @@ export async function logMutation (queryTime: number, operationName: string, que
   } catch (e: any) {
     console.error('Error logging mutation:', e)
   }
+}
+
+export async function appRequestTransaction (appRequestInternalId: number, callback: (db: Queryable) => Promise<void>) {
+  return await db.transaction(async db => {
+    // lock the appRequest while we evaluate
+    await db.getval('SELECT id FROM app_requests WHERE id = ? FOR UPDATE', [appRequestInternalId])
+    await callback(db)
+  }, { retries: 2 })
 }

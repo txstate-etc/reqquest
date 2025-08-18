@@ -50,6 +50,18 @@ export const periodMigrations: DatabaseMigration[] = [
           FOREIGN KEY (periodId) REFERENCES periods (id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `)
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS period_workflow_stages (
+          periodId INT UNSIGNED NOT NULL,
+          stageKey VARCHAR(255) NOT NULL,
+          programKey VARCHAR(255) NOT NULL,
+          title TEXT NOT NULL,
+          blocking TINYINT(1) NOT NULL DEFAULT 0,
+          evaluationOrder TINYINT UNSIGNED NOT NULL DEFAULT 0,
+          PRIMARY KEY (periodId, stageKey, programKey),
+          FOREIGN KEY (periodId) REFERENCES periods (id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `)
     }
   }
 ]

@@ -8,7 +8,6 @@ export const which_state_req: RequirementDefinition = {
   title: 'Applicant provides state of residence.',
   navTitle: 'State',
   description: 'Applicants must tell us which state they live in.',
-  neverDisqualifying: true,
   promptKeys: ['which_state_prompt'],
   resolve: (data, config) => {
     const state = data.which_state_prompt?.state as string

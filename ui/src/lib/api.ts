@@ -368,7 +368,6 @@ class API extends APIBase {
             title: true,
             status: true,
             statusReason: true,
-            reachable: true,
             prompts: {
               id: true,
               key: true,
@@ -388,7 +387,7 @@ class API extends APIBase {
     })
     if (response.appRequests.length === 0) return undefined
     const appRequest = response.appRequests[0]
-    return { ...appRequest, applications: appRequest.applications.map(a => ({ ...a, requirements: a.requirements.filter(r => r.reachable).map(r => ({ ...r, prompts: r.prompts.filter(p => visibilities.includes(p.visibility)) })) })) }
+    return { ...appRequest, applications: appRequest.applications.map(a => ({ ...a, requirements: a.requirements.map(r => ({ ...r, prompts: r.prompts.filter(p => visibilities.includes(p.visibility)) })) })) }
   }
 
   async getRequestActivity (appRequestId: string, filters?: AppRequestActivityFilters) {

@@ -1,5 +1,5 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
-import { ApplicationRequirementRow, PeriodConfigurationRow, PeriodProgramKey, PeriodProgramRequirementRow, RequirementDefinitionProcessed, requirementRegistry } from '../internal.js'
+import { ApplicationRequirementRow, PeriodProgramKey, PeriodProgramRequirementRow, programRegistry, RequirementDefinitionProcessed, requirementRegistry, WorkflowStage } from '../internal.js'
 
 @ObjectType({ description: 'A requirement for a program. Each program has an ordered array of requirements, all of which must pass for an application to the program to succeed.' })
 export class Requirement {
@@ -38,6 +38,7 @@ export enum RequirementType {
   POSTQUAL = 'POSTQUAL',
   PREAPPROVAL = 'PREAPPROVAL',
   APPROVAL = 'APPROVAL',
+  WORKFLOW = 'WORKFLOW',
   ACCEPTANCE = 'ACCEPTANCE'
 }
 registerEnumType(RequirementType, {
@@ -48,6 +49,7 @@ registerEnumType(RequirementType, {
     POSTQUAL: { description: 'A requirement that should be shown to applicants at the end of the request process, prior to review and submission, outside the context of the individual programs. It is intended for acknowledgements like "I affirm that I have given truthful answers". It wouldn\'t make sense to have them affirm that their answers are truthful in one application but not in the others.' },
     PREAPPROVAL: { description: 'A requirement that has no prompts and must have a non-PENDING status before an application may be reviewed. Use this for materials/data that must appear in an external system before a reviewer will be able to begin their work.' },
     APPROVAL: { description: 'A requirement that should only be shown to agents/reviewers and must have a non-pending status before an application is closed.' },
+    WORKFLOW: { description: 'This requirement belongs to a workflow stage. It should only be included in a workflow stage and should not appear in the standard requirementKeys array of a program.' },
     ACCEPTANCE: { description: 'A requirement that should only be shown to applicants after the application has been through review and an offer has been made. The applicant can come back and fill out the requirement\'s prompts to accept the offer.' }
   }
 })
@@ -77,7 +79,10 @@ export class ApplicationRequirement extends Requirement {
   applicationInternalId: number
   applicationId: string
   periodId: string
+  programKey: string
   appRequestTags?: Record<string, string[]>
+  workflowStageKey?: string
+  workflowStageDefinition?: WorkflowStage
 
   constructor (row: ApplicationRequirementRow) {
     const definition = requirementRegistry.get(row.requirementKey)
@@ -85,6 +90,7 @@ export class ApplicationRequirement extends Requirement {
     this.internalId = row.id
     this.id = String(row.id)
     this.definition = definition
+    this.programKey = row.programKey
     this.applicationInternalId = row.applicationId
     this.applicationId = String(row.applicationId)
     this.appRequestInternalId = row.appRequestId
@@ -92,7 +98,8 @@ export class ApplicationRequirement extends Requirement {
     this.periodId = String(row.periodId)
     this.status = row.status
     this.statusReason = row.statusReason
-    this.reachable = !!row.reachable
+    this.workflowStageKey = row.workflowStage
+    this.workflowStageDefinition = row.workflowStage ? programRegistry.workflowStagesByKey[row.workflowStage] : undefined
   }
 
   @Field(type => ID)
@@ -103,9 +110,6 @@ export class ApplicationRequirement extends Requirement {
 
   @Field({ nullable: true, description: 'The reason why the requirement is in the status it is in. This will be shown to the applicant.' })
   statusReason?: string
-
-  @Field({ description: 'When true, means that the requirement has not been made moot by an earlier requirement failing. It may still need to be hidden from navigation based on evaluatedInEarlierApplication.' })
-  reachable: boolean
 }
 
 @InputType()

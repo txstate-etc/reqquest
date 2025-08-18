@@ -1,7 +1,7 @@
 import { ValidatedResponse } from '@txstate-mws/graphql-server'
 import { DateTime } from 'luxon'
 import { Field, ID, InputType, ObjectType } from 'type-graphql'
-import { PeriodConfigurationRow, PeriodRow, Prompt, promptRegistry, Requirement, requirementRegistry } from '../internal.js'
+import { PeriodConfigurationRow, PeriodRow, PeriodWorkflowRow, Prompt, promptRegistry, Requirement, requirementRegistry } from '../internal.js'
 
 @ObjectType()
 export class Period {
@@ -149,4 +149,27 @@ export class ConfigurationAccess {}
 export class ValidatedConfigurationResponse extends ValidatedResponse {
   @Field(type => Configuration, { nullable: true })
   configuration?: Configuration
+}
+
+@ObjectType()
+export class PeriodWorkflowStage {
+  constructor (row: PeriodWorkflowRow) {
+    this.periodId = String(row.periodId)
+    this.key = row.stageKey
+    this.programKey = row.programKey
+    this.title = row.title
+    this.blocking = !!row.blocking
+    this.evaluationOrder = row.evaluationOrder
+  }
+
+  periodId: string
+  programKey: string
+  key: string
+  evaluationOrder?: number
+
+  @Field({ description: 'A human readable title for the workflow stage.' })
+  title: string
+
+  @Field({ description: 'Whether this stage is blocking. If true, the application cannot be completed and shown to the applicant until all requirements in this stage are satisfied.' })
+  blocking: boolean
 }

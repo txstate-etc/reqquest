@@ -1,6 +1,6 @@
 import { Ctx, FieldResolver, Query, Resolver, Root } from 'type-graphql'
 import { Context } from '@txstate-mws/graphql-server'
-import { requirementRegistry, Requirement, ApplicationRequirement, Prompt, promptRegistry, RequirementPrompt, RequirementPromptService, Application, ApplicationService, Configuration, ConfigurationService, RQContext, PeriodProgramRequirement, PromptService, JsonData, PeriodPromptService, PeriodPrompt } from '../internal.js'
+import { requirementRegistry, Requirement, ApplicationRequirement, Prompt, promptRegistry, RequirementPrompt, RequirementPromptService, Application, ApplicationService, Configuration, ConfigurationService, RQContext, PeriodProgramRequirement, PromptService, JsonData, PeriodPromptService, PeriodPrompt, PeriodWorkflowStage, ProgramService } from '../internal.js'
 
 @Resolver(of => Requirement)
 export class RequirementResolver {
@@ -36,6 +36,12 @@ export class ApplicationRequirementResolver {
   async smartTitle (@Ctx() ctx: RQContext, @Root() applicationRequirement: ApplicationRequirement) {
     const configuration = await ctx.svc(ConfigurationService).findByPeriodIdAndKey(applicationRequirement.periodId, applicationRequirement.key)
     return applicationRequirement.definition.smartTitle?.(configuration) ?? applicationRequirement.definition.title
+  }
+
+  @FieldResolver(type => PeriodWorkflowStage, { nullable: true, description: 'The stage of the workflow for this requirement. Null if not part of a workflow stage' })
+  async workflowStage (@Ctx() ctx: RQContext, @Root() applicationRequirement: ApplicationRequirement) {
+    if (!applicationRequirement.workflowStageKey) return undefined
+    return await ctx.svc(ProgramService).findWorkflowStage(applicationRequirement.periodId, applicationRequirement.programKey, applicationRequirement.workflowStageKey)
   }
 }
 

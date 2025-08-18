@@ -1,5 +1,5 @@
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { AuthService, getPeriodPrograms, PeriodProgramFilters, Program, programRegistry } from '../internal.js'
+import { AuthService, getPeriodPrograms, getPeriodWorkflowStages, PeriodProgramFilters, Program, programRegistry } from '../internal.js'
 
 const periodProgramByPeriodAndKey = new PrimaryKeyLoader({
   fetch: async (periodKeys: { periodId: string, key: string }[]) => {
@@ -14,6 +14,21 @@ const byPeriodId = new OneToManyLoader({
   },
   extractKey: row => row.periodId,
   idLoader: periodProgramByPeriodAndKey
+})
+
+const workflowStageByWorkflowId = new PrimaryKeyLoader({
+  fetch: async (workflowIds: { periodId: string, programKey: string, workflowKey: string }[]) => {
+    return await getPeriodWorkflowStages({ workflowIds })
+  },
+  extractId: workflowStage => ({ periodId: workflowStage.periodId, programKey: workflowStage.programKey, workflowKey: workflowStage.key })
+})
+
+const workflowStageByPeriodIdAndProgramKeyLoader = new OneToManyLoader({
+  fetch: async (periodIdProgramKeys: { periodId: string, programKey: string }[]) => {
+    return await getPeriodWorkflowStages({ periodIdProgramKeys })
+  },
+  extractKey: row => ({ periodId: row.periodId, programKey: row.programKey }),
+  idLoader: workflowStageByWorkflowId
 })
 
 export class ProgramService extends AuthService<Program> {
@@ -32,6 +47,14 @@ export class ProgramService extends AuthService<Program> {
 
   async findPeriodProgramByKey (periodId: string, key: string) {
     return await this.loaders.get(periodProgramByPeriodAndKey).load({ periodId, key })
+  }
+
+  async findWorkflowStageByPeriodIdAndProgramKey (periodId: string, programKey: string) {
+    return await this.loaders.get(workflowStageByPeriodIdAndProgramKeyLoader).load({ periodId, programKey })
+  }
+
+  async findWorkflowStage (periodId: string, programKey: string, workflowKey: string) {
+    return await this.loaders.get(workflowStageByWorkflowId).load({ periodId, programKey, workflowKey })
   }
 
   mayConfigure (program: Program) {

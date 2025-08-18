@@ -1,6 +1,7 @@
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { Application, AppRequest, AppRequestService, AuthService, getApplications } from '../internal.js'
+import { advanceWorkflow, Application, ApplicationPhase, AppRequest, AppRequestService, appRequestTransaction, AuthService, evaluateAppRequest, getApplications, PeriodWorkflowStage, ValidatedAppRequestResponse, WorkflowStage } from '../internal.js'
 import { BaseService } from '@txstate-mws/graphql-server'
+import db from 'mysql2-async/db'
 
 const appByInternalIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -53,5 +54,27 @@ export class ApplicationService extends AuthService<Application> {
   mayViewAsReviewer (application: Application) {
     if (this.isOwn(application) && !this.hasControl('AppRequest', 'review_own')) return false
     return this.hasControl('Application', 'view', application.authorizationKeys)
+  }
+
+  mayAdvanceWorkflow (application: Application) {
+    // any reviewer can advance the workflow if the requirements have been met, we already
+    // control who can answer the prompts so I don't think it's necessary to lock down
+    // the advancement
+    if (application.phase === ApplicationPhase.READY_FOR_WORKFLOW) return false
+    if (this.isOwn(application) && !this.hasControl('AppRequest', 'review_own')) return false
+    return this.hasControl('AppRequest', 'review', application.appRequestTags)
+  }
+
+  async advanceWorkflow (applicationId: string) {
+    const application = await getApplications({ ids: [applicationId] }, db)
+    if (!application.length) throw new Error(`Application not found: ${applicationId}`)
+    await appRequestTransaction(application[0].appRequestInternalId, async db => {
+      await advanceWorkflow(application[0].id, db)
+      await evaluateAppRequest(application[0].appRequestInternalId, db)
+    })
+    this.loaders.clear()
+    const resp = new ValidatedAppRequestResponse({ success: true, messages: [] })
+    resp.appRequest = await this.svc(AppRequestService).findByInternalId(application[0].appRequestInternalId)
+    return resp
   }
 }

@@ -552,6 +552,11 @@ enum AppRequestStatus {
   PREAPPROVAL
 
   """
+  Applicant has been offered, satisfied all acceptance requirements and is ready to accept. This status is unreachable if the period has no ACCEPTANCE requirements.
+  """
+  READY_TO_ACCEPT
+
+  """
   Applicant has completed all prompts and is ready to submit. At least one application is eligible to proceed.
   """
   READY_TO_SUBMIT
@@ -572,8 +577,18 @@ type Application {
   actions: ApplicationActions!
   id: ID!
 
+  """
+  The phase in which this application became ineligible for benefits. Useful for reporting / filtering. Null if the application is not (yet) ineligible.
+  """
+  ineligiblePhase: IneligiblePhases
+
   """The navigation title of the program this application is for."""
   navTitle: String!
+
+  """
+  The phase of the application. This is usually a computed field, not stored in the database.
+  """
+  phase: ApplicationPhase!
 
   """The program key this application corresponds to."""
   programKey: String!
@@ -587,10 +602,78 @@ type Application {
 
   """The title of the program this application is for."""
   title: String!
+
+  """
+  If the program has workflow, it may be divided into multiple stages of audit, each with their own requirements/prompts. This indicates which stage we are currently evaluating, or null if we are not in the workflow phase. An application with no workflow defined will never be in the workflow phase. Starts at 1.
+  """
+  workflowStage: PeriodWorkflowStage
 }
 
 type ApplicationActions {
   viewAsReviewer: Boolean!
+}
+
+"\n    The phase of the application. This is usually a computed field, not stored in the database. The phase\n    is computed based on the status of the appRequest and of the requirements for the program.\n  "
+enum ApplicationPhase {
+  """
+  The application has been reviewed and an offer has been made to the applicant. The applicant must accept the offer.
+  """
+  ACCEPTANCE
+
+  """
+  The applicant has submitted the application and any PREAPPROVAL requirements are passing. The application is under review.
+  """
+  APPROVAL
+
+  """
+  The application has been reviewed. If there was a workflow, it is complete. If there was an acceptance phase, the offer was accepted or rejected.
+  """
+  COMPLETE
+
+  """
+  The applicant has submitted the application, but there are automated prompts that need to be filled in before the application will appear on a reviewer's dashboard.
+  """
+  PREAPPROVAL
+
+  """
+  The appRequest has not finished pre-qual yet. The application doesn't properly exist yet.
+  """
+  PREQUAL
+
+  """
+  The applicant is filling out their portion of prompts and has not yet finished.
+  """
+  QUALIFICATION
+
+  """
+  The application has been reviewed and any blocking workflow stages have been completed. The application is ready for an offer to be made to the applicant. A reviewer must manually advanced the phase, and will do so for the whole appRequest, not one application at a time. So the application will sit in this state until all applications are ready for offer. If there is no acceptance phase (because there are no acceptance requirements), the makeOffer prompt will move the phase to WORKFLOW_NONBLOCKING or COMPLETE.
+  """
+  READY_FOR_OFFER
+
+  """
+  No application requirements are PENDING. The application is ready for the first workflow stage, but a reviewer must manually advance the phase. This phase will be automatically skipped if there are no workflow stages configured/enabled.
+  """
+  READY_FOR_WORKFLOW
+
+  """
+  An offer has been made to the applicant. The acceptance requirements are no longer pending, the application is ready to be finalized.
+  """
+  READY_TO_ACCEPT
+
+  """
+  The applicant has filled out their portion of the prompts but has not yet submitted for review.
+  """
+  READY_TO_SUBMIT
+
+  """
+  The application review has been completed and now there is a workflow process to audit the review BEFORE marking the application status as eligible or ineligible. It should remain pending until the blocking workflow stages have been completed. Workflow stages that evaluate to INELIGIBLE will also make the application status INELIGIBLE. Prompts from the applicant and review phases are locked.
+  """
+  WORKFLOW_BLOCKING
+
+  """
+  The application has been offered and accepted and now there is a workflow process to audit the review AFTER marking the application status as eligible or ineligible. Requirements from non-blocking workflow states cannot affect the application status, but the application will not proceed to the complete phase until all workflow stages are non-PENDING.
+  """
+  WORKFLOW_NONBLOCKING
 }
 
 """
@@ -622,11 +705,6 @@ type ApplicationRequirement {
   prompts: [RequirementPrompt!]!
 
   """
-  When true, means that the requirement has not been made moot by an earlier requirement failing. It may still need to be hidden from navigation based on evaluatedInEarlierApplication.
-  """
-  reachable: Boolean!
-
-  """
   The smart title for this requirement in the app request's period. For instance, might be "Applicant must have GPA over 3.4" instead of the regular title "Applicant must meet GPA requirement". Will fall back to the regular title for any requirement that does not provide a smart title.
   """
   smartTitle: String!
@@ -648,71 +726,39 @@ type ApplicationRequirement {
   The type of requirement. This determines when the requirement is evaluated and who can see the requirement.
   """
   type: RequirementType!
+
+  """
+  The stage of the workflow for this requirement. Null if not part of a workflow stage
+  """
+  workflowStage: PeriodWorkflowStage
 }
 
-"\n    The status of an application. This is usually a computed field, not stored in the database. The status\n    is computed based on the status of the appRequest and of the requirements for the program. If\n    the appRequest is CLOSED, the status should permanently match the ApplicationStatusDB instead of being\n    computed. If the appRequest is CANCELLED, all applications should be CANCELLED as well.\n  "
+"\n    The status of an application. This is usually a computed field, not stored in the database. The status\n    is computed based on the status of the appRequest and of the requirements for the program. If\n    the appRequest is CLOSED or CANCELLED, this status will remain frozen wherever it was before the\n    closure / cancellation.\n  "
 enum ApplicationStatus {
   """
-  The application has been approved and an offer has been submitted for applicant acceptance. This status is only possible for programs with at least one ACCEPTANCE requirement.
-  """
-  ACCEPTANCE
-
-  """
-  The application's benefit has been accepted by the applicant. This status is only possible for programs with at least one ACCEPTANCE requirement.
+  An offer was made to the applicant and all ACCEPTANCE requirements are met (the applicant accepted the offer).
   """
   ACCEPTED
 
   """
-  The application has been submitted, has passed preapproval, and is awaiting approval.
+  All application requirements up to and including WORKFLOW_BLOCKING requirements are resolving as MET (or NOT_APPLICABLE or WARNING). If there is an acceptance phase, the acceptance is still pending.
   """
-  APPROVAL
-
-  """The application has been approved."""
-  APPROVED
-
-  "\n      The appRequest (and thus the application inside it) has been cancelled by the applicant. In\n      some cases, individual programs may have a requirement that the applicant agrees that they\n      desire to apply. In that case the appRequest status is not CANCELLED, and neither is the application\n      status. It will actually be FAILED_PREQUAL or FAILED_QUALIFICATION, and the statusReason of the\n      requirement will explain that the applicant did not wish to pursue the application.\n    "
-  CANCELLED
+  ELIGIBLE
 
   """
-  The applicant is ineligible for the program according to the pre-qual requirements. The application/program should no longer be visible in the UI for this appRequest.
+  At least one application requirement up to and including WORKFLOW_BLOCKING requirements is not met. The review cannot proceed, but the first or current stage of the workflow should still continue.
   """
-  FAILED_PREQUAL
+  INELIGIBLE
 
   """
-  The applicant is ineligible for the program according to the qualification requirements. The application/program should remain visible in the UI and any applicable statusReason from the associated requirements should be displayed.
+  The application status has not yet been determined. Further prompts must be answered.
   """
-  FAILED_QUALIFICATION
+  PENDING
 
   """
-  The application's benefit was rejected by the applicant. This status is only possible for programs with at least one ACCEPTANCE requirement.
+  An offer was made to the applicant and at least one ACCEPTANCE requirement is not met (the applicant rejected the offer).
   """
-  NOT_ACCEPTED
-
-  """The application has not been approved."""
-  NOT_APPROVED
-
-  """The application has been submitted and is awaiting preapproval."""
-  PREAPPROVAL
-
-  """
-  The appRequest has not finished pre-qualification yet. This application does not quite exist yet and probably should not appear in the UI.
-  """
-  PREQUAL
-
-  """
-  The application has been pre-qualified and is awaiting further input from the applicant.
-  """
-  QUALIFICATION
-
-  """
-  All requirements have been evaluated as MET or NOT_APPLICABLE. The application is ready to be submitted.
-  """
-  READY_TO_SUBMIT
-
-  """
-  The appRequest (and thus the application inside it) was withdrawn after being submitted. If it is re-opened, it will re-open in submitted state.
-  """
-  WITHDRAWN
+  REJECTED
 }
 
 type Configuration {
@@ -787,10 +833,35 @@ type IndexValue {
   value: String!
 }
 
+enum IneligiblePhases {
+  """The application became ineligible in the acceptance phase."""
+  ACCEPTANCE
+
+  """The application became ineligible in the approval phase."""
+  APPROVAL
+
+  """The application became ineligible in the pre-approval phase."""
+  PREAPPROVAL
+
+  """The application became ineligible in the pre-qualification phase."""
+  PREQUAL
+
+  """The application became ineligible in the qualification phase."""
+  QUALIFICATION
+
+  """The application became ineligible during blocking workflow."""
+  WORKFLOW
+}
+
 """Unstructured JSON data."""
 scalar JsonData
 
 type Mutation {
+  """
+  This is for the applicant to accept or reject the offer that was made based on their app request. The difference between accept and reject is determined by the status of the acceptance requirements. They will still "accept offer" after they answer that they do not want the offer. If there is non-blocking workflow on any applications, the first one in each will begin. Applications without non-blocking workflow will be advanced to the COMPLETE phase. If all applications are complete, the app request will be closed.
+  """
+  acceptOffer(appRequestId: ID!): ValidatedAppRequestResponse!
+
   """Add a note to the app request."""
   addNote(
     content: String!
@@ -801,13 +872,47 @@ type Mutation {
     internal: Boolean!
   ): ValidatedAppRequestResponse!
 
+  """
+  Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to READY_FOR_OFFER. If all applications are READY_FOR_OFFER, automatically triggers the app request makeOffer mutation. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation.
+  """
+  advanceWorkflow(applicationId: ID!): ValidatedAppRequestResponse!
+
+  """
+  Cancel or withdraw the app request, depending on its current phase. This is only available if the app request is in a cancellable state.
+  """
+  cancelAppRequest(
+    appRequestId: ID!
+
+    """
+    If the user is currently viewing some of the app request details, include the dataVersion here to make the cancellation fail when the app request has been updated by another user.
+    """
+    dataVersion: Int
+  ): ValidatedAppRequestResponse!
+
+  """
+  Close the app request. Generally this is always available and will freeze the request/applications in their current phase/status.
+  """
+  closeAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
+
   """Create a new app request."""
   createAppRequest(login: String!, periodId: ID!, validateOnly: Boolean): ValidatedAppRequestResponse!
   createPeriod(period: PeriodUpdate!, validateOnly: Boolean): ValidatedPeriodResponse!
   deletePeriod(periodId: ID!): ValidatedResponse!
 
-  """Make an offer on the app request."""
+  """
+  Make an offer on the app request. If all applications are ineligible, or if there are no acceptance requirements, the applications will advance to the non-blocking workflow, or absent that, be marked complete.
+  """
   offerAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
+
+  """
+  Reopen the app request. This is only available if the app request is in a state that allows reopening.
+  """
+  reopenAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
+
+  """
+  Return the app request to the applicant phase. This is only available if the app request is in a state that allows returning.
+  """
+  returnAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
   roleAddGrant(grant: AccessRoleGrantCreate!, roleId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!
   roleCreate(role: AccessRoleInput!, validateOnly: Boolean): AccessRoleValidatedResponse!
   roleDelete(roleId: ID!): ValidatedResponse!
@@ -1026,6 +1131,16 @@ input PeriodUpdate {
   code: String
   name: String!
   openDate: DateTime!
+}
+
+type PeriodWorkflowStage {
+  """
+  Whether this stage is blocking. If true, the application cannot be completed and shown to the applicant until all requirements in this stage are satisfied.
+  """
+  blocking: Boolean!
+
+  """A human readable title for the workflow stage."""
+  title: String!
 }
 
 type Program {
@@ -1258,6 +1373,11 @@ enum RequirementType {
   A requirement that should have a non-pending status before an application may be submitted for review. Programs with a DISQUALIFYING requirement of type APPLICATION should be visible to the submitter but visually distinct as disabled/ineligible.
   """
   QUALIFICATION
+
+  """
+  This requirement belongs to a workflow stage. It should only be included in a workflow stage and should not appear in the standard requirementKeys array of a program.
+  """
+  WORKFLOW
 }
 
 type RoleActions {
