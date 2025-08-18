@@ -48,7 +48,7 @@ export const testMigrations: DatabaseMigration[] = [
           grants: [
             { subjectType: 'AppRequestOwn', controls: ['create', 'cancel', 'uncancel'], allow: true },
             { subjectType: 'AppRequestOwnReview', controls: ['withdraw', 'unwithdraw'], allow: true },
-            { subjectType: 'AppRequest', controls: ['review', 'return', 'reopen', 'close', 'offer'], allow: true},
+            { subjectType: 'AppRequest', controls: ['review', 'return', 'reopen', 'close', 'offer'], allow: true },
             { subjectType: 'AppRequestPreReview', controls: ['create', 'uncancel'], allow: true },
             { subjectType: 'PromptAnswer', controls: ['view', 'update'], allow: true },
             { subjectType: 'ApplicationRequirement', controls: ['view'], allow: true },
