@@ -557,9 +557,9 @@ export interface RequirementPrompt {
     /** Whether the prompt has been answered on this request. */
     answered: Scalars['Boolean']
     /** The configuration data for this prompt in the app request's period. */
-    configurationData: Scalars['JsonData']
+    configurationData: (Scalars['JsonData'] | null)
     /** All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it. */
-    configurationRelatedData: Scalars['JsonData']
+    configurationRelatedData: (Scalars['JsonData'] | null)
     /** The data that has been gathered from the user in response to this prompt. The schema is controlled by the question's implementation. */
     data: (Scalars['JsonData'] | null)
     /** A brief description of the prompt. This should be shown to administrators to help explain the full meaning of the prompt while assigning permissions or editing its configuration. */
@@ -1116,7 +1116,7 @@ export interface MutationGenqlSelection{
     /** Update the data for a prompt in this app request. */
     updatePrompt?: (ValidatedAppRequestResponseGenqlSelection & { __args: {data: Scalars['JsonData'], 
     /** The data version of the app request at the time this prompt was loaded. If provided, the API will perform an optimistic concurrency check and fail the update if someone else has updated the data in the meantime. */
-    dataVersion?: (Scalars['Float'] | null), promptId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
+    dataVersion?: (Scalars['Int'] | null), promptId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -1176,6 +1176,8 @@ closesBefore?: (Scalars['DateTime'] | null),
 codes?: (Scalars['String'][] | null),
 /** Return periods that have any of these IDs. */
 ids?: (Scalars['ID'][] | null),
+/** Return periods that have any of these names. */
+names?: (Scalars['String'][] | null),
 /** true -> open periods. false -> closed periods. null -> all periods. */
 openNow?: (Scalars['Boolean'] | null),
 /** Return periods that open after this date, not including that date's active period(s). */
@@ -1239,7 +1241,7 @@ export interface PeriodPromptGenqlSelection{
     __scalar?: boolean | number
 }
 
-export interface PeriodUpdate {archiveDate?: (Scalars['DateTime'] | null),closeDate?: (Scalars['DateTime'] | null),code?: (Scalars['String'] | null),name: Scalars['String'],openDate: Scalars['DateTime']}
+export interface PeriodUpdate {archiveDate?: (Scalars['DateTime'] | null),closeDate?: (Scalars['DateTime'] | null),code?: (Scalars['String'] | null),name: Scalars['String'],openDate: Scalars['DateTime'],reviewed?: (Scalars['Boolean'] | null)}
 
 export interface PeriodWorkflowStageGenqlSelection{
     /** Whether this stage is blocking. If true, the application cannot be completed and shown to the applicant until all requirements in this stage are satisfied. */

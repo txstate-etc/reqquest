@@ -238,6 +238,9 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * Optionally provide a function that can preprocess the data from this prompt before it is
    * saved to the database. This is useful for prompts that need to do some processing on the
    * data before it is stored, e.g. converting a string to a date or saving files to disk.
+   *
+   * To save files to disk, we provide the Context object provided by graphql-server. This object
+   * has a `files()` method that can be used to access the incoming file streams.
    */
   preProcessData?: (appRequest: AppRequest, data: InputDataType, ctx: RQContext) => Promise<DataType> | DataType
 }

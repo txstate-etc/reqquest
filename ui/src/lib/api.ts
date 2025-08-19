@@ -163,18 +163,18 @@ class API extends APIBase {
   }
 
   async updatePrompt (promptId: string, data: any, validateOnly: boolean, dataVersion?: number) {
-    const response = await this.client.mutation({
-      __name: 'UpdatePrompt',
-      updatePrompt: {
-        __args: { promptId, data, validateOnly, dataVersion },
-        success: true,
-        messages: {
-          message: true,
-          type: true,
-          arg: true
+    const response = await this.graphqlWithUploads(`
+      mutation UpdatePrompt($promptId: ID!, $data: JsonData!, $validateOnly: Boolean!, $dataVersion: Int) {
+        updatePrompt(promptId: $promptId, data: $data, validateOnly: $validateOnly, dataVersion: $dataVersion) {
+          success
+          messages {
+            message
+            type
+            arg
+          }
         }
       }
-    })
+    `, { promptId, data, validateOnly, dataVersion })
     return this.mutationForDialog(response.updatePrompt)
   }
 

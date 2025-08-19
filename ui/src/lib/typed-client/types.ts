@@ -1040,7 +1040,7 @@ export default {
                         "JsonData!"
                     ],
                     "dataVersion": [
-                        38
+                        43
                     ],
                     "promptId": [
                         39,
@@ -1148,6 +1148,9 @@ export default {
             ],
             "ids": [
                 39
+            ],
+            "names": [
+                68
             ],
             "openNow": [
                 33
@@ -1266,6 +1269,9 @@ export default {
             ],
             "openDate": [
                 37
+            ],
+            "reviewed": [
+                33
             ],
             "__typename": [
                 68
