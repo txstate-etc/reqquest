@@ -469,17 +469,30 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       for (const requirement of sortedRequirements) {
         const requiredData = {} as AppRequestData
         let resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
-        for (const prompt of promptLookup[requirement.id] ?? []) {
-          if (resolveInfo.status !== RequirementStatus.PENDING) prompt.visibility = PromptVisibility.UNREACHABLE
-          else {
-            if (promptsSeenInApplication.has(prompt.key)) prompt.visibility = PromptVisibility.APPLICATION_DUPE
-            else if (promptsSeenInRequest.has(prompt.key)) prompt.visibility = PromptVisibility.REQUEST_DUPE
-            else prompt.visibility = PromptVisibility.AVAILABLE
+        const prompts = promptLookup[requirement.id] ?? []
+        const anyOrderPrompts = prompts.filter(p => requirement.definition.anyOrderPromptKeySet.has(p.key))
+        const regularPrompts = prompts.filter(p => !requirement.definition.anyOrderPromptKeySet.has(p.key))
+        for (const prompt of anyOrderPrompts) prompt.visibility = PromptVisibility.AVAILABLE
+        if (anyOrderPrompts.every(p => p.answered)) {
+          for (const prompt of anyOrderPrompts) {
+            requiredData[prompt.key] = data[prompt.key]
             promptsSeenInApplication.add(prompt.key)
             promptsSeenInRequest.add(prompt.key)
-            if (prompt.answered) requiredData[prompt.key] = data[prompt.key]
-            if (!requirement.definition.anyOrderPromptKeySet.has(prompt.key)) {
-              resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
+          }
+          if (anyOrderPrompts.length) resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
+          let hasUnanswered = false
+          for (const prompt of regularPrompts) {
+            if (hasUnanswered || resolveInfo.status !== RequirementStatus.PENDING) prompt.visibility = PromptVisibility.UNREACHABLE
+            else {
+              if (promptsSeenInApplication.has(prompt.key)) prompt.visibility = PromptVisibility.APPLICATION_DUPE
+              else if (promptsSeenInRequest.has(prompt.key)) prompt.visibility = PromptVisibility.REQUEST_DUPE
+              else prompt.visibility = PromptVisibility.AVAILABLE
+              promptsSeenInApplication.add(prompt.key)
+              promptsSeenInRequest.add(prompt.key)
+              if (prompt.answered) {
+                requiredData[prompt.key] = data[prompt.key]
+                resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
+              } else hasUnanswered = true
             }
           }
         }
