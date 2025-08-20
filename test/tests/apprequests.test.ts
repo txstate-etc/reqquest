@@ -464,7 +464,6 @@ test.describe('App Request workflows', () => {
     `
     const variables = { appRequestId: appRequest2Id }
     const response = await applicant2Request.graphql<{ submitAppRequest: { appRequest: { id: string, status: string }, messages: { arg: String, message: string, type: string }[], success: boolean } }>(query, variables)
-    console.log(`Applicant 2 submit app request ${JSON.stringify(response)}`)
     expect(response.submitAppRequest.success).toEqual(true)
   })
 })
