@@ -30,9 +30,7 @@ test.describe('App Request workflows', () => {
       }
     `
     const variables = { name, code, openDate, closeDate }
-    //  NOTE: Styled differently from other destructured request examples as this was an early deadlock hit
     const response = await adminRequest.graphql<{ createPeriod: { period: { id: number, name: string, code: string, openDate: string, closeDate: string }, messages: { message: string }[] } }>(query, variables)
-    // console.log(`Response is ${JSON.stringify(response)}`)
     periodId = response.createPeriod.period.id
     expect(response.createPeriod.period.name).toEqual(name)
     expect(response.createPeriod.period.code).toEqual(code)
@@ -220,7 +218,7 @@ test.describe('App Request workflows', () => {
         }
       `
       const query_update_prompt = `
-        mutation UpdatePrompt($promptId: ID!,$data: JsonData!,$validateOnly: Boolean, $dataVersion: Float){
+        mutation UpdatePrompt($promptId: ID!,$data: JsonData!,$validateOnly: Boolean, $dataVersion: Int){
           updatePrompt(promptId:$promptId, data:$data, validateOnly:$validateOnly, dataVersion: $dataVersion){
             success
             messages {
@@ -267,6 +265,7 @@ test.describe('App Request workflows', () => {
     `
     const variables = { appRequestId }
     const response = await applicantRequest.graphql<{ errors: { message: string }[] }>(query, variables)
+    console.log(`Submit with non passing data: ${JSON.stringify(response)}`)
     expect(response.errors[0].message.includes('You may not submit this app request.')).toEqual(true)
   })
 
@@ -297,7 +296,7 @@ test.describe('App Request workflows', () => {
         }
       `
       const query_update_prompt = `
-        mutation UpdatePrompt($promptId: ID!,$data: JsonData!,$validateOnly: Boolean, $dataVersion: Float){
+        mutation UpdatePrompt($promptId: ID!,$data: JsonData!,$validateOnly: Boolean, $dataVersion: Int){
           updatePrompt(promptId:$promptId, data:$data, validateOnly:$validateOnly, dataVersion: $dataVersion){
             success
             messages {
@@ -418,7 +417,7 @@ test.describe('App Request workflows', () => {
         }
       `
       const query_update_prompt = `
-        mutation UpdatePrompt($promptId: ID!,$data: JsonData!,$validateOnly: Boolean, $dataVersion: Float){
+        mutation UpdatePrompt($promptId: ID!,$data: JsonData!,$validateOnly: Boolean, $dataVersion: Int){
           updatePrompt(promptId:$promptId, data:$data, validateOnly:$validateOnly, dataVersion: $dataVersion){
             success
             messages {

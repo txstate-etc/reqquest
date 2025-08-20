@@ -1,5 +1,5 @@
 import { YardData } from '../../testserver/src/definitions/yard.js'
-import { CatTowerData, TunaAllergyData, NiceData } from '../../testserver/src/definitions/cat.js'
+import { CatTowerData, TunaAllergyData, NiceData, OtherCatsData } from '../../testserver/src/definitions/cat.js'
 import { ExerciseData } from '../../testserver/src/definitions/exercise.js'
 
 export const promptMapPass: Map<string, Map<string, any>> = new Map([
@@ -8,7 +8,8 @@ export const promptMapPass: Map<string, Map<string, any>> = new Map([
   ['have_a_cat_tower_prompt', new Map<string, CatTowerData>([['pass_0', { haveCatTower: true }], ['pass_1', { haveCatTower: false, willPurchaseCatTower: true }]])],
   ['not_allergic_to_tuna_prompt', new Map<string, TunaAllergyData>([['pass_0', { allergicToTuna: false }]])],
   ['must_exercise_your_dog_prompt', new Map<string, ExerciseData>([['pass_0', { exerciseHours: 10 }]])],
-  ['applicant_seems_nice_prompt', new Map<string, NiceData>([['pass_0', { seemsNice: true }]])]
+  ['applicant_seems_nice_prompt', new Map<string, NiceData>([['pass_0', { seemsNice: true }]])],
+  ['other_cats_prompt', new Map<string, OtherCatsData>([['pass_0', { hasOtherCats: false }]])]
 ])
 
 export const promptMapFail: Map<string, Map<string, any>> = new Map([
@@ -17,5 +18,6 @@ export const promptMapFail: Map<string, Map<string, any>> = new Map([
   ['have_a_cat_tower_prompt', new Map<string, CatTowerData>([['fail_0', { haveCatTower: false, willPurchaseCatTower: false }]])],
   ['not_allergic_to_tuna_prompt', new Map<string, TunaAllergyData>([['fail_0', { allergicToTuna: true }]])],
   ['must_exercise_your_dog_prompt', new Map<string, ExerciseData>([['fail_0', { exerciseHours: 1 }]])],
-  ['applicant_seems_nice_prompt', new Map<string, NiceData>([['fail_0', { seemsNice: false }]])]
+  ['applicant_seems_nice_prompt', new Map<string, NiceData>([['fail_0', { seemsNice: false }]])],
+  ['other_cats_prompt', new Map<string, OtherCatsData>([['fail_0', { hasOtherCats: true }]])]
 ])
