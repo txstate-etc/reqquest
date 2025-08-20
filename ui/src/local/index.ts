@@ -13,6 +13,12 @@ import ExercisePrompt from './ExercisePrompt.svelte'
 import ExercisePromptDisplay from './ExercisePromptDisplay.svelte'
 import StatePrompt from './StatePrompt.svelte'
 import StatePromptDisplay from './StatePromptDisplay.svelte'
+import OtherCatsPrompt from './OtherCatsPrompt.svelte'
+import OtherCatsPromptDisplay from './OtherCatsPromptDisplay.svelte'
+import OtherCatsVaccinesPrompt from './OtherCatsVaccinesPrompt.svelte'
+import OtherCatsVaccinesPromptDisplay from './OtherCatsVaccinesPromptDisplay.svelte'
+import VaccineReviewPrompt from './VaccineReviewPrompt.svelte'
+import VaccineReviewPromptDisplay from './VaccineReviewPromptDisplay.svelte'
 
 export const uiRegistry = new UIRegistry({
   appName: 'Adopt a Critter',
@@ -27,7 +33,9 @@ export const uiRegistry = new UIRegistry({
     { key: 'not_allergic_to_tuna_req' },
     { key: 'applicant_seems_nice_req' },
     { key: 'must_exercise_your_dog_req', configureComponent: ExerciseConfigure },
-    { key: 'which_state_req' }
+    { key: 'which_state_req' },
+    { key: 'other_cats_applicant_req' },
+    { key: 'other_cats_reviewer_req' }
   ],
   prompts: [{
     key: 'have_yard_prompt',
@@ -53,5 +61,17 @@ export const uiRegistry = new UIRegistry({
     key: 'which_state_prompt',
     formComponent: StatePrompt,
     displayComponent: StatePromptDisplay
+  }, {
+    key: 'other_cats_prompt',
+    formComponent: OtherCatsPrompt,
+    displayComponent: OtherCatsPromptDisplay
+  }, {
+    key: 'other_cats_vaccines_prompt',
+    formComponent: OtherCatsVaccinesPrompt,
+    displayComponent: OtherCatsVaccinesPromptDisplay
+  }, {
+    key: 'vaccine_review_prompt',
+    formComponent: VaccineReviewPrompt,
+    displayComponent: VaccineReviewPromptDisplay
   }]
 })

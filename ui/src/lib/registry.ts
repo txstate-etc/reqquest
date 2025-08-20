@@ -1,5 +1,5 @@
 import type { LayoutStructureNode, LayoutStructureNodeRoot } from '@txstate-mws/carbon-svelte'
-import type { SvelteComponent } from 'svelte'
+import type { Component } from 'svelte'
 import { plural } from 'txstate-utils'
 
 export interface ProgramDefinition {
@@ -11,7 +11,7 @@ export interface ProgramDefinition {
   /**
    * An icon to represent this program in the navigation.
    */
-  icon?: typeof SvelteComponent<any>
+  icon?: Component
 }
 
 export interface RequirementDefinition {
@@ -24,11 +24,11 @@ export interface RequirementDefinition {
    * An icon to represent this requirement in the navigation. Requirements do not appear
    * in the navigation in the applicant's view.
    */
-  icon?: typeof SvelteComponent<any>
+  icon?: Component
   /**
    * A component that will be used to render the form for this prompt's configuration, if applicable.
    */
-  configureComponent?: typeof SvelteComponent<any>
+  configureComponent?: Component
 }
 
 export interface PromptDefinition {
@@ -36,7 +36,7 @@ export interface PromptDefinition {
   /**
    * The component that will be used to render the form for this prompt.
    */
-  formComponent: typeof SvelteComponent<any>
+  formComponent: Component
   /**
    * Control the size of the area the formComponent will be rendered in.
    * - 'small' will render the form in a small area (about 8 lines or less at 320px width).
@@ -49,7 +49,7 @@ export interface PromptDefinition {
    * A component that displays the data collected from this prompt instead of collecting
    * it. Should be as compact as possible, as it will be displayed in a big list of prompts.
    */
-  displayComponent: typeof SvelteComponent<any>
+  displayComponent: Component
   /**
    * Control the size of the area the displayComponent will be rendered in.
    * - 'small' will render the component in a small area (about 8 lines or less at 320px width).
@@ -65,11 +65,11 @@ export interface PromptDefinition {
    *
    * Configuration forms are always rendered in a modal that takes up (up to) the full screen.
    */
-  configureComponent?: typeof SvelteComponent<any>
+  configureComponent?: Component
   /**
    * An icon for the navigation.
    */
-  icon?: typeof SvelteComponent<any>
+  icon?: Component
 }
 
 export interface Terminologies {
@@ -134,14 +134,14 @@ export interface UIConfig {
      * request, such as the name of the applicant and the period. Any custom user information returned
      * by the userLookup function you provide will also be included at `basicRequestData.applicant.otherInfo`.
      */
-    reviewerSidebarCard?: typeof SvelteComponent<any>
+    reviewerSidebarCard?: Component
     /**
      * This will be placed below the request details in the sidebar.
      *
      * It will only receive the `basicRequestData` prop, but you may use the `api` object from
      * @reqquest/ui to fetch additional data.
      */
-    reviewerSidebar?: typeof SvelteComponent<any>
+    reviewerSidebar?: Component
   }
 }
 

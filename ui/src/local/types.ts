@@ -1,3 +1,5 @@
+import type { FieldUploadPreload } from '@txstate-mws/carbon-svelte'
+
 export interface YardData {
   haveYard: boolean
   squareFootage?: number
@@ -28,4 +30,22 @@ export interface ExerciseConfig {
 export interface StateData {
   state: string
   stateName: string
+}
+
+export interface OtherCatsData {
+  hasOtherCats: boolean
+}
+
+export interface VaccineData {
+  distemperDoc: FieldUploadPreload
+  rabiesDoc: FieldUploadPreload
+  felineLeukemiaDoc: FieldUploadPreload
+  felineHIVDoc: FieldUploadPreload
+}
+
+export interface VaccineReviewData {
+  distemper: { satisfactory: boolean }
+  rabies: { satisfactory: boolean }
+  felineLeukemia: { satisfactory: boolean }
+  felineHIV: { satisfactory: boolean }
 }
