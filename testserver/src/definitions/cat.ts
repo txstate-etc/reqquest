@@ -195,3 +195,64 @@ export const other_cats_vaccines_prompt: PromptDefinition<VaccineData> = {
     return messages
   }
 }
+
+export const other_cats_reviewer_req: RequirementDefinition = {
+  key: 'other_cats_reviewer_req',
+  type: RequirementType.APPROVAL,
+  title: 'Other Cats Reviewer Requirement',
+  description: 'Reviewer must assess the vaccination records provided by the applicant.',
+  promptKeys: ['other_cats_prompt', 'vaccine_review_prompt'],
+  resolve: (data, config) => {
+    const otherCatsData = data['other_cats_prompt'] as OtherCatsData
+    if (otherCatsData?.hasOtherCats === false) return { status: RequirementStatus.NOT_APPLICABLE }
+    const reviewData = data['vaccine_review_prompt'] as VaccineReviewData
+    if (!reviewData) return { status: RequirementStatus.PENDING, reason: 'Reviewer must assess all vaccine records.' }
+    const keys: (keyof VaccineReviewData)[] = ['distemper', 'rabies', 'felineLeukemia', 'felineHIV']
+    for (const key of keys) {
+      if (!reviewData[key]) return { status: RequirementStatus.PENDING, reason: 'Reviewer is still assessing vaccine records.' }
+      if (!reviewData[key]!.satisfactory) return { status: RequirementStatus.DISQUALIFYING, reason: `The ${key} vaccine record is unsatisfactory.` }
+    }
+    return { status: RequirementStatus.MET }
+  }
+}
+
+interface VaccineReview {
+  satisfactory: boolean
+}
+export interface VaccineReviewData {
+  distemper: VaccineReview
+  rabies: VaccineReview
+  felineLeukemia: VaccineReview
+  felineHIV: VaccineReview
+}
+
+export const vaccine_review_prompt: PromptDefinition<VaccineReviewData> = {
+  key: 'vaccine_review_prompt',
+  title: 'Vaccine Review',
+  description: 'Review the vaccination records for the applicant\'s cats.',
+  answered: (data, config) => {
+    return data?.distemper?.satisfactory != null && data?.rabies?.satisfactory != null && data?.felineLeukemia?.satisfactory != null && data?.felineHIV?.satisfactory != null
+  },
+  validate: (data, config) => {
+    const messages: MutationMessage[] = []
+    if (!data) {
+      messages.push({ type: MutationMessageType.warning, message: 'Please review the vaccination records.', arg: 'vaccineReview' })
+    } else {
+      if (!data.distemper) messages.push({ type: MutationMessageType.warning, message: 'Please review distemper vaccination record.', arg: 'distemper' })
+      if (!data.rabies) messages.push({ type: MutationMessageType.warning, message: 'Please review rabies vaccination record.', arg: 'rabies' })
+      if (!data.felineLeukemia) messages.push({ type: MutationMessageType.warning, message: 'Please review feline leukemia vaccination record.', arg: 'felineLeukemia' })
+      if (!data.felineHIV) messages.push({ type: MutationMessageType.warning, message: 'Please review feline HIV vaccination record.', arg: 'felineHIV' })
+    }
+    return messages
+  },
+  invalidUponChange: data => {
+    return data?.distemper?.satisfactory === false || data?.rabies?.satisfactory === false || data?.felineLeukemia?.satisfactory === false || data?.felineHIV?.satisfactory === false
+      ? [other_cats_vaccines_prompt.key]
+      : []
+  },
+  validUponChange: data => {
+    return data?.distemper?.satisfactory === true && data?.rabies?.satisfactory === true && data?.felineLeukemia?.satisfactory === true && data?.felineHIV?.satisfactory === true
+      ? [other_cats_vaccines_prompt.key]
+      : []
+  }
+}

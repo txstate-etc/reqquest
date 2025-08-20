@@ -1,4 +1,5 @@
 import type { ProgramDefinition } from '@reqquest/api'
+import { other_cats_reviewer_req } from './cat.js'
 
 export const adopt_a_dog_program: ProgramDefinition = {
   key: 'adopt_a_dog_program',
@@ -17,7 +18,8 @@ export const adopt_a_cat_program: ProgramDefinition = {
   requirementKeys: [
     'have_a_cat_tower_req',
     'not_allergic_to_tuna_req',
+    'other_cats_applicant_req',
     'applicant_seems_nice_req',
-    'other_cats_applicant_req'
+    other_cats_reviewer_req.key
   ]
 }

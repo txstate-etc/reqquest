@@ -123,7 +123,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * to other sections of the application. So, just because an answer validates does not
    * mean it is complete.
    */
-  answered?: (data: DataType, config: ConfigurationDataType) => boolean
+  answered?: (data: Partial<DataType>, config: ConfigurationDataType) => boolean
   /**
    * A brief description of the prompt. This will be shown to administrators to help explain
    * the full meaning of the prompt as they are assigning permissions or editing its configuration.
@@ -137,7 +137,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * warnings rather than errors. The `answered` function (see above) can be used to
    * prevent the application from proceeding until the user has provided required fields.
    */
-  validate?: (data: InputDataType, config: ConfigurationDataType, allConfig: Record<string, any>) => Promise<MutationMessage[]> | MutationMessage[]
+  validate?: (data: Partial<InputDataType>, config: ConfigurationDataType, allConfig: Record<string, any>) => Promise<MutationMessage[]> | MutationMessage[]
   /**
    * Return validation messages to the user to help them provide correct input while
    * configuring the Prompt. Prompt configuration is for administrators to be able to

@@ -42,3 +42,10 @@ export interface VaccineData {
   felineLeukemiaDoc: FieldUploadPreload
   felineHIVDoc: FieldUploadPreload
 }
+
+export interface VaccineReviewData {
+  distemper: { satisfactory: boolean }
+  rabies: { satisfactory: boolean }
+  felineLeukemia: { satisfactory: boolean }
+  felineHIV: { satisfactory: boolean }
+}

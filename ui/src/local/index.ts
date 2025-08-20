@@ -17,6 +17,8 @@ import OtherCatsPrompt from './OtherCatsPrompt.svelte'
 import OtherCatsPromptDisplay from './OtherCatsPromptDisplay.svelte'
 import OtherCatsVaccinesPrompt from './OtherCatsVaccinesPrompt.svelte'
 import OtherCatsVaccinesPromptDisplay from './OtherCatsVaccinesPromptDisplay.svelte'
+import VaccineReviewPrompt from './VaccineReviewPrompt.svelte'
+import VaccineReviewPromptDisplay from './VaccineReviewPromptDisplay.svelte'
 
 export const uiRegistry = new UIRegistry({
   appName: 'Adopt a Critter',
@@ -32,7 +34,8 @@ export const uiRegistry = new UIRegistry({
     { key: 'applicant_seems_nice_req' },
     { key: 'must_exercise_your_dog_req', configureComponent: ExerciseConfigure },
     { key: 'which_state_req' },
-    { key: 'other_cats_applicant_req' }
+    { key: 'other_cats_applicant_req' },
+    { key: 'other_cats_reviewer_req' }
   ],
   prompts: [{
     key: 'have_yard_prompt',
@@ -66,5 +69,9 @@ export const uiRegistry = new UIRegistry({
     key: 'other_cats_vaccines_prompt',
     formComponent: OtherCatsVaccinesPrompt,
     displayComponent: OtherCatsVaccinesPromptDisplay
+  }, {
+    key: 'vaccine_review_prompt',
+    formComponent: VaccineReviewPrompt,
+    displayComponent: VaccineReviewPromptDisplay
   }]
 })
