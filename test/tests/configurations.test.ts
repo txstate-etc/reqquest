@@ -1,7 +1,7 @@
 import { expect, test } from './fixtures.js'
 import { DateTime } from 'luxon'
 
-test.describe('Manage period configurations', () => {
+test.describe.serial('Manage period configurations', () => {
   const name = '2025 Config'
   const code = '2025-config'
   const timeZone = 'America/Chicago'
@@ -61,10 +61,77 @@ test.describe('Manage period configurations', () => {
       expect(config.actions.view).toEqual(true)
     }
   })
-  // TEST - Make config change for exercise hours - should succeeded
-  // TEST - Make period reviewed
-  // TEST - Make config change for exercise hours - shoudl fail and 'reviewed' no more change
-
+  test('Admin - Make exercise hours config changes', async ({ adminRequest }) => {
+    const query = `
+      mutation UpdatePeriodConfiguration($periodId: ID!, $data: JsonData!, $key: String!, $validateOnly: Boolean) {
+        updateConfiguration(periodId:$periodId, data: $data, key: $key, validateOnly: $validateOnly) {
+          success
+          messages{
+            message
+            arg
+            type
+          }
+          configuration {
+            key
+            data
+          }
+        }
+      }
+    `
+    const data = { minExerciseHours: 15 }
+    const variables = { periodId, key: 'must_exercise_your_dog_req', data, validateOnly: false }
+    const response = await adminRequest.graphql<{ updateConfiguration: { success: boolean, configuration: { key: string, data: { minExerciseHours: number} } } }>(query, variables)
+    expect(response.updateConfiguration.success).toEqual(true)
+    expect(response.updateConfiguration.configuration.data.minExerciseHours).toEqual(data.minExerciseHours)
+  })
+  test('Admin - Set period reviewed for prompt configuration update blocks', async ({ adminRequest }) => {
+    const query = `
+      mutation UpdatePeriod($periodId: ID!, $name: String!, $code: String, $openDate:DateTime!, $closeDate:DateTime!, $reviewed:Boolean){
+        updatePeriod(periodId: $periodId, update:{ name: $name, code: $code, openDate: $openDate, closeDate: $closeDate, reviewed:$reviewed }, validateOnly: false) {
+          period {
+            id
+            name
+            code
+            openDate
+            closeDate
+            archiveDate
+            reviewed
+          }
+          messages {
+            message
+          }
+        }
+      }
+    `
+    const variables = { periodId, name, code, openDate, closeDate, reviewed: true }
+    const { updatePeriod } = await adminRequest.graphql<{ updatePeriod: { period: { id: number, name: string, code: string, closeDate: string, openDate: string, archiveDate: string, reviewed: boolean }, messages: { message: string }[] } }>(query, variables)
+    expect(updatePeriod.period.id).toEqual(periodId)
+    expect(updatePeriod.period.reviewed).toEqual(true)
+    expect(updatePeriod.period.closeDate).toEqual(closeDate)
+  })
+  test('Admin - Make exercise hours config changes in reviewed period', async ({ adminRequest }) => {
+    const query = `
+      mutation UpdatePeriodConfiguration($periodId: ID!, $data: JsonData!, $key: String!, $validateOnly: Boolean) {
+        updateConfiguration(periodId:$periodId, data: $data, key: $key, validateOnly: $validateOnly) {
+          success
+          messages{
+            message
+            arg
+            type
+          }
+          configuration {
+            key
+            data
+          }
+        }
+      }
+    `
+    const data = { minExerciseHours: 5 }
+    const variables = { periodId, key: 'must_exercise_your_dog_req', data, validateOnly: false }
+    const response = await adminRequest.graphql<{ updateConfiguration: { success: boolean, configuration: { key: string, data: { minExerciseHours: number} } } }>(query, variables)
+    expect(response.updateConfiguration.success).toEqual(false)
+    expect(response.updateConfiguration.configuration.data.minExerciseHours).not.toEqual(data.minExerciseHours)
+  })
   test('Reviewer - Get prompt configuration period details with view access, but no update access', async ({ reviewerRequest }) => {
     const query = `
       query GetPeriodConfigurations($ids: [ID!]){
