@@ -124,6 +124,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
 
   async update (prompt: RequirementPrompt, data: any, validateOnly = false, dataVersion?: number) {
     if (!this.mayUpdate(prompt)) throw new Error('You are not allowed to update this prompt.')
+    if (!promptRegistry.validate(prompt.key, data)) throw new Error('Invalid prompt data.')
     const response = new ValidatedAppRequestResponse({ success: true })
     const allConfigData = await this.svc(ConfigurationService).getRelatedData(prompt.periodId, prompt.key)
     for (const message of await prompt.definition.validate?.(data, allConfigData[prompt.key] ?? {}, allConfigData) ?? []) response.addMessage(message.message, message.arg, message.type)

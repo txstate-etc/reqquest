@@ -1,7 +1,11 @@
 import type { MutationMessage } from '@txstate-mws/graphql-server'
-import { Cache, isNotBlank, sortby } from 'txstate-utils'
-import { AppRequest, getIndexesInUse, programRegistry, requirementRegistry, RQContext, TagDefinition, type AppRequestData } from '../internal.js'
+import type { SchemaObject } from '@txstate-mws/fastify-shared'
+import Ajv, { ValidateFunction } from 'ajv'
+import addFormats from 'ajv-formats'
+import addErrors from 'ajv-errors'
 import db from 'mysql2-async/db'
+import { Cache, isNotBlank, isNotEmpty, sortby } from 'txstate-utils'
+import { AppRequest, getIndexesInUse, programRegistry, requirementRegistry, RQContext, TagDefinition, type AppRequestData } from '../internal.js'
 
 export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVersion'>> {
   /**
@@ -132,12 +136,25 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
   /**
    * Return validation messages to the user to help them provide correct input.
    *
-   * Be careful about making fields required. We want to allow the user to save and
-   * visit another part of the application. Required field messages should probably be
-   * warnings rather than errors. The `answered` function (see above) can be used to
-   * prevent the application from proceeding until the user has provided required fields.
+   * Be careful about returning `type: 'error'` messages. They will prevent the prompt from being
+   * saved. We usually want to allow the user to be able to save and visit another part of the
+   * application, even if what they've entered isn't perfect. For example, required field or
+   * character limit messages should probably be warnings rather than errors. The `answered`
+   * function (see above) can be used to prevent the application from proceeding until the user
+   * has provided required fields and tailored their input to meet character limits (major
+   * infractions could be errors, to avoid saving huge amounts of data).
    */
   validate?: (data: Partial<InputDataType>, config: ConfigurationDataType, allConfig: Record<string, any>) => Promise<MutationMessage[]> | MutationMessage[]
+  /**
+   * Optionally provide a JSON-schema object to validate the prompt's input data. Reqquest will
+   * use ajv to validate the input data against this schema.
+   *
+   * It's a bad idea to use the `required` keyword, as this will force the user to provide
+   * all required fields before any information can be saved. We would rather save what they
+   * can give us and let them come back later to fill in the rest. The `answered` function
+   * should be the final determination that all the required fields have been provided.
+   */
+  schema?: SchemaObject
   /**
    * Return validation messages to the user to help them provide correct input while
    * configuring the Prompt. Prompt configuration is for administrators to be able to
@@ -262,6 +279,15 @@ const tagListCache = new Cache(async (key: { category: string, search?: string }
   return tags ?? []
 }, { freshseconds: 300 })
 
+const ajv = new Ajv({
+  allErrors: true,
+  strictSchema: false,
+  coerceTypes: true
+})
+
+addFormats(ajv)
+addErrors(ajv)
+
 class PromptRegistry {
   protected prompts: Record<string, PromptDefinition> = {}
   protected promptsList: PromptDefinition[] = []
@@ -269,6 +295,7 @@ class PromptRegistry {
   protected unsortedMigrations: AppRequestMigration[] = []
   protected sortedMigrations: AppRequestMigration[] = []
   protected indexLookups: Record<string, (tag: string) => Promise<string> | string> = {}
+  protected validators: Record<string, ValidateFunction> = {}
   public indexCategories: PromptIndexDefinition[] = []
   public indexCategoryMap: Record<string, PromptIndexDefinition> = {}
   public tagCategories: PromptTagDefinition[] = []
@@ -279,6 +306,7 @@ class PromptRegistry {
     this.prompts[prompt.key] = prompt
     this.promptsList.push(prompt)
     this.unsortedMigrations.push(...(prompt.migrations ?? []))
+    if (isNotEmpty(prompt.schema)) this.validators[prompt.key] = ajv.compile(prompt.schema)
   }
 
   get (key: string) {
@@ -360,6 +388,12 @@ class PromptRegistry {
 
   isUserPrompt (key: string) {
     return this.userPrompts.has(key)
+  }
+
+  validate (key: string, data: any) {
+    const validate = this.validators[key]
+    if (!validate) return true
+    return validate(data)
   }
 
   migrations () {

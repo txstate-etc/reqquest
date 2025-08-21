@@ -20,7 +20,7 @@
 
   export let data: PageData
   $: ({ prompt, appRequestData, dataVersion } = data)
-  $: def = uiRegistry.getPrompt($page.params.promptKey)
+  $: def = uiRegistry.getPrompt($page.params.promptKey!)
 
   let store: FormStore | undefined
   let continueAfterSave = false
@@ -41,7 +41,7 @@
 
   async function onSaved () {
     const [nextPrompt] = await Promise.all([
-      api.getNextPrompt($page.params.id, prompt.key),
+      api.getNextPrompt($page.params.id!, prompt.key),
       invalidate('request:apply')
     ])
     if (continueAfterSave) {
