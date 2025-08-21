@@ -12,7 +12,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 /package-lock.json
-/test/package-lock.json
 docker-compose.override.yml
 docker-compose.*.override.yml
 /test/test-results

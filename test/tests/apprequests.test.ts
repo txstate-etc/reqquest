@@ -448,6 +448,7 @@ test.describe('App Request workflows', () => {
     }
   })
   // Submit with passing data
+  let lastAppRequestStatus = ''
   test('Applicant 2 - submit app request with passing data', async ({ applicant2Request }) => {
     const query = `
       mutation SubmitAppRequest($appRequestId:ID!) {
@@ -458,11 +459,67 @@ test.describe('App Request workflows', () => {
             arg
             type
           }
+          appRequest {
+            id
+            status
+          }
         }
       }
     `
     const variables = { appRequestId: appRequest2Id }
     const response = await applicant2Request.graphql<{ submitAppRequest: { appRequest: { id: string, status: string }, messages: { arg: String, message: string, type: string }[], success: boolean } }>(query, variables)
+    lastAppRequestStatus = response.submitAppRequest.appRequest.status
     expect(response.submitAppRequest.success).toEqual(true)
+  })
+  test('Applicant 2 - Close valid submitted app request that is currently under reviewer purview', async ({ applicant2Request }) => {
+    const query = `
+      mutation CloseAppRequest($appRequestId: ID!) {
+        closeAppRequest(appRequestId: $appRequestId) {
+          success
+          appRequest {
+            status
+            statusReason
+            closedAt
+          }
+        }
+      }
+    `
+    const variables = { appRequestId: appRequest2Id }
+    const response = await applicant2Request.graphql<{ errors: { message: string }[] }>(query, variables)
+    expect(response.errors[0].message).toEqual('You may not close this app request.')
+  })
+  test('Reviewer - Close valid submitted app request that is currently under reviewer purview', async ({ reviewerRequest }) => {
+    const query = `
+      mutation CloseAppRequest($appRequestId: ID!) {
+        closeAppRequest(appRequestId: $appRequestId) {
+          success
+          appRequest {
+            status
+            statusReason
+            closedAt
+          }
+        }
+      }
+    `
+    const variables = { appRequestId: appRequest2Id }
+    const response = await reviewerRequest.graphql<{ closeAppRequest: { success: boolean, appRequest: { status: string, statusReason: string, closedAt: string } } }>(query, variables)
+    expect(response.closeAppRequest.success).toEqual(true)
+  })
+  test('Reviewer - Reopen valid submitted app request that is currently under reviewer purview', async ({ reviewerRequest }) => {
+    const query = `
+      mutation ReOpenAppRequest($appRequestId:ID!) {
+        reopenAppRequest(appRequestId:$appRequestId) {
+          success
+          appRequest{
+            status
+            statusReason
+          }
+        }
+      }
+    `
+    const variables = { appRequestId: appRequest2Id }
+    const response = await reviewerRequest.graphql<{ reopenAppRequest: { success: boolean, appRequest: { status: string, statusReason: string, closedAt: string } } }>(query, variables)
+    expect(response.reopenAppRequest.success).toEqual(true)
+    expect(response.reopenAppRequest.appRequest.status).toEqual(lastAppRequestStatus) // confirm status did not change
   })
 })
