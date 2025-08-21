@@ -1,2 +1,2 @@
 #!/bin/bash
-cd api; npm ci; cd ../ui; npm ci; cd ../test; npm ci; cd ../testserver; npm ci
+cd api; npm ci; cd ../ui; npm ci; cd ../test; npm i; cd ../testserver; npm ci
