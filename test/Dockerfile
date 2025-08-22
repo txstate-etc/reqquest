@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/playwright:v1.53.2
 
-COPY test/package.json ./
-RUN npm install --omit=dev
+COPY test/package.json test/package-lock.json ./
+RUN npm ci --omit=dev
 COPY test/tsconfig.json ./
 COPY test/playwright.config.ts ./
 COPY test/tests tests
