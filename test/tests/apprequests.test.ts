@@ -1,7 +1,7 @@
 import { Hash } from 'crypto'
 import { expect, test } from './fixtures.js'
 import { DateTime } from 'luxon'
-import { promptMapPass, promptMapFail } from './promptdata.js'
+import { promptMapQualified, promptMapUnqualified } from './promptdata.js'
 
 test.describe('App Request workflows', () => {
   const name = '2025 app-req'
@@ -195,7 +195,7 @@ test.describe('App Request workflows', () => {
   test('Applicant - recurring update all available prompts with FAILING data', async ({ applicantRequest }) => {
     let promptsExist = true
     let promptIteration = 0
-    while (promptsExist && (promptIteration < promptMapPass.size)) {
+    while (promptsExist && (promptIteration < promptMapQualified.size)) {
       promptIteration++
       const query_get_prompts = `
         query GetPromptsForRequest($appRequestIds: [ID!]) {
@@ -237,7 +237,7 @@ test.describe('App Request workflows', () => {
       if (allPrompts.length < 1) promptsExist = false
       // update unanswered available prompts
       for (const availablePrompt of allPrompts) {
-        const promptMap = promptMapFail.get(availablePrompt.key)
+        const promptMap = promptMapUnqualified.get(availablePrompt.key)
         if (promptMap) { // only test if map to valid prompt data exists
           for (const value of promptMap) {
             const query_update_prompt_variables = { promptId: availablePrompt.id, data: value[1], validateOnly: false }
@@ -272,7 +272,7 @@ test.describe('App Request workflows', () => {
   test('Applicant - recurring update next available and not answered prompts with passing data', async ({ applicantRequest }) => {
     let availableUnasweredPromptsExist = true
     let promptIteration = 0
-    while (availableUnasweredPromptsExist && (promptIteration < promptMapPass.size)) {
+    while (availableUnasweredPromptsExist && (promptIteration < promptMapQualified.size)) {
       promptIteration++
       const query_get_prompts = `
         query GetPromptsForRequest($appRequestIds: [ID!]) {
@@ -314,7 +314,7 @@ test.describe('App Request workflows', () => {
       if (allAvailableUnansweredPrompts.length < 1) availableUnasweredPromptsExist = false
       // update unanswered available prompts
       for (const availablePrompt of allAvailableUnansweredPrompts) {
-        const promptMap = promptMapPass.get(availablePrompt.key)
+        const promptMap = promptMapQualified.get(availablePrompt.key)
         if (promptMap) { // only test if map to valid prompt data exists
           for (const value of promptMap) {
             const query_update_prompt_variables = { promptId: availablePrompt.id, data: value[1], validateOnly: false }
@@ -393,7 +393,7 @@ test.describe('App Request workflows', () => {
   test('Applicant 2 - recurring update next available and not answered prompts with passing data', async ({ applicant2Request }) => {
     let availableUnasweredPromptsExist = true
     let promptIteration = 0
-    while (availableUnasweredPromptsExist && (promptIteration < promptMapPass.size)) {
+    while (availableUnasweredPromptsExist && (promptIteration < promptMapQualified.size)) {
       promptIteration++
       const query_get_prompts = `
         query GetPromptsForRequest($appRequestIds: [ID!]) {
@@ -435,7 +435,7 @@ test.describe('App Request workflows', () => {
       if (allAvailableUnansweredPrompts.length < 1) availableUnasweredPromptsExist = false
       // update unanswered available prompts
       for (const availablePrompt of allAvailableUnansweredPrompts) {
-        const promptMap = promptMapPass.get(availablePrompt.key)
+        const promptMap = promptMapQualified.get(availablePrompt.key)
         if (promptMap) { // only test if map to valid prompt data exists
           for (const value of promptMap) {
             const query_update_prompt_variables = { promptId: availablePrompt.id, data: value[1], validateOnly: false }

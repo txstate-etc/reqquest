@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FieldCheckbox } from '@txstate-mws/carbon-svelte'
+  import { FieldRadio } from '@txstate-mws/carbon-svelte'
 </script>
 
-<FieldCheckbox path="allergicToTuna" labelText="Are you allergic to airborne tuna?" />
+<FieldRadio boolean path="allergicToTuna" legendText="Are you allergic to airborne tuna?" items={[{ label: 'Yes', value: true }, { label: 'No', value: false }]} />

@@ -1,23 +1,21 @@
-import { YardData } from '../../testserver/src/definitions/yard.js'
-import { CatTowerData, TunaAllergyData, NiceData, OtherCatsData } from '../../testserver/src/definitions/cat.js'
-import { ExerciseData } from '../../testserver/src/definitions/exercise.js'
+import { YardPromptData, CatTowerPromptData, TunaAllergyPromptData, NicePromptData, OtherCatsPromptData, ExercisePromptData } from '../../testserver/src/definitions/models/index.js'
 
-export const promptMapPass: Map<string, Map<string, any>> = new Map([
-  ['which_state_prompt', new Map<string, any>([['pass_0', { state: 'TX' }]])],
-  ['have_yard_prompt', new Map<string, YardData>([['pass_0', { haveYard: true, squareFootage: 1000, totalPets: 2 }]])],
-  ['have_a_cat_tower_prompt', new Map<string, CatTowerData>([['pass_0', { haveCatTower: true }], ['pass_1', { haveCatTower: false, willPurchaseCatTower: true }]])],
-  ['not_allergic_to_tuna_prompt', new Map<string, TunaAllergyData>([['pass_0', { allergicToTuna: false }]])],
-  ['must_exercise_your_dog_prompt', new Map<string, ExerciseData>([['pass_0', { exerciseHours: 10 }]])],
-  ['applicant_seems_nice_prompt', new Map<string, NiceData>([['pass_0', { seemsNice: true }]])],
-  ['other_cats_prompt', new Map<string, OtherCatsData>([['pass_0', { hasOtherCats: false }]])]
+export const promptMapQualified: Map<string, Map<string, any>> = new Map([
+  ['which_state_prompt', new Map<string, any>([['pass_0', { state: 'TX', stateName: 'Texas' }]])],
+  ['have_yard_prompt', new Map<string, YardPromptData>([['pass_0', { haveYard: true, squareFootage: 1000, totalPets: 2 }]])],
+  ['have_a_cat_tower_prompt', new Map<string, CatTowerPromptData>([['pass_0', { haveCatTower: true }], ['pass_1', { haveCatTower: false, willPurchaseCatTower: true }]])],
+  ['not_allergic_to_tuna_prompt', new Map<string, TunaAllergyPromptData>([['pass_0', { allergicToTuna: false }]])],
+  ['must_exercise_your_dog_prompt', new Map<string, ExercisePromptData>([['pass_0', { exerciseHours: 10 }]])],
+  ['applicant_seems_nice_prompt', new Map<string, NicePromptData>([['pass_0', { seemsNice: true }]])],
+  ['other_cats_prompt', new Map<string, OtherCatsPromptData>([['pass_0', { hasOtherCats: false }]])]
 ])
 
-export const promptMapFail: Map<string, Map<string, any>> = new Map([
-  ['which_state_prompt', new Map<string, any>([['fail_0', { state: 'TT' }]])],
-  ['have_yard_prompt', new Map<string, YardData>([['fail_0', { haveYard: false }]])],
-  ['have_a_cat_tower_prompt', new Map<string, CatTowerData>([['fail_0', { haveCatTower: false, willPurchaseCatTower: false }]])],
-  ['not_allergic_to_tuna_prompt', new Map<string, TunaAllergyData>([['fail_0', { allergicToTuna: true }]])],
-  ['must_exercise_your_dog_prompt', new Map<string, ExerciseData>([['fail_0', { exerciseHours: 1 }]])],
-  ['applicant_seems_nice_prompt', new Map<string, NiceData>([['fail_0', { seemsNice: false }]])],
-  ['other_cats_prompt', new Map<string, OtherCatsData>([['fail_0', { hasOtherCats: true }]])]
+export const promptMapUnqualified: Map<string, Map<string, any>> = new Map([
+  ['which_state_prompt', new Map<string, any>([['fail_0', { state: 'WA', stateName: 'Washington' }]])],
+  ['have_yard_prompt', new Map<string, YardPromptData>([['fail_0', { haveYard: false }]])],
+  ['have_a_cat_tower_prompt', new Map<string, CatTowerPromptData>([['fail_0', { haveCatTower: false, willPurchaseCatTower: false }]])],
+  ['not_allergic_to_tuna_prompt', new Map<string, TunaAllergyPromptData>([['fail_0', { allergicToTuna: true }]])],
+  ['must_exercise_your_dog_prompt', new Map<string, ExercisePromptData>([['fail_0', { exerciseHours: 1 }]])],
+  ['applicant_seems_nice_prompt', new Map<string, NicePromptData>([['fail_0', { seemsNice: false }]])],
+  ['other_cats_prompt', new Map<string, OtherCatsPromptData>([['fail_0', { hasOtherCats: true }]])]
 ])

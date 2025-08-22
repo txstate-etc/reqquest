@@ -4,7 +4,7 @@
 
 <FieldRadio boolean path="hasOtherCats" labelText="Do you have other cats?" items={
   [
-    { value: false, label: 'No' },
-    { value: true, label: 'Yes' }
+    { value: true, label: 'Yes' },
+    { value: false, label: 'No' }
   ]
 } />
