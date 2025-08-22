@@ -75,11 +75,17 @@ class API extends APIBase {
     for (const applications of response.appRequests[0]?.applications ?? []) {
       for (const requirement of applications.requirements) {
         for (const prompt of requirement.prompts) {
-          if ((!prompt.answered || currentKeyFound) && prompt.visibility === enumPromptVisibility.AVAILABLE) return prompt
-          if (prompt.key === currentPromptKey && prompt.visibility === enumPromptVisibility.AVAILABLE) currentKeyFound = true
+          if (prompt.visibility !== enumPromptVisibility.AVAILABLE) continue
+          if (currentPromptKey == null) {
+            if (!prompt.answered) return prompt
+          } else {
+            if (currentKeyFound) return prompt
+            if (prompt.key === currentPromptKey) currentKeyFound = true
+          }
         }
       }
     }
+    return undefined
   }
 
   async getApplyNavigation (appRequestId: string) {
