@@ -1,4 +1,5 @@
-export * from './cat.js'
+export * from './cat/cat.prompts.js'
+export * from './cat/cat.requirements.js'
 export * from './exercise.js'
 export * from './programs.js'
 export * from './state.js'

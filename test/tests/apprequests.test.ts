@@ -265,7 +265,6 @@ test.describe('App Request workflows', () => {
     `
     const variables = { appRequestId }
     const response = await applicantRequest.graphql<{ errors: { message: string }[] }>(query, variables)
-    console.log(`Submit with non passing data: ${JSON.stringify(response)}`)
     expect(response.errors[0].message.includes('You may not submit this app request.')).toEqual(true)
   })
 
