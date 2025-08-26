@@ -34,6 +34,10 @@ other requirements in the system and the information they have already collected
 * Reviewer
 
   Reviews submitted applications and eventually gets them to approved status.
+* Second Eyes Reviewer
+
+  Fills out prompts in the workflow stage of one or more applications, in order to check
+  the work of a reviewer.
 * Administrator
 
   Creates new application windows, manages roles, manages configurations.
@@ -46,7 +50,7 @@ into role management admins and configuration management admins.
 
 # Multiple programs
 One of ReqQuest's main distinguishing features is support for multiple programs in the same
-App Request. By the same App Request, I mean that applicants submit to all programs in a single
+App Request. By the same App Request, we mean that applicants submit to all programs in a single
 submission.
 
 ReqQuest's multi-program support is NOT intended to support multiple programs with
@@ -55,8 +59,8 @@ multiple programs are available to support one of the applicant's needs at a par
 time.
 
 For instance, if you have 4 scholarships that are all available to help a student
-pay for a semester of school, that fits because ReqQuest can help them apply once and get
-all the benefits they qualify for.
+pay for a semester of school, ReqQuest can help them apply once and get one or more of
+the scholarships - as many as they qualify for.
 
 On the other hand, what if you have some processes that support faculty, like a
 sabbatical request form and a request for a promotion to tenure? Those may seem related
@@ -114,22 +118,36 @@ they will only receive data from automation processes.
 prompts (and depending on permissions, editing/correcting the applicant's prompts). This phase continues
 until the applications are all approved or denied.
 
-6. APPROVED / NOT_APPROVED - Once the reviewer has answered all appropriate prompts, each application
-will automatically be designated as APPROVED or NOT_APPROVED. If at least one application is APPROVED, the
-App Request as a whole will be marked as APPROVED, otherwise it will be marked as NOT_APPROVED. This
-designation at the App Request level is mostly for display convenience so that it's easy to tell the
-difference between requests that ended in benefits and those that ended without benefits. Automations
-would likely be configured to respond to individual applications and their status. Automations can also
-be configured to wait for the App Request to be closed.
+6. BLOCKING WORKFLOW (optional) - Each application can independently be configured for a second set
+of eyes to confirm the review _before_ the result is released to the applicant. This phase is not visible
+at the app request level, it just appears to be in the APPROVAL phase. Each application can be in its own
+workflow stage. A workflow stage contains requirements and prompts just like the rest of the review process,
+so it can be as simple as one prompt ("yes this all looks good") or many prompts (one for each major portion
+of the review).
 
-    Note: An App Request can "jump" to this phase if all applications are disqualified early.
+7. REVIEW_COMPLETE - Once the reviewer (and blocking workflow reviewers) have answered all appropriate prompts,
+each application will automatically be designated as ELIGIBLE or INELIGIBLE instead of PENDING. Once no
+applications are PENDING, the App Request as a whole will be marked as REVIEW_COMPLETE. A reviewer is now able
+to publish the results to the applicant.
 
-7. ACCEPTANCE (optional) - In some projects, there may be an acceptance step where the approval
+8. APPROVED / NOT_APPROVED - Once the app request results are published to the applicant, the app request
+will be marked as either APPROVED or NOT_APPROVED. It is APPROVED if at least one application was found
+to be ELIGIBLE. This is mostly for display purposes, the actual approvals at the application level are
+more important.
+
+9. ACCEPTANCE (optional) - In some projects, there may be an acceptance step where the approval
 is actually an offer of benefits, and the applicant must accept the offer. In these cases,
-there will be at least one Requirement with type ACCEPTANCE, and ReqQuest will add this step
-to the workflow. Automations would wait on the ACCEPTED status instead of APPROVED.
+there will be at least one Requirement with type ACCEPTANCE. ReqQuest will recognize this and set the app
+request status to ACCEPTANCE instead of APPROVED after the results are published to the applicant. From
+there, the applicant will have more prompts to answer (e.g. "yes, I accept" or perhaps "yes I accept $500
+out of the $1000 offered"). Automated integrations should wait on the ACCEPTED status instead of APPROVED.
 
-8. CLOSED - All App Requests are automatically CLOSED after their period's Archive date. They
+10. NON-BLOCKING WORKFLOW (optional) - In some systems, we will have a need for a second set of eyes to
+come into each app request and ensure that everything was done correctly. This could be for training purposes
+or to satisfy audit requirements, but does not interfere with the main app request process - the user will
+be awarded or denied the benefit before non-blocking workflow starts.
+
+11. CLOSED - All App Requests are automatically CLOSED after their period's Archive date. They
 can also be manually closed by reviewers with the appropriate permission. Once marked as CLOSED, an
 App Request can no longer be updated without being re-opened (re-open is unavailable
 after the associated period's archive date). All collected data and determinations of eligibility
@@ -172,71 +190,92 @@ example, if the Program represents an "In-State Tuition Grant" program, the Appl
 represents the information Jennifer gave us to prove she's eligible for the grant, and the
 status of her request.
 
-### Application Statuses
+### Application Status
+Application status represents the current state of the eligibility of the application.
+* PENDING
+
+  The application is usually in this status while it is being entered or reviewed.
+* ELIGIBLE
+
+  The application is currently eligible for the benefit offered by the program, but there could
+  be further review or blocking workflow stages.
+* INELIGIBLE
+
+  The application is currently ineligible for the benefit offered by the program. Blocking
+  workflow stages should still be completed.
+* ACCEPTED
+
+  An offer was made to the applicant, and they accepted or partially accepted it.
+* REJECTED
+
+  An offer was made to the applicant, but they rejected it.
+
+Occasionally when the application is ready to move to a new phase, the status will change
+temporarily to ELIGIBLE or INELIGIBLE, only to return to PENDING in the new phase. For example,
+when the application is READY_TO_SUBMIT, it may briefly become ELIGIBLE before being submitted,
+but then go back to PENDING while the reviewers are doing their part.
+
+### Application Phase
+Application phase represents where the application is in the process, regardless of whether it is
+currently eligible or ineligible for the benefit. Even rejected applications continue to work through
+the phases, since we need to perform blocking and non-blocking workflow stages on all applications, not
+just the ones that are awarded a benefit.
+
 * PREQUAL
 
   The appRequest has not finished pre-qualification yet. Since pre-qualification determines which applications
   are relevant, this application is not yet relevant and should not appear in the applicant UI. This status is only
   possible if there is at least one PREQUAL requirement.
-
 * QUALIFICATION
 
   The application has been pre-qualified and is awaiting further input from the applicant.
-
 * READY_TO_SUBMIT
 
-  All pre-submission requirements have been evaluated as passing (MET, WARNING, or NOT_APPLICABLE). The application is ready to be submitted.
-
+  All pre-submission requirements have been evaluated as passing (MET, WARNING, or NOT_APPLICABLE). The application
+  is ready to be submitted. Applications that do not qualify for the benefit remain in whichever phase they were
+  disqualified in.
 * PREAPPROVAL
 
   The application has been submitted and at least one PREAPPROVAL requirement exists and is PENDING.
-
 * APPROVAL
 
   The application has been submitted, has passed preapproval, and is awaiting approval.
+* READY_FOR_WORKFLOW
 
-* APPROVED
+  All review requirements have been resolved as non-PENDING, the application is ready to be moved into
+  the first non-blocking workflow stage. If there is no non-blocking workflow, this phase is skipped
+  and we proceed to REVIEW_COMPLETE.
 
-  The application has passed all requirements.
+  This phase is also used for applications that are in a workflow stage and all its requirements are
+  passing. The application is ready to move to the next non-blocking workflow. If there are no later non-blocking
+  workflow stages, this phase is skipped and we proceed to REVIEW_COMPLETE.
+* WORKFLOW_BLOCKING
 
-* FAILED_PREQUAL
+  The application is currently in a blocking workflow stage with one or more PENDING requirements. We are waiting
+  on the workflow stage reviewer to come and answer prompts.
+* REVIEW_COMPLETE
 
-  The applicant is ineligible for the program according to the pre-qual requirements. The application/program should no longer be visible in the navigation for this appRequest, but may still be visible on the PreQual Review screen.
-
-* FAILED_QUALIFICATION
-
-  The applicant is ineligible for the program according to the qualification requirements. The application/program should remain visible in the UI and any applicable statusReason from the associated requirements should be displayed.
-
-* NOT_APPROVED
-
-  The applicant will not be receiving the benefit because they failed a requirement in the pre-review or review phase. We
-  should be careful not to use strong language like DENIED or DISQUALIFIED because it's possible they simply did not
-  make the cut in a competitive pool of applicants. The statusReason can provide more information.
-
+  The application has been reviewed and all requirements are non-PENDING. This application is ready to be released
+  to the applicant. It will wait in this phase for all other applications to reach REVIEW_COMPLETE, then the whole
+  app request may be released to the applicant by a reviewer.
 * ACCEPTANCE
 
-  The application has been approved and an offer has been submitted for applicant acceptance.
-  This status is only possible for programs with at least one ACCEPTANCE requirement.
+  The application has been released to the applicant and there is at least one ACCEPTANCE requirement that is PENDING. We are waiting for the applicant to come and answer acceptance prompts.
+* READY_TO_ACCEPT
+  All ACCEPTANCE requirements have been satisfied and are non-PENDING. The applicant may now finalize the
+  application by submitting their acceptance.
+* WORKFLOW_NONBLOCKING
+  Now that the application results have been revealed to the applicant, and the applicant accepted the benefit,
+  the application proceeds through any non-blocking workflow stages. In the current workflow stage, there are
+  PENDING requirements that must be resolved before the application can move forward to the next workflow stage.
 
-* ACCEPTED
+  The READY_FOR_WORKFLOW status will re-appear at the end of each non-blocking workflow stage, when the application
+  is ready to move to the next one. When the last non-blocking workflow stage is complete, the application will
+  move to the COMPLETE phase.
+* COMPLETE
 
-  The application\'s benefit has been accepted by the applicant. This status is only possible for programs with at least one ACCEPTANCE requirement.
-
-* NOT_ACCEPTED
-
-  The application\'s benefit was rejected by the applicant. This status is only possible for programs with at least one ACCEPTANCE requirement.
-
-* CANCELLED
-
-  The App Request (and thus all applications inside it) has been cancelled by the applicant. Individual
-  applications cannot be cancelled. If you want applicants to be able to opt out of individual programs,
-  you should add a requirement to each program to the effect of "applicant must not opt-out". In this
-  case, the application status would be FAILED_QUALIFICATION instead of CANCELLED. The statusReason can
-  explain in sentence form that the applicant opted out.
-
-* WITHDRAWN
-
-  The App Request (and thus all applications inside it) was withdrawn after being submitted. If it is re-opened, it will re-open in submitted state.
+  There is nothing left to do on this application. Other applications may still be working through their own
+  non-blocking workflow stages.
 
 ## Requirements and ApplicationRequirements
 Requirements are business rules that govern whether an applicant will be eligible for
@@ -279,6 +318,7 @@ for the applicant to resolve, and some the reviewer(s).
 * PREAPPROVAL
 * APPROVAL
 * ACCEPTANCE
+* WORKFLOW
 
 ### ApplicationRequirement Statuses
 Status is updated on each requirement, each time we collect new Prompt data. The status
@@ -296,27 +336,20 @@ eligibility. The applicant will be shown a custom message describing the problem
 * NOT_APPLICABLE - This requirement does not apply to the applicant. They will be allowed to
 proceed as if the requirement has been met.
 
-### Never-Disqualifying Requirements
+### Requirement Order
 _This is an advanced topic, feel free to skip it until you're more comfortable with ReqQuest._
 
-Generally, the applicant (and reviewers) must proceed through requirements in strict order,
-as one requirement returning DISQUALIFYING renders the rest of the application moot, and we
-don't want to waste time asking further questions.
+Requirements are added to the system in a specific order, but this order is mostly for display purposes. The
+first prompt from each requirement will be shown to the user, regardless of the status of any previous
+requirements.
 
-However, some requirements are merely procedural - it's required to upload your photo,
-but the only way to fail the requirement is to fail to upload a valid photo (uploading a 300x200
-when we asked for a 600x400 isn't DISQUALIFYING, it would actually keep the ApplicationRequirement
-in PENDING status until you correct your submission).
+Some requirements will have `promptKeysAnyOrder`. All prompts listed this way will be treated as the
+first prompt and all will be displayed.
 
-We refer to this type of Requirement as "never-disqualifying" because it's logically
-impossible for it to receive the DISQUALIFYING status. Developers may flag it
-as such, and given this information, ReqQuest knows that it can allow users to proceed to
-the next requirement for now, and come back to this requirement later. This gives users
-maximum flexibility to see more of the information that is required, partially fill the
-application, save, and return later after acquiring more information or documentation.
-
-In situations with minimal branching logic, the user could complete the application in any
-order.
+In situations where we have override prompts or other prompts that should not be shown until the user
+has answered another prompt, we can depend on that other prompt first. This way the later prompts will
+stay hidden until the first prompt is answered. The prompt will not appear twice on the same form just because
+two different requirements depended on it.
 
 ## Prompts and PromptAnswers
 Prompts represent the collection of data from our users (both applicants and reviewers). Each
@@ -338,6 +371,33 @@ data. It is the responsibility of the project developer to write javascript code
 prompt has been sufficiently answered or is still incomplete. Note: generally the user is allowed to
 save incomplete data and come back later. The project developer has discretion to disallow saving certain
 data, like a large invalid upload, since that could have consequences.
+
+## Workflow Stages
+A workflow stage is defined by a set of requirements. These requirements are oriented around reviewing
+the review process itself, so that each application can be evaluated by two people.
+
+One major distinguishing factor for workflow stages is that they will be completed regardless of
+whether the application was found to be eligible or ineligible. Even denied applications need to
+be reviewed for correctness.
+
+Each program can have as many workflow stages as needed, so we can set it up for multiple rounds
+of reviews. They are defined by the developer in a specific order.
+
+Once all the requirements in a workflow stage have been met, any reviewer can push a button to
+move the application to the next stage (or out of workflow and into acceptance or completion).
+
+### Blocking vs Non-Blocking Workflow Stages
+Each workflow stage may be designated as blocking or non-blocking. Blocking stages must be fully
+completed before the application result can be shown to the applicant, while non-blocking stages
+will be completed after the applicant has received the result and (if applicable) accepted or
+rejected the offer.
+
+So blocking workflow is for situations where the benefit should not be granted until the second
+person has evaluated the application for correctness, while non-blocking workflow is for situations
+where the correctness evaluation is only there for training and reporting purposes.
+
+Non-blocking workflow is ideal when the desire is not to slow down the overall process with reviews,
+and when it's not necessary to review every submission.
 
 ## Roles
 Roles represent a set of access privileges that can be assigned to a group of users. Each
