@@ -532,7 +532,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
             ? ApplicationPhase.READY_TO_ACCEPT
             : ApplicationPhase.ACCEPTANCE
           : phase === 'applicant'
-            ? requirementsResolution === 'pass'
+            ? requirementsResolution !== 'pending'
               ? ApplicationPhase.READY_TO_SUBMIT
               : nonPassingRequirement?.type === RequirementType.PREQUAL
                 ? ApplicationPhase.PREQUAL
@@ -548,8 +548,9 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
                 : ApplicationPhase.WORKFLOW_BLOCKING
 
       if (application.phase === ApplicationPhase.READY_FOR_WORKFLOW && (!workflowStages.length || workflowStages[workflowStages.length - 1].key === application.workflowStageKey)) {
-        application.phase = ApplicationPhase.READY_FOR_OFFER
-      } else if (requirementsResolution === 'fail') {
+        application.phase = ApplicationPhase.REVIEW_COMPLETE
+      }
+      if (requirementsResolution === 'fail') {
         if (phase === 'acceptance') application.ineligiblePhase = IneligiblePhases.ACCEPTANCE
         else if (phase === 'applicant') application.ineligiblePhase = application.phase === ApplicationPhase.PREQUAL ? IneligiblePhases.PREQUAL : IneligiblePhases.QUALIFICATION
         else if (phase === 'review') application.ineligiblePhase = application.phase === ApplicationPhase.PREAPPROVAL ? IneligiblePhases.PREAPPROVAL : IneligiblePhases.APPROVAL
@@ -565,7 +566,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       else if (applications.some(a => a.ineligiblePhase === IneligiblePhases.APPROVAL || a.ineligiblePhase === IneligiblePhases.WORKFLOW)) appRequest.status = AppRequestStatus.NOT_APPROVED
       else appRequest.status = AppRequestStatus.DISQUALIFIED
     } else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_SUBMIT) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.READY_TO_SUBMIT
-    else if (applications.some(a => a.phase === ApplicationPhase.READY_FOR_OFFER) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.APPROVED
+    else if (applications.some(a => a.phase === ApplicationPhase.REVIEW_COMPLETE) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
     else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_ACCEPT) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.READY_TO_ACCEPT
     else if (applications.some(a => a.phase === ApplicationPhase.ACCEPTANCE)) appRequest.status = AppRequestStatus.ACCEPTANCE
     else if (applications.some(a => a.phase === ApplicationPhase.PREAPPROVAL)) appRequest.status = AppRequestStatus.PREAPPROVAL

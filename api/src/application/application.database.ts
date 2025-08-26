@@ -88,15 +88,15 @@ export async function advanceWorkflow (applicationId: string, tdb: Queryable = d
   let toPhase: ApplicationPhase = application.computedPhase
   if (!current) {
     toStage = blocking[0]
-    if (!toStage) toPhase = ApplicationPhase.READY_FOR_OFFER
+    if (!toStage) toPhase = ApplicationPhase.REVIEW_COMPLETE
     else toPhase = ApplicationPhase.WORKFLOW_BLOCKING
   } else if (current.blocking) {
     const currIdx = findIndex(blocking, stage => stage.stageKey === current.stageKey)
     if (currIdx) {
       toStage = blocking[currIdx + 1]
-      if (!toStage) toPhase = ApplicationPhase.READY_FOR_OFFER
+      if (!toStage) toPhase = ApplicationPhase.REVIEW_COMPLETE
       else toPhase = ApplicationPhase.WORKFLOW_BLOCKING
-    } else toPhase = ApplicationPhase.READY_FOR_OFFER
+    } else toPhase = ApplicationPhase.REVIEW_COMPLETE
   } else {
     const currIdx = findIndex(nonblocking, stage => stage.stageKey === current.stageKey)
     if (currIdx) {

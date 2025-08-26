@@ -3,7 +3,6 @@ import { AppRequestStatusDB, PromptDefinition, promptRegistry, PromptRow } from 
 
 export enum PromptVisibility {
   UNREACHABLE = 'UNREACHABLE',
-  AUTOMATION = 'AUTOMATION',
   APPLICATION_DUPE = 'APPLICATION_DUPE',
   REQUEST_DUPE = 'REQUEST_DUPE',
   AVAILABLE = 'AVAILABLE'
@@ -13,7 +12,6 @@ registerEnumType(PromptVisibility, {
   description: 'The visibility of a prompt on a request. This is used to determine whether the prompt should be shown to the user in the UI.',
   valuesConfig: {
     UNREACHABLE: { description: 'This RequirementPrompt cannot be reached, there is a requirement or prompt in front of it that could or already has disqualified the application.' },
-    AUTOMATION: { description: 'The prompt is intended to be filled in by an automation, but is otherwise available to be answered. It may or may not be visible in various UIs but it is not editable in any of them.' },
     APPLICATION_DUPE: { description: 'This RequirementPrompt is a duplicate of a RequirementPrompt that already appears earlier in the same application (it could also be duplicated yet again in an earlier application). It should not be shown to applicants. The reviewer UI may or may not want to show these repeated dependencies.' },
     REQUEST_DUPE: { description: 'This RequirementPrompt is a duplicate of a RequirementPrompt that already appears earlier in the same app request, but it is the first appearance in its application. It should not be shown to applicants. The reviewer UI may or may not want to show these repeated dependencies.' },
     AVAILABLE: { description: 'This RequirementPrompt is available to be answered. It is the first appearance of this prompt in the App Request. It should be visible in both the applicant and reviewer UI.' }
