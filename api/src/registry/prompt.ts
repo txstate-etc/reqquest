@@ -118,43 +118,50 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    */
   navTitle?: string
   /**
-   * A function that prompt template developers can provide to determine whether
-   * the prompt has been completely answered. This is used to determine which prompts
-   * will be displayed to the user. i.e. in each requirement, we show completed prompts,
-   * one incomplete prompt, and the rest are unreachable.
-   *
-   * Keep in mind that we allow the user to submit/save partial answers and jump around
-   * to other sections of the application. So, just because an answer validates does not
-   * mean it is complete.
-   */
-  answered?: (data: Partial<DataType>, config: ConfigurationDataType) => boolean
-  /**
    * A brief description of the prompt. This will be shown to administrators to help explain
    * the full meaning of the prompt as they are assigning permissions or editing its configuration.
    */
   description?: string
   /**
-   * Return validation messages to the user to help them provide correct input.
-   *
-   * Be careful about returning `type: 'error'` messages. They will prevent the prompt from being
-   * saved. We usually want to allow the user to be able to save and visit another part of the
-   * application, even if what they've entered isn't perfect. For example, required field or
-   * character limit messages should probably be warnings rather than errors. The `answered`
-   * function (see above) can be used to prevent the application from proceeding until the user
-   * has provided required fields and tailored their input to meet character limits (major
-   * infractions could be errors, to avoid saving huge amounts of data).
-   */
-  validate?: (data: Partial<InputDataType>, config: ConfigurationDataType, allConfig: Record<string, any>) => Promise<MutationMessage[]> | MutationMessage[]
-  /**
    * Optionally provide a JSON-schema object to validate the prompt's input data. Reqquest will
    * use ajv to validate the input data against this schema.
    *
-   * It's a bad idea to use the `required` keyword, as this will force the user to provide
-   * all required fields before any information can be saved. We would rather save what they
-   * can give us and let them come back later to fill in the rest. The `answered` function
-   * should be the final determination that all the required fields have been provided.
+   * Only use this schema for safety, like ensuring a number is a number, NOT for errors a user
+   * could make. Failing this check should be considered a software bug in your prompt definition
+   * or form component. Users will NOT get a friendly error message when it fails.
+   *
+   * This runs before your `preProcessData` function so be sure to describe the structure before
+   * pre-processing.
    */
   schema?: SchemaObject
+  /**
+   * Return validation messages to the user to help them provide correct input.
+   *
+   * Note that validation errors will not prevent the prompt from being saved. We want to allow
+   * the user to save any time and visit another part of the application, even if what they've
+   * entered isn't perfect.
+   *
+   * When it comes time to use the gathered data for evaluating a requirement, that's where
+   * we require that there are no validation errors present. None of the prompt's data will be
+   * made available to the requirement `resolve` function until there are no errors.
+   *
+   * This function runs after the `preProcessData` function has run. This is a little tricky but
+   * the `validate` function has to run during the app request evaluation routine, so it must operate
+   * on post-processed data. Be aware of the potential transformations when you set the `arg` for each
+   * MutationMessage you return.
+   */
+  validate?: (data: Partial<DataType>, config: ConfigurationDataType, allConfig: Record<string, any>) => MutationMessage[]
+  /**
+   * In some cases you may want to provide MutationMessages that actually prevent saving, for instance
+   * when a prompt has file uploads, and you want to create a file type or file size restriction. In this
+   * case you do not want to save invalid files, because they are expensive and would be difficult to
+   * clean up.
+   *
+   * Provide this function and any errors you return will prevent the prompt data from being saved. It
+   * runs before the `preProcessData` function so it should expect the pre-processed data structure.
+   * `preProcessData` will not be run at all if this returns any errors.
+   */
+  preValidate?: (data: Partial<InputDataType>, config: ConfigurationDataType, allConfig: Record<string, any>) => MutationMessage[]
   /**
    * Return validation messages to the user to help them provide correct input while
    * configuring the Prompt. Prompt configuration is for administrators to be able to
@@ -258,8 +265,16 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    *
    * To save files to disk, we provide the Context object provided by graphql-server. This object
    * has a `files()` method that can be used to access the incoming file streams.
+   *
+   * You may throw an error from this function to protect the system from bad data, like a file
+   * stream that goes over its stated length.
+   *
+   * This function runs after the JSON-schema has been validated but before the `validate` function
+   * has run. This is a little tricky but the validate function has to run during the app request
+   * evaluation routine, so it has to operate on post-processed data. Be aware of the potential
+   * transformations when you set the `arg` for each MutationMessage returned by `validate`.
    */
-  preProcessData?: (appRequest: AppRequest, data: InputDataType, ctx: RQContext) => Promise<DataType> | DataType
+  preProcessData?: (data: InputDataType, ctx: RQContext, appRequest: AppRequest) => Promise<DataType> | DataType
 }
 
 const labelLookupCache = new Cache(async (tag: { category: string, value: string }) => {

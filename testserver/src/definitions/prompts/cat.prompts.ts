@@ -9,12 +9,11 @@ export const have_a_cat_tower_prompt: PromptDefinition<CatTowerPromptData> = {
   title: 'Cat Owner Equipment',
   description: 'Applicants will indicate whether they own a cat tower or will purchase one.',
   schema: CatTowerPromptSchema,
-  answered: (data, config) => data.haveCatTower != null,
   validate: (data, config) => {
     const messages: MutationMessage[] = []
-    if (data.haveCatTower == null) messages.push({ type: MutationMessageType.warning, message: 'Please indicate whether you have a cat tower.', arg: 'haveCatTower' })
+    if (data.haveCatTower == null) messages.push({ type: MutationMessageType.error, message: 'Please indicate whether you have a cat tower.', arg: 'haveCatTower' })
     if (data.haveCatTower === false) {
-      if (data.willPurchaseCatTower == null) messages.push({ type: MutationMessageType.warning, message: 'Please indicate whether you will purchase a cat tower.', arg: 'willPurchaseCatTower' })
+      if (data.willPurchaseCatTower == null) messages.push({ type: MutationMessageType.error, message: 'Please indicate whether you will purchase a cat tower.', arg: 'willPurchaseCatTower' })
     }
     return messages
   }
@@ -25,11 +24,10 @@ export const not_allergic_to_tuna_prompt: PromptDefinition<TunaAllergyPromptData
   title: 'Tuna Allergy',
   description: 'Applicants will indicate whether they are allergic to tuna.',
   schema: TunaAllergyPromptSchema,
-  answered: (data, config) => data.allergicToTuna != null,
   validate: (data, config) => {
     const messages = []
     if (data.allergicToTuna == null) {
-      messages.push({ type: MutationMessageType.warning, message: 'Please indicate whether you are allergic to tuna.', arg: 'allergicToTuna' })
+      messages.push({ type: MutationMessageType.error, message: 'Please indicate whether you are allergic to tuna.', arg: 'allergicToTuna' })
     }
     return messages
   }
@@ -41,11 +39,10 @@ export const applicant_seems_nice_prompt: PromptDefinition<NicePromptData> = {
   navTitle: 'Niceness',
   description: 'Reviewer will indicate whether the applicant seems nice.',
   schema: NicePromptSchema,
-  answered: (data, config) => data.seemsNice != null,
   validate: (data, config) => {
     const messages = []
     if (data.seemsNice == null) {
-      messages.push({ type: MutationMessageType.warning, message: 'Please indicate whether the applicant seems nice.', arg: 'seemsNice' })
+      messages.push({ type: MutationMessageType.error, message: 'Please indicate whether the applicant seems nice.', arg: 'seemsNice' })
     }
     return messages
   },
@@ -66,11 +63,10 @@ export const other_cats_prompt: PromptDefinition<OtherCatsPromptData> = {
   title: 'Do you have other cats?',
   description: 'Applicants will indicate whether they have other cats in the household.',
   schema: OtherCatsPromptSchema,
-  answered: (data, config) => data.hasOtherCats != null,
   validate: (data, config) => {
     const messages: MutationMessage[] = []
     if (data.hasOtherCats == null) {
-      messages.push({ type: MutationMessageType.warning, message: 'Please indicate whether you have other cats.', arg: 'hasOtherCats' })
+      messages.push({ type: MutationMessageType.error, message: 'Please indicate whether you have other cats.', arg: 'hasOtherCats' })
     }
     return messages
   }
@@ -81,7 +77,17 @@ export const other_cats_vaccines_prompt: PromptDefinition<VaccinePromptData> = {
   title: 'Other Cats Vaccination Records',
   description: 'Upload vaccination records for other cats in the household.',
   schema: VaccinePromptSchema,
-  preProcessData: async (appRequest, data, ctx) => {
+  preValidate: (data, config) => {
+    const messages: MutationMessage[] = []
+    for (const docKey of ['distemperDoc', 'rabiesDoc', 'felineLeukemiaDoc', 'felineHIVDoc'] as const) {
+      const doc = data[docKey]
+      if (doc && doc.size > 10 * 1024 * 1024) {
+        messages.push({ type: MutationMessageType.error, message: 'This document is too large, please upload a file less than 10MB.', arg: docKey })
+      }
+    }
+    return messages
+  },
+  preProcessData: async (data, ctx) => {
     const shasums: string[] = []
     for await (const file of ctx.files()) {
       const hash = createHash('sha256')
@@ -96,18 +102,15 @@ export const other_cats_vaccines_prompt: PromptDefinition<VaccinePromptData> = {
     if (data.felineHIVDoc) data.felineHIVDoc.shasum = shasums[data.felineHIVDoc.multipartIndex]
     return data
   },
-  answered: (data, config) => {
-    return !isEmpty(data?.distemperDoc) && !isEmpty(data?.rabiesDoc) && !isEmpty(data?.felineLeukemiaDoc) && !isEmpty(data?.felineHIVDoc)
-  },
   validate: (data, config) => {
     const messages: MutationMessage[] = []
     if (!data) {
-      messages.push({ type: MutationMessageType.warning, message: 'Please upload vaccination records for other cats.', arg: 'other_cats_vaccines' })
+      messages.push({ type: MutationMessageType.error, message: 'Please upload vaccination records for other cats.', arg: 'other_cats_vaccines' })
     } else {
-      if (!data.distemperDoc) messages.push({ type: MutationMessageType.warning, message: 'Please upload distemper vaccination record.', arg: 'distemperDoc' })
-      if (!data.rabiesDoc) messages.push({ type: MutationMessageType.warning, message: 'Please upload rabies vaccination record.', arg: 'rabiesDoc' })
-      if (!data.felineLeukemiaDoc) messages.push({ type: MutationMessageType.warning, message: 'Please upload feline leukemia vaccination record.', arg: 'felineLeukemiaDoc' })
-      if (!data.felineHIVDoc) messages.push({ type: MutationMessageType.warning, message: 'Please upload feline HIV vaccination record.', arg: 'felineHIVDoc' })
+      if (!data.distemperDoc) messages.push({ type: MutationMessageType.error, message: 'Please upload distemper vaccination record.', arg: 'distemperDoc' })
+      if (!data.rabiesDoc) messages.push({ type: MutationMessageType.error, message: 'Please upload rabies vaccination record.', arg: 'rabiesDoc' })
+      if (!data.felineLeukemiaDoc) messages.push({ type: MutationMessageType.error, message: 'Please upload feline leukemia vaccination record.', arg: 'felineLeukemiaDoc' })
+      if (!data.felineHIVDoc) messages.push({ type: MutationMessageType.error, message: 'Please upload feline HIV vaccination record.', arg: 'felineHIVDoc' })
     }
     return messages
   }
@@ -118,18 +121,15 @@ export const vaccine_review_prompt: PromptDefinition<VaccineReviewPromptData> = 
   title: 'Vaccine Review',
   description: 'Review the vaccination records for the applicant\'s cats.',
   schema: VaccineReviewPromptSchema,
-  answered: (data, config) => {
-    return data?.distemper?.satisfactory != null && data?.rabies?.satisfactory != null && data?.felineLeukemia?.satisfactory != null && data?.felineHIV?.satisfactory != null
-  },
   validate: (data, config) => {
     const messages: MutationMessage[] = []
     if (!data) {
-      messages.push({ type: MutationMessageType.warning, message: 'Please review the vaccination records.', arg: 'vaccineReview' })
+      messages.push({ type: MutationMessageType.error, message: 'Please review the vaccination records.', arg: 'vaccineReview' })
     } else {
-      if (!data.distemper) messages.push({ type: MutationMessageType.warning, message: 'Please review distemper vaccination record.', arg: 'distemper' })
-      if (!data.rabies) messages.push({ type: MutationMessageType.warning, message: 'Please review rabies vaccination record.', arg: 'rabies' })
-      if (!data.felineLeukemia) messages.push({ type: MutationMessageType.warning, message: 'Please review feline leukemia vaccination record.', arg: 'felineLeukemia' })
-      if (!data.felineHIV) messages.push({ type: MutationMessageType.warning, message: 'Please review feline HIV vaccination record.', arg: 'felineHIV' })
+      if (!data.distemper) messages.push({ type: MutationMessageType.error, message: 'Please review distemper vaccination record.', arg: 'distemper' })
+      if (!data.rabies) messages.push({ type: MutationMessageType.error, message: 'Please review rabies vaccination record.', arg: 'rabies' })
+      if (!data.felineLeukemia) messages.push({ type: MutationMessageType.error, message: 'Please review feline leukemia vaccination record.', arg: 'felineLeukemia' })
+      if (!data.felineHIV) messages.push({ type: MutationMessageType.error, message: 'Please review feline HIV vaccination record.', arg: 'felineHIV' })
     }
     return messages
   },

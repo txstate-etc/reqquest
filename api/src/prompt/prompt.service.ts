@@ -6,7 +6,7 @@ import {
   promptRegistry, getRequirementPrompts, ValidatedAppRequestResponse,
   getPeriodPrompts, ConfigurationService, PeriodPrompt, requirementRegistry,
   AppRequestStatusDB, AppRequest, setRequirementPromptValid, updateAppRequestData,
-  closedStatuses
+  closedStatuses, getAppRequests, getAppRequestData, appRequestTransaction
 } from '../internal.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
@@ -127,26 +127,32 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     if (!promptRegistry.validate(prompt.key, data)) throw new Error('Invalid prompt data.')
     const response = new ValidatedAppRequestResponse({ success: true })
     const allConfigData = await this.svc(ConfigurationService).getRelatedData(prompt.periodId, prompt.key)
-    for (const message of await prompt.definition.validate?.(data, allConfigData[prompt.key] ?? {}, allConfigData) ?? []) response.addMessage(message.message, message.arg, message.type)
-    const [appRequest, appRequestData] = await Promise.all([
-      this.svc(AppRequestService).findByInternalId(prompt.appRequestInternalId),
-      this.svc(AppRequestService).getData(prompt.appRequestInternalId)
-    ])
-    if (!appRequest) throw new Error('AppRequest not found')
-    if (dataVersion != null && appRequest.dataVersion !== dataVersion) {
-      throw new Error('Someone else is working on the same request and made changes since you loaded. Copy any unsaved work into another document and reload the page to see what has changed.')
-    }
-    if (response.hasErrors() || validateOnly) return response
-    const newData = prompt.definition.preProcessData ? await prompt.definition.preProcessData(appRequest, data, this.ctx) : data
-    if (!equal(appRequestData[prompt.key], newData)) {
-      appRequestData[prompt.key] = newData
-      await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion)
-      this.svc(AppRequestService).recordActivity(appRequest, 'Prompt Updated', { data, description: prompt.title })
-    }
-    await setRequirementPromptValid(prompt)
-    this.loaders.clear()
-    const updatedAppRequest = (await this.svc(AppRequestService).findByInternalId(appRequest.internalId))!
-    response.appRequest = updatedAppRequest
+    await appRequestTransaction(prompt.appRequestInternalId, async db => {
+      const [[appRequest], [appRequestDataPair]] = await Promise.all([
+        getAppRequests({ internalIds: [prompt.appRequestInternalId] }, db),
+        getAppRequestData([prompt.appRequestInternalId], db)
+      ])
+      const appRequestData = appRequestDataPair?.data ?? {}
+      if (!appRequest) throw new Error('AppRequest not found')
+      for (const message of prompt.definition.preValidate?.(data, allConfigData[prompt.key] ?? {}, allConfigData) ?? []) response.addMessage(message.message, message.arg, message.type)
+      const hadPrevalidateErrors = response.hasErrors()
+      const processedData = prompt.definition.preProcessData ? await prompt.definition.preProcessData(data, this.ctx, appRequest) : data
+      for (const message of prompt.definition.validate?.(processedData, allConfigData[prompt.key] ?? {}, allConfigData) ?? []) response.addMessage(message.message, message.arg, message.type)
+      if (dataVersion != null && appRequest.dataVersion !== dataVersion) {
+        throw new Error('Someone else is working on the same request and made changes since you loaded. Copy any unsaved work into another document and reload the page to see what has changed.')
+      }
+      if (hadPrevalidateErrors || validateOnly) return
+      if (!equal(appRequestData[prompt.key], processedData)) {
+        appRequestData[prompt.key] = processedData
+        await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion)
+        this.svc(AppRequestService).recordActivity(appRequest, 'Prompt Updated', { data, description: prompt.title })
+      }
+      await setRequirementPromptValid(prompt)
+      this.loaders.clear()
+      const updatedAppRequest = (await this.svc(AppRequestService).findByInternalId(appRequest.internalId))!
+      response.success = true
+      response.appRequest = updatedAppRequest
+    })
     return response
   }
 }

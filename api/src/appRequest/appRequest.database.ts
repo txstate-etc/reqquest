@@ -72,7 +72,7 @@ export interface AppRequestActivityRow {
 }
 
 export async function getAppRequestData (ids: number[], tdb: Queryable = db): Promise<{ id: number, data: AppRequestData }[]> {
-  const rows = await db.getall<AppRequestRowData>(`SELECT id, data FROM app_requests WHERE id = ${db.in([], ids)}`, ids)
+  const rows = await tdb.getall<AppRequestRowData>(`SELECT id, data FROM app_requests WHERE id = ${db.in([], ids)}`, ids)
   return await Promise.all(rows.map(async row => ({ ...row, data: row.data ? await migrateAppRequestData(JSON.parse(row.data) as AppRequestData) : {} as AppRequestData })))
 }
 
@@ -218,13 +218,13 @@ export async function createAppRequest (periodId: number, userId: number) {
   return appRequestId
 }
 
-export async function updateAppRequestData (appRequestId: number, data: AppRequestData, dataVersion?: number) {
+export async function updateAppRequestData (appRequestId: number, data: AppRequestData, dataVersion?: number, tdb: Queryable = db) {
   const where = dataVersion != null ? ' AND dataVersion = ?' : ''
   const binds: any[] = [JSON.stringify(data), appRequestId]
   if (dataVersion != null) binds.push(dataVersion)
-  const rowsAffected = await db.update('UPDATE app_requests SET data = ?, dataVersion = dataVersion + 1 WHERE id = ?' + where, binds)
+  const rowsAffected = await tdb.update('UPDATE app_requests SET data = ?, dataVersion = dataVersion + 1 WHERE id = ?' + where, binds)
   if (!rowsAffected) throw new Error('Someone else is working on the same request and made changes since you loaded. Copy any unsaved work into another document and reload the page to see what has changed.')
-  await evaluateAppRequest(appRequestId)
+  await evaluateAppRequest(appRequestId, tdb)
 }
 
 export async function submitAppRequest (appRequestId: number) {
@@ -462,40 +462,53 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
             : [...prequalRequirements, ...qualificationRequirements, ...preapprovalRequirements, ...approvalRequirements, ...blockingWorkflowRequirements]
 
       for (const prompt of prompts) {
-        prompt.answered = prompt.definition.answered?.(data[prompt.key] ?? {}, configLookup[prompt.key] ?? {}) ?? false
+        const validationMessages = prompt.definition.validate?.(data[prompt.key] ?? {}, configLookup[prompt.key] ?? {}, configLookup) ?? []
+        prompt.answered = !validationMessages.some(m => m.type === 'error')
       }
 
       const promptsSeenInApplication = new Set<string>()
       for (const requirement of sortedRequirements) {
         const requiredData = {} as AppRequestData
-        let resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
         const prompts = promptLookup[requirement.id] ?? []
         const anyOrderPrompts = prompts.filter(p => requirement.definition.anyOrderPromptKeySet.has(p.key))
-        const regularPrompts = prompts.filter(p => !requirement.definition.anyOrderPromptKeySet.has(p.key))
-        for (const prompt of anyOrderPrompts) prompt.visibility = PromptVisibility.AVAILABLE
-        if (anyOrderPrompts.every(p => p.answered)) {
-          for (const prompt of anyOrderPrompts) {
-            requiredData[prompt.key] = data[prompt.key]
+        const noDisplayPrompts = prompts.filter(p => requirement.definition.noDisplayPromptKeySet.has(p.key))
+        const regularPrompts = prompts.filter(p => !requirement.definition.anyOrderPromptKeySet.has(p.key) && !requirement.definition.noDisplayPromptKeySet.has(p.key))
+        let hasUnanswered = false
+        for (const prompt of noDisplayPrompts) {
+          prompt.visibility = PromptVisibility.UNREACHABLE
+          if (!prompt.answered) hasUnanswered = true
+          else requiredData[prompt.key] = data[prompt.key]
+        }
+        let resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
+
+        const anyOrderAllAnswered = anyOrderPrompts.every(p => p.answered)
+        for (const prompt of anyOrderPrompts) {
+          prompt.visibility = PromptVisibility.UNREACHABLE
+          if (!hasUnanswered && resolveInfo.status === RequirementStatus.PENDING) {
+            if (anyOrderAllAnswered) requiredData[prompt.key] = data[prompt.key]
+            prompt.visibility = PromptVisibility.AVAILABLE
             promptsSeenInApplication.add(prompt.key)
             promptsSeenInRequest.add(prompt.key)
           }
-          if (anyOrderPrompts.length) resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
-          let hasUnanswered = false
-          for (const prompt of regularPrompts) {
-            if (hasUnanswered || resolveInfo.status !== RequirementStatus.PENDING) prompt.visibility = PromptVisibility.UNREACHABLE
-            else {
-              if (promptsSeenInApplication.has(prompt.key)) prompt.visibility = PromptVisibility.APPLICATION_DUPE
-              else if (promptsSeenInRequest.has(prompt.key)) prompt.visibility = PromptVisibility.REQUEST_DUPE
-              else prompt.visibility = PromptVisibility.AVAILABLE
-              promptsSeenInApplication.add(prompt.key)
-              promptsSeenInRequest.add(prompt.key)
-              if (prompt.answered) {
-                requiredData[prompt.key] = data[prompt.key]
-                resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
-              } else hasUnanswered = true
-            }
+        }
+        if (!hasUnanswered && anyOrderAllAnswered && anyOrderPrompts.length) resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
+        hasUnanswered ||= !anyOrderAllAnswered
+
+        for (const prompt of regularPrompts) {
+          if (hasUnanswered || resolveInfo.status !== RequirementStatus.PENDING) prompt.visibility = PromptVisibility.UNREACHABLE
+          else {
+            if (promptsSeenInApplication.has(prompt.key)) prompt.visibility = PromptVisibility.APPLICATION_DUPE
+            else if (promptsSeenInRequest.has(prompt.key)) prompt.visibility = PromptVisibility.REQUEST_DUPE
+            else prompt.visibility = PromptVisibility.AVAILABLE
+            promptsSeenInApplication.add(prompt.key)
+            promptsSeenInRequest.add(prompt.key)
+            if (prompt.answered) {
+              requiredData[prompt.key] = data[prompt.key]
+              resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
+            } else hasUnanswered = true
           }
         }
+
         requirement.status = resolveInfo.status
         requirement.statusReason = resolveInfo.reason
       }
@@ -672,10 +685,10 @@ export async function logMutation (queryTime: number, operationName: string, que
   }
 }
 
-export async function appRequestTransaction (appRequestInternalId: number, callback: (db: Queryable) => Promise<void>) {
+export async function appRequestTransaction<T = any> (appRequestInternalId: number, callback: (db: Queryable) => Promise<T>) {
   return await db.transaction(async db => {
     // lock the appRequest while we evaluate
     await db.getval('SELECT id FROM app_requests WHERE id = ? FOR UPDATE', [appRequestInternalId])
-    await callback(db)
+    return await callback(db)
   }, { retries: 2 })
 }
