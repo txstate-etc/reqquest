@@ -446,8 +446,108 @@ test.describe('App Request workflows', () => {
       }
     }
   })
-  // Submit with passing data
+  // Applicant 2 - close request prior to submit - pass
   let lastAppRequestStatus = ''
+  test('Applicant 2 - close request prior to submit ', async ({ applicant2Request }) => {
+    const query = `
+      mutation CloseAppRequest($appRequestId: ID!) {
+        closeAppRequest(appRequestId: $appRequestId) {
+          success
+          appRequest {
+            status
+            statusReason
+            closedAt
+          }
+        }
+      }
+    `
+    const variables = { appRequestId: appRequest2Id }
+    const response = await applicant2Request.graphql<{ closeAppRequest: { success: boolean, appRequest: { status: string, statusReason: string, closedAt: string } } }>(query, variables)
+    lastAppRequestStatus = response.closeAppRequest.appRequest.status
+    expect(response.closeAppRequest.success).toEqual(true)
+  })
+  // Applicant 2 - submit closed request - fail
+  test('Applicant 2 - submit closed applicant 2 request', async ({ applicant2Request }) => {
+    const query = `
+      mutation SubmitAppRequest($appRequestId:ID!) {
+        submitAppRequest(appRequestId: $appRequestId) {
+          success
+          messages{
+            message
+            arg
+            type
+          }
+          appRequest {
+            id
+            status
+          }
+        }
+      }
+    `
+    const variables = { appRequestId: appRequest2Id }
+    const response = await applicant2Request.graphql<{ errors: { message: string }[] }>(query, variables)
+    expect(response.errors[0].message).toEqual('You may not submit this app request.')
+  })
+  // Reviewer - Reopen closed request prior to submit - pass
+  test('Reviewer - Reopen closed applicant request prior to submit', async ({ reviewerRequest }) => {
+    const query = `
+      mutation ReOpenAppRequest($appRequestId:ID!) {
+        reopenAppRequest(appRequestId:$appRequestId) {
+          success
+          appRequest{
+            status
+            statusReason
+          }
+        }
+      }
+    `
+    const variables = { appRequestId: appRequest2Id }
+    const response = await reviewerRequest.graphql<{ reopenAppRequest: { success: boolean, appRequest: { status: string, statusReason: string, closedAt: string } } }>(query, variables)
+    expect(response.reopenAppRequest.success).toEqual(true)
+    expect(response.reopenAppRequest.appRequest.status).toEqual(lastAppRequestStatus) // confirm status did not change from last close
+  })
+  // Applicant 2 - close reviewer reopened request prior to submit - pass
+  test('Applicant 2 - close reviewer reopened request prior to submit', async ({ applicant2Request }) => {
+    const query = `
+      mutation CloseAppRequest($appRequestId: ID!) {
+        closeAppRequest(appRequestId: $appRequestId) {
+          success
+          appRequest {
+            status
+            statusReason
+            closedAt
+          }
+        }
+      }
+    `
+    const variables = { appRequestId: appRequest2Id }
+    const response = await applicant2Request.graphql<{ closeAppRequest: { success: boolean, appRequest: { status: string, statusReason: string, closedAt: string } } }>(query, variables)
+    lastAppRequestStatus = response.closeAppRequest.appRequest.status
+    expect(response.closeAppRequest.success).toEqual(true)
+  })
+  // Applicant 2 - Reopen closed request prior to submit - pass
+  test('Applicant 2 - Reopen applicant closed request prior to submit', async ({ applicant2Request }) => {
+    const query = `
+      mutation ReOpenAppRequest($appRequestId:ID!) {
+        reopenAppRequest(appRequestId:$appRequestId) {
+          success
+          appRequest{
+            status
+            statusReason
+          }
+        }
+      }
+    `
+    const variables = { appRequestId: appRequest2Id }
+    const response = await applicant2Request.graphql<{ reopenAppRequest: { success: boolean, appRequest: { status: string, statusReason: string, closedAt: string } } }>(query, variables)
+    expect(response.reopenAppRequest.success).toEqual(true)
+    expect(response.reopenAppRequest.appRequest.status).toEqual(lastAppRequestStatus) // confirm status did not change
+  })
+  // Applicant 2 - Cancel / withdraw request prior to submit - pass
+  // Applicant 2 - submit canceled request - fail
+  // Applicant 2 - Uncancel request - pass
+  // Applicant 2 - Cancel / withdraw request prior to submit to allow reviwer uncancel - pass
+  // Reviewer - Uncancel applicant request - pass
   test('Applicant 2 - submit app request with passing data', async ({ applicant2Request }) => {
     const query = `
       mutation SubmitAppRequest($appRequestId:ID!) {
@@ -521,4 +621,11 @@ test.describe('App Request workflows', () => {
     expect(response.reopenAppRequest.success).toEqual(true)
     expect(response.reopenAppRequest.appRequest.status).toEqual(lastAppRequestStatus) // confirm status did not change
   })
+
+  // Reviewer - Cancel/Withdraw applicant 2 request - fail
+  // Applicant 2 - cancel/withdraw request - pass
+  // Applicant 2 - uncancel/unwithdraw request - pass
+  // Applicant 2 - cancel/withdraw request to allow reviewer uncancel - pass
+  // Reviewer - uncancel/unwithdraw applicant 2 request - pass
+  // Applicant - Cancel/Withdraw applicant 2 request - fail
 })

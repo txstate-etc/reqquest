@@ -57,12 +57,13 @@ export const stateList: { value: string, label: string }[] = [
 export const stateLookup = keyby(stateList, 'value')
 
 export const stateAbbreviations = stateList.map(sl => sl.value)
+export const stateNames = stateList.map(s1 => s1.label)
 
 export const StatePromptSchema = {
   type: 'object',
   properties: {
     state: { type: 'string', enum: stateAbbreviations },
-    stateName: { type: 'string' }
+    stateName: { type: 'string', enum: stateNames }
   },
   additionalProperties: false
 } as const satisfies SchemaObject

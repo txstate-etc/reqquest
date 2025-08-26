@@ -1,6 +1,7 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
 import { stateList, stateLookup, StatePromptSchema } from '../models/index.js'
+import { stat } from 'node:fs'
 
 export const which_state_prompt: PromptDefinition = {
   key: 'which_state_prompt',
@@ -11,9 +12,8 @@ export const which_state_prompt: PromptDefinition = {
   answered: (data, config) => data.state != null,
   validate: (data, config) => {
     const messages: MutationMessage[] = []
-    if (data.state == null) {
-      messages.push({ type: MutationMessageType.warning, message: 'Please enter the state you live in.', arg: 'state' })
-    }
+    if (data.state == null) messages.push({ type: MutationMessageType.warning, message: 'Please enter the state you live in.', arg: 'state' })
+    if (data.stateName !== stateList.find(sl => sl.value === data.state)?.label) messages.push({ type: MutationMessageType.error, message: 'State abbreviation does not match state name.', arg: 'stateName' })
     return messages
   },
   tags: [{

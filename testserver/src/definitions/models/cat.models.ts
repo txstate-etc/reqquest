@@ -1,7 +1,5 @@
-import { UploadInfo } from '@txstate-mws/graphql-server'
 import type { SchemaObject } from '@txstate-mws/fastify-shared'
 import type { FromSchema } from 'json-schema-to-ts'
-import { Scheduler } from 'timers/promises'
 
 export const CatTowerPromptSchema = {
   type: 'object',
