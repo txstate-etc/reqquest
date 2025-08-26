@@ -100,24 +100,6 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
   promptKeysNoDisplay?: string[]
 
   /**
-   * Set this true to indicate that this requirement depends on all previous requirements having passed.
-   *
-   * Normal behavior is to make at least one prompt from each requirement available to the user so
-   * that they can fill in their answers in any order. In some cases, it doesn't make sense to enter
-   * data late in the form until everything previous has been answered.
-   *
-   * For instance, if you are implementing an approval workflow, you don't want approvers to be able
-   * to sign off on the application until everything else is done. You will likely create TWO requirements
-   * with this set to true: one for the regular reviewer to indicate that the application is ready for
-   * approval, and one (or more) for the approver to indicate that they have approved the application.
-   *
-   * Another situation where this is useful is when you have requirements with complicated branching logic
-   * and override capabilities. If we see that the user is being asked to override something that hasn't
-   * even been answered yet, we can set this to true to block off the rest of the form and resolve the issue.
-   */
-  requireAllPrevious?: boolean
-
-  /**
    * Provide a function that can evaluate the requirement based on answers to prompts.
    *
    * This function should not be async, as the justification for a rejection should
