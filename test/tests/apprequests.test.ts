@@ -3,7 +3,7 @@ import { expect, test } from './fixtures.js'
 import { DateTime } from 'luxon'
 import { promptMapQualified, promptMapUnqualified } from './promptdata.js'
 
-test.describe('App Request workflows', () => {
+test.describe.serial('App Request workflows', () => {
   const name = '2025 app-req'
   const code = 'APP_REQ_PER-255'
   const openDate = '2025-07-01T00:00:00.000-05:00'
@@ -467,7 +467,7 @@ test.describe('App Request workflows', () => {
     expect(response.closeAppRequest.success).toEqual(true)
   })
   // Applicant 2 - submit closed request - fail
-  test('Applicant 2 - submit closed applicant 2 request', async ({ applicant2Request }) => {
+  test('Applicant 2 - submit closed applicant request', async ({ applicant2Request }) => {
     const query = `
       mutation SubmitAppRequest($appRequestId:ID!) {
         submitAppRequest(appRequestId: $appRequestId) {
@@ -545,6 +545,27 @@ test.describe('App Request workflows', () => {
   })
   // Applicant 2 - Cancel / withdraw request prior to submit - pass
   // Applicant 2 - submit canceled request - fail
+  test('Applicant 2 - submit canceled applicant request', async ({ applicant2Request }) => {
+    const query = `
+      mutation SubmitAppRequest($appRequestId:ID!) {
+        submitAppRequest(appRequestId: $appRequestId) {
+          success
+          messages{
+            message
+            arg
+            type
+          }
+          appRequest {
+            id
+            status
+          }
+        }
+      }
+    `
+    const variables = { appRequestId: appRequest2Id }
+    const response = await applicant2Request.graphql<{ errors: { message: string }[] }>(query, variables)
+    expect(response.errors[0].message).toEqual('You may not submit this app request.')
+  })
   // Applicant 2 - Uncancel request - pass
   // Applicant 2 - Cancel / withdraw request prior to submit to allow reviwer uncancel - pass
   // Reviewer - Uncancel applicant request - pass

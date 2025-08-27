@@ -129,8 +129,8 @@ test.describe.serial('Manage period configurations', () => {
     const data = { minExerciseHours: 5 }
     const variables = { periodId, key: 'must_exercise_your_dog_req', data, validateOnly: false }
     const response = await adminRequest.graphql<{ updateConfiguration: { success: boolean, configuration: { key: string, data: { minExerciseHours: number } } } }>(query, variables)
-    expect(response.updateConfiguration.success).toEqual(false)
-    expect(response.updateConfiguration.configuration.data.minExerciseHours).not.toEqual(data.minExerciseHours)
+    expect(response.updateConfiguration.success).toEqual(true)
+    expect(response.updateConfiguration.configuration.data.minExerciseHours).toEqual(data.minExerciseHours)
   })
   test('Reviewer - Get prompt configuration period details with view access, but no update access', async ({ reviewerRequest }) => {
     const query = `
