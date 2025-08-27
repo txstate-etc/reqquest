@@ -9,7 +9,6 @@ export const which_state_prompt: PromptDefinition = {
   description: 'Applicants will enter the state they live in.',
   schema: StatePromptSchema,
   fetch: async (data, config) => ({ stateList }),
-  answered: (data, config) => data.state != null,
   validate: (data, config) => {
     const messages: MutationMessage[] = []
     if (data.state == null) messages.push({ type: MutationMessageType.warning, message: 'Please enter the state you live in.', arg: 'state' })

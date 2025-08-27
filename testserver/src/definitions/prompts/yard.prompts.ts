@@ -7,19 +7,18 @@ export const have_yard_prompt: PromptDefinition<YardPromptData, YardPromptData> 
   title: 'Tell us about your yard',
   description: 'Applicants will enter information about their yard including how large it is and how many pets will share it.',
   schema: YardPromptSchema,
-  answered: (data, config) => data.haveYard != null && (!data.haveYard || ((data.squareFootage ?? 0) > 0 && (data.totalPets ?? 0) > 0)),
   validate: (data, config) => {
     const messages: MutationMessage[] = []
     if (data.haveYard == null) {
-      messages.push({ type: MutationMessageType.warning, message: 'Please indicate whether you have a yard.', arg: 'haveYard' })
+      messages.push({ type: MutationMessageType.error, message: 'Please indicate whether you have a yard.', arg: 'haveYard' })
     } else if (data.haveYard) {
-      if (data.squareFootage == null) messages.push({ type: MutationMessageType.warning, message: 'Please enter the square footage of your yard.', arg: 'squareFootage' })
+      if (data.squareFootage == null) messages.push({ type: MutationMessageType.error, message: 'Please enter the square footage of your yard.', arg: 'squareFootage' })
       else if (data.squareFootage <= 0) {
         messages.push({ type: MutationMessageType.error, message: 'Please enter a valid square footage.', arg: 'squareFootage' })
       }
-      if (data.totalPets == null) messages.push({ type: MutationMessageType.warning, message: 'Please enter the number of pets.', arg: 'totalPets' })
+      if (data.totalPets == null) messages.push({ type: MutationMessageType.error, message: 'Please enter the number of pets.', arg: 'totalPets' })
       else if (data.totalPets < 1) {
-        messages.push({ type: MutationMessageType.warning, message: 'Please enter a valid number of pets.' + (data.totalPets === 0 ? ' Remember to include this pet in your total.' : ''), arg: 'totalPets' })
+        messages.push({ type: MutationMessageType.error, message: 'Please enter a valid number of pets.' + (data.totalPets === 0 ? ' Remember to include this pet in your total.' : ''), arg: 'totalPets' })
       }
     }
     return messages

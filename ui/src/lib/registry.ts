@@ -29,14 +29,22 @@ export interface RequirementDefinition {
    * A component that will be used to render the form for this prompt's configuration, if applicable.
    */
   configureComponent?: Component
+  /**
+   * Read-only version of the configuration.
+   */
+  configureDisplayComponent?: Component
 }
 
 export interface PromptDefinition {
   key: string
   /**
    * The component that will be used to render the form for this prompt.
+   *
+   * If not provided, it will be assumed that the prompt is meant to be filled in
+   * by an automation. The applicant view cannot handle this, so always include
+   * a formComponent for applicant prompts.
    */
-  formComponent: Component
+  formComponent?: Component
   /**
    * Control the size of the area the formComponent will be rendered in.
    * - 'small' will render the form in a small area (about 8 lines or less at 320px width).
@@ -45,6 +53,21 @@ export interface PromptDefinition {
    * Defaults to 'small'.
    */
   formMode?: 'small' | 'large' | 'full'
+  /**
+   * Set this to true to make the prompt visually distinct as something that is meant to
+   * be filled in by an automation. If you provide a formComponent, humans with permission
+   * will still have an edit pencil and be able to edit the prompt in a modal.
+   *
+   * - If you didn't provide a formComponent, `automation` defaults to true.
+   * - When `automation` is true, `formMode` is ignored (behaves like 'full').
+   * - The applicant view will ignore this setting.
+   *
+   * Note: if you set this and also provide a formComponent, it might be a good idea to add
+   * a hidden field to the formComponent to mark the data as written by a human, so automations
+   * know to stop updating the data. Automations will set data directly so anything you do
+   * in the formComponent will only affect human edits / overrides.
+   */
+  automation?: boolean
   /**
    * A component that displays the data collected from this prompt instead of collecting
    * it. Should be as compact as possible, as it will be displayed in a big list of prompts.
@@ -66,6 +89,10 @@ export interface PromptDefinition {
    * Configuration forms are always rendered in a modal that takes up (up to) the full screen.
    */
   configureComponent?: Component
+  /**
+   * Read-only version of the configuration.
+   */
+  configureDisplayComponent?: Component
   /**
    * An icon for the navigation.
    */

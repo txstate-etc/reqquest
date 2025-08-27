@@ -251,6 +251,7 @@ export class AppRequestService extends AuthService<AppRequest> {
 
   mayOffer (appRequest: AppRequest) {
     if (appRequest.dbStatus !== AppRequestStatusDB.SUBMITTED) return false
+    if (appRequest.status !== AppRequestStatus.REVIEW_COMPLETE) return false
     if (!this.isAcceptancePeriod(appRequest.periodId)) return false
     if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false
     return this.hasControl('AppRequest', 'offer', appRequest.tags)
