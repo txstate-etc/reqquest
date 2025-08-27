@@ -6,7 +6,8 @@ import {
   promptRegistry, getRequirementPrompts, ValidatedAppRequestResponse,
   getPeriodPrompts, ConfigurationService, PeriodPrompt, requirementRegistry,
   AppRequestStatusDB, AppRequest, setRequirementPromptValid, updateAppRequestData,
-  closedStatuses, getAppRequests, getAppRequestData, appRequestTransaction
+  closedStatuses, getAppRequests, getAppRequestData, appRequestTransaction,
+  recordAppRequestActivity
 } from '../internal.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
@@ -144,15 +145,15 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
       if (hadPrevalidateErrors || validateOnly) return
       if (!equal(appRequestData[prompt.key], processedData)) {
         appRequestData[prompt.key] = processedData
-        await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion)
-        this.svc(AppRequestService).recordActivity(appRequest, 'Prompt Updated', { data, description: prompt.title })
+        await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion, db)
+        recordAppRequestActivity(appRequest.internalId, this.user!.internalId, 'Prompt Updated', { data, description: prompt.title }, db)
       }
-      await setRequirementPromptValid(prompt)
-      this.loaders.clear()
-      const updatedAppRequest = (await this.svc(AppRequestService).findByInternalId(appRequest.internalId))!
-      response.success = true
-      response.appRequest = updatedAppRequest
+      await setRequirementPromptValid(prompt, db)
     })
+    this.loaders.clear()
+    const updatedAppRequest = (await this.svc(AppRequestService).findByInternalId(prompt.appRequestInternalId))!
+    response.success = true
+    response.appRequest = updatedAppRequest
     return response
   }
 }
