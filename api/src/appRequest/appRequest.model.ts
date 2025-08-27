@@ -33,10 +33,11 @@ registerEnumType(AppRequestStatus, {
     [AppRequestStatus.APPROVAL]: { description: 'Applicant has submitted and any pre-approval requirements have been met. We are waiting for a reviewer to do their part.' },
     [AppRequestStatus.REVIEW_COMPLETE]: { description: 'All applications have been reviewed and any blocking workflow stages have been completed. The application is ready for results to be released to the applicant.' },
     [AppRequestStatus.ACCEPTANCE]: { description: 'Reviewer has approved an offer and we are waiting for the applicant to accept. This status is unreachable if the period has no ACCEPTANCE requirements.' },
-    [AppRequestStatus.APPROVED]: { description: 'Applicant has submitted, at least one application is in an approved state, and no applications are pending.' },
-    [AppRequestStatus.NOT_APPROVED]: { description: 'Applicant has submitted, and ALL applications have been disqualified, no applications are pending.' },
+    [AppRequestStatus.APPROVED]: { description: 'Results have been released to the applicant, there is no acceptance phase, and at least one application was found eligible.' },
+    [AppRequestStatus.NOT_APPROVED]: { description: 'Results have been released to the applicant, there is no acceptance phase, and all applications were found ineligible.' },
     [AppRequestStatus.READY_TO_ACCEPT]: { description: 'Applicant has been offered, satisfied all acceptance requirements and is ready to accept. This status is unreachable if the period has no ACCEPTANCE requirements.' },
     [AppRequestStatus.ACCEPTED]: { description: 'Applicant has accepted an offer on at least one application and no applications are still pending acceptance.' },
+    [AppRequestStatus.NOT_ACCEPTED]: { description: 'Applicant has responded to the offer, but did not accept an offer on any application.' },
     [AppRequestStatus.WITHDRAWN]: { description: 'Applicant withdrew the request after submitting. The request must be re-opened (if eligible) to be edited again.' },
     [AppRequestStatus.CANCELLED]: { description: 'Applicant cancelled the request before submitting. The applicant may be permitted to uncancel and continue, if the period is still open.' }
   }
