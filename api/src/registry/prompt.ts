@@ -98,6 +98,67 @@ export interface PromptTagDefinition<PromptKey extends string = string, DataType
   getTags?: (search?: string) => Promise<TagDefinition[]> | TagDefinition[]
 }
 
+export interface ConfigurationDefinition<ConfigurationInputType = any, ConfigurationDataType = any> {
+  /**
+   * Provide a JSON-schema object to help validate the configuration data. Reqquest will
+   * use ajv to validate the input data against this schema.
+   *
+   * Only use this schema for safety, like ensuring a number is a number, NOT for errors a user
+   * could make. Failing this check should be considered a software bug in your schema
+   * or form component. Users will NOT get a friendly error message when it fails.
+   *
+   * This schema is evaluated before `preProcessData` runs, so be sure to describe the structure
+   * appropriately. If you are accepting an uploaded file and then taking it apart to create
+   * the configuration data, you will need to account for type mismatches as you parse the file.
+   */
+  schema?: SchemaObject
+  /**
+   * This function is called before the configuration data is processed. It can be used to
+   * modify the data, read incoming files and translate them into data, or save files to the
+   * filesystem.
+   *
+   * To process files, you are provided the Context object from graphql-server. This object
+   * has a `files()` method that can be used to access the incoming file streams.
+   *
+   * You may throw an error from this function to protect the system from bad data, like a file
+   * stream that goes over its stated length.
+   *
+   * This function runs after the JSON-schema has been validated but before the `validate` function
+   * has run. This will help you in cases where you are converting a file into data (that should then
+   * validate), but be aware of the potential transformations when you set the `arg` for each
+   * MutationMessage returned by `validate`.
+   */
+  preProcessData?: (data: Partial<ConfigurationInputType>, ctx: RQContext) => Promise<ConfigurationDataType> | ConfigurationDataType
+  /**
+   * Return validation messages to the user to help them provide correct input while
+   * configuring the Prompt. Prompt configuration is for administrators to be able to
+   * adjust the behavior of the prompt, e.g. changing the text of the prompt.
+   *
+   * This function runs after the `preProcessData` function has run. This will help you in cases
+   * where you are converting a file into data (that should then validate), but be aware of the potential
+   * transformations when you set the `arg` for each MutationMessage returned.
+   */
+  validate?: (data: ConfigurationDataType) => Promise<MutationMessage[]> | MutationMessage[]
+  /**
+   * An array of migrations to perform on the configuration data to make it compatible with the latest
+   * version of the software. Be careful not to revise history too much, changes here will affect all
+   * past requests. Use this only to maintain compatibility / avoid crashes, NOT to adjust the
+   * behavior of the prompt.
+   */
+  migrations?: AppRequestMigration<ConfigurationDataType & { savedAtVersion: string }>[]
+  /**
+   * The default configuration data for this prompt. This will be used to initialize the
+   * configuration data for the prompt when it is added to a period that does not already
+   * have a configuration for it.
+   *
+   * Typically the configuration will be copied from period to period, so this is only used
+   * for the first period after the prompt is added to the system.
+   *
+   * It may also be used as a reset-to-default target.
+   */
+  default?: ConfigurationDataType
+}
+
 export interface PromptDefinition<DataType = any, InputDataType = DataType, ConfigurationDataType = any, FetchType = any, KeyLiteral extends string = string> {
   /**
    * A globally unique, human and machine readable key. This will be used to match up with
@@ -162,30 +223,6 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * `preProcessData` will not be run at all if this returns any errors.
    */
   preValidate?: (data: Partial<InputDataType>, config: ConfigurationDataType, allConfig: Record<string, any>) => MutationMessage[]
-  /**
-   * Return validation messages to the user to help them provide correct input while
-   * configuring the Prompt. Prompt configuration is for administrators to be able to
-   * adjust the behavior of the prompt, e.g. changing the text of the prompt.
-   */
-  validateConfiguration?: (data: ConfigurationDataType) => Promise<MutationMessage[]> | MutationMessage[]
-  /**
-   * An array of migrations to perform on the configuration data to make it compatible with the latest
-   * version of the software. Be careful not to revise history too much, changes here will affect all
-   * past requests. Use this only to maintain compatibility / avoid crashes, NOT to adjust the
-   * behavior of the prompt.
-   */
-  configurationMigrations?: AppRequestMigration<ConfigurationDataType & { savedAtVersion: string }>[]
-  /**
-   * The default configuration data for this prompt. This will be used to initialize the
-   * configuration data for the prompt when it is added to a period that does not already
-   * have a configuration for it.
-   *
-   * Typically the configuration will be copied from period to period, so this is only used
-   * for the first period after the prompt is added to the system.
-   *
-   * It may also be used as a reset-to-default target.
-   */
-  configurationDefault?: ConfigurationDataType
   /**
    * A function that can be used to preload data for the prompt. This is useful for
    * prompts that depend on data from the database or other sources. Data provided by
@@ -257,7 +294,6 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * are also indexes, you don't need to provide them in both places.
    */
   tags?: PromptTagDefinition<KeyLiteral, DataType>[]
-
   /**
    * Optionally provide a function that can preprocess the data from this prompt before it is
    * saved to the database. This is useful for prompts that need to do some processing on the
@@ -275,6 +311,18 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * transformations when you set the `arg` for each MutationMessage returned by `validate`.
    */
   preProcessData?: (data: InputDataType, ctx: RQContext, appRequest: AppRequest) => Promise<DataType> | DataType
+  /**
+   * Sometimes, you will want to allow application administrators to control various aspects of
+   * how the prompt will be displayed or evaluated. For example, you might want administrators to
+   * be able to re-word questions, create a list of questions, or create a list of values for
+   * a dropdown.
+   *
+   * This section is meant to enable you to do that. You create a form for the administrator, and
+   * we will collect the data in JSON and give it to the prompt component as a prop. You'll also
+   * receive the configuration JSON in your validate, preValidate, preProcessData, etc - to help you
+   * make decisions.
+   */
+  configuration?: ConfigurationDefinition
 }
 
 const labelLookupCache = new Cache(async (tag: { category: string, value: string }) => {
@@ -294,14 +342,14 @@ const tagListCache = new Cache(async (key: { category: string, search?: string }
   return tags ?? []
 }, { freshseconds: 300 })
 
-const ajv = new Ajv({
+export const registryAjv = new Ajv({
   allErrors: true,
   strictSchema: false,
   coerceTypes: true
 })
 
-addFormats(ajv)
-addErrors(ajv)
+addFormats(registryAjv)
+addErrors(registryAjv)
 
 class PromptRegistry {
   protected prompts: Record<string, PromptDefinition> = {}
@@ -311,6 +359,7 @@ class PromptRegistry {
   protected sortedMigrations: AppRequestMigration[] = []
   protected indexLookups: Record<string, (tag: string) => Promise<string> | string> = {}
   protected validators: Record<string, ValidateFunction> = {}
+  protected configValidators: Record<string, ValidateFunction> = {}
   public indexCategories: PromptIndexDefinition[] = []
   public indexCategoryMap: Record<string, PromptIndexDefinition> = {}
   public tagCategories: PromptTagDefinition[] = []
@@ -321,7 +370,8 @@ class PromptRegistry {
     this.prompts[prompt.key] = prompt
     this.promptsList.push(prompt)
     this.unsortedMigrations.push(...(prompt.migrations ?? []))
-    if (isNotEmpty(prompt.schema)) this.validators[prompt.key] = ajv.compile(prompt.schema)
+    if (isNotEmpty(prompt.schema)) this.validators[prompt.key] = registryAjv.compile(prompt.schema)
+    if (isNotEmpty(prompt.configuration?.schema)) this.configValidators[prompt.key] = registryAjv.compile(prompt.configuration.schema)
   }
 
   get (key: string) {
@@ -409,6 +459,14 @@ class PromptRegistry {
     const validate = this.validators[key]
     if (!validate) return true
     return validate(data)
+  }
+
+  validateConfig (key: string, data: any) {
+    const validate = this.configValidators[key]
+    if (!validate) return true
+    const valid = validate(data)
+    if (!valid) console.error(validate.errors)
+    return valid
   }
 
   migrations () {

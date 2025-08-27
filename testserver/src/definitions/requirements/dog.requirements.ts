@@ -15,14 +15,16 @@ export const must_exercise_your_dog_req: RequirementDefinition<ExerciseConfigReq
     if (exerciseData.exerciseHours >= config.minExerciseHours) return { status: RequirementStatus.MET }
     return { status: RequirementStatus.WARNING, reason: `You must exercise your dog ${config.minExerciseHours} hours a week.` }
   },
-  validateConfiguration: config => {
-    const messages: MutationMessage[] = []
-    if (config.minExerciseHours == null) {
-      messages.push({ type: MutationMessageType.error, message: 'Please enter the minimum number of hours to exercise the dog.', arg: 'minExerciseHours' })
-    } else if (config.minExerciseHours < 0) {
-      messages.push({ type: MutationMessageType.error, message: 'Please enter a valid number of hours.', arg: 'minExerciseHours' })
-    }
-    return messages
-  },
-  configurationDefault: { minExerciseHours: 10 }
+  configuration: {
+    validate: config => {
+      const messages: MutationMessage[] = []
+      if (config.minExerciseHours == null) {
+        messages.push({ type: MutationMessageType.error, message: 'Please enter the minimum number of hours to exercise the dog.', arg: 'minExerciseHours' })
+      } else if (config.minExerciseHours < 0) {
+        messages.push({ type: MutationMessageType.error, message: 'Please enter a valid number of hours.', arg: 'minExerciseHours' })
+      }
+      return messages
+    },
+    default: { minExerciseHours: 10 }
+  }
 }

@@ -1,5 +1,6 @@
-import { MutationMessage } from '@txstate-mws/graphql-server'
-import { applicantRequirementTypes, AppRequestData, AppRequestMigration, programRegistry, promptRegistry, RequirementStatus, RequirementType } from '../internal.js'
+import { type ValidateFunction } from 'ajv'
+import { applicantRequirementTypes, AppRequestData, ConfigurationDefinition, programRegistry, promptRegistry, RequirementStatus, RequirementType, registryAjv } from '../internal.js'
+import { isNotEmpty } from 'txstate-utils'
 
 export interface RequirementDefinition<ConfigurationDataType = any> {
   /**
@@ -125,34 +126,18 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    * is available to you.
    */
   resolve: (appRequestData: AppRequestData, config: ConfigurationDataType, configLookup: Record<string, any>) => { status: RequirementStatus, reason?: string }
-
   /**
-   * Return validation messages to the user to help them provide correct input while
-   * configuring the Requirement. Requirement configuration is for administrators to be able to
-   * adjust the behavior of the requirement, e.g. changing the absolute value of an income limit
-   * the applicant is supposed to make less than.
-   */
-  validateConfiguration?: (data: ConfigurationDataType) => Promise<MutationMessage[]> | MutationMessage[]
-
-  /**
-   * An array of migrations to perform on the configuration data to make it compatible with the latest
-   * version of the software. Be careful not to revise history too much, changes here will affect all
-   * past requests. Use this only to maintain compatibility / avoid crashes, NOT to adjust the
-   * behavior of the prompt.
-   */
-  configurationMigrations?: AppRequestMigration<ConfigurationDataType & { savedAtVersion: string }>[]
-
-  /**
-   * The default configuration data for this requirement. This will be used to initialize the
-   * configuration data for the requirement when it is added to a period that does not already
-   * have a configuration for it.
+   * Often, you will want to allow application administrators to control various aspects of
+   * how requirements will be evaluated. For example, you might want administrators to
+   * set an income threshold to determine eligibility. The threshold may change from period
+   * to period and we don't want to hard-code that into the `resolve` function.
    *
-   * Typically the configuration will be copied from period to period, so this is only used
-   * for the first period after the requirement is added to the system.
-   *
-   * It may also be used as a reset-to-default target.
+   * This part of the definition is meant to allow you to do that. You create a form for the
+   * administrator, and we will collect the data in JSON and give it to the resolve function as
+   * a parameter. You'll also receive the configuration JSON in your smartTitle function in case
+   * it helps.
    */
-  configurationDefault?: ConfigurationDataType
+  configuration?: ConfigurationDefinition
 }
 
 export interface RequirementDefinitionProcessed extends RequirementDefinition {
@@ -166,6 +151,7 @@ export interface RequirementDefinitionProcessed extends RequirementDefinition {
 class RequirementRegistry {
   protected requirements: Record<string, RequirementDefinitionProcessed> = {}
   protected requirementsList: RequirementDefinitionProcessed[] = []
+  protected configValidators: Record<string, ValidateFunction> = {}
   public authorizationKeys: Record<string, string[]> = {}
   public reachable: RequirementDefinitionProcessed[] = []
 
@@ -185,6 +171,7 @@ class RequirementRegistry {
     if (applicantRequirementTypes.has(definition.type)) {
       for (const key of allPromptKeys) promptRegistry.setUserPrompt(key)
     }
+    if (isNotEmpty(definition.configuration?.schema)) this.configValidators[definition.key] = registryAjv.compile(definition.configuration.schema)
   }
 
   keys () {
@@ -203,6 +190,14 @@ class RequirementRegistry {
     const reachableKeys = new Set(programRegistry.reachable.flatMap(program => program.requirementKeys))
     this.reachable = this.requirementsList.filter(requirement => reachableKeys.has(requirement.key))
     promptRegistry.finalize()
+  }
+
+  validateConfig (key: string, data: any) {
+    const validate = this.configValidators[key]
+    if (!validate) return true
+    const valid = validate(data)
+    if (!valid) console.error(validate.errors)
+    return valid
   }
 }
 
