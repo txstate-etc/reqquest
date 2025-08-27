@@ -289,8 +289,8 @@ export async function ensureConfigurationRecords (periodIds?: number[], tdb?: Qu
     const requirements = requirementRegistry.reachable
     const promptAndReqKeys = [...prompts.map(p => p.key), ...requirements.map(r => r.key)]
     const promptAndReqKeysSet = new Set(promptAndReqKeys)
-    const promptConfigurationsToInsert = futurePeriodIds.flatMap(periodId => prompts.filter(p => !configMap?.[periodId]?.has(p.key)).map(p => ({ periodId: periodId, key: p.key, data: stringify(p.configurationDefault ?? {}) })))
-    const requirementConfigurationsToInsert = futurePeriodIds.flatMap(periodId => requirements.filter(r => !configMap?.[periodId]?.has(r.key)).map(r => ({ periodId: periodId, key: r.key, data: stringify(r.configurationDefault ?? {}) })))
+    const promptConfigurationsToInsert = futurePeriodIds.flatMap(periodId => prompts.filter(p => !configMap?.[periodId]?.has(p.key)).map(p => ({ periodId: periodId, key: p.key, data: stringify(p.configuration?.default ?? {}) })))
+    const requirementConfigurationsToInsert = futurePeriodIds.flatMap(periodId => requirements.filter(r => !configMap?.[periodId]?.has(r.key)).map(r => ({ periodId: periodId, key: r.key, data: stringify(r.configuration?.default ?? {}) })))
     const configurationsToInsert = promptConfigurationsToInsert.concat(requirementConfigurationsToInsert)
     const configurationsToDelete = futurePeriodIds.flatMap(periodId => Array.from(configMap?.[periodId] ?? []).filter(key => !promptAndReqKeysSet.has(key)).map(key => ({ periodId: periodId, key })))
     if (configurationsToInsert.length) {

@@ -178,7 +178,7 @@ export class PeriodPromptService extends AuthService<Prompt> {
   }
 
   mayConfigure (prompt: PeriodPrompt): boolean {
-    if (prompt.definition.validateConfiguration == null) return false
+    if (prompt.definition.configuration == null) return false
     return this.hasControl('Prompt', 'configure', prompt.authorizationKeys)
   }
 }

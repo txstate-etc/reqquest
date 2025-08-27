@@ -186,10 +186,14 @@ export class ConfigurationService extends AuthService<Configuration> {
     if (!cfg) throw new Error('Configuration not found')
     if (!await this.mayUpdate(cfg)) throw new Error('You are not allowed to update this configuration.')
     const response = new ValidatedConfigurationResponse({ success: true })
-    const messages = await cfg.configuredObject.definition.validateConfiguration?.(data) ?? []
+    const registry = cfg.type === 'Prompt' ? promptRegistry : requirementRegistry
+    const valid = registry.validateConfig(key, data)
+    if (!valid) throw new Error('Invalid configuration data format.')
+    const processedData = cfg.configuredObject.definition.configuration?.preProcessData?.(data, this.ctx) ?? data
+    const messages = await cfg.configuredObject.definition.configuration?.validate?.(processedData) ?? []
     for (const feedback of messages) response.addMessage(feedback.message)
     if (validateOnly || response.hasErrors()) return response
-    await upsertConfiguration(periodId, key, data)
+    await upsertConfiguration(periodId, key, processedData)
     this.loaders.clear()
     response.configuration = await this.findByPeriodIdAndKey(periodId, key)
     return response
