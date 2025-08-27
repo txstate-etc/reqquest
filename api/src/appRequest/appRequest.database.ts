@@ -600,8 +600,8 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
   return await appRequestTransaction(appRequestInternalId, action)
 }
 
-export async function recordAppRequestActivity (appRequestId: number, userId: number, action: string, info?: { description?: string, data?: any, impersonatedBy?: number }) {
-  await db.insert(`
+export async function recordAppRequestActivity (appRequestId: number, userId: number, action: string, info?: { description?: string, data?: any, impersonatedBy?: number }, tdb: Queryable = db) {
+  await tdb.insert(`
     INSERT INTO app_request_activity (appRequestId, userId, impersonatedBy, action, description, data)
     VALUES (?, ?, ?, ?, ?, ?)
   `, [
