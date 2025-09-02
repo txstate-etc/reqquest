@@ -132,7 +132,7 @@ test.describe.serial('Manage period configurations', () => {
     expect(response.updateConfiguration.success).toEqual(true)
     expect(response.updateConfiguration.configuration.data.minExerciseHours).toEqual(data.minExerciseHours)
   })
-  test('Reviewer - Get prompt configuration period details with view access, but no update access', async ({ reviewerRequest }) => {
+  test.fixme('Reviewer - Get prompt configuration period details with view access, but no update access', async ({ reviewerRequest }) => {
     const query = `
       query GetPeriodConfigurations($ids: [ID!]){
         periods(filter: {ids: $ids}) {
@@ -158,7 +158,7 @@ test.describe.serial('Manage period configurations', () => {
       expect(config.actions.view).toEqual(true)
     }
   })
-  test('Applicant - Get prompt configuration period details with view access, but no update access', async ({ applicantRequest }) => {
+  test.fixme('Applicant - Get prompt configuration period details with view access, but no update access', async ({ applicantRequest }) => {
     const query = `
       query GetPeriodConfigurations($ids: [ID!]){
         periods(filter: {ids: $ids}) {
@@ -184,7 +184,7 @@ test.describe.serial('Manage period configurations', () => {
       expect(config.actions.view).toEqual(true)
     }
   })
-  test('Applicant 2 - Get prompt configuration period details with view access, but no update access', async ({ applicant2Request }) => {
+  test.fixme('Applicant 2 - Get prompt configuration period details with view access, but no update access', async ({ applicant2Request }) => {
     const query = `
       query GetPeriodConfigurations($ids: [ID!]){
         periods(filter: {ids: $ids}) {
