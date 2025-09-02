@@ -28,9 +28,8 @@ export abstract class AuthService<ObjType, RedactedType = ObjType> extends Autho
     return this.ctx.authInfo.impersonationUser
   }
 
-  async lookupUser (login: string): Promise<ReqquestUser | undefined> {
-    const groups = await allGroupCache.get()
-    return (await appConfig.userLookups.byLogins([login], groups))[0]
+  async lookupUser (login: string) {
+    return await lookupUser(login)
   }
 
   private roleMatches (roleLookup: RoleLookup, allow: boolean, subjectType: string, control: string, tags?: Record<string, string[]>) {
@@ -82,9 +81,33 @@ const allGroupCache = new Cache(async () => {
   return await AccessDatabase.getAllGroups()
 }, { freshseconds: 30, staleseconds: 28800 }) // 30 seconds, 8 hours
 
+async function lookupUser (login: string): Promise<ReqquestUser | undefined> {
+  try {
+    const groups = await allGroupCache.get()
+    return (await appConfig.userLookups.byLogins([login], groups))[0]
+  } catch (e: any) {
+    console.error('Error looking up user info for login', login, e)
+    // we're going to try to fall back to our local copy if the remote user provider
+    // is temporarily offline
+    const [dbUser] = await AccessDatabase.getAccessUsers({ logins: [login] })
+    if (!dbUser) return undefined
+    const [groups, otherIdentifiers] = await Promise.all([
+      AccessDatabase.getGroupsByUserIds([dbUser.internalId]),
+      AccessDatabase.getOtherIdentifiersByUserIds([dbUser.internalId])
+    ])
+    return dbUser
+      ? {
+        login: dbUser.login,
+        fullname: dbUser.fullname,
+        groups: groups.map(g => g.value),
+        otherIdentifiers: otherIdentifiers.map(oi => ({ label: oi.label, value: oi.id }))
+      }
+      : undefined
+  }
+}
+
 const userCache = new Cache(async (login: string, ctx: Context) => {
-  const groups = await allGroupCache.get()
-  const userInfo = (await appConfig.userLookups.byLogins([login], groups))[0] // get user info from motion
+  const userInfo = await lookupUser(login)
   if (!userInfo) return undefined
   const user = await AccessDatabase.upsertAccessUser(userInfo)
   return user
