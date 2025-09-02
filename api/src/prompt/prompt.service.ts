@@ -7,7 +7,8 @@ import {
   getPeriodPrompts, ConfigurationService, PeriodPrompt, requirementRegistry,
   AppRequestStatusDB, AppRequest, setRequirementPromptValid, updateAppRequestData,
   closedStatuses, getAppRequests, getAppRequestData, appRequestTransaction,
-  recordAppRequestActivity
+  recordAppRequestActivity, appConfig, AppRequestData, AppRequestStatus, ApplicationPhase,
+  ApplicationService, setRequirementPromptsInvalid
 } from '../internal.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
@@ -128,12 +129,17 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     if (!promptRegistry.validate(prompt.key, data)) throw new Error('Invalid prompt data.')
     const response = new ValidatedAppRequestResponse({ success: true })
     const allConfigData = await this.svc(ConfigurationService).getRelatedData(prompt.periodId, prompt.key)
+    let updated = false
+    let savedData: any
+    let previousAppRequestStatus: AppRequestStatus | undefined
+    let previousAppPhases: Record<string, ApplicationPhase> = {}
+    let appRequestData: AppRequestData | undefined
     await appRequestTransaction(prompt.appRequestInternalId, async db => {
       const [[appRequest], [appRequestDataPair]] = await Promise.all([
         getAppRequests({ internalIds: [prompt.appRequestInternalId] }, db),
         getAppRequestData([prompt.appRequestInternalId], db)
       ])
-      const appRequestData = appRequestDataPair?.data ?? {}
+      appRequestData = appRequestDataPair?.data ?? {}
       if (!appRequest) throw new Error('AppRequest not found')
       for (const message of prompt.definition.preValidate?.(data, allConfigData[prompt.key] ?? {}, allConfigData) ?? []) response.addMessage(message.message, message.arg, message.type)
       const hadPrevalidateErrors = response.hasErrors()
@@ -144,14 +150,38 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
       }
       if (hadPrevalidateErrors || validateOnly) return
       if (!equal(appRequestData[prompt.key], processedData)) {
+        updated = true
+        previousAppRequestStatus = appRequest.status
+        savedData = appRequestData[prompt.key]
         appRequestData[prompt.key] = processedData
-        await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion, db)
+        previousAppPhases = (await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion, db))!
         recordAppRequestActivity(appRequest.internalId, this.user!.internalId, 'Prompt Updated', { data, description: prompt.title }, db)
       }
+      const promptsToInvalidate = promptRegistry.getInvalidatedPrompts(prompt.key, processedData)
+      await setRequirementPromptsInvalid(promptsToInvalidate, db)
       await setRequirementPromptValid(prompt, db)
     })
     this.loaders.clear()
     const updatedAppRequest = (await this.svc(AppRequestService).findByInternalId(prompt.appRequestInternalId))!
+
+    // run hooks
+    try {
+      if (updated) {
+        const applications = await this.svc(ApplicationService).findByAppRequest(updatedAppRequest)
+        await appConfig.hooks?.updatePrompt?.(this.ctx, updatedAppRequest, appRequestData!, prompt.key, savedData)
+        if (updatedAppRequest.status !== previousAppRequestStatus) {
+          await appConfig.hooks?.appRequestStatus?.(this.ctx, updatedAppRequest, previousAppRequestStatus)
+        }
+        for (const app of applications) {
+          if (app.phase !== previousAppPhases[app.programKey]) {
+            await appConfig.hooks?.applicationPhase?.(this.ctx, updatedAppRequest, app.programKey, previousAppPhases[app.programKey])
+          }
+        }
+      }
+    } catch (err) {
+      console.error(err)
+    }
+
     response.success = true
     response.appRequest = updatedAppRequest
     return response

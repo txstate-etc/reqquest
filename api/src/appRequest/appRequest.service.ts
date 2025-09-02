@@ -2,7 +2,7 @@ import { BaseService, MutationMessageType } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { DateTime } from 'luxon'
 import { isBlank, someAsync } from 'txstate-utils'
-import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer, getAppRequestTags, closedStatuses, ApplicationRequirementService, recordAppRequestActivity, addAppRequestNote, closeAppRequest, getAppRequestActivity, AppRequestActivityFilters, PeriodService, createAppRequest, Period, appConfig, AccessUser, ReqquestUser, AccessDatabase, cancelAppRequest, reopenAppRequest, returnAppRequest, acceptOffer } from '../internal.js'
+import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer, getAppRequestTags, closedStatuses, ApplicationRequirementService, recordAppRequestActivity, addAppRequestNote, closeAppRequest, getAppRequestActivity, AppRequestActivityFilters, PeriodService, createAppRequest, Period, appConfig, AccessUser, ReqquestUser, AccessDatabase, cancelAppRequest, reopenAppRequest, returnAppRequest, acceptOffer, ApplicationPhase, ApplicationService } from '../internal.js'
 
 const appReqByIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -213,6 +213,7 @@ export class AppRequestService extends AuthService<AppRequest> {
   }
 
   mayClose (appRequest: AppRequest) {
+    if (this.isClosed(appRequest)) return false
     if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false
     return this.hasControl('AppRequest', 'close', appRequest.tags)
   }
@@ -238,6 +239,7 @@ export class AppRequestService extends AuthService<AppRequest> {
   }
 
   maySubmit (appRequest: AppRequest) {
+    if (this.isClosed(appRequest)) return false
     if (!this.isInOpenPeriod(appRequest)) return false
     if (appRequest.status !== AppRequestStatus.READY_TO_SUBMIT) return false
     return this.isOwn(appRequest) || this.hasControl('AppRequest', 'submit', appRequest.tags)
@@ -276,6 +278,11 @@ export class AppRequestService extends AuthService<AppRequest> {
     const internalId = await createAppRequest(period.internalId, this.user!.internalId)
     this.loaders.clear()
     response.appRequest = await this.findByInternalId(internalId)
+    try {
+      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, undefined)
+    } catch (err) {
+      console.error(err)
+    }
     return response
   }
 
@@ -306,6 +313,11 @@ export class AppRequestService extends AuthService<AppRequest> {
     const internalId = await createAppRequest(period.internalId, user.internalId)
     this.loaders.clear()
     response.appRequest = await this.findByInternalId(internalId)
+    try {
+      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, undefined)
+    } catch (err) {
+      console.error(err)
+    }
     return response
   }
 
@@ -317,6 +329,16 @@ export class AppRequestService extends AuthService<AppRequest> {
     await this.recordActivity(appRequest, 'Submitted')
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
+    try {
+      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, AppRequestStatus.READY_TO_SUBMIT)
+      const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
+      for (const app of applications) {
+        await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, ApplicationPhase.READY_TO_SUBMIT)
+      }
+    } catch (err) {
+      console.error(err)
+    }
+
     return response
   }
 
@@ -328,6 +350,16 @@ export class AppRequestService extends AuthService<AppRequest> {
     await this.recordActivity(appRequest, 'Made Offer')
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
+    try {
+      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, AppRequestStatus.REVIEW_COMPLETE)
+      const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
+      for (const app of applications) {
+        await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, ApplicationPhase.REVIEW_COMPLETE)
+      }
+    } catch (err) {
+      console.error(err)
+    }
+
     return response
   }
 
@@ -339,6 +371,11 @@ export class AppRequestService extends AuthService<AppRequest> {
     await this.recordActivity(appRequest, 'Closed')
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
+    try {
+      await appConfig.hooks?.closeAppRequest?.(this.ctx, response.appRequest!)
+    } catch (err) {
+      console.error(err)
+    }
     return response
   }
 
@@ -358,10 +395,22 @@ export class AppRequestService extends AuthService<AppRequest> {
     if (!this.mayCancel(appRequest)) throw new Error('You may not cancel this app request.')
     const response = new ValidatedAppRequestResponse()
     if (response.hasErrors()) return response
+    const applicationsBefore = await this.svc(ApplicationService).findByAppRequest(appRequest)
+    const appBeforePhase = applicationsBefore.reduce((acc, app) => ({ ...acc, [app.programKey]: app.phase }), {} as Record<string, ApplicationPhase>)
     const withdrawn = await cancelAppRequest(appRequest.internalId, dataVersion)
     await this.recordActivity(appRequest, withdrawn ? 'Withdrew' : 'Cancelled')
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
+    try {
+      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, appRequest.status)
+      const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
+      for (const app of applications) {
+        await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, appBeforePhase[app.programKey])
+      }
+    } catch (err) {
+      console.error(err)
+    }
+
     return response
   }
 
@@ -369,10 +418,21 @@ export class AppRequestService extends AuthService<AppRequest> {
     if (!this.mayReopen(appRequest)) throw new Error('You may not reopen this app request.')
     const response = new ValidatedAppRequestResponse()
     if (response.hasErrors()) return response
+    const applicationsBefore = await this.svc(ApplicationService).findByAppRequest(appRequest)
+    const appBeforePhase = applicationsBefore.reduce((acc, app) => ({ ...acc, [app.programKey]: app.phase }), {} as Record<string, ApplicationPhase>)
     await reopenAppRequest(appRequest.internalId)
     await this.recordActivity(appRequest, 'Reopened')
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
+    try {
+      const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
+      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, appRequest.status)
+      for (const app of applications) {
+        await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, appBeforePhase[app.programKey])
+      }
+    } catch (err) {
+      console.error(err)
+    }
     return response
   }
 
@@ -380,10 +440,21 @@ export class AppRequestService extends AuthService<AppRequest> {
     if (!this.mayReturn(appRequest)) throw new Error('You may not return this app request.')
     const response = new ValidatedAppRequestResponse()
     if (response.hasErrors()) return response
+    const applicationsBefore = await this.svc(ApplicationService).findByAppRequest(appRequest)
+    const appBeforePhase = applicationsBefore.reduce((acc, app) => ({ ...acc, [app.programKey]: app.phase }), {} as Record<string, ApplicationPhase>)
     await returnAppRequest(appRequest.internalId, dataVersion)
     await this.recordActivity(appRequest, 'Returned to applicant')
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
+    try {
+      const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
+      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, appRequest.status)
+      for (const app of applications) {
+        await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, appBeforePhase[app.programKey])
+      }
+    } catch (err) {
+      console.error(err)
+    }
     return response
   }
 
@@ -395,6 +466,15 @@ export class AppRequestService extends AuthService<AppRequest> {
     await this.recordActivity(appRequest, 'Accepted')
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
+    try {
+      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, AppRequestStatus.READY_TO_ACCEPT)
+      const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
+      for (const app of applications) {
+        await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, ApplicationPhase.READY_TO_ACCEPT)
+      }
+    } catch (err) {
+      console.error(err)
+    }
     return response
   }
 }
