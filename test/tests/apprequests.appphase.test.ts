@@ -3,7 +3,7 @@ import { expect, test } from './fixtures.js'
 import { DateTime } from 'luxon'
 import { promptMapQualified, promptMapUnqualified } from './promptdata.js'
 
-test.describe.serial('App Request workflows', () => {
+test.describe.serial('App Request - App Phase - workflows', () => {
   const name = '2025 app-req'
   const code = 'APP_REQ_PER-255'
   const openDate = '2025-07-01T00:00:00.000-05:00'
@@ -249,7 +249,6 @@ test.describe.serial('App Request workflows', () => {
     }
   })
 
-  // Submit with non passing data
   test('Applicant - submit app request with non passing data', async ({ applicantRequest }) => {
     const query = `
       mutation SubmitAppRequest($appRequestId:ID!) {
@@ -268,7 +267,6 @@ test.describe.serial('App Request workflows', () => {
     expect(response.errors[0].message.includes('You may not submit this app request.')).toEqual(true)
   })
 
-  // Note: this next test should actually result in no updates to answers as all previously AVAILABLE and unanswered prompts have non passing data
   test('Applicant - recurring update next available and not answered prompts with passing data', async ({ applicantRequest }) => {
     let availableUnasweredPromptsExist = true
     let promptIteration = 0
@@ -326,7 +324,6 @@ test.describe.serial('App Request workflows', () => {
     }
   })
 
-  // Submit with non passing data
   test('Applicant - submit app request with non updated and non passing data', async ({ applicantRequest }) => {
     const query = `
       mutation SubmitAppRequest($appRequestId:ID!) {
@@ -366,7 +363,6 @@ test.describe.serial('App Request workflows', () => {
     expect(response.errors[0].message).toEqual('You may not create requests for other people.')
   })
 
-  // New app request as second applicant
   let appRequest2Id = 0
   test('Applicant 2 - create app request in reviewed period', async ({ applicant2Request }) => {
     const query = `
@@ -446,7 +442,7 @@ test.describe.serial('App Request workflows', () => {
       }
     }
   })
-  // Applicant 2 - close request prior to submit - fail
+
   test('Applicant 2 - close request prior to submit ', async ({ applicant2Request }) => {
     const query = `
       mutation CloseAppRequest($appRequestId: ID!) {
