@@ -224,7 +224,7 @@ export async function updateAppRequestData (appRequestId: number, data: AppReque
   if (dataVersion != null) binds.push(dataVersion)
   const rowsAffected = await tdb.update('UPDATE app_requests SET data = ?, dataVersion = dataVersion + 1 WHERE id = ?' + where, binds)
   if (!rowsAffected) throw new Error('Someone else is working on the same request and made changes since you loaded. Copy any unsaved work into another document and reload the page to see what has changed.')
-  await evaluateAppRequest(appRequestId, tdb)
+  return await evaluateAppRequest(appRequestId, tdb)
 }
 
 export async function submitAppRequest (appRequestId: number) {
@@ -406,12 +406,18 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
     const workflowStages = await getPeriodWorkflowStages({ periodIds: [appRequest.periodId], workflowKeys: workflowStageKeys }, db)
     const workflowStageLookup = keyby(workflowStages, 'key')
     const workflowStagesByProgramKey = groupby(workflowStages, 'programKey')
+    const previousApplicationPhases = applications.reduce((acc, app) => ({ ...acc, [app.programKey]: app.phase }), {} as Record<string, ApplicationPhase>)
 
     await tagAppRequest(appRequest.internalId, data, prompts, db)
 
     // grab all the prompt and requirement configurations from this apprequest's period
     const configurations = await db.getall<{ definitionKey: string, data: string }>('SELECT definitionKey, data FROM period_configurations WHERE periodId = ?', [appRequest.periodId])
     const configLookup: Record<string, any> = configurations.map(c => ({ ...c, data: JSON.parse(c.data ?? '{}') })).reduce((acc, c) => ({ ...acc, [c.definitionKey]: c.data }), {})
+
+    for (const prompt of prompts) {
+      const validationMessages = prompt.definition.validate?.(data[prompt.key] ?? {}, configLookup[prompt.key] ?? {}, configLookup) ?? []
+      prompt.answered = !validationMessages.some(m => m.type === 'error') && !prompt.invalidated
+    }
 
     const promptsSeenInRequest = new Set<string>()
     for (const application of applications) {
@@ -460,11 +466,6 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
           : phase === 'blocking' || phase === 'nonblocking'
             ? currentWorkflowRequirements
             : [...prequalRequirements, ...qualificationRequirements, ...preapprovalRequirements, ...approvalRequirements, ...blockingWorkflowRequirements]
-
-      for (const prompt of prompts) {
-        const validationMessages = prompt.definition.validate?.(data[prompt.key] ?? {}, configLookup[prompt.key] ?? {}, configLookup) ?? []
-        prompt.answered = !validationMessages.some(m => m.type === 'error')
-      }
 
       const promptsSeenInApplication = new Set<string>()
       for (const requirement of sortedRequirements) {
@@ -594,6 +595,8 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
     await updateApplicationsComputed(applications, db)
     await updateRequirementComputed(requirements, db)
     await updatePromptComputed(prompts, db)
+
+    return previousApplicationPhases
   }
 
   if (tdb) return await action(tdb)

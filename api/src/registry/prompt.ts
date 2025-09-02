@@ -360,6 +360,7 @@ class PromptRegistry {
   protected indexLookups: Record<string, (tag: string) => Promise<string> | string> = {}
   protected validators: Record<string, ValidateFunction> = {}
   protected configValidators: Record<string, ValidateFunction> = {}
+  protected promptInvalidators: Record<string, (data: any) => string[]> = {}
   public indexCategories: PromptIndexDefinition[] = []
   public indexCategoryMap: Record<string, PromptIndexDefinition> = {}
   public tagCategories: PromptTagDefinition[] = []
@@ -372,6 +373,9 @@ class PromptRegistry {
     this.unsortedMigrations.push(...(prompt.migrations ?? []))
     if (isNotEmpty(prompt.schema)) this.validators[prompt.key] = registryAjv.compile(prompt.schema)
     if (isNotEmpty(prompt.configuration?.schema)) this.configValidators[prompt.key] = registryAjv.compile(prompt.configuration.schema)
+    if (prompt.invalidUponChange == null) this.promptInvalidators[prompt.key] = () => []
+    else if (Array.isArray(prompt.invalidUponChange)) this.promptInvalidators[prompt.key] = () => prompt.invalidUponChange as string[]
+    else this.promptInvalidators[prompt.key] = prompt.invalidUponChange
   }
 
   get (key: string) {
@@ -467,6 +471,12 @@ class PromptRegistry {
     const valid = validate(data)
     if (!valid) console.error(validate.errors)
     return valid
+  }
+
+  getInvalidatedPrompts (key: string, data: any) {
+    const prompt = this.prompts[key]
+    if (!prompt) throw new Error(`Prompt ${key} not found.`)
+    return this.promptInvalidators[key](data) ?? []
   }
 
   migrations () {

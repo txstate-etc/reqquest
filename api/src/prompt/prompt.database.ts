@@ -61,6 +61,11 @@ export async function setRequirementPromptValid (prompt: RequirementPrompt, tdb:
   await tdb.update('UPDATE requirement_prompts SET invalidated = 0 WHERE id = ?', [prompt.internalId])
 }
 
+export async function setRequirementPromptsInvalid (promptKeys: string[], tdb: Queryable = db) {
+  if (!promptKeys?.length) return
+  await tdb.update(`UPDATE requirement_prompts SET invalidated = 1 WHERE promptKey IN (${db.in([], promptKeys)})`, promptKeys)
+}
+
 export async function syncPromptRecords (requirement: ApplicationRequirement, db: Queryable) {
   const existingPrompts = await db.getall<PromptRow>('SELECT * FROM requirement_prompts WHERE requirementId = ?', [requirement.internalId])
   const existingPromptKeys = new Set(existingPrompts.map(row => row.promptKey))

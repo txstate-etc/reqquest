@@ -1,5 +1,5 @@
 import { FastifyRequest } from 'fastify'
-import { AppRequest, RQContext, RQContextClass } from '../internal.js'
+import { ApplicationPhase, AppRequest, AppRequestStatus, RQContext, RQContextClass } from '../internal.js'
 
 export interface AppRequestData {
   [keys: string]: any
@@ -53,6 +53,34 @@ export interface AppDefinition {
    * roles. Each scope must have its own set of roles.
    */
   scopes?: string[]
+
+  hooks?: {
+    /**
+     * Code that should run any time the status of an app request changes. Useful for
+     * sending emails or other notifications, or triggering automations.
+     *
+     * oldPhase should only be null on creation.
+     */
+    appRequestStatus?: (ctx: RQContext, appRequest: AppRequest, oldStatus?: AppRequestStatus) => void | Promise<void>
+    /**
+     * Code that should run any time an app request is closed. Useful for
+     * sending emails or other notifications, or triggering automations.
+     */
+    closeAppRequest?: (ctx: RQContext, appRequest: AppRequest) => void | Promise<void>
+    /**
+     * Code that should run any time the application phase changes. Useful for
+     * triggering automations or email notifications, especially workflow notifications.
+     *
+     * This hook will not fire on app request creation, use `appRequestStatus` instead.
+     */
+    applicationPhase?: (ctx: RQContext, appRequest: AppRequest, programKey: string, oldPhase: ApplicationPhase) => void | Promise<void>
+    /**
+     * Code that should run any time a prompt for an app request is updated. Useful for
+     * triggering automations or email notifications. Will only be called if the old data
+     * is different from the new data.
+     */
+    updatePrompt?: (ctx: RQContext, appRequest: AppRequest, appRequestData: AppRequestData, promptKey: string, oldData: any) => void | Promise<void>
+  }
 }
 
 export const appConfig = {
