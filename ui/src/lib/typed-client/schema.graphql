@@ -526,7 +526,7 @@ enum AppRequestStatus {
   APPROVAL
 
   """
-  Applicant has submitted, at least one application is in an approved state, and no applications are pending.
+  Results have been released to the applicant, there is no acceptance phase, and at least one application was found eligible.
   """
   APPROVED
 
@@ -539,10 +539,14 @@ enum AppRequestStatus {
   Applicant has not yet submitted but ALL applications have been disqualified. Applicant may continue editing prompts until the App Request is closed.
   """
   DISQUALIFIED
+
+  """
+  Applicant has responded to the offer, but did not accept an offer on any application.
+  """
   NOT_ACCEPTED
 
   """
-  Applicant has submitted, and ALL applications have been disqualified, no applications are pending.
+  Results have been released to the applicant, there is no acceptance phase, and all applications were found ineligible.
   """
   NOT_APPROVED
 
@@ -560,6 +564,11 @@ enum AppRequestStatus {
   Applicant has completed all prompts and is ready to submit. At least one application is eligible to proceed.
   """
   READY_TO_SUBMIT
+
+  """
+  All applications have been reviewed and any blocking workflow stages have been completed. The application is ready for results to be released to the applicant.
+  """
+  REVIEW_COMPLETE
 
   """Applicant has begun the process and has not yet submitted."""
   STARTED
@@ -646,11 +655,6 @@ enum ApplicationPhase {
   QUALIFICATION
 
   """
-  The application has been reviewed and any blocking workflow stages have been completed. The application is ready for an offer to be made to the applicant. A reviewer must manually advanced the phase, and will do so for the whole appRequest, not one application at a time. So the application will sit in this state until all applications are ready for offer. If there is no acceptance phase (because there are no acceptance requirements), the makeOffer prompt will move the phase to WORKFLOW_NONBLOCKING or COMPLETE.
-  """
-  READY_FOR_OFFER
-
-  """
   No application requirements are PENDING. The application is ready for the first workflow stage, but a reviewer must manually advance the phase. This phase will be automatically skipped if there are no workflow stages configured/enabled.
   """
   READY_FOR_WORKFLOW
@@ -664,6 +668,11 @@ enum ApplicationPhase {
   The applicant has filled out their portion of the prompts but has not yet submitted for review.
   """
   READY_TO_SUBMIT
+
+  """
+  The application has been reviewed and any blocking workflow stages have been completed. The application is ready for results (whether eligible or not) to be released to the applicant. A reviewer must manually advanced the phase, and will do so for the whole appRequest, not one application at a time. So the application will sit in this state until all applications are REVIEW_COMPLETE. If there is no acceptance phase (because there are no acceptance requirements), or if the application is not eligible, the makeOffer prompt will move the phase to WORKFLOW_NONBLOCKING or COMPLETE.
+  """
+  REVIEW_COMPLETE
 
   """
   The application review has been completed and now there is a workflow process to audit the review BEFORE marking the application status as eligible or ineligible. It should remain pending until the blocking workflow stages have been completed. Workflow stages that evaluate to INELIGIBLE will also make the application status INELIGIBLE. Prompts from the applicant and review phases are locked.
@@ -1184,11 +1193,6 @@ enum PromptVisibility {
   This RequirementPrompt is a duplicate of a RequirementPrompt that already appears earlier in the same application (it could also be duplicated yet again in an earlier application). It should not be shown to applicants. The reviewer UI may or may not want to show these repeated dependencies.
   """
   APPLICATION_DUPE
-
-  """
-  The prompt is intended to be filled in by an automation, but is otherwise available to be answered. It may or may not be visible in various UIs but it is not editable in any of them.
-  """
-  AUTOMATION
 
   """
   This RequirementPrompt is available to be answered. It is the first appearance of this prompt in the App Request. It should be visible in both the applicant and reviewer UI.

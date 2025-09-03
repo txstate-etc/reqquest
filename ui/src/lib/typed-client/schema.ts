@@ -249,7 +249,7 @@ export type AppRequestIndexDestination = 'APPLICANT_DASHBOARD' | 'APP_REQUEST_LI
  *     the database and the status of each application.
  *   
  */
-export type AppRequestStatus = 'ACCEPTANCE' | 'ACCEPTED' | 'APPROVAL' | 'APPROVED' | 'CANCELLED' | 'DISQUALIFIED' | 'NOT_ACCEPTED' | 'NOT_APPROVED' | 'PREAPPROVAL' | 'READY_TO_ACCEPT' | 'READY_TO_SUBMIT' | 'STARTED' | 'WITHDRAWN'
+export type AppRequestStatus = 'ACCEPTANCE' | 'ACCEPTED' | 'APPROVAL' | 'APPROVED' | 'CANCELLED' | 'DISQUALIFIED' | 'NOT_ACCEPTED' | 'NOT_APPROVED' | 'PREAPPROVAL' | 'READY_TO_ACCEPT' | 'READY_TO_SUBMIT' | 'REVIEW_COMPLETE' | 'STARTED' | 'WITHDRAWN'
 
 
 /** An application represents the applicant applying to a specific program. Each appRequest has multiple applications - one per program defined in the system. Some applications are mutually exclusive and/or will be eliminated early based on PREQUAL requirements, but they all technically exist in the data model - there is no concept of picking one application over another, just two applications where one dies and the other survives. */
@@ -287,7 +287,7 @@ export interface ApplicationActions {
  *     is computed based on the status of the appRequest and of the requirements for the program.
  *   
  */
-export type ApplicationPhase = 'ACCEPTANCE' | 'APPROVAL' | 'COMPLETE' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION' | 'READY_FOR_OFFER' | 'READY_FOR_WORKFLOW' | 'READY_TO_ACCEPT' | 'READY_TO_SUBMIT' | 'WORKFLOW_BLOCKING' | 'WORKFLOW_NONBLOCKING'
+export type ApplicationPhase = 'ACCEPTANCE' | 'APPROVAL' | 'COMPLETE' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION' | 'READY_FOR_WORKFLOW' | 'READY_TO_ACCEPT' | 'READY_TO_SUBMIT' | 'REVIEW_COMPLETE' | 'WORKFLOW_BLOCKING' | 'WORKFLOW_NONBLOCKING'
 
 
 /** The specific instance of a requirement on a particular application. Stores the status of the requirement, e.g. being satisfied or not. */
@@ -525,7 +525,7 @@ export interface ProgramGroup {
 
 
 /** The visibility of a prompt on a request. This is used to determine whether the prompt should be shown to the user in the UI. */
-export type PromptVisibility = 'APPLICATION_DUPE' | 'AUTOMATION' | 'AVAILABLE' | 'REQUEST_DUPE' | 'UNREACHABLE'
+export type PromptVisibility = 'APPLICATION_DUPE' | 'AVAILABLE' | 'REQUEST_DUPE' | 'UNREACHABLE'
 
 export interface Query {
     /**
@@ -1745,6 +1745,7 @@ export const enumAppRequestStatus = {
    PREAPPROVAL: 'PREAPPROVAL' as const,
    READY_TO_ACCEPT: 'READY_TO_ACCEPT' as const,
    READY_TO_SUBMIT: 'READY_TO_SUBMIT' as const,
+   REVIEW_COMPLETE: 'REVIEW_COMPLETE' as const,
    STARTED: 'STARTED' as const,
    WITHDRAWN: 'WITHDRAWN' as const
 }
@@ -1756,10 +1757,10 @@ export const enumApplicationPhase = {
    PREAPPROVAL: 'PREAPPROVAL' as const,
    PREQUAL: 'PREQUAL' as const,
    QUALIFICATION: 'QUALIFICATION' as const,
-   READY_FOR_OFFER: 'READY_FOR_OFFER' as const,
    READY_FOR_WORKFLOW: 'READY_FOR_WORKFLOW' as const,
    READY_TO_ACCEPT: 'READY_TO_ACCEPT' as const,
    READY_TO_SUBMIT: 'READY_TO_SUBMIT' as const,
+   REVIEW_COMPLETE: 'REVIEW_COMPLETE' as const,
    WORKFLOW_BLOCKING: 'WORKFLOW_BLOCKING' as const,
    WORKFLOW_NONBLOCKING: 'WORKFLOW_NONBLOCKING' as const
 }
@@ -1789,7 +1790,6 @@ export const enumMutationMessageType = {
 
 export const enumPromptVisibility = {
    APPLICATION_DUPE: 'APPLICATION_DUPE' as const,
-   AUTOMATION: 'AUTOMATION' as const,
    AVAILABLE: 'AVAILABLE' as const,
    REQUEST_DUPE: 'REQUEST_DUPE' as const,
    UNREACHABLE: 'UNREACHABLE' as const
