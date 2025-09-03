@@ -36,17 +36,34 @@ class API extends APIBase {
     return response.access
   }
 
-  async getApplicantRequests () {
+  async getApplicantRequests (additionalFilters = {}) {
+    const filter = { own: true, ...additionalFilters }
     const response = await this.client.query({
       __name: 'GetApplicantRequests',
       appRequests: {
-        __args: { filter: { own: true } },
+        __args: { filter },
         id: true,
         status: true,
+        createdAt: true,
+        updatedAt: true,
         period: {
           name: true,
           openDate: true,
           closeDate: true
+        },
+        applications: {
+          id: true,
+          title: true,
+          status: true
+        },
+        actions: {
+          cancel: true,
+          close: true,
+          reopen: true,
+          return: true,
+          review: true,
+          offer: true,
+          submit: true
         }
       }
     })
@@ -252,6 +269,54 @@ class API extends APIBase {
       }
     })
     return this.mutationForDialog(response.submitAppRequest)
+  }
+
+  async cancelAppRequest (appRequestId: string, dataVersion?: number) {
+    const response = await this.client.mutation({
+      __name: 'CancelAppRequest',
+      cancelAppRequest: {
+        __args: { appRequestId, dataVersion },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.cancelAppRequest)
+  }
+
+  async reopenAppRequest (appRequestId: string) {
+    const response = await this.client.mutation({
+      __name: 'ReopenAppRequest',
+      reopenAppRequest: {
+        __args: { appRequestId },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.reopenAppRequest)
+  }
+
+  async returnAppRequest (appRequestId: string) {
+    const response = await this.client.mutation({
+      __name: 'ReturnAppRequest',
+      returnAppRequest: {
+        __args: { appRequestId },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.returnAppRequest)
   }
 
   async getAppRequests (filter?: Omit<AppRequestFilter, 'indexes'> & { indexes?: Record<string, string[]> }, dest = enumAppRequestIndexDestination.APP_REQUEST_LIST) {
@@ -470,7 +535,10 @@ class API extends APIBase {
       periods: {
         __args: { filter: { openNow: true } },
         id: true,
-        name: true
+        name: true,
+        openDate: true,
+        closeDate: true,
+        archiveDate: true
       }
     })
     return response.periods
