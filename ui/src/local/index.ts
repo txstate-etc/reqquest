@@ -22,6 +22,9 @@ import VaccineReviewPromptDisplay from './VaccineReviewPromptDisplay.svelte'
 
 export const uiRegistry = new UIRegistry({
   appName: 'Adopt a Critter',
+  applicantDashboardIntroHeader: 'Start your Pet Journey Here!',
+  applicantDashboardIntroDetail: 'Submitting an adoption application is the first step in adopting a cat or dog. Based on your responses you will receive a list of "eligible benefits."',
+  applicantDashboardRecentDays: 30,
   programs: [{
     key: 'adopt_a_dog_program',
     icon: DogWalker
