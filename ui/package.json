@@ -28,7 +28,7 @@
   "dependencies": {
     "@txstate-mws/carbon-svelte": "^1.5.1",
     "@txstate-mws/fastify-shared": "^1.1.0",
-    "@txstate-mws/svelte-components": "^1.5.13",
+    "@txstate-mws/svelte-components": "^1.6.11",
     "@txstate-mws/sveltekit-utils": "^1.0.2",
     "carbon-components-svelte": ">=0.85.1 <1",
     "carbon-icons-svelte": "^13.0.0",
