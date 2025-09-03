@@ -19,6 +19,7 @@ import {
   AccessRoleGrantActionsResolver, AccessTagCategoryResolver, logMutation,
   AppRequestActivityResolver
 } from './internal.js'
+import { scheduler, schedulerMigration } from './util/scheduler.js'
 
 export interface RQStartOpts extends Omit<GQLStartOpts, 'resolvers'> {
   resolvers?: NonEmptyArray<Function>
@@ -112,10 +113,11 @@ export class RQServer extends GQLServer {
     for (const program of options.programs) programRegistry.register(program, true)
     for (const program of options.pastPrograms ?? []) programRegistry.register(program, false)
     programRegistry.finalize()
-    await initializeDb([...periodMigrations, ...promptMigrations, ...requirementMigrations, ...accessMigrations, ...appRequestMigrations, ...applicationMigrations, ...(options?.migrations ?? [])])
+    await initializeDb([...periodMigrations, ...promptMigrations, ...requirementMigrations, ...accessMigrations, ...appRequestMigrations, ...applicationMigrations, schedulerMigration, ...(options?.migrations ?? [])])
     await initAccess()
     await ensureConfigurationRecords()
     await super.start({ ...options, resolvers })
+    await scheduler.start()
   }
 }
 
