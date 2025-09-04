@@ -104,7 +104,7 @@ export async function getPeriods (filters?: PeriodFilters) {
 export async function getPeriodsEmpty (periodIds: string[]) {
   const binds: any[] = []
   const emptyPeriodIds = new Set(await db.getvals<number>(`
-    SELECT DISTINCT id FROM periods p LEFT JOIN app_requests ar ON ar.periodId = p.id
+    SELECT DISTINCT p.id FROM periods p LEFT JOIN app_requests ar ON ar.periodId = p.id
     WHERE ar.id IS NULL AND p.id IN (${db.in(binds, periodIds)})
   `, binds))
   return periodIds.map(id => ({ id, empty: emptyPeriodIds.has(Number(id)) }))
