@@ -67,13 +67,13 @@ export class ProgramRegistry {
     this.programList.push(program)
     if (active) this.activeList.push(program)
     for (const requirementKey of program.requirementKeys) {
-      this.allRequirementKeys[requirementKey] ??= new Set()
-      this.allRequirementKeys[requirementKey].add(requirementKey)
+      this.allRequirementKeys[program.key] ??= new Set()
+      this.allRequirementKeys[program.key].add(requirementKey)
     }
     for (const stage of program.workflowStages ?? []) {
       for (const requirementKey of stage.requirementKeys) {
-        this.allRequirementKeys[requirementKey] ??= new Set()
-        this.allRequirementKeys[requirementKey].add(requirementKey)
+        this.allRequirementKeys[program.key] ??= new Set()
+        this.allRequirementKeys[program.key].add(requirementKey)
       }
     }
   }

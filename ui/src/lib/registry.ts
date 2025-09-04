@@ -134,6 +134,16 @@ export interface UIConfig {
   appName: string
   applicantDashboardTitle?: string
   applicantDashboardNavTitle?: string
+  /**
+   * The header text for the applicant dashboard intro section.
+   */
+  applicantDashboardIntroHeader?: string
+  applicantDashboardIntroDetail?: string
+  /**
+   * The number of days an application is considered "recent" on the applicant dashboard.
+   * Defaults to 30 if not specified.
+   */
+  applicantDashboardRecentDays?: number
   extraNavItems?: LayoutStructureNodeRoot<LayoutStructureNode>[]
   /**
    * These options give you the ability to customize the terminology used in the UI.
