@@ -12,7 +12,7 @@ export const which_state_prompt: PromptDefinition = {
   validate: (data, config) => {
     const messages: MutationMessage[] = []
     if (data.state == null) {
-      messages.push({ type: MutationMessageType.warning, message: 'Please enter the state you live in.', arg: 'state' })
+      messages.push({ type: MutationMessageType.error, message: 'Please enter the state you live in.', arg: 'state' })
     } else if (data.stateName !== stateList.find(sl => sl.value === data.state)?.label) messages.push({ type: MutationMessageType.error, message: 'State abbreviation does not match state name.', arg: 'stateName' })
     return messages
   },

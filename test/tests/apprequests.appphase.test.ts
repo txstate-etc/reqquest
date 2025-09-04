@@ -1,16 +1,17 @@
 import { Hash } from 'crypto'
 import { expect, test } from './fixtures.js'
 import { DateTime } from 'luxon'
-import { promptMapQualified, promptMapUnqualified } from './promptdata.js'
+import { promptMapApplicantQualified, promptMapApplicantUnqualified } from './promptdata.js'
 
 test.describe.skip('App Request - App Phase - workflows', () => {
   const name = '2025 app-req App Phase'
   const code = 'APP_REQ_APP-255'
+  const timeZone = 'America/Chicago'
+  const dateTomorrow = new Date(new Date(new Date().setDate(new Date().getDate() + 1)).setMilliseconds(0)).toISOString()
   const openDate = '2025-07-01T00:00:00.000-05:00'
-  const closeDate = '2025-09-01T00:00:00.000-05:00'
+  const closeDate = DateTime.fromISO(dateTomorrow).setZone(timeZone).toISO()
   const applicantLogin = 'applicant'
   const applicant2Login = 'applicant2'
-  const timeZone = 'America/Chicago'
   let periodId = 0
   test('Admin - Create new period for app phase appRequests', async ({ adminRequest }) => {
     const query = `
@@ -195,7 +196,7 @@ test.describe.skip('App Request - App Phase - workflows', () => {
   test('Applicant - recurring update all available prompts with FAILING data', async ({ applicantRequest }) => {
     let promptsExist = true
     let promptIteration = 0
-    while (promptsExist && (promptIteration < promptMapQualified.size)) {
+    while (promptsExist && (promptIteration < promptMapApplicantQualified.size)) {
       promptIteration++
       const query_get_prompts = `
         query GetPromptsForRequest($appRequestIds: [ID!]) {
@@ -237,9 +238,9 @@ test.describe.skip('App Request - App Phase - workflows', () => {
       if (allPrompts.length < 1) promptsExist = false
       // update unanswered available prompts
       for (const availablePrompt of allPrompts) {
-        const promptMap = promptMapUnqualified.get(availablePrompt.key)
-        if (promptMap) { // only test if map to valid prompt data exists
-          for (const value of promptMap) {
+        const promptMapApplicant = promptMapApplicantUnqualified.get(availablePrompt.key)
+        if (promptMapApplicant) { // only test if map to valid prompt data exists
+          for (const value of promptMapApplicant) {
             const query_update_prompt_variables = { promptId: availablePrompt.id, data: value[1], validateOnly: false }
             const response = await applicantRequest.graphql<{ updatePrompt: { success: boolean, messages: { message: string }[] } }>(query_update_prompt, query_update_prompt_variables)
             expect(response.updatePrompt.messages.length).toBeGreaterThanOrEqual(0)
@@ -270,7 +271,7 @@ test.describe.skip('App Request - App Phase - workflows', () => {
   test('Applicant - recurring update next available and not answered prompts with passing data', async ({ applicantRequest }) => {
     let availableUnasweredPromptsExist = true
     let promptIteration = 0
-    while (availableUnasweredPromptsExist && (promptIteration < promptMapQualified.size)) {
+    while (availableUnasweredPromptsExist && (promptIteration < promptMapApplicantQualified.size)) {
       promptIteration++
       const query_get_prompts = `
         query GetPromptsForRequest($appRequestIds: [ID!]) {
@@ -312,9 +313,9 @@ test.describe.skip('App Request - App Phase - workflows', () => {
       if (allAvailableUnansweredPrompts.length < 1) availableUnasweredPromptsExist = false
       // update unanswered available prompts
       for (const availablePrompt of allAvailableUnansweredPrompts) {
-        const promptMap = promptMapQualified.get(availablePrompt.key)
-        if (promptMap) { // only test if map to valid prompt data exists
-          for (const value of promptMap) {
+        const promptMapApplicant = promptMapApplicantQualified.get(availablePrompt.key)
+        if (promptMapApplicant) { // only test if map to valid prompt data exists
+          for (const value of promptMapApplicant) {
             const query_update_prompt_variables = { promptId: availablePrompt.id, data: value[1], validateOnly: false }
             const { updatePrompt } = await applicantRequest.graphql<{ updatePrompt: { success: boolean, messages: { message: string }[] } }>(query_update_prompt, query_update_prompt_variables)
             expect(updatePrompt.success).toEqual(true)
@@ -389,7 +390,7 @@ test.describe.skip('App Request - App Phase - workflows', () => {
   test('Applicant 2 - recurring update next available and not answered prompts with passing data', async ({ applicant2Request }) => {
     let availableUnasweredPromptsExist = true
     let promptIteration = 0
-    while (availableUnasweredPromptsExist && (promptIteration < promptMapQualified.size)) {
+    while (availableUnasweredPromptsExist && (promptIteration < promptMapApplicantQualified.size)) {
       promptIteration++
       const query_get_prompts = `
         query GetPromptsForRequest($appRequestIds: [ID!]) {
@@ -431,9 +432,9 @@ test.describe.skip('App Request - App Phase - workflows', () => {
       if (allAvailableUnansweredPrompts.length < 1) availableUnasweredPromptsExist = false
       // update unanswered available prompts
       for (const availablePrompt of allAvailableUnansweredPrompts) {
-        const promptMap = promptMapQualified.get(availablePrompt.key)
-        if (promptMap) { // only test if map to valid prompt data exists
-          for (const value of promptMap) {
+        const promptMapApplicant = promptMapApplicantQualified.get(availablePrompt.key)
+        if (promptMapApplicant) { // only test if map to valid prompt data exists
+          for (const value of promptMapApplicant) {
             const query_update_prompt_variables = { promptId: availablePrompt.id, data: value[1], validateOnly: false }
             const { updatePrompt } = await applicant2Request.graphql<{ updatePrompt: { appRequest: { data: any }, success: boolean, messages: { message: string }[] } }>(query_update_prompt, query_update_prompt_variables)
             expect(updatePrompt.success).toEqual(true)
