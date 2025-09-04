@@ -3,7 +3,7 @@ import {
   Application, AuthService, getApplicationRequirements, ApplicationRequirement,
   ApplicationRequirementFilter, PeriodProgramRequirement, getPeriodProgramRequirements,
   PeriodProgramKey, PeriodProgramRequirementKey, PeriodRequirementKey, AppRequest,
-  AppRequestService, requirementRegistry
+  AppRequestService
 } from '../internal.js'
 
 const byIdLoader = new PrimaryKeyLoader({

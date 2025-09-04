@@ -1,12 +1,18 @@
-import { ValidatedResponse } from '@txstate-mws/graphql-server'
+import { BaseService, ValidatedResponse } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { intersect, isBlank, keyby, pick } from 'txstate-utils'
-import { AuthService, Configuration, ConfigurationFilters, createPeriod, deletePeriod, getConfigurationData, getConfigurations, getPeriods, markPeriodReviewed, Period, PeriodFilters, PeriodUpdate, promptRegistry, requirementRegistry, updatePeriod, upsertConfiguration, ValidatedConfigurationResponse, ValidatedPeriodResponse } from '../internal.js'
+import { applicantRequirementTypes, AppRequestService, AuthService, Configuration, ConfigurationFilters, createPeriod, deletePeriod, getConfigurationData, getConfigurations, getPeriods, getPeriodsEmpty, Period, PeriodFilters, PeriodUpdate, promptRegistry, Requirement, RequirementPrompt, RequirementPromptService, requirementRegistry, RequirementType, updatePeriod, upsertConfiguration, ValidatedConfigurationResponse, ValidatedPeriodResponse } from '../internal.js'
 import { DateTime } from 'luxon'
 
 const periodByIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
     return await getPeriods({ ids })
+  }
+})
+
+const periodEmptyByIdLoader = new PrimaryKeyLoader({
+  fetch: async (ids: string[]) => {
+    return await getPeriodsEmpty(ids)
   }
 })
 
@@ -141,7 +147,7 @@ const configurationDataByIdLoader = new PrimaryKeyLoader({
   extractId: configuration => pick(configuration, 'periodId', 'definitionKey')
 })
 
-export class ConfigurationService extends AuthService<Configuration> {
+export class ConfigurationServiceInternal extends BaseService<Configuration> {
   async find (filter?: ConfigurationFilters) {
     return await getConfigurations(filter)
   }
@@ -161,12 +167,35 @@ export class ConfigurationService extends AuthService<Configuration> {
     const dataRow = await this.loaders.get(configurationDataByIdLoader).load({ periodId, definitionKey })
     return dataRow?.data ?? {}
   }
+}
+
+export class ConfigurationService extends AuthService<Configuration> {
+  raw = this.svc(ConfigurationServiceInternal)
+
+  async find (filter?: ConfigurationFilters) {
+    const configurations = await this.raw.find(filter)
+    return this.removeUnauthorized(configurations)
+  }
+
+  async findByPeriodIdAndKey (periodId: string, key: string) {
+    const configurations = await this.raw.findByPeriodIdAndKey(periodId, key)
+    return this.removeUnauthorized(configurations)
+  }
+
+  async findByPeriodId (periodId: string, filter?: ConfigurationFilters) {
+    const configurations = await this.raw.findByPeriodId(periodId, filter)
+    return this.removeUnauthorized(configurations)
+  }
+
+  async getData (periodId: string, definitionKey: string) {
+    return await this.raw.getData(periodId, definitionKey)
+  }
 
   async getRelatedData (periodId: string, promptKey: string) {
     const allConfig: Record<string, any> = {}
     const relatedKeys = promptRegistry.authorizationKeys[promptKey] ?? []
     await Promise.all(relatedKeys.map(async key => {
-      const config = await this.svc(ConfigurationService).getData(periodId, key)
+      const config = await this.getData(periodId, key)
       allConfig[key] = config
     }))
     return allConfig
@@ -177,7 +206,8 @@ export class ConfigurationService extends AuthService<Configuration> {
   }
 
   async mayUpdate (cfg: Configuration) {
-    // TODO: make sure there are no app requests that have been submitted in the period
+    const empty = (await this.loaders.get(periodEmptyByIdLoader).load(cfg.periodId))?.empty
+    if (!empty) return false
     return this.hasControl(cfg.type, 'configure', cfg.configuredObject.authorizationKeys)
   }
 
