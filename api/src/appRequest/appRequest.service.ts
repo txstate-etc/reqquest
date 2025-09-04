@@ -2,7 +2,15 @@ import { BaseService, MutationMessageType } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { DateTime } from 'luxon'
 import { isBlank, someAsync } from 'txstate-utils'
-import { AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData, submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse, AppRequestStatus, appRequestMakeOffer, getAppRequestTags, closedStatuses, ApplicationRequirementService, recordAppRequestActivity, addAppRequestNote, closeAppRequest, getAppRequestActivity, AppRequestActivityFilters, PeriodService, createAppRequest, Period, appConfig, AccessUser, ReqquestUser, AccessDatabase, cancelAppRequest, reopenAppRequest, returnAppRequest, acceptOffer, ApplicationPhase, ApplicationService } from '../internal.js'
+import {
+  AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData,
+  submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse,
+  AppRequestStatus, appRequestMakeOffer, getAppRequestTags, closedStatuses, ApplicationRequirementService,
+  recordAppRequestActivity, addAppRequestNote, closeAppRequest, getAppRequestActivity,
+  AppRequestActivityFilters, PeriodService, createAppRequest, Period, appConfig, AccessUser, ReqquestUser,
+  AccessDatabase, cancelAppRequest, reopenAppRequest, returnAppRequest, acceptOffer, ApplicationPhase,
+  ApplicationService, RequirementPromptService
+} from '../internal.js'
 
 const appReqByIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -101,8 +109,19 @@ export class AppRequestService extends AuthService<AppRequest> {
   }
 
   async getData (appRequestInternalId: number) {
-    // TODO: authorize release of the data or strike out prompt data for unauthorized prompts
-    return await this.raw.getData(appRequestInternalId)
+    const appRequest = await this.findByInternalId(appRequestInternalId)
+    if (!appRequest) return {} as AppRequestData
+    const [data, prompts] = await Promise.all([
+      this.raw.getData(appRequestInternalId),
+      this.svc(RequirementPromptService).findByAppRequest(appRequest)
+    ])
+    const allowedPromptKeys = new Set<string>()
+    for (const prompt of prompts) {
+      if (this.svc(RequirementPromptService).mayView(prompt)) allowedPromptKeys.add(prompt.definition.key)
+    }
+    const cleanData: AppRequestData = { savedAtVersion: data.savedAtVersion }
+    for (const key of allowedPromptKeys) cleanData[key] = data[key]
+    return cleanData
   }
 
   async getStatusReason (appRequest: AppRequest) {

@@ -8,7 +8,7 @@ import {
   AppRequestStatusDB, AppRequest, setRequirementPromptValid, updateAppRequestData,
   closedStatuses, getAppRequests, getAppRequestData, appRequestTransaction,
   recordAppRequestActivity, appConfig, AppRequestData, AppRequestStatus, ApplicationPhase,
-  ApplicationService, setRequirementPromptsInvalid
+  ApplicationService, setRequirementPromptsInvalid, AppRequestServiceInternal
 } from '../internal.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
@@ -88,8 +88,8 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
   }
 
   async getPreloadData (requirementPrompt: RequirementPrompt) {
-    const appRequest = (await this.svc(AppRequestService).findByInternalId(requirementPrompt.appRequestInternalId))!
-    const data = await this.svc(AppRequestService).getData(requirementPrompt.appRequestInternalId)
+    const appRequest = (await this.svc(AppRequestServiceInternal).findByInternalId(requirementPrompt.appRequestInternalId))!
+    const data = await this.svc(AppRequestServiceInternal).getData(requirementPrompt.appRequestInternalId)
     const config = await this.svc(ConfigurationService).getData(appRequest.periodId, requirementPrompt.key)
     if (data[requirementPrompt.definition.key] == null) return await requirementPrompt.definition.preload?.(appRequest, config)
     return data[requirementPrompt.definition.key]
