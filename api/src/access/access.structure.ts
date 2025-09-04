@@ -1,5 +1,5 @@
 import { keyby } from 'txstate-utils'
-import { programRegistry, promptRegistry, requirementRegistry } from '../internal.js'
+import { programRegistry, promptRegistry, requirementRegistry, RequirementType } from '../internal.js'
 
 export interface TagDefinition {
   /**
@@ -115,7 +115,9 @@ export async function initAccess () {
     label: 'Requirement',
     description: description ?? 'Limit this grant to specific requirements or the requirements associated with a program.',
     getTags: () => [
+      ...Object.values(RequirementType).map(type => ({ value: type, label: 'Phase: ' + type })),
       ...programRegistry.list().map(program => ({ value: program.key, label: 'Program: ' + program.title })),
+      ...programRegistry.list().flatMap(program => program.workflowStages?.map(stage => ({ value: stage.key, label: program.title + ': ' + stage.title })) ?? []),
       ...requirementRegistry.list().map(requirement => ({ value: requirement.key, label: 'Requirement: ' + requirement.title }))
     ]
   })
@@ -124,7 +126,9 @@ export async function initAccess () {
     label: 'Prompt',
     description: description ?? 'Limit this grant to specific prompts or the prompts associated with a requirement or program.',
     getTags: () => [
-      ...programRegistry.list().map(program => ({ value: program.key, label: 'Program: ' + program.title })),
+      ...Object.values(RequirementType).map(type => ({ value: type, label: 'Phase: ' + type })),
+      ...programRegistry.list().map(program => ({ value: program.key, label: program.title + ': Review' })),
+      ...programRegistry.list().flatMap(program => program.workflowStages?.map(stage => ({ value: stage.key, label: program.title + ': ' + stage.title })) ?? []),
       ...requirementRegistry.list().map(requirement => ({ value: requirement.key, label: 'Requirement: ' + requirement.title })),
       ...promptRegistry.list().map(prompt => ({ value: prompt.key, label: 'Prompt: ' + prompt.title }))
     ]

@@ -414,16 +414,24 @@ class PromptRegistry {
         }
       }
     }
-    for (const program of programRegistry.reachable) {
-      for (const rKey of program.requirementKeys) {
-        requirementRegistry.authorizationKeys[rKey] ??= []
-        requirementRegistry.authorizationKeys[rKey].push(rKey)
-        requirementRegistry.authorizationKeys[rKey].push(program.key)
-        for (const promptKey of requirementRegistry.get(rKey).allPromptKeys) {
-          this.authorizationKeys[promptKey] ??= []
-          this.authorizationKeys[promptKey].push(promptKey)
-          this.authorizationKeys[promptKey].push(rKey)
-          this.authorizationKeys[promptKey].push(program.key)
+    for (const program of programRegistry.list()) {
+      for (const stage of [undefined, ...(program.workflowStages ?? [])]) {
+        for (const rKey of (stage ?? program).requirementKeys) {
+          const req = requirementRegistry.get(rKey)
+          if (!req) continue
+          requirementRegistry.authorizationKeys[rKey] ??= []
+          requirementRegistry.authorizationKeys[rKey].push(req.type)
+          if (stage) requirementRegistry.authorizationKeys[rKey].push(stage.key)
+          requirementRegistry.authorizationKeys[rKey].push(rKey)
+          requirementRegistry.authorizationKeys[rKey].push(program.key)
+          for (const promptKey of requirementRegistry.get(rKey).visiblePromptKeys) {
+            this.authorizationKeys[promptKey] ??= []
+            this.authorizationKeys[promptKey].push(requirementRegistry.get(rKey).type)
+            if (stage) this.authorizationKeys[promptKey].push(stage.key)
+            this.authorizationKeys[promptKey].push(promptKey)
+            this.authorizationKeys[promptKey].push(rKey)
+            this.authorizationKeys[promptKey].push(program.key)
+          }
         }
       }
     }
