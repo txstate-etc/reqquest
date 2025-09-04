@@ -62,15 +62,15 @@
     <!-- Application Status Panel -->
     <Panel title="{selectedApplication.period.name} - Status">
       <div class="status-content">
-        <p class="mb-4 text-gray-600">Overall Status: <strong>{getAppRequestStatusInfo(selectedApplication.status).label}</strong></p>
+        <p class="mb-4 status-text">Overall Status: <strong>{getAppRequestStatusInfo(selectedApplication.status).label}</strong></p>
 
         <!-- Application Status List -->
         {#if selectedApplication.applications && selectedApplication.applications.length > 0}
-          <div class="border border-gray-300 rounded">
+          <div class="status-list border rounded">
             {#each selectedApplication.applications as application}
               {@const appStatusTag = getApplicationStatusInfo(application.status)}
-              <dl class="flex items-center justify-between px-4 py-3 border-b border-gray-300 last:border-b-0">
-                <dt class="font-medium text-gray-900">{application.title}</dt>
+              <dl class="status-list-item flex items-center justify-between px-4 py-3 border-b last:border-b-0">
+                <dt class="status-list-label font-medium">{application.title}</dt>
                 <dd>
                   <TagSet tags={[{ label: appStatusTag.label, type: appStatusTag.color }]} />
                 </dd>
@@ -92,9 +92,9 @@
           {#if section.prompts.length}
             {#each section.prompts as prompt}
               {@const def = uiRegistry.getPrompt(prompt.key)}
-              <dl class="prompt-list mb-4 last:mb-0 p-3 border-b-2 border-solid border-gray-200">
-                <dt class="prompt-term font-semibold mb-2 text-gray-900">{prompt.title}</dt>
-                <dd class="text-gray-500 prompt-answer">
+              <dl class="prompt-list mb-4 last:mb-0 p-3 border-b-2 border-solid">
+                <dt class="prompt-term font-semibold mb-2">{prompt.title}</dt>
+                <dd class="prompt-answer">
                   {#if applicationDetails}
                     {#if applicationDetails.data[prompt.key] && def.displayComponent}
                       <svelte:component this={def.displayComponent} data={applicationDetails.data[prompt.key]} />
@@ -132,5 +132,33 @@
     display:grid;
     grid-template-columns: 2fr 1fr;
     row-gap:0.5rem;
+  }
+
+  .status-text {
+    color: var(--cds-text-02);
+  }
+
+  .status-list {
+    border-color: var(--cds-border-subtle);
+  }
+
+  .status-list-item {
+    border-color: var(--cds-border-subtle);
+  }
+
+  .status-list-label {
+    color: var(--cds-text-01);
+  }
+
+  .prompt-list {
+    border-color: var(--cds-border-subtle);
+  }
+
+  .prompt-term {
+    color: var(--cds-text-01);
+  }
+
+  .prompt-answer {
+    color: var(--cds-text-02);
   }
 </style>

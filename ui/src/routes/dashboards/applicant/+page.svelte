@@ -264,6 +264,8 @@
   // Reactive statements for filter options
   $: yearOptions = getAvailableYears(availableYears)
   $: recentDays = uiRegistry.config.applicantDashboardRecentDays ?? 30
+  // TODO: only display 3 periods max for now pending final design
+  $: displayedPeriods = openPeriods.slice(0, 3)
 </script>
 
 <div class="flow">
@@ -285,18 +287,18 @@
 
   {#if filterDataSearch?.tab !== 'past_applications'}
   <!-- TODO break this into component. Loooks like it will be used throughout app -->
-    <section class="bg-gray-100 text-2xl p-4 flex">
+    <section class="intro-panel text-2xl p-4 flex flex-col lg:flex-row gap-4">
       <div class="intro-text flow max-w-lg">
         <h2 class="intro-header">{uiRegistry.config.applicantDashboardIntroHeader}</h2>
-        <p class="text-gray-600">{uiRegistry.config.applicantDashboardIntroDetail}</p>
+        <p class="intro-subtitle">{uiRegistry.config.applicantDashboardIntroDetail}</p>
       </div>
-      <div class="period-controls ml-auto flex gap-6 items-center">
+      <div class="period-controls lg:ml-auto flex gap-6 items-center">
         {#if openPeriods.length > 0}
-          <div class="max-h-48 overflow-y-auto flex flex-row gap-4">
-            {#each openPeriods as period}
+          <div class="flex flex-row gap-4">
+            {#each displayedPeriods as period}
               {@const periodInfo = getPeriodDisplayInfo(period)}
-                <section class="h-full flex items-center justify-center border-r-2 border-gray-300 pr-6 text-base text-center flex-col gap-2">
-                  <h3 class="font-bold text-lg">{period.name}</h3>
+                <section class="h-full flex items-center justify-cente pr-6 text-base text-center flex-col gap-2">
+                  <h3 class="font-bold text-base">{period.name}</h3>
                   <dl class="flex flex-col text-sm">
                     <dt class="font-bold">Application opens:</dt>
                     <dd>
@@ -394,3 +396,20 @@
 
   <Toasts />
 </div>
+<style>
+  .intro-panel {
+    background-color: var(--cds-ui-01)
+  }
+  .intro-header {
+    color: var(--cds-text-01, #1A1A1A);
+    font-size: 1.25rem;
+    font-weight: 400;
+    line-height: 28px; /* 140% */
+  }
+  .intro-subtitle {
+    color: var(--cds-text-02);
+    font-size: 0.875rem;
+    line-height: 18px;
+    letter-spacing: 0.16px;
+  }
+</style>
