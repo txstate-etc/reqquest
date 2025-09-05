@@ -43,6 +43,25 @@ type AccessControl {
   name: String!
 }
 
+type AccessControlGroup {
+  """
+  A list of all possible controls for this controlGroup. Use this to populate the control dropdown when creating a grant.
+  """
+  controls: [AccessControl!]!
+
+  """
+  A longer explanation of the control group for display in the role management interface.
+  """
+  description: String
+  name: String!
+  tags: [AccessTagCategory!]!
+
+  """
+  A slightly longer version of the control group's name, for display in the role management interface.
+  """
+  title: String!
+}
+
 type AccessGrantTag {
   category: String!
   categoryLabel: String!
@@ -74,13 +93,13 @@ input AccessRoleFilter {
 type AccessRoleGrant {
   actions: AccessRoleGrantActions!
 
-  "\n    If true, this grant allows the action specified by the selected controls. If false, it removes\n    the controls.\n\n    Removing a control only happens within the context of a single role. If another role grants the\n    same control, the action is allowed. This is more of an exception system than a denial\n    system. So you can do something like add the \"view\" control to the \"movie\" subject type in one\n    grant, and then in a second grant in the same role, remove it from \"The Princess Bride\". Now you\n    have a role that grants \"view\" on all movies _except_ The Princess Bride. If the user has another role\n    that grants \"view\" on The Princess Bride (or on all movies), they can view it based on that other role.\n  "
+  "\n    If true, this grant allows the action specified by the selected controls. If false, it removes\n    the controls.\n\n    Removing a control only happens within the context of a single role. If another role grants the\n    same control, the action is allowed. This is more of an exception system than a denial\n    system. So you can do something like add the \"view\" control to the \"movie\" control group in one\n    grant, and then in a second grant in the same role, remove it from \"The Princess Bride\". Now you\n    have a role that grants \"view\" on all movies _except_ The Princess Bride. If the user has another role\n    that grants \"view\" on The Princess Bride (or on all movies), they can view it based on that other role.\n  "
   allow: Boolean!
+
+  """The group this control belongs to. e.g. Reviewer - Review Phase"""
+  controlGroup: AccessControlGroup!
   controls: [String!]!
   id: ID!
-
-  """The type of subject this grant applies to, e.g. "movie"."""
-  subjectType: AccessSubjectType!
   tags: [AccessGrantTag!]!
 }
 
@@ -91,12 +110,12 @@ type AccessRoleGrantActions {
 
 input AccessRoleGrantCreate {
   allow: Boolean!
+  controlGroup: String
 
   """
-  A list of controls that are allowed or denied by this grant. Each subjectType has a list of available controls, available under Query.subjectTypes.
+  A list of controls that are allowed or denied by this grant. Each controlGroup has a list of available controls, available under Query.controlGroups.
   """
   controls: [String!]
-  subjectType: String
 
   """
   A list of tags to restrict a grant. For instance, if this is added to a grant on PromptAnswer-update, each tag refers to a subset of App Requests.
@@ -106,12 +125,12 @@ input AccessRoleGrantCreate {
 
 input AccessRoleGrantUpdate {
   allow: Boolean!
+  controlGroup: String
 
   """
-  A list of controls that are allowed or denied by this grant. Each subjectType has a list of available controls, available under Query.subjectTypes.
+  A list of controls that are allowed or denied by this grant. Each controlGroup has a list of available controls, available under Query.controlGroups.
   """
   controls: [String!]
-  subjectType: String
 
   """
   A list of tags to restrict a grant. For instance, if this is added to a grant on PromptAnswer-update, each tag refers to a subset of App Requests.
@@ -141,25 +160,6 @@ type AccessRoleValidatedResponse {
   True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings.
   """
   success: Boolean!
-}
-
-type AccessSubjectType {
-  """
-  A list of all possible controls for this subjectType. Use this to populate the control dropdown when creating a grant.
-  """
-  controls: [AccessControl!]!
-
-  """
-  A longer explanation of the subject type for display in the role management interface.
-  """
-  description: String
-  name: String!
-  tags: [AccessTagCategory!]!
-
-  """
-  A slightly longer version of the subject type's name, for display in the role management interface.
-  """
-  title: String!
 }
 
 type AccessTag {
@@ -1063,7 +1063,6 @@ type PeriodProgram {
   Whether the program is enabled in this period. This is set by the system administrator.
   """
   enabled: Boolean!
-  group: PeriodProgramActions!
   key: ID!
   navTitle: String!
   period: Period!
@@ -1166,25 +1165,6 @@ input ProgramFilters {
   keys: [String!]
 }
 
-type ProgramGroup {
-  key: ID!
-
-  """
-  A human readable title for the program group in the navigation. You may want it to be shorter than the full title. If not provided, the title will be used.
-  """
-  navTitle: String!
-  programs(filter: ProgramFilters): [Program!]!
-
-  """
-  A human readable title for the program group. This will be shown to users.
-  """
-  title: String!
-}
-
-input ProgramGroupFilter {
-  keys: [ID!]
-}
-
 """
 The visibility of a prompt on a request. This is used to determine whether the prompt should be shown to the user in the UI.
 """
@@ -1223,8 +1203,12 @@ type Query {
     for: AppRequestIndexDestination
   ): [IndexCategory!]!
   appRequests(filter: AppRequestFilter): [AppRequest!]!
+
+  """
+  This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant.
+  """
+  controlGroups: [AccessControlGroup!]!
   periods(filter: PeriodFilters): [Period!]!
-  programGroups(filter: ProgramGroupFilter): [ProgramGroup!]!
   programs(filter: ProgramFilters): [Program!]!
   roles(filter: AccessRoleFilter): [AccessRole!]!
 
@@ -1232,11 +1216,6 @@ type Query {
   A list of all possible scopes. Scopes are used to limit users when they are accessing the system through an alternate UI or login method. For instance, if you generate an authentication token to give to a third party, it may have a scope identifying that third party and limiting their access even though they are acting as you. Roles must match the token scope in order to apply permissions.
   """
   scopes: [String!]!
-
-  """
-  This is where you get information about the authorization system. Each grant will be associated with one of these subjectTypes and optionally a list of subject instances. The grant will also have a set of controls, and each control will have an optional set of tags. The tags are used to limit the scope of the grant.
-  """
-  subjectTypes: [AccessSubjectType!]!
 }
 
 """

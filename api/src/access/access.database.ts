@@ -37,7 +37,7 @@ export interface AccessRoleGroup {
 export interface AccessRoleGrantRow {
   id: number
   roleId: number
-  subjectType: string
+  controlGroup: string
   allow: 0 | 1
 }
 
@@ -45,7 +45,7 @@ export interface AccessRoleGrantTagRow {
   grantId: number
   category: string
   tag: string
-  subjectType: string
+  controlGroup: string
   roleId: number
 }
 
@@ -53,7 +53,7 @@ export interface AccessRoleGrantControlRow {
   id: number
   grantId: number
   control: string
-  subjectType: string
+  controlGroup: string
   roleId: number
 }
 
@@ -251,7 +251,7 @@ export namespace AccessDatabase {
     const rows = await db.getall<AccessRoleGrantRow>(`
       select arg.* from accessRoleGrants arg
       ${where.length > 0 ? `WHERE ${where.join(' AND ')}` : ''}
-      order by arg.subjectType, arg.id
+      order by arg.controlGroup, arg.id
     `, params)
     return rows.map(row => new AccessRoleGrant(row))
   }
@@ -269,7 +269,7 @@ export namespace AccessDatabase {
   export async function getTagsByGrantIds (grantIds: number[]) {
     const params: any[] = []
     const rows = await db.getall<AccessRoleGrantTagRow>(`
-      SELECT t.*, g.subjectType, g.roleId
+      SELECT t.*, g.controlGroup, g.roleId
       FROM accessRoleGrantTags t
       INNER JOIN accessRoleGrants g ON g.id = t.grantId
       WHERE t.grantId IN (${db.in(params, grantIds)})
@@ -326,9 +326,9 @@ export namespace AccessDatabase {
   export async function addAccessRoleGrant (roleId: string, grantInput: AccessRoleGrantCreate) {
     return await db.transaction(async db => {
       const grantId = await db.insert(`
-        INSERT INTO accessRoleGrants (roleId, subjectType, allow)
+        INSERT INTO accessRoleGrants (roleId, controlGroup, allow)
         VALUES (?, ?, ?)
-      `, [roleId, grantInput.subjectType, grantInput.allow])
+      `, [roleId, grantInput.controlGroup, grantInput.allow])
 
       if (grantInput.controls?.length) {
         const binds: any[] = []
@@ -350,7 +350,7 @@ export namespace AccessDatabase {
 
   export async function updateAccessRoleGrant (grantId: string, grantInput: AccessRoleGrantCreate) {
     return await db.transaction(async db => {
-      await db.update('UPDATE accessRoleGrants SET subjectType = ?, allow = ? WHERE id = ?', [grantInput.subjectType, grantInput.allow, grantId])
+      await db.update('UPDATE accessRoleGrants SET controlGroup = ?, allow = ? WHERE id = ?', [grantInput.controlGroup, grantInput.allow, grantId])
 
       if (grantInput.controls?.length) {
         const ibinds: any[] = []
@@ -386,7 +386,7 @@ export namespace AccessDatabase {
   }
 
   export async function deleteAccessRoleGrant (grantId: string) {
-    // controls, subjects, and tags will be deleted due to foreign key constraint ON DELETE CASCADE
+    // controls, control groups, and tags will be deleted due to foreign key constraint ON DELETE CASCADE
     await db.delete('DELETE FROM accessRoleGrants g WHERE id = ?', [grantId])
   }
 }

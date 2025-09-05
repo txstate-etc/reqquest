@@ -12,12 +12,12 @@
   import ControlWithTooltip from './ControlWithTooltip.svelte'
 
   export let data: PageData
-  $: ({ role, subjectTypes, subjectTypeLookup } = data)
+  $: ({ role, controlGroups, controlGroupLookup } = data)
 
   $: grants = role.grants.filter(g => g.allow)
   $: exceptions = role.grants.filter(g => !g.allow)
 
-  setContext('subjectTypeLookup', () => subjectTypeLookup)
+  setContext('controlGroupLookup', () => controlGroupLookup)
   function tagsRender (tags: { categoryLabel: string, label: string }[]) {
     const categories = groupby(tags, 'categoryLabel')
     return Object.entries(categories).map(([category, tags]) => `<strong>${tags[0].categoryLabel}</strong><br>${tags.map(t => t.label).join(', ')}`).join('<br>')
@@ -28,7 +28,7 @@
   function transformFromAPI (data: PageData['role']['grants'][number]): AccessRoleGrantUpdateForm {
     return {
       ...pick(data, 'controls', 'allow'),
-      subjectType: data.subjectType.name,
+      controlGroup: data.controlGroup.name,
       tags: data.tags.reduce((acc: Record<string, string[]>, curr) => ({ ...acc, [curr.category]: [...(acc[curr.category] ?? []), curr.tag] }), {})
     }
   }
@@ -125,7 +125,7 @@
     }
   ]}
   columns={[
-    { id: 'subjectType', label: 'Grants', render: grant => grant.subjectType.title },
+    { id: 'controlGroup', label: 'Grants', render: grant => grant.controlGroup.title },
     { id: 'controls', label: 'Controls', component: ControlWithTooltip },
     { id: 'tags', label: 'Restrictions', render: grant => tagsRender(grant.tags) }
   ]}
@@ -149,7 +149,7 @@
 <ColumnList
   title="Exceptions for Role: {role.name}"
   columns={[
-    { id: 'subjectType', label: 'Exceptions', render: grant => grant.subjectType.title },
+    { id: 'controlGroup', label: 'Exceptions', render: grant => grant.controlGroup.title },
     { id: 'controls', label: 'Controls', render: grant => grant.controls.join(', ') },
     { id: 'tags', label: 'Restrictions', render: grant => grant.tags.map(t => t.label).join(', ') }
   ]}
@@ -184,17 +184,17 @@
 />
 
 {#if showGrantEdit && grantToEdit}
-  {@const subjectType = subjectTypeLookup[grantToEdit.subjectType.name]}
+  {@const controlGroup = controlGroupLookup[grantToEdit.controlGroup.name]}
   <PanelFormDialog open title="Edit {grantToEdit.allow ? 'Grant' : 'Exception'}" submit={onEditSubmit} validate={onEditValidate} on:cancel={onCloseEdit} on:saved={onSaveGrant} preload={grantToEditInput} let:data>
     <FieldHidden path="allow" value={grantToEdit.allow} />
-    <FieldHidden path="subjectType" value={grantToEdit.subjectType.name} />
+    <FieldHidden path="controlGroup" value={grantToEdit.controlGroup.name} />
     <FieldCheckboxList
       path="controls"
       legendText="Controls"
-      items={subjectType.controls.map(c => ({ value: c.name }))}
+      items={controlGroup.controls.map(c => ({ value: c.name }))}
     >
       <svelte:fragment slot="labelText" let:item>
-        {@const control = subjectType.controls.find(c => c.name === item.value)}
+        {@const control = controlGroup.controls.find(c => c.name === item.value)}
         {#if control}
           <TooltipDefinition tooltipText={control.description} direction="bottom" align="start">
             {control.name}
@@ -204,7 +204,7 @@
         {/if}
       </svelte:fragment>
     </FieldCheckboxList>
-    {#each subjectType.tags as category}
+    {#each controlGroup.tags as category}
       <FieldMultiselect
         path="tags.{category.category}"
         titleText={category.label}
@@ -217,21 +217,21 @@
 {:else if showGrantCreate}
   <PanelFormDialog open title="New {grantCreateAllow ? 'Grant' : 'Exception'}" submit={onCreateSubmit} validate={onCreateValidate} on:cancel={onCloseEdit} on:saved={onSaveGrant} let:data>
     <FieldHidden path="allow" value={grantCreateAllow} />
-    {@const subjectType = data.subjectType ? subjectTypeLookup[data.subjectType] : undefined}
+    {@const controlGroup = data.controlGroup ? controlGroupLookup[data.controlGroup] : undefined}
     <FieldSelect
-      path="subjectType"
-      labelText="Subject Type"
-      items={subjectTypes.map(st => ({ value: st.name, label: st.title }))}
-      helperText={subjectType?.description}
+      path="controlGroup"
+      labelText="Control Group"
+      items={controlGroups.map(st => ({ value: st.name, label: st.title }))}
+      helperText={controlGroup?.description}
     />
-    {#if subjectType}
+    {#if controlGroup}
       <FieldCheckboxList
         path="controls"
         legendText="Controls"
-        items={subjectType.controls.map(c => ({ value: c.name }))}
+        items={controlGroup.controls.map(c => ({ value: c.name }))}
       >
         <svelte:fragment slot="labelText" let:item>
-          {@const control = subjectType.controls.find(c => c.name === item.value)}
+          {@const control = controlGroup.controls.find(c => c.name === item.value)}
           {#if control}
             <TooltipDefinition tooltipText={control.description} direction="bottom" align="start">
               {control.name}
@@ -242,7 +242,7 @@
         </svelte:fragment>
       </FieldCheckboxList>
 
-      {#each subjectType.tags as category (category.category)}
+      {#each controlGroup.tags as category (category.category)}
         <FieldMultiselect
           path="tags.{category.category}"
           titleText={category.label}
@@ -265,7 +265,7 @@
     on:submit={executeDelete}
     on:close={closeDeleteConfirmation}
   >
-    <p>Are you sure you want to delete this {grantToDelete.allow ? 'grant' : 'exception'}?<br><em>{subjectTypeLookup[grantToDelete.subjectType.name].title}</em></p>
+    <p>Are you sure you want to delete this {grantToDelete.allow ? 'grant' : 'exception'}?<br><em>{controlGroupLookup[grantToDelete.controlGroup.name].title}</em></p>
     <p>This action cannot be undone.</p>
   </Modal>
 {/if}

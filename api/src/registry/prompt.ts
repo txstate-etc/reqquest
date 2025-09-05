@@ -166,7 +166,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * snake_case, alphanumeric and underscore only.
    *
    * Do not use the same key for a prompt and a requirement, as the keys will be used as
-   * subject names in our authorization scheme and need to not clash.
+   * tag names in our authorization scheme and need to not clash.
    */
   key: KeyLiteral
   /**

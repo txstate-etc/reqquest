@@ -6,7 +6,7 @@ services:
     build:
       context: .
       dockerfile: testserver/Dockerfile
-    attach: false
+    attach: true
     environment:
       TZ: America/Chicago
       NODE_ENV: development

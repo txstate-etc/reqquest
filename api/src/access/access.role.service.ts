@@ -173,7 +173,7 @@ export class AccessRoleService extends AuthService<AccessRole> {
 
   validateAccessRoleGrant (grant: AccessRoleGrantCreate): AccessRoleValidatedResponse {
     const response = new AccessRoleValidatedResponse({ success: true, messages: [] })
-    if (isBlank(grant.subjectType)) response.addMessage('Subject type is required.', 'subjectType', MutationMessageType.error)
+    if (isBlank(grant.controlGroup)) response.addMessage('Control Group is required.', 'controlGroup', MutationMessageType.error)
     else if (!grant.controls?.length) response.addMessage('At least one control must be selected.', 'controls', MutationMessageType.error)
     return response
   }

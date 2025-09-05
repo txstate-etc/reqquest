@@ -9,7 +9,7 @@ export interface TagDefinition {
   value: string
   /**
    * A human readable name for the tag that will be shown to the admin when creating a grant. Does
-   * not need to be stable, but should be unique within the subjectType.
+   * not need to be stable, but should be unique within the controlGroup.
    */
   label?: string
 }
@@ -21,13 +21,13 @@ export interface TagLabels {
 
 export interface TagCategoryDefinition {
   /**
-   * The key for the tag category. This should be a stable string and unique within its subjectType.
+   * The key for the tag category. This should be a stable string and unique within its controlGroup.
    */
   category: string
 
   /**
    * A human readable name for the tag category that will be shown to the admin when creating a grant.
-   * Does not need to be stable, but should be unique within the subjectType.
+   * Does not need to be stable, but should be unique within the controlGroup.
    */
   label: string
 
@@ -71,25 +71,25 @@ export interface ControlDefinition {
 }
 
 /**
- * This interface defines the structure of a subjectType. It defines the controls
- * and tags that are relevant to the subjectType.
+ * This interface defines the structure of a controlGroup. It defines the controls
+ * and tags that are relevant to the controlGroup.
  */
-export interface SubjectTypeDefinition {
+export interface ControlGroupDefinition {
   /**
    * This title will be shown in the role management UI and may be easier to read than
    * the name we store in the database.
    */
   title: string
   /**
-   * Describe the set of controls that this subjectType has, to help administrators decide
-   * which subjectType to choose when creating a grant.
+   * Describe the set of controls that this controlGroup has, to help administrators decide
+   * which controlGroup to choose when creating a grant.
    */
   description?: string
   tags?: TagCategoryDefinition[]
   controls: Record<string, ControlDefinition>
 }
 
-export interface SubjectTypeDefinitionProcessed extends SubjectTypeDefinition {
+export interface ControlGroupDefinitionProcessed extends ControlGroupDefinition {
   tagCategoryLookup: Record<string, TagCategoryDefinition>
   tagLookup: Record<string, Record<string, TagDefinition>>
 }
@@ -133,21 +133,21 @@ export async function initAccess () {
       ...promptRegistry.list().map(prompt => ({ value: prompt.key, label: 'Prompt: ' + prompt.title }))
     ]
   })
-  subjectTypes.Application = {
+  controlGroups.Application = {
     title: 'Reviewer - View Applications',
     tags: [programTags(), ...appRequestTags],
     controls: {
       view: { description: 'View application as a reviewer in an AppRequest.' }
     }
   }
-  subjectTypes.ApplicationRequirement = {
+  controlGroups.ApplicationRequirement = {
     title: 'Reviewer - Requirement Statuses',
     tags: [requirementTags(), ...appRequestTags],
     controls: {
       view: { description: 'View requirement status in an AppRequest. You still need AppRequest.review to see the reviewer interface at all.' }
     }
   }
-  subjectTypes.AppRequestOwn = {
+  controlGroups.AppRequestOwn = {
     title: 'Applicant - Applicant Phase',
     description: 'These controls govern actions people take on their own appRequest during the applicant phase, like creating and cancelling. No restrictions are available because we need to complete the applicant phase in order to collect enough data to generate tags.',
     controls: {
@@ -156,7 +156,7 @@ export async function initAccess () {
       uncancel: { description: 'Re-open one\'s own appRequest that was cancelled in the applicant phase.' }
     }
   }
-  subjectTypes.AppRequestOwnReview = {
+  controlGroups.AppRequestOwnReview = {
     title: 'Applicant - Reviewer Phase',
     description: 'These controls govern actions people take on their own appRequest during the reviewer phase, like withdrawing and un-withdrawing.',
     controls: {
@@ -165,7 +165,7 @@ export async function initAccess () {
     },
     tags: appRequestTags
   }
-  subjectTypes.AppRequest = {
+  controlGroups.AppRequest = {
     title: 'Reviewer - Review Phase',
     description: 'These controls govern the overall lifecycle of an App Request, like creating, submitting, and closing. See PromptAnswer, ApplicationRequirement, and Application for some additional controls governing the reviewer interface of an App Request.',
     tags: appRequestTags,
@@ -180,7 +180,7 @@ export async function initAccess () {
       offer: { description: 'Finish out a review and make an offer to the applicant. This only applies when there is at least one ACCEPTANCE requirement in the system/period.' }
     }
   }
-  subjectTypes.AppRequestPreReview = {
+  controlGroups.AppRequestPreReview = {
     title: 'Reviewer - Applicant Phase',
     description: 'These are the App Request controls that relate to reviewers/admins taking action during the applicant phase instead of the review phase. No restrictions are available because we need to complete the applicant phase in order to collect enough data to generate tags.',
     controls: {
@@ -188,7 +188,7 @@ export async function initAccess () {
       uncancel: { description: 'Re-open any appRequest that was cancelled in the applicant phase.' }
     }
   },
-  subjectTypes.Period = {
+  controlGroups.Period = {
     title: 'Admin - Manage Periods',
     controls: {
       view: { description: 'View the period management interface and see all the periods.' },
@@ -198,7 +198,7 @@ export async function initAccess () {
       delete: { description: 'Delete existing periods.' }
     }
   }
-  subjectTypes.Program = {
+  controlGroups.Program = {
     title: 'Admin - Configure Programs',
     tags: [programTags()],
     controls: {
@@ -207,7 +207,7 @@ export async function initAccess () {
       disable: { description: 'Disable/Enable a program for all appRequests in a given period. The period must be eligible.' }
     }
   }
-  subjectTypes.Prompt = {
+  controlGroups.Prompt = {
     title: 'Admin - Configure Prompts',
     tags: [promptTags()],
     controls: {
@@ -215,7 +215,7 @@ export async function initAccess () {
       configure: { description: 'Configure the way that a prompt works for all appRequests.' }
     }
   }
-  subjectTypes.PromptAnswer = {
+  controlGroups.PromptAnswer = {
     title: 'Reviewer - View and Update Prompt Data',
     tags: [promptTags(), ...appRequestTags],
     controls: {
@@ -224,7 +224,7 @@ export async function initAccess () {
       update_anytime: { description: 'Update this prompt as a reviewer even if the appRequest is not yet submitted or awaiting acceptance or pre-approval automations.' }
     }
   }
-  subjectTypes.Requirement = {
+  controlGroups.Requirement = {
     title: 'Admin - Configure Requirements',
     tags: [requirementTags(), programTags('Limit to requirements that are used within certain programs.')],
     controls: {
@@ -233,7 +233,7 @@ export async function initAccess () {
       disable: { description: 'Disable/Enable a requirement for all appRequests in a given period. The period must be eligible.' }
     }
   }
-  subjectTypes.Role = {
+  controlGroups.Role = {
     title: 'Admin - Manage Roles',
     controls: {
       view: { description: 'View the role management interface and see all the roles, grants, exceptions, groups, and users associated with each.' },
@@ -242,8 +242,8 @@ export async function initAccess () {
       delete: { description: 'Delete existing roles.' }
     }
   }
-  for (const subjectType of Object.keys(subjectTypes)) {
-    const def = subjectTypes[subjectType] as SubjectTypeDefinitionProcessed
+  for (const controlGroup of Object.keys(controlGroups)) {
+    const def = controlGroups[controlGroup] as ControlGroupDefinitionProcessed
     def.tagCategoryLookup = keyby(def.tags ?? [], 'category')
     def.tagLookup = {}
     for (const tagCategory of def.tags ?? []) {
@@ -253,4 +253,4 @@ export async function initAccess () {
   }
 }
 
-export const subjectTypes: Record<string, SubjectTypeDefinition> = {}
+export const controlGroups: Record<string, ControlGroupDefinition> = {}

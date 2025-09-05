@@ -3,14 +3,13 @@ import db from 'mysql2-async/db'
 /**
  * Safety type for accurate seeding of definition data
  */
-export type AccessRoleGrantDefinition<AdditionalSubjectTypes = unknown, AdditionalControls = unknown> = {
+export type AccessRoleGrantDefinition<AdditionalControlGroups = unknown, AdditionalControls = unknown> = {
   [roleName: string]: {
     scope?: string
     description?: string
     groups: string[]
     grants: {
-      subjectType: string
-      subjects?: string[]
+      controlGroup: string
       controls: string[]
       allow: boolean
     }[]
@@ -23,12 +22,12 @@ export const rqAccessSeed: AccessRoleGrantDefinition = {
     groups: [process.env.RQ_APPLICANT_GROUP ?? 'applicants'],
     grants: [
       {
-        subjectType: 'AppRequestOwn',
+        controlGroup: 'AppRequestOwn',
         controls: ['create', 'cancel', 'uncancel'],
         allow: true
       },
       {
-        subjectType: 'AppRequestOwnReview',
+        controlGroup: 'AppRequestOwnReview',
         controls: ['withdraw', 'unwithdraw'],
         allow: true
       }
@@ -39,27 +38,27 @@ export const rqAccessSeed: AccessRoleGrantDefinition = {
     groups: [process.env.RQ_REVIEWER_GROUP ?? 'reviewers'],
     grants: [
       {
-        subjectType: 'AppRequest',
+        controlGroup: 'AppRequest',
         controls: ['review', 'return', 'reopen', 'close', 'offer'],
         allow: true
       },
       {
-        subjectType: 'AppRequestPreReview',
+        controlGroup: 'AppRequestPreReview',
         controls: ['create', 'uncancel'],
         allow: true
       },
       {
-        subjectType: 'PromptAnswer',
+        controlGroup: 'PromptAnswer',
         controls: ['view', 'update'],
         allow: true
       },
       {
-        subjectType: 'ApplicationRequirement',
+        controlGroup: 'ApplicationRequirement',
         controls: ['view'],
         allow: true
       },
       {
-        subjectType: 'Application',
+        controlGroup: 'Application',
         controls: ['view'],
         allow: true
       }
@@ -69,11 +68,11 @@ export const rqAccessSeed: AccessRoleGrantDefinition = {
     description: 'This role is for system administrators who configure the system and manage roles. They do not automatically have applicant and reviewer access.',
     groups: [process.env.RQ_ADMIN_GROUP ?? 'administrators'],
     grants: [
-      { subjectType: 'Period', controls: ['view', 'view_configuration', 'create', 'update', 'delete'], allow: true },
-      { subjectType: 'Program', controls: ['view', 'configure', 'disable'], allow: true },
-      { subjectType: 'Prompt', controls: ['view', 'configure'], allow: true },
-      { subjectType: 'Requirement', controls: ['view', 'configure', 'disable'], allow: true },
-      { subjectType: 'Role', controls: ['view', 'create', 'update', 'delete'], allow: true }
+      { controlGroup: 'Period', controls: ['view', 'view_configuration', 'create', 'update', 'delete'], allow: true },
+      { controlGroup: 'Program', controls: ['view', 'configure', 'disable'], allow: true },
+      { controlGroup: 'Prompt', controls: ['view', 'configure'], allow: true },
+      { controlGroup: 'Requirement', controls: ['view', 'configure', 'disable'], allow: true },
+      { controlGroup: 'Role', controls: ['view', 'create', 'update', 'delete'], allow: true }
     ]
   }
 }
@@ -85,9 +84,9 @@ export async function seedAccessRoles (appDef: AccessRoleGrantDefinition): Promi
     await db.insert(`INSERT INTO accessRoleGroups (roleId, groupName) VALUES ${db.in(ibinds, roleDef.groups.map(g => [roleId, g]))}`, ibinds)
 
     for (const grant of roleDef.grants) {
-      const grantId = await db.insert('INSERT INTO accessRoleGrants (roleId, subjectType, allow) VALUES (?, ?, ?)', [
+      const grantId = await db.insert('INSERT INTO accessRoleGrants (roleId, controlGroup, allow) VALUES (?, ?, ?)', [
         roleId,
-        grant.subjectType,
+        grant.controlGroup,
         grant.allow
       ])
       for (const control of grant.controls) {

@@ -25,7 +25,7 @@ export const accessMigrations: DatabaseMigration[] = [{
     await db.execute(`CREATE TABLE IF NOT EXISTS accessRoleGrants (
       id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       roleId INT UNSIGNED NOT NULL,
-      subjectType VARCHAR(64) NOT NULL,
+      controlGroup VARCHAR(64) NOT NULL,
       allow TINYINT(1) DEFAULT 0,
       FOREIGN KEY (roleId) REFERENCES accessRoles(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)

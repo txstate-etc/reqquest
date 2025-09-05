@@ -43,6 +43,18 @@ export interface AccessControl {
     __typename: 'AccessControl'
 }
 
+export interface AccessControlGroup {
+    /** A list of all possible controls for this controlGroup. Use this to populate the control dropdown when creating a grant. */
+    controls: AccessControl[]
+    /** A longer explanation of the control group for display in the role management interface. */
+    description: (Scalars['String'] | null)
+    name: Scalars['String']
+    tags: AccessTagCategory[]
+    /** A slightly longer version of the control group's name, for display in the role management interface. */
+    title: Scalars['String']
+    __typename: 'AccessControlGroup'
+}
+
 export interface AccessGrantTag {
     category: Scalars['String']
     categoryLabel: Scalars['String']
@@ -72,17 +84,17 @@ export interface AccessRoleGrant {
      * 
      *     Removing a control only happens within the context of a single role. If another role grants the
      *     same control, the action is allowed. This is more of an exception system than a denial
-     *     system. So you can do something like add the "view" control to the "movie" subject type in one
+     *     system. So you can do something like add the "view" control to the "movie" control group in one
      *     grant, and then in a second grant in the same role, remove it from "The Princess Bride". Now you
      *     have a role that grants "view" on all movies _except_ The Princess Bride. If the user has another role
      *     that grants "view" on The Princess Bride (or on all movies), they can view it based on that other role.
      *   
      */
     allow: Scalars['Boolean']
+    /** The group this control belongs to. e.g. Reviewer - Review Phase */
+    controlGroup: AccessControlGroup
     controls: Scalars['String'][]
     id: Scalars['ID']
-    /** The type of subject this grant applies to, e.g. "movie". */
-    subjectType: AccessSubjectType
     tags: AccessGrantTag[]
     __typename: 'AccessRoleGrant'
 }
@@ -99,18 +111,6 @@ export interface AccessRoleValidatedResponse {
     /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
     success: Scalars['Boolean']
     __typename: 'AccessRoleValidatedResponse'
-}
-
-export interface AccessSubjectType {
-    /** A list of all possible controls for this subjectType. Use this to populate the control dropdown when creating a grant. */
-    controls: AccessControl[]
-    /** A longer explanation of the subject type for display in the role management interface. */
-    description: (Scalars['String'] | null)
-    name: Scalars['String']
-    tags: AccessTagCategory[]
-    /** A slightly longer version of the subject type's name, for display in the role management interface. */
-    title: Scalars['String']
-    __typename: 'AccessSubjectType'
 }
 
 export interface AccessTag {
@@ -450,7 +450,6 @@ export interface PeriodProgram {
     actions: PeriodProgramActions
     /** Whether the program is enabled in this period. This is set by the system administrator. */
     enabled: Scalars['Boolean']
-    group: PeriodProgramActions
     key: Scalars['ID']
     navTitle: Scalars['String']
     period: Period
@@ -513,16 +512,6 @@ export interface Program {
     __typename: 'Program'
 }
 
-export interface ProgramGroup {
-    key: Scalars['ID']
-    /** A human readable title for the program group in the navigation. You may want it to be shorter than the full title. If not provided, the title will be used. */
-    navTitle: Scalars['String']
-    programs: Program[]
-    /** A human readable title for the program group. This will be shown to users. */
-    title: Scalars['String']
-    __typename: 'ProgramGroup'
-}
-
 
 /** The visibility of a prompt on a request. This is used to determine whether the prompt should be shown to the user in the UI. */
 export type PromptVisibility = 'APPLICATION_DUPE' | 'AVAILABLE' | 'REQUEST_DUPE' | 'UNREACHABLE'
@@ -538,14 +527,13 @@ export interface Query {
     accessUsers: AccessUser[]
     appRequestIndexes: IndexCategory[]
     appRequests: AppRequest[]
+    /** This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant. */
+    controlGroups: AccessControlGroup[]
     periods: Period[]
-    programGroups: ProgramGroup[]
     programs: Program[]
     roles: AccessRole[]
     /** A list of all possible scopes. Scopes are used to limit users when they are accessing the system through an alternate UI or login method. For instance, if you generate an authentication token to give to a third party, it may have a scope identifying that third party and limiting their access even though they are acting as you. Roles must match the token scope in order to apply permissions. */
     scopes: Scalars['String'][]
-    /** This is where you get information about the authorization system. Each grant will be associated with one of these subjectTypes and optionally a list of subject instances. The grant will also have a set of controls, and each control will have an optional set of tags. The tags are used to limit the scope of the grant. */
-    subjectTypes: AccessSubjectType[]
     __typename: 'Query'
 }
 
@@ -662,6 +650,19 @@ export interface AccessControlGenqlSelection{
     __scalar?: boolean | number
 }
 
+export interface AccessControlGroupGenqlSelection{
+    /** A list of all possible controls for this controlGroup. Use this to populate the control dropdown when creating a grant. */
+    controls?: AccessControlGenqlSelection
+    /** A longer explanation of the control group for display in the role management interface. */
+    description?: boolean | number
+    name?: boolean | number
+    tags?: AccessTagCategoryGenqlSelection
+    /** A slightly longer version of the control group's name, for display in the role management interface. */
+    title?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
 export interface AccessGrantTagGenqlSelection{
     category?: boolean | number
     categoryLabel?: boolean | number
@@ -695,17 +696,17 @@ export interface AccessRoleGrantGenqlSelection{
      * 
      *     Removing a control only happens within the context of a single role. If another role grants the
      *     same control, the action is allowed. This is more of an exception system than a denial
-     *     system. So you can do something like add the "view" control to the "movie" subject type in one
+     *     system. So you can do something like add the "view" control to the "movie" control group in one
      *     grant, and then in a second grant in the same role, remove it from "The Princess Bride". Now you
      *     have a role that grants "view" on all movies _except_ The Princess Bride. If the user has another role
      *     that grants "view" on The Princess Bride (or on all movies), they can view it based on that other role.
      *   
      */
     allow?: boolean | number
+    /** The group this control belongs to. e.g. Reviewer - Review Phase */
+    controlGroup?: AccessControlGroupGenqlSelection
     controls?: boolean | number
     id?: boolean | number
-    /** The type of subject this grant applies to, e.g. "movie". */
-    subjectType?: AccessSubjectTypeGenqlSelection
     tags?: AccessGrantTagGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
@@ -718,15 +719,15 @@ export interface AccessRoleGrantActionsGenqlSelection{
     __scalar?: boolean | number
 }
 
-export interface AccessRoleGrantCreate {allow: Scalars['Boolean'],
-/** A list of controls that are allowed or denied by this grant. Each subjectType has a list of available controls, available under Query.subjectTypes. */
-controls?: (Scalars['String'][] | null),subjectType?: (Scalars['String'] | null),
+export interface AccessRoleGrantCreate {allow: Scalars['Boolean'],controlGroup?: (Scalars['String'] | null),
+/** A list of controls that are allowed or denied by this grant. Each controlGroup has a list of available controls, available under Query.controlGroups. */
+controls?: (Scalars['String'][] | null),
 /** A list of tags to restrict a grant. For instance, if this is added to a grant on PromptAnswer-update, each tag refers to a subset of App Requests. */
 tags?: (AccessTagInput[] | null)}
 
-export interface AccessRoleGrantUpdate {allow: Scalars['Boolean'],
-/** A list of controls that are allowed or denied by this grant. Each subjectType has a list of available controls, available under Query.subjectTypes. */
-controls?: (Scalars['String'][] | null),subjectType?: (Scalars['String'] | null),
+export interface AccessRoleGrantUpdate {allow: Scalars['Boolean'],controlGroup?: (Scalars['String'] | null),
+/** A list of controls that are allowed or denied by this grant. Each controlGroup has a list of available controls, available under Query.controlGroups. */
+controls?: (Scalars['String'][] | null),
 /** A list of tags to restrict a grant. For instance, if this is added to a grant on PromptAnswer-update, each tag refers to a subset of App Requests. */
 tags?: (AccessTagInput[] | null)}
 
@@ -743,19 +744,6 @@ export interface AccessRoleValidatedResponseGenqlSelection{
     messages?: MutationMessageGenqlSelection
     /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
     success?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-export interface AccessSubjectTypeGenqlSelection{
-    /** A list of all possible controls for this subjectType. Use this to populate the control dropdown when creating a grant. */
-    controls?: AccessControlGenqlSelection
-    /** A longer explanation of the subject type for display in the role management interface. */
-    description?: boolean | number
-    name?: boolean | number
-    tags?: AccessTagCategoryGenqlSelection
-    /** A slightly longer version of the subject type's name, for display in the role management interface. */
-    title?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -1189,7 +1177,6 @@ export interface PeriodProgramGenqlSelection{
     actions?: PeriodProgramActionsGenqlSelection
     /** Whether the program is enabled in this period. This is set by the system administrator. */
     enabled?: boolean | number
-    group?: PeriodProgramActionsGenqlSelection
     key?: boolean | number
     navTitle?: boolean | number
     period?: PeriodGenqlSelection
@@ -1262,19 +1249,6 @@ export interface ProgramGenqlSelection{
 
 export interface ProgramFilters {keys?: (Scalars['String'][] | null)}
 
-export interface ProgramGroupGenqlSelection{
-    key?: boolean | number
-    /** A human readable title for the program group in the navigation. You may want it to be shorter than the full title. If not provided, the title will be used. */
-    navTitle?: boolean | number
-    programs?: (ProgramGenqlSelection & { __args?: {filter?: (ProgramFilters | null)} })
-    /** A human readable title for the program group. This will be shown to users. */
-    title?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-export interface ProgramGroupFilter {keys?: (Scalars['ID'][] | null)}
-
 export interface QueryGenqlSelection{
     /**
      * 
@@ -1288,14 +1262,13 @@ export interface QueryGenqlSelection{
     /** Returns indexes that are flagged to appear in this destination. Also sorts for this destination. */
     for?: (AppRequestIndexDestination | null)} })
     appRequests?: (AppRequestGenqlSelection & { __args?: {filter?: (AppRequestFilter | null)} })
+    /** This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant. */
+    controlGroups?: AccessControlGroupGenqlSelection
     periods?: (PeriodGenqlSelection & { __args?: {filter?: (PeriodFilters | null)} })
-    programGroups?: (ProgramGroupGenqlSelection & { __args?: {filter?: (ProgramGroupFilter | null)} })
     programs?: (ProgramGenqlSelection & { __args?: {filter?: (ProgramFilters | null)} })
     roles?: (AccessRoleGenqlSelection & { __args?: {filter?: (AccessRoleFilter | null)} })
     /** A list of all possible scopes. Scopes are used to limit users when they are accessing the system through an alternate UI or login method. For instance, if you generate an authentication token to give to a third party, it may have a scope identifying that third party and limiting their access even though they are acting as you. Roles must match the token scope in order to apply permissions. */
     scopes?: boolean | number
-    /** This is where you get information about the authorization system. Each grant will be associated with one of these subjectTypes and optionally a list of subject instances. The grant will also have a set of controls, and each control will have an optional set of tags. The tags are used to limit the scope of the grant. */
-    subjectTypes?: AccessSubjectTypeGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -1407,6 +1380,14 @@ export interface ValidatedResponseGenqlSelection{
     
 
 
+    const AccessControlGroup_possibleTypes: string[] = ['AccessControlGroup']
+    export const isAccessControlGroup = (obj?: { __typename?: any } | null): obj is AccessControlGroup => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAccessControlGroup"')
+      return AccessControlGroup_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const AccessGrantTag_possibleTypes: string[] = ['AccessGrantTag']
     export const isAccessGrantTag = (obj?: { __typename?: any } | null): obj is AccessGrantTag => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isAccessGrantTag"')
@@ -1443,14 +1424,6 @@ export interface ValidatedResponseGenqlSelection{
     export const isAccessRoleValidatedResponse = (obj?: { __typename?: any } | null): obj is AccessRoleValidatedResponse => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isAccessRoleValidatedResponse"')
       return AccessRoleValidatedResponse_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const AccessSubjectType_possibleTypes: string[] = ['AccessSubjectType']
-    export const isAccessSubjectType = (obj?: { __typename?: any } | null): obj is AccessSubjectType => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isAccessSubjectType"')
-      return AccessSubjectType_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -1651,14 +1624,6 @@ export interface ValidatedResponseGenqlSelection{
     export const isProgram = (obj?: { __typename?: any } | null): obj is Program => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isProgram"')
       return Program_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const ProgramGroup_possibleTypes: string[] = ['ProgramGroup']
-    export const isProgramGroup = (obj?: { __typename?: any } | null): obj is ProgramGroup => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isProgramGroup"')
-      return ProgramGroup_possibleTypes.includes(obj.__typename)
     }
     
 

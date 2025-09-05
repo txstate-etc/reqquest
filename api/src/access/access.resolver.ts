@@ -4,9 +4,9 @@ import { Arg, Ctx, FieldResolver, ID, Mutation, Query, Resolver, Root } from 'ty
 import {
   Access, AccessUser, AccessUserFilter, AccessRole, AccessRoleFilter, AccessRoleValidatedResponse,
   RoleActions, AccessUserService, AccessRoleService, AccessRoleGrantCreate, AccessRoleGrant,
-  AccessUserIdentifier, AccessRoleInput, AccessControl, AccessSubjectType, subjectTypes,
+  AccessUserIdentifier, AccessRoleInput, AccessControl, AccessControlGroup, controlGroups,
   AccessRoleGrantUpdate, appConfig, AccessTagCategory, AccessTag, AccessGrantTag,
-  AccessRoleGrantActions, AccessRoleServiceInternal, AppRequestService, SubjectTypeDefinitionProcessed,
+  AccessRoleGrantActions, AccessRoleServiceInternal, AppRequestService, ControlGroupDefinitionProcessed,
   TagCategoryDefinition, PeriodService, RQContext
 } from '../internal.js'
 
@@ -179,8 +179,8 @@ export class AccessRoleGrantActionsResolver {
 export class AccessGrantTagResolver {
   @FieldResolver(returns => String)
   async label (@Ctx() ctx: Context, @Root() tag: AccessGrantTag) {
-    const subjectType = subjectTypes[tag.subjectType] as SubjectTypeDefinitionProcessed
-    const category = subjectType.tagCategoryLookup[tag.category] as TagCategoryDefinition
+    const controlGroup = controlGroups[tag.controlGroup] as ControlGroupDefinitionProcessed
+    const category = controlGroup.tagCategoryLookup[tag.category] as TagCategoryDefinition
     return await category.getLabel?.(tag.tag) ?? tag.tag
   }
 }
@@ -221,17 +221,17 @@ export class AccessUserResolver {
   }
 }
 
-@Resolver(of => AccessSubjectType)
-export class AccessSubjectTypeResolver {
-  @Query(returns => [AccessSubjectType], { description: 'This is where you get information about the authorization system. Each grant will be associated with one of these subjectTypes and optionally a list of subject instances. The grant will also have a set of controls, and each control will have an optional set of tags. The tags are used to limit the scope of the grant.' })
-  async subjectTypes (@Ctx() ctx: Context) {
-    return sortby(Object.keys(subjectTypes).map(name => new AccessSubjectType(name)), 'title')
+@Resolver(of => AccessControlGroup)
+export class AccessControlGroupResolver {
+  @Query(returns => [AccessControlGroup], { description: 'This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant.' })
+  async controlGroups (@Ctx() ctx: Context) {
+    return sortby(Object.keys(controlGroups).map(name => new AccessControlGroup(name)), 'title')
   }
 
-  @FieldResolver(returns => [AccessControl], { description: 'A list of all possible controls for this subjectType. Use this to populate the control dropdown when creating a grant.' })
-  async controls (@Ctx() ctx: Context, @Root() subjectType: AccessSubjectType) {
-    const controls = subjectTypes[subjectType.name].controls
-    return Object.keys(controls).map(name => new AccessControl(subjectType.name, name, controls[name]))
+  @FieldResolver(returns => [AccessControl], { description: 'A list of all possible controls for this controlGroup. Use this to populate the control dropdown when creating a grant.' })
+  async controls (@Ctx() ctx: Context, @Root() controlGroup: AccessControlGroup) {
+    const controls = controlGroups[controlGroup.name].controls
+    return Object.keys(controls).map(name => new AccessControl(controlGroup.name, name, controls[name]))
   }
 }
 

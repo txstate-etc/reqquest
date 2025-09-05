@@ -28,14 +28,13 @@ export const testMigrations: DatabaseMigration[] = [
       const su01 = await db.getrow<{ id: number, login: string }>('SELECT * FROM accessUsers WHERE login = ?', ['su01'])
 
       // Note: cloned from access.seed implementation to support creation of su style account in testserver
-      type AccessRoleGrantDefinition<AdditionalSubjectTypes = unknown, AdditionalControls = unknown> = {
+      type AccessRoleGrantDefinition<AdditionalControlGroups = unknown, AdditionalControls = unknown> = {
         [roleName: string]: {
           scope?: string
           description?: string
           groups: string[]
           grants: {
-            subjectType: string
-            subjects?: string[]
+            controlGroup: string
             controls: string[]
             allow: boolean
           }[]
@@ -46,18 +45,18 @@ export const testMigrations: DatabaseMigration[] = [
           description: 'This role is a super user role to assist in validation and development of automated test tasks (seeded via testdata.ts)',
           groups: ['sudoers'],
           grants: [
-            { subjectType: 'AppRequestOwn', controls: ['create', 'cancel', 'uncancel'], allow: true },
-            { subjectType: 'AppRequestOwnReview', controls: ['withdraw', 'unwithdraw'], allow: true },
-            { subjectType: 'AppRequest', controls: ['review', 'return', 'reopen', 'close', 'offer'], allow: true },
-            { subjectType: 'AppRequestPreReview', controls: ['create', 'uncancel'], allow: true },
-            { subjectType: 'PromptAnswer', controls: ['view', 'update'], allow: true },
-            { subjectType: 'ApplicationRequirement', controls: ['view'], allow: true },
-            { subjectType: 'Application', controls: ['view'], allow: true },
-            { subjectType: 'Period', controls: ['view', 'view_configuration', 'create', 'update', 'delete'], allow: true },
-            { subjectType: 'Program', controls: ['view', 'configure', 'disable'], allow: true },
-            { subjectType: 'Prompt', controls: ['view', 'configure'], allow: true },
-            { subjectType: 'Requirement', controls: ['view', 'configure', 'disable'], allow: true },
-            { subjectType: 'Role', controls: ['view', 'create', 'update', 'delete'], allow: true }
+            { controlGroup: 'AppRequestOwn', controls: ['create', 'cancel', 'uncancel'], allow: true },
+            { controlGroup: 'AppRequestOwnReview', controls: ['withdraw', 'unwithdraw'], allow: true },
+            { controlGroup: 'AppRequest', controls: ['review', 'return', 'reopen', 'close', 'offer'], allow: true },
+            { controlGroup: 'AppRequestPreReview', controls: ['create', 'uncancel'], allow: true },
+            { controlGroup: 'PromptAnswer', controls: ['view', 'update'], allow: true },
+            { controlGroup: 'ApplicationRequirement', controls: ['view'], allow: true },
+            { controlGroup: 'Application', controls: ['view'], allow: true },
+            { controlGroup: 'Period', controls: ['view', 'view_configuration', 'create', 'update', 'delete'], allow: true },
+            { controlGroup: 'Program', controls: ['view', 'configure', 'disable'], allow: true },
+            { controlGroup: 'Prompt', controls: ['view', 'configure'], allow: true },
+            { controlGroup: 'Requirement', controls: ['view', 'configure', 'disable'], allow: true },
+            { controlGroup: 'Role', controls: ['view', 'create', 'update', 'delete'], allow: true }
           ]
         }
       }
@@ -67,9 +66,9 @@ export const testMigrations: DatabaseMigration[] = [
         await db.insert(`INSERT INTO accessRoleGroups (roleId, groupName) VALUES ${db.in(ibinds, roleDef.groups.map(g => [roleId, g]))}`, ibinds)
 
         for (const grant of roleDef.grants) {
-          const grantId = await db.insert('INSERT INTO accessRoleGrants (roleId, subjectType, allow) VALUES (?, ?, ?)', [
+          const grantId = await db.insert('INSERT INTO accessRoleGrants (roleId, controlGroup, allow) VALUES (?, ?, ?)', [
             roleId,
-            grant.subjectType,
+            grant.controlGroup,
             grant.allow
           ])
           for (const control of grant.controls) {

@@ -32,8 +32,8 @@ export abstract class AuthService<ObjType, RedactedType = ObjType> extends Autho
     return await lookupUser(login)
   }
 
-  private roleMatches (roleLookup: RoleLookup, allow: boolean, subjectType: string, control: string, tags?: Record<string, string[]>) {
-    const controlLookup = roleLookup[subjectType]?.[control]?.[Number(allow)]
+  private roleMatches (roleLookup: RoleLookup, allow: boolean, controlGroup: string, control: string, tags?: Record<string, string[]>) {
+    const controlLookup = roleLookup[controlGroup]?.[control]?.[Number(allow)]
     if (!controlLookup) return false
     for (const tagCategory of Object.keys(controlLookup)) {
       const tagSet = controlLookup[tagCategory]
@@ -43,14 +43,14 @@ export abstract class AuthService<ObjType, RedactedType = ObjType> extends Autho
   }
 
   /**
-   * Primary function to check if the user has a specific control on a subject type.
+   * Primary function to check if the user has a specific control on a control group.
    */
-  hasControl (subjectType: string, control: string, tags?: Record<string, string[]>) {
+  hasControl (controlGroup: string, control: string, tags?: Record<string, string[]>) {
     for (const roleLookup of this.ctx.authInfo.roleLookups) {
       // if role has a deny, this role does not permit the control, go to the next role
-      if (this.roleMatches(roleLookup, false, subjectType, control, tags)) continue
+      if (this.roleMatches(roleLookup, false, controlGroup, control, tags)) continue
       // if role has an allow, this role permits the control, since roles are OR'd, we can stop looking
-      if (this.roleMatches(roleLookup, true, subjectType, control, tags)) return true
+      if (this.roleMatches(roleLookup, true, controlGroup, control, tags)) return true
     }
     return false
   }
@@ -60,9 +60,9 @@ export abstract class AuthService<ObjType, RedactedType = ObjType> extends Autho
    * a slight weakness in that if a role grants on some tags and then denies all the same
    * tags, it will still return true.
    */
-  hasAnyControl (subjectType: string, control: string) {
+  hasAnyControl (controlGroup: string, control: string) {
     for (const roleLookup of this.ctx.authInfo.roleLookups) {
-      const controlLookup = roleLookup[subjectType]?.[control]
+      const controlLookup = roleLookup[controlGroup]?.[control]
       // if we have any allow, and we don't have a global deny, we have the control
       if (controlLookup?.[1] && (controlLookup?.[0] == null || Object.keys(controlLookup[0]).length)) return true
     }
@@ -130,13 +130,13 @@ const authCache = new Cache(async (login: string, ctx: Context) => {
   for (const role of roles) {
     const mergedPerRole: RoleLookup = {}
     for (const grant of role.loadedGrants) {
-      mergedPerRole[grant.subjectType.name] ??= {}
+      mergedPerRole[grant.controlGroup.name] ??= {}
       for (const control of grant.loadedControls) {
-        mergedPerRole[grant.subjectType.name][control] ??= {}
-        mergedPerRole[grant.subjectType.name][control][Number(grant.allow)] ??= {}
+        mergedPerRole[grant.controlGroup.name][control] ??= {}
+        mergedPerRole[grant.controlGroup.name][control][Number(grant.allow)] ??= {}
         for (const tag of grant.loadedTags) {
-          mergedPerRole[grant.subjectType.name][control][Number(grant.allow)][tag.category] ??= new Set()
-          mergedPerRole[grant.subjectType.name][control][Number(grant.allow)][tag.category].add(tag.tag)
+          mergedPerRole[grant.controlGroup.name][control][Number(grant.allow)][tag.category] ??= new Set()
+          mergedPerRole[grant.controlGroup.name][control][Number(grant.allow)][tag.category].add(tag.tag)
         }
       }
     }

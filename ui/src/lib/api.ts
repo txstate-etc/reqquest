@@ -661,7 +661,7 @@ class API extends APIBase {
         groups: true,
         grants: {
           id: true,
-          subjectType: {
+          controlGroup: {
             name: true,
             title: true,
             description: true
@@ -693,7 +693,7 @@ class API extends APIBase {
   async getAuthorizationInfo () {
     const response = await this.client.query({
       __name: 'GetAuthorizationInfo',
-      subjectTypes: {
+      controlGroups: {
         name: true,
         title: true,
         description: true,
@@ -713,7 +713,7 @@ class API extends APIBase {
         }
       }
     })
-    return response.subjectTypes
+    return response.controlGroups
   }
 
   async upsertRole (roleId: string | undefined, role: AccessRoleInput, validateOnly: boolean) {

@@ -8,7 +8,7 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    * the UI definition. Use lowercase snake_case, alphanumeric and underscore only.
    *
    * Do not use the same key for a prompt and a requirement, as the keys will be used as
-   * subject names in our authorization scheme and need to not clash.
+   * tag names in our authorization scheme and need to not clash.
    */
   key: string
 
