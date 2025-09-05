@@ -1,16 +1,11 @@
 import { Arg, Ctx, FieldResolver, Query, Resolver, Root } from 'type-graphql'
-import { Program, PeriodProgramActions, ProgramGroupService, ProgramService, RQContext, Period, PeriodProgram, PeriodService, ProgramFilters, PeriodProgramRequirement, PeriodRequirementService } from '../internal.js'
+import { Program, PeriodProgramActions, ProgramService, RQContext, Period, PeriodProgram, PeriodService, ProgramFilters, PeriodProgramRequirement, PeriodRequirementService } from '../internal.js'
 
 @Resolver(of => PeriodProgram)
 export class PeriodProgramResolver {
   @Query(returns => [Program])
   async programs (@Ctx() ctx: RQContext, @Arg('filter', type => ProgramFilters, { nullable: true }) filter?: ProgramFilters) {
     return ctx.svc(ProgramService).find()
-  }
-
-  @FieldResolver(returns => PeriodProgramActions)
-  async group (@Ctx() ctx: RQContext, @Root() program: Program) {
-    return ctx.svc(ProgramGroupService).findByProgram(program.key)
   }
 
   @FieldResolver(returns => Period)

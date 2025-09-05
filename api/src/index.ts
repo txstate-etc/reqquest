@@ -5,7 +5,7 @@ import { DateTime } from 'luxon'
 import { NonEmptyArray } from 'type-graphql'
 import {
   applicationMigrations, AccessResolver, ApplicationActions, ApplicationActionsResolver,
-  AppRequestAccessResolver, ProgramGroupResolver, PeriodProgramResolver,
+  AppRequestAccessResolver, PeriodProgramResolver,
   AccessUserResolver, AccessRoleResolver, RoleActionsResolver, RequirementPromptActionsResolver, accessMigrations,
   DatabaseMigration, initializeDb, DateTimeScalar, rqContextMixin, ProgramDefinition,
   RequirementDefinition, PromptDefinition, AppDefinition, ProgramGroupDefinition, programRegistry,
@@ -80,7 +80,6 @@ export class RQServer extends GQLServer {
       PeriodProgramResolver,
       PeriodRequirementResolver,
       PeriodPromptResolver,
-      ProgramGroupResolver,
       RequirementPromptResolver,
       RequirementPromptActionsResolver,
       RoleActionsResolver,
