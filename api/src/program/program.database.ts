@@ -33,13 +33,13 @@ export async function getPeriodWorkflowStages (filter: { workflowIds?: { periodI
     where.push(`periodId IN (${db.in(binds, filter.periodIds)})`)
   }
   if (filter.workflowKeys?.length) {
-    where.push(`workflowKey IN (${db.in(binds, filter.workflowKeys)})`)
+    where.push(`stageKey IN (${db.in(binds, filter.workflowKeys)})`)
   }
   if (filter.periodIdProgramKeys?.length) {
     where.push(`(periodId, programKey) IN (${db.in(binds, filter.periodIdProgramKeys.map(pk => [pk.periodId, pk.programKey]))})`)
   }
   if (filter.workflowIds?.length) {
-    where.push(`(periodId, programKey, workflowKey) IN (${db.in(binds, filter.workflowIds.map(wi => [wi.periodId, wi.programKey, wi.workflowKey]))})`)
+    where.push(`(periodId, programKey, stageKey) IN (${db.in(binds, filter.workflowIds.map(wi => [wi.periodId, wi.programKey, wi.workflowKey]))})`)
   }
   if (!where.length) return []
   const rows = (await tdb.getall<PeriodWorkflowRow>(`
