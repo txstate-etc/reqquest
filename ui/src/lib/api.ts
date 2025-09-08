@@ -439,6 +439,11 @@ class API extends APIBase {
             title: true,
             status: true,
             statusReason: true,
+            workflowStage: {
+              key: true,
+              title: true,
+              blocking: true
+            },
             prompts: {
               id: true,
               key: true,

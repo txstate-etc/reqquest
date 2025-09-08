@@ -29,14 +29,22 @@
   let applicantReqs: ApplicationRequirement[]
   let reviewerReqs: ApplicationRequirement[]
   let acceptanceReqs: ApplicationRequirement[]
+  let blockingWorkflow: Record<string, { title: string, requirements: ApplicationRequirement[] }> = {}
+  let nonBlockingWorkflow: Record<string, { title: string, requirements: ApplicationRequirement[] }> = {}
   $: {
     generalReqs = []
     applicantReqs = []
     reviewerReqs = []
     acceptanceReqs = []
+    blockingWorkflow = {}
+    nonBlockingWorkflow = {}
     for (const req of application.requirements) {
       if (req.type === enumRequirementType.ACCEPTANCE) acceptanceReqs.push(req)
-      else if (req.type === enumRequirementType.APPROVAL || req.type === enumRequirementType.PREAPPROVAL) reviewerReqs.push(req)
+      else if (req.workflowStage) {
+        const target = req.workflowStage.blocking ? blockingWorkflow : nonBlockingWorkflow
+        target[req.workflowStage.key] ??= { title: req.workflowStage.title, requirements: [] }
+        target[req.workflowStage.key].requirements.push(req)
+      } else if (req.type === enumRequirementType.APPROVAL || req.type === enumRequirementType.PREAPPROVAL) reviewerReqs.push(req)
       else if (req.type === enumRequirementType.QUALIFICATION || req.type === enumRequirementType.POSTQUAL) {
         if (applicantReqs.length > 0) {
           applicantReqs.push(req)
@@ -52,11 +60,15 @@
       }
     }
   }
+  $: blockingWorkflowStages = Object.entries(blockingWorkflow).map(([key, val]) => ({ key, ...val }))
+  $: nonBlockingWorkflowStages = Object.entries(nonBlockingWorkflow).map(([key, val]) => ({ key, ...val }))
   $: sections = [
     { title: 'General Questions', requirements: generalReqs },
     { title: application.title, requirements: applicantReqs },
     { title: 'Reviewer Questions', requirements: reviewerReqs },
-    { title: 'Acceptance', requirements: acceptanceReqs }
+    { title: 'Acceptance', requirements: acceptanceReqs },
+    ...blockingWorkflowStages,
+    ...nonBlockingWorkflowStages
   ].filter(s => s.requirements.length > 0 && s.requirements.some(r => r.prompts.length > 0))
 
   type PromptExtraData = Awaited<ReturnType<typeof api.getPromptData>>

@@ -1151,6 +1151,11 @@ type PeriodWorkflowStage {
   """
   blocking: Boolean!
 
+  """
+  Globally unique key for this workflow stage. Use lowercase snake_case, alphanumeric and underscore only.
+  """
+  key: String!
+
   """A human readable title for the workflow stage."""
   title: String!
 }

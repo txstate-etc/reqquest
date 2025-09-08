@@ -164,8 +164,10 @@ export class PeriodWorkflowStage {
 
   periodId: string
   programKey: string
-  key: string
   evaluationOrder?: number
+
+  @Field({ description: 'Globally unique key for this workflow stage. Use lowercase snake_case, alphanumeric and underscore only.' })
+  key: string
 
   @Field({ description: 'A human readable title for the workflow stage.' })
   title: string

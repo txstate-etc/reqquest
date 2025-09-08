@@ -500,6 +500,8 @@ export interface PeriodPrompt {
 export interface PeriodWorkflowStage {
     /** Whether this stage is blocking. If true, the application cannot be completed and shown to the applicant until all requirements in this stage are satisfied. */
     blocking: Scalars['Boolean']
+    /** Globally unique key for this workflow stage. Use lowercase snake_case, alphanumeric and underscore only. */
+    key: Scalars['String']
     /** A human readable title for the workflow stage. */
     title: Scalars['String']
     __typename: 'PeriodWorkflowStage'
@@ -1233,6 +1235,8 @@ export interface PeriodUpdate {archiveDate?: (Scalars['DateTime'] | null),closeD
 export interface PeriodWorkflowStageGenqlSelection{
     /** Whether this stage is blocking. If true, the application cannot be completed and shown to the applicant until all requirements in this stage are satisfied. */
     blocking?: boolean | number
+    /** Globally unique key for this workflow stage. Use lowercase snake_case, alphanumeric and underscore only. */
+    key?: boolean | number
     /** A human readable title for the workflow stage. */
     title?: boolean | number
     __typename?: boolean | number
