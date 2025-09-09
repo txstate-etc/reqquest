@@ -1,0 +1,17 @@
+FROM node:24-alpine
+
+WORKDIR /usr/app
+COPY ui/package.json ./
+COPY ui/package-lock.json ./
+COPY ui/svelte.config.js ./
+COPY ui/tailwind.config.js ./
+COPY ui/postcss.config.js ./
+COPY ui/tsconfig.json ./
+COPY ui/vite.config.ts ./
+RUN npm ci
+COPY ui/src src
+COPY ui/static static
+RUN rm -f src/local/*
+COPY simple/ui/src/local/. src/local/
+
+CMD ["npm", "run", "dev"]

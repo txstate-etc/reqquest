@@ -1,0 +1,14 @@
+FROM node:24-alpine
+WORKDIR /usr/app/api
+COPY api/package.json api/package-lock.json ./
+RUN npm ci
+COPY api/tsconfig.json ./
+COPY api/src src
+WORKDIR /usr/app/simple/api
+COPY simple/api/package.json ./
+COPY simple/api/package-lock.json ./
+RUN npm ci
+COPY simple/api/tsconfig.json ./
+COPY simple/api/src src
+
+CMD [ "npm", "run", "start:nodemon" ]
