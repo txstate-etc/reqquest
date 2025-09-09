@@ -4,11 +4,11 @@ COPY api/package.json api/package-lock.json ./
 RUN npm ci
 COPY api/tsconfig.json ./
 COPY api/src src
-WORKDIR /usr/app/simple/api
-COPY simple/api/package.json ./
-COPY simple/api/package-lock.json ./
+WORKDIR /usr/app/demos/simple/api
+COPY demos/simple/api/package.json ./
+COPY demos/simple/api/package-lock.json ./
 RUN npm ci
-COPY simple/api/tsconfig.json ./
-COPY simple/api/src src
+COPY demos/simple/api/tsconfig.json ./
+COPY demos/simple/api/src src
 
 CMD [ "npm", "run", "start:nodemon" ]

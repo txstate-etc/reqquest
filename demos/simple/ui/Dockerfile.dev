@@ -12,6 +12,6 @@ RUN npm ci
 COPY ui/src src
 COPY ui/static static
 RUN rm -f src/local/*
-COPY simple/ui/src/local/. src/local/
+COPY demos/simple/ui/src/local/. src/local/
 
 CMD ["npm", "run", "dev"]
