@@ -17,6 +17,7 @@ export const accessMigrations: DatabaseMigration[] = [{
     await db.execute(`CREATE TABLE IF NOT EXISTS accessRoleGroups (
       roleId INT UNSIGNED NOT NULL,
       groupName VARCHAR(128) NOT NULL,
+      dateAdded DATETIME DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (roleId, groupName),
       INDEX (groupName),
       FOREIGN KEY (roleId) REFERENCES accessRoles(id) ON DELETE CASCADE
