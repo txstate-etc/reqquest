@@ -7,22 +7,28 @@
   import View from 'carbon-icons-svelte/lib/View.svelte'
   import { pick } from 'txstate-utils'
   import { invalidate } from '$app/navigation'
-  import { api, type AccessRoleInput } from '$lib'
+  import { api, type AccessRole, type AccessRoleGroup, type AccessRoleInput } from '$lib'
   import type { PageData } from './$types'
 
   export let data: PageData
   $: ({ roles, access } = data)
 
+
+  function transformToAPI (data: any): AccessRoleInput {
+    return { description: data.description, name: data.name, scope: data.scope, groups: data.groupNames }
+  }
+
+
   let createDialog = false
   let editingRole: PageData['roles'][number] | undefined
 
-  async function validate (role: AccessRoleInput) {
-    const response = await api.upsertRole(editingRole?.id, role, true)
+  async function validate (role: AccessRole) {
+    const response = await api.upsertRole(editingRole?.id, transformToAPI(role), true)
     return response.messages
   }
 
-  async function onSubmit (role: AccessRoleInput) {
-    const response = await api.upsertRole(editingRole?.id, role, false)
+  async function onSubmit (role: AccessRole) {
+    const response = await api.upsertRole(editingRole?.id, transformToAPI(role), false)
     return {
       ...response,
       data: role
@@ -66,7 +72,7 @@
   title="Roles"
   columns={[
     { id: 'role', label: 'Role', get: 'name' },
-    { id: 'groups', label: 'Groups', render: role => role.groups.join(', ') },
+    { id: 'groups', label: 'Groups', render: role => role.groupNames.join(', ') },
     { id: 'description', label: 'Description', get: 'description' }
   ]}
   rows={roles}
@@ -104,10 +110,10 @@
 />
 
 {#if createDialog}
-  <PanelFormDialog open title="Create Role" preload={editingRole ? pick(editingRole, 'name', 'description', 'groups') : undefined} submit={onSubmit} {validate} on:saved={onSaved} on:cancel={closeDialog}>
+  <PanelFormDialog open title="Create Role" preload={editingRole ? pick(editingRole, 'name', 'description', 'groupNames') : undefined} submit={onSubmit} {validate} on:saved={onSaved} on:cancel={closeDialog}>
     <FieldTextInput path="name" labelText="Role Name" required notNull />
     <FieldTextArea path="description" labelText="Description" />
-    <FieldMore path="groups" legendText="Groups" required>
+    <FieldMore path="groupNames" legendText="Groups" required>
       <FieldTextInput path="" labelText="Group Name" placeholder="Enter group name"/>
     </FieldMore>
   </PanelFormDialog>

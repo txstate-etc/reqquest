@@ -7,7 +7,8 @@ import {
   AccessUserIdentifier, AccessRoleInput, AccessControl, AccessControlGroup, controlGroups,
   AccessRoleGrantUpdate, appConfig, AccessTagCategory, AccessTag, AccessGrantTag,
   AccessRoleGrantActions, AccessRoleServiceInternal, AppRequestService, ControlGroupDefinitionProcessed,
-  TagCategoryDefinition, PeriodService, RQContext
+  TagCategoryDefinition, PeriodService, RQContext,
+  AccessRoleGroup
 } from '../internal.js'
 
 @Resolver(of => Access)
@@ -83,7 +84,7 @@ export class AccessRoleResolver {
     return appConfig.scopes ?? []
   }
 
-  @FieldResolver(returns => [String])
+  @FieldResolver(returns => [AccessRoleGroup])
   async groups (@Ctx() ctx: Context, @Root() accessRole: AccessRole) {
     return await ctx.svc(AccessRoleService).getGroupsByRoleId(accessRole.id)
   }

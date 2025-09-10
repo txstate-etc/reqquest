@@ -106,7 +106,7 @@
     <h3>Groups</h3>
     <ul>
       {#each role.groups as group}
-        <li>{group}</li>
+        <li>{group.groupName}</li>
       {/each}
     </ul>
   </div>

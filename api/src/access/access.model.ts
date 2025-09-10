@@ -1,6 +1,7 @@
 import { Context, ValidatedResponse, ValidatedResponseArgs } from '@txstate-mws/graphql-server'
 import { ObjectType, InputType, Field, ID } from 'type-graphql'
-import { AccessRoleGrantRow, AccessRoleGrantTagRow, AccessRoleRow, AccessRoleService, AccessUserIdentifierRow, AccessUserRow, ControlDefinition, JsonData, safeParse, ControlGroupDefinitionProcessed, controlGroups, TagCategoryDefinition } from '../internal.js'
+import { AccessRoleGrantRow, AccessRoleGrantTagRow, AccessRoleRow, AccessRoleService, AccessUserIdentifierRow, AccessUserRow, ControlDefinition, JsonData, safeParse, ControlGroupDefinitionProcessed, controlGroups, TagCategoryDefinition, AccessRoleGroupRow } from '../internal.js'
+import { DateTime } from 'luxon'
 
 @ObjectType()
 export class Access {}
@@ -120,6 +121,47 @@ export class AccessRoleInput {
 
   @Field(type => [String], { description: 'A list of groups this role is associated with.' })
   groups?: string[]
+}
+
+@ObjectType()
+export class AccessRoleGroupManager {
+  constructor (manager: { fullname: string, email?: string }) {
+    this.fullname = manager.fullname
+    this.email = manager.email
+  }
+
+  @Field({ description: 'The date the group was added to a role.' })
+  fullname: string
+
+  @Field({ nullable: true, description: 'The date the group was added to a role.' })
+  email?: string
+}
+
+@ObjectType()
+export class AccessRoleGroup {
+  constructor (row: AccessRoleGroupRow) {
+    this.roleId = String(row.roleId)
+    this.groupName = row.groupName
+    this.dateAdded = DateTime.fromJSDate(row.dateAdded)
+  }
+
+  @Field(type => ID)
+  roleId: string
+
+  @Field({ description: 'The name of the group. This should be unique even among all roleIds.' })
+  groupName: string
+
+  @Field({ description: 'The date the group was added to a role.' })
+  dateAdded: DateTime
+
+  // @Field({ nullable: true, description: 'List of managers or entities that manage members of group.' })
+  // managers?: AccessRoleGroupManager[]
+
+  // async load (ctx: Context) {
+  //   if (this.loadedGrants) return
+  //   this.loadedGrants = await ctx.svc(AccessRoleService).getGrantsByRoleId(this.id)
+  //   await Promise.all(this.loadedGrants.map(grant => grant.load(ctx)))
+  // }
 }
 
 @ObjectType()

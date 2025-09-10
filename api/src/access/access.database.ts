@@ -1,7 +1,8 @@
 import db from 'mysql2-async/db'
 import {
   AccessRole, AccessUser, type AccessUserFilter, AccessRoleFilter, AccessRoleGrant, ReqquestUser,
-  AccessUserIdentifier, AccessRoleInput, AccessRoleGrantCreate, AccessGrantTag
+  AccessUserIdentifier, AccessRoleInput, AccessRoleGrantCreate, AccessGrantTag,
+  AccessRoleGroup
 } from '../internal.js'
 
 export interface AccessUserRow {
@@ -27,11 +28,8 @@ export interface AccessRoleRow {
 
 export interface AccessRoleGroupRow {
   roleId: number
-  groupId: number
-}
-export interface AccessRoleGroup {
-  id: number
-  name: string
+  groupName: string
+  dateAdded: Date
 }
 
 export interface AccessRoleGrantRow {
@@ -216,17 +214,18 @@ export namespace AccessDatabase {
   }
 
   export async function getAllGroups () {
-    return await db.getvals<string>('SELECT DISTINCT groupName FROM accessRoleGroups')
+    const groups = await db.getvals<AccessRoleGroupRow>('SELECT DISTINCT roleId, groupName, dateAdded FROM accessRoleGroups')
+    return groups.map(g => new AccessRoleGroup(g))
   }
 
   export async function getGroupsByRoleIds (roleIds: string[]) {
     const params: any[] = []
-    const rows = await db.getall<{ roleId: number, groupName: string }>(`
-      SELECT arg.roleId, arg.groupName
+    const rows = await db.getall<AccessRoleGroupRow>(`
+      SELECT arg.roleId, arg.groupName, arg.dateAdded
       FROM accessRoleGroups arg
       WHERE arg.roleId IN (${db.in(params, roleIds)})
     `, params)
-    return rows.map(row => ({ key: String(row.roleId), value: row.groupName }))
+    return rows.map(g => new AccessRoleGroup(g)).map(g => ({ key: g.roleId, value: g }))
   }
 
   export async function getGroupsByUserIds (userInternalIds: number[]) {

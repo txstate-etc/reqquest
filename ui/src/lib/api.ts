@@ -1,7 +1,7 @@
 import { PUBLIC_API_BASE, PUBLIC_AUTH_REDIRECT } from '$env/static/public'
 import { APIBase } from '@txstate-mws/sveltekit-utils'
 import type { Feedback } from '@txstate-mws/svelte-forms'
-import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleInput, type AppRequestActivityFilters, type AppRequestFilter, type PeriodUpdate, type PromptVisibility } from './typed-client/index.js'
+import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleGroup, type AccessRoleInput, type AppRequestActivityFilters, type AppRequestFilter, type PeriodUpdate, type PromptVisibility } from './typed-client/index.js'
 import { DateTime } from 'luxon'
 
 class API extends APIBase {
@@ -645,14 +645,22 @@ class API extends APIBase {
         id: true,
         name: true,
         description: true,
-        groups: true,
+        groups: {
+          groupName: true,
+          dateAdded: true
+        },
         actions: {
           update: true,
           delete: true
         }
       }
     })
-    return response.roles
+    if (response.roles.length === 0) return undefined
+    const roles = response.roles
+    return roles.map(role => ({ ...role, groups: role.groups.map((group: AccessRoleGroup) => ({
+      ...group,
+      dateAdded: DateTime.fromISO(group.dateAdded)
+    })) }))
   }
 
   async getRoleDetails (roleId: string) {
@@ -663,7 +671,10 @@ class API extends APIBase {
         id: true,
         name: true,
         description: true,
-        groups: true,
+        groups: {
+          groupName: true,
+          dateAdded: true
+        },
         grants: {
           id: true,
           controlGroup: {
@@ -692,7 +703,10 @@ class API extends APIBase {
     })
     if (!response.roles.length) return undefined
     const role = response.roles[0]
-    return role
+    return { ...role, groups: role.groups.map((group: AccessRoleGroup) => ({
+      ...group,
+      dateAdded: DateTime.fromISO(group.dateAdded)
+    })) }
   }
 
   async getAuthorizationInfo () {

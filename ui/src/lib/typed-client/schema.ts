@@ -63,12 +63,18 @@ export interface AccessGrantTag {
     __typename: 'AccessGrantTag'
 }
 
+export interface AccessRoleGroup {
+    roleId: string
+    groupName: string
+    dateAdded: Scalars['DateTime']
+}
+
 export interface AccessRole {
     actions: RoleActions
     /** A description of the grant. This is not used for anything, but can be useful for admins to understand what the grant was trying to do. */
     description: (Scalars['String'] | null)
     grants: AccessRoleGrant[]
-    groups: Scalars['String'][]
+    groups: AccessRoleGroup[]
     id: Scalars['ID']
     name: Scalars['String']
     scope: (Scalars['String'] | null)
@@ -674,12 +680,20 @@ export interface AccessGrantTagGenqlSelection{
     __scalar?: boolean | number
 }
 
+export interface AccessRoleGroupGenqlSelection{
+    roleId?: boolean | number
+    groupName?: boolean | number
+    dateAdded?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
 export interface AccessRoleGenqlSelection{
     actions?: RoleActionsGenqlSelection
     /** A description of the grant. This is not used for anything, but can be useful for admins to understand what the grant was trying to do. */
     description?: boolean | number
     grants?: AccessRoleGrantGenqlSelection
-    groups?: boolean | number
+    groups?: AccessRoleGroupGenqlSelection
     id?: boolean | number
     name?: boolean | number
     scope?: boolean | number
