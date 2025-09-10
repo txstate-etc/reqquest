@@ -1,5 +1,5 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
-import { AppRequestStatusDB, PromptDefinition, promptRegistry, PromptRow } from '../internal.js'
+import { AppRequestPhase, AppRequestStatusDB, PromptDefinition, promptRegistry, PromptRow } from '../internal.js'
 
 export enum PromptVisibility {
   UNREACHABLE = 'UNREACHABLE',
@@ -57,6 +57,7 @@ export class RequirementPrompt extends Prompt {
     this.appRequestInternalId = row.appRequestId
     this.appRequestId = String(row.appRequestId)
     this.appRequestDbStatus = row.appRequestDbStatus
+    this.appRequestDbPhase = row.appRequestDbPhase
     this.periodId = String(row.periodId)
     this.userInternalId = row.userId
     this.answered = !!row.answered
@@ -89,6 +90,7 @@ export class RequirementPrompt extends Prompt {
   programKey: string
   periodId: string
   appRequestDbStatus: AppRequestStatusDB
+  appRequestDbPhase: AppRequestPhase
 }
 
 @ObjectType()

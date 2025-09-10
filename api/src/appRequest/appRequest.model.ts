@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon'
 import { Field, ID, InputType, Int, ObjectType, registerEnumType } from 'type-graphql'
-import { AppRequestActivityRow, AppRequestRow, AppRequestStatusDB, JsonData, PromptTagDefinition } from '../internal.js'
+import { AppRequestActivityRow, AppRequestPhase, AppRequestRow, AppRequestStatusDB, JsonData, PromptTagDefinition } from '../internal.js'
 import { ValidatedResponse } from '@txstate-mws/graphql-server'
 
 export enum AppRequestStatus {
@@ -50,6 +50,7 @@ export class AppRequest {
     this.internalId = row.id
     this.dbStatus = row.status
     this.status = row.computedStatus
+    this.phase = row.phase
     this.createdAt = DateTime.fromJSDate(row.createdAt)
     this.updatedAt = DateTime.fromJSDate(row.updatedAt)
     this.closedAt = row.closedAt ? DateTime.fromJSDate(row.closedAt) : undefined
@@ -84,6 +85,7 @@ export class AppRequest {
   periodArchivesAt?: DateTime
   periodOpensAt: DateTime
   dbStatus: AppRequestStatusDB
+  phase: AppRequestPhase
   internalId: number
   userInternalId: number
   periodId: string

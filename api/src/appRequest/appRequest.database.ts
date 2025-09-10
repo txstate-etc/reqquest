@@ -12,6 +12,17 @@ import { ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest
  * but some applications will be INELIGIBLE while others are APPROVED or NOT_APPROVED.
  */
 export enum AppRequestStatusDB {
+  OPEN = 'OPEN',
+  CLOSED = 'CLOSED',
+  // The request has been cancelled.
+  CANCELLED = 'CANCELLED',
+  // The request was withdrawn after submission. The applicant may re-open but
+  // the request should go back to SUBMITTED - the applicant may not
+  // make edits unless the reviewer sends it back to STARTED.
+  WITHDRAWN = 'WITHDRAWN'
+}
+
+export enum AppRequestPhase {
   // The request has been started but not yet submitted.
   STARTED = 'STARTED',
   // The request has been submitted for review. Reviewers and blocking-workflow auditors
@@ -24,27 +35,15 @@ export enum AppRequestStatusDB {
   // its non-blocking workflow. If there is no non-blocking workflow, the applications should
   // be marked complete and this status should move to CLOSED.
   WORKFLOW_NONBLOCKING = 'WORKFLOW_NONBLOCKING',
-  // The request has been closed.
-  CLOSED = 'CLOSED',
-  // The request has been cancelled.
-  CANCELLED = 'CANCELLED',
-  // The request was withdrawn after submission. The applicant may re-open but
-  // the request should go back to SUBMITTED - the applicant may not
-  // make edits unless the reviewer sends it back to STARTED.
-  WITHDRAWN = 'WITHDRAWN'
+  COMPLETE = 'COMPLETE'
 }
-
-export const closedStatuses = new Set<AppRequestStatusDB>([
-  AppRequestStatusDB.CANCELLED,
-  AppRequestStatusDB.CLOSED,
-  AppRequestStatusDB.WITHDRAWN
-])
 
 export interface AppRequestRow {
   id: number
   periodId: number
   userId: number
   status: AppRequestStatusDB
+  phase: AppRequestPhase
   computedStatus: AppRequestStatus
   createdAt: Date
   updatedAt: Date
@@ -169,7 +168,7 @@ function processFilters (filter?: AppRequestFilter) {
 export async function getAppRequests (filter?: AppRequestFilter, tdb: Queryable = db) {
   const { joins, where, binds } = processFilters(filter)
   const rows = await tdb.getall<AppRequestRow>(`
-    SELECT DISTINCT ar.id, ar.periodId, ar.userId, ar.status, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt, ar.dataVersion,
+    SELECT DISTINCT ar.id, ar.periodId, ar.userId, ar.status, ar.phase, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt, ar.dataVersion,
       p.closeDate AS periodClosesAt, p.archiveDate AS periodArchivesAt, p.openDate AS periodOpensAt
     FROM app_requests ar
     INNER JOIN periods p ON p.id = ar.periodId
@@ -228,38 +227,39 @@ export async function updateAppRequestData (appRequestId: number, data: AppReque
 }
 
 export async function submitAppRequest (appRequestId: number) {
-  await db.update('UPDATE app_requests SET status = ?, submittedData = data, submittedAt=NOW() WHERE id = ?', [AppRequestStatusDB.SUBMITTED, appRequestId])
+  await db.update('UPDATE app_requests SET phase = ?, submittedData = data, submittedAt=NOW() WHERE id = ?', [AppRequestPhase.SUBMITTED, appRequestId])
   await evaluateAppRequest(appRequestId)
 }
 
 export async function returnAppRequest (appRequestId: number, dataVersion?: number) {
   await appRequestTransaction(appRequestId, async db => {
     const where = dataVersion != null ? ' AND dataVersion = ?' : ''
-    const binds: any[] = [AppRequestStatusDB.STARTED, appRequestId]
+    const binds: any[] = [AppRequestPhase.STARTED, appRequestId]
     if (dataVersion != null) binds.push(dataVersion)
-    const updated = await db.update('UPDATE app_requests SET status = ?, submittedAt = NULL WHERE id = ?' + where, binds)
+    const updated = await db.update('UPDATE app_requests SET phase = ?, submittedAt = NULL WHERE id = ?' + where, binds)
     if (!updated) throw new Error('Someone else is working on the same request and made changes since you loaded. Reload the page to try again.')
     await evaluateAppRequest(appRequestId, db)
   })
 }
 
 export async function restoreAppRequest (appRequestId: number) {
-  await db.update('UPDATE app_requests SET status = ?, data = submittedData WHERE id = ?', [AppRequestStatusDB.SUBMITTED, appRequestId])
+  await db.update('UPDATE app_requests SET phase = ?, data = submittedData WHERE id = ?', [AppRequestPhase.SUBMITTED, appRequestId])
   await evaluateAppRequest(appRequestId)
 }
 
 export async function closeAppRequest (appRequestId: number) {
-  await db.update('UPDATE app_requests SET status = ?, closedAt = NOW() WHERE id = ?', [
-    AppRequestStatusDB.CLOSED, appRequestId
+  await db.update('UPDATE app_requests SET status = CASE WHEN phase=? THEN ? ELSE ? END, closedAt = NOW() WHERE id = ?', [
+    AppRequestPhase.STARTED, AppRequestStatusDB.CANCELLED, AppRequestStatusDB.CLOSED, appRequestId
   ])
 }
 
 export async function cancelAppRequest (appRequestId: number, existingDataVersion?: number) {
   return await db.transaction(async db => {
-    const row = await db.getrow<Pick<AppRequestRow, 'status' | 'dataVersion'>>('SELECT status, dataVersion FROM app_requests WHERE id = ? FOR UPDATE', [appRequestId])
+    const row = await db.getrow<Pick<AppRequestRow, 'phase' | 'status' | 'dataVersion'>>('SELECT phase, status, dataVersion FROM app_requests WHERE id = ? FOR UPDATE', [appRequestId])
     if (!row) throw new Error(`AppRequest ${appRequestId} not found`)
+    if (row.status !== AppRequestStatusDB.OPEN) throw new Error(`AppRequest ${appRequestId} is already closed and cannot be cancelled.`)
     if (existingDataVersion && row.dataVersion !== existingDataVersion) throw new Error(`AppRequest ${appRequestId} has been modified by another user. Reload the page and try cancelling again if it is still eligible.`)
-    const withdrawn = row.status === AppRequestStatusDB.SUBMITTED
+    const withdrawn = row.phase !== AppRequestPhase.STARTED
     await db.update('UPDATE app_requests SET status = ?, computedStatus = ? WHERE id = ?', [
       withdrawn ? AppRequestStatusDB.WITHDRAWN : AppRequestStatusDB.CANCELLED,
       withdrawn ? AppRequestStatus.WITHDRAWN : AppRequestStatus.CANCELLED,
@@ -273,36 +273,35 @@ export async function reopenAppRequest (appRequestId: number) {
   return await db.transaction(async db => {
     const dbStatus = await db.getval<AppRequestStatusDB>('SELECT status FROM app_requests WHERE id = ? FOR UPDATE', [appRequestId])
     if (!dbStatus) throw new Error(`AppRequest ${appRequestId} not found`)
-    if (![AppRequestStatusDB.CANCELLED, AppRequestStatusDB.WITHDRAWN, AppRequestStatusDB.CLOSED].includes(dbStatus)) throw new Error(`AppRequest ${appRequestId} is already open.`)
-    const newStatus = dbStatus === AppRequestStatusDB.CANCELLED
-      ? AppRequestStatusDB.STARTED
-      : AppRequestStatusDB.SUBMITTED
-    await db.update('UPDATE app_requests SET status = ?, closedAt = NULL WHERE id = ?', [newStatus, appRequestId])
+    if (dbStatus === AppRequestStatusDB.OPEN) throw new Error(`AppRequest ${appRequestId} is already open.`)
+    await db.update('UPDATE app_requests SET status = ?, closedAt = NULL WHERE id = ?', [AppRequestStatusDB.OPEN, appRequestId])
     await evaluateAppRequest(appRequestId, db)
   })
 }
 
 export async function acceptOffer (appRequestId: number, existingDataVersion?: number) {
   return await appRequestTransaction(appRequestId, async db => {
-    const row = await db.getrow<{ computedStatus: AppRequestStatus, dataVersion: number, periodId: number }>('SELECT computedStatus, dataVersion, periodId FROM app_requests WHERE id = ?', [appRequestId])
+    const row = await db.getrow<{ status: AppRequestStatusDB, computedStatus: AppRequestStatus, dataVersion: number, periodId: number }>('SELECT status, computedStatus, dataVersion, periodId FROM app_requests WHERE id = ?', [appRequestId])
     if (!row) throw new Error(`AppRequest ${appRequestId} not found`)
     if (existingDataVersion && row.dataVersion !== existingDataVersion) throw new Error('Someone else is working on the same request and made changes since you loaded. Reload the page to try again.')
     if (row.computedStatus !== AppRequestStatus.READY_TO_ACCEPT) throw new Error(`AppRequest ${appRequestId} is not ready to accept.`)
     const nonblockingWorkflows = await db.getvals<string>('SELECT DISTINCT stageKey FROM period_workflow_stages WHERE periodId = ? AND blocking = 0', [row.periodId])
-    let newStatus: AppRequestStatusDB
+    let newPhase: AppRequestPhase
+    let newStatus = row.status
     if (nonblockingWorkflows.length) {
-      newStatus = AppRequestStatusDB.WORKFLOW_NONBLOCKING
+      newPhase = AppRequestPhase.WORKFLOW_NONBLOCKING
     } else {
+      newPhase = AppRequestPhase.COMPLETE
       newStatus = AppRequestStatusDB.CLOSED
       await db.update('UPDATE applications SET computedPhase = ? WHERE appRequestId = ?', [ApplicationPhase.COMPLETE, appRequestId])
     }
-    await db.update('UPDATE app_requests SET status = ?, computedStatus = ? WHERE id = ?', [newStatus, AppRequestStatus.ACCEPTED, appRequestId])
+    await db.update('UPDATE app_requests SET phase = ?, status = ?, computedStatus = ? WHERE id = ?', [newPhase, newStatus, AppRequestStatus.ACCEPTED, appRequestId])
     await evaluateAppRequest(appRequestId, db)
   })
 }
 
 export async function appRequestMakeOffer (appRequestId: number) {
-  await db.execute('UPDATE app_requests SET status = ? WHERE id = ?', [AppRequestStatusDB.ACCEPTANCE, appRequestId])
+  await db.execute('UPDATE app_requests SET phase = ? WHERE id = ?', [AppRequestPhase.ACCEPTANCE, appRequestId])
   await evaluateAppRequest(appRequestId)
 }
 
@@ -392,7 +391,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
     if (!appRequest) throw new Error(`AppRequest ${appRequestInternalId} not found`)
 
     // if the appRequest is closed, we don't need to evaluate
-    if ([AppRequestStatusDB.CLOSED, AppRequestStatusDB.CANCELLED, AppRequestStatusDB.WITHDRAWN].includes(appRequest.dbStatus)) return
+    if (appRequest.dbStatus !== AppRequestStatusDB.OPEN) return
 
     const data = (await getAppRequestData([appRequest.internalId], db))[0].data
 
@@ -430,9 +429,9 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
         previousWorkflowStages.push(stage)
       }
 
-      const phase = appRequest.dbStatus === AppRequestStatusDB.STARTED
+      const phase = appRequest.phase === AppRequestPhase.STARTED
         ? 'applicant'
-        : appRequest.dbStatus === AppRequestStatusDB.ACCEPTANCE
+        : appRequest.phase === AppRequestPhase.ACCEPTANCE
           ? 'acceptance'
           : application.workflowStageKey
             ? activeWorkflowStage?.blocking
@@ -573,9 +572,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
     }
 
     // determine appRequest status based on the application statuses
-    if (appRequest.dbStatus === AppRequestStatusDB.WITHDRAWN) appRequest.status = AppRequestStatus.WITHDRAWN
-    else if (appRequest.dbStatus === AppRequestStatusDB.CANCELLED) appRequest.status = AppRequestStatus.CANCELLED
-    else if (applications.every(a => a.status === ApplicationStatus.INELIGIBLE || a.status === ApplicationStatus.REJECTED)) {
+    if (applications.every(a => a.status === ApplicationStatus.INELIGIBLE || a.status === ApplicationStatus.REJECTED)) {
       if (applications.some(a => a.ineligiblePhase === IneligiblePhases.ACCEPTANCE)) appRequest.status = AppRequestStatus.NOT_ACCEPTED
       else if (applications.some(a => a.ineligiblePhase === IneligiblePhases.APPROVAL || a.ineligiblePhase === IneligiblePhases.WORKFLOW)) appRequest.status = AppRequestStatus.NOT_APPROVED
       else appRequest.status = AppRequestStatus.DISQUALIFIED

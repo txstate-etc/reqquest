@@ -6,9 +6,10 @@ import {
   promptRegistry, getRequirementPrompts, ValidatedAppRequestResponse,
   getPeriodPrompts, ConfigurationService, PeriodPrompt, requirementRegistry,
   AppRequestStatusDB, AppRequest, setRequirementPromptValid, updateAppRequestData,
-  closedStatuses, getAppRequests, getAppRequestData, appRequestTransaction,
+  getAppRequests, getAppRequestData, appRequestTransaction,
   recordAppRequestActivity, appConfig, AppRequestData, AppRequestStatus, ApplicationPhase,
-  ApplicationService, setRequirementPromptsInvalid, AppRequestServiceInternal
+  ApplicationService, setRequirementPromptsInvalid, AppRequestServiceInternal,
+  AppRequestPhase
 } from '../internal.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
@@ -108,17 +109,17 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
   }
 
   mayUpdate (prompt: RequirementPrompt): boolean {
-    if (closedStatuses.has(prompt.appRequestDbStatus)) return false
+    if (prompt.appRequestDbStatus !== AppRequestStatusDB.OPEN) return false
     if (this.isOwn(prompt)) {
       if (
-        [AppRequestStatusDB.STARTED, AppRequestStatusDB.ACCEPTANCE].includes(prompt.appRequestDbStatus)
+        [AppRequestPhase.STARTED, AppRequestPhase.ACCEPTANCE].includes(prompt.appRequestDbPhase)
         && promptRegistry.isUserPrompt(prompt.key)
       ) {
         return true
       }
       if (!this.hasControl('AppRequest', 'review_own', prompt.appRequestTags)) return false
     }
-    if (prompt.appRequestDbStatus === AppRequestStatusDB.SUBMITTED) {
+    if (prompt.appRequestDbPhase === AppRequestPhase.SUBMITTED) {
       return this.hasControl('PromptAnswer', 'update', { ...prompt.authorizationKeys, ...prompt.appRequestTags })
     }
     return this.hasControl('PromptAnswer', 'update_anytime', { ...prompt.authorizationKeys, ...prompt.appRequestTags })

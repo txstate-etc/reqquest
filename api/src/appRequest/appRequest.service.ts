@@ -5,11 +5,12 @@ import { isBlank, someAsync } from 'txstate-utils'
 import {
   AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData,
   submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse,
-  AppRequestStatus, appRequestMakeOffer, getAppRequestTags, closedStatuses, ApplicationRequirementService,
+  AppRequestStatus, appRequestMakeOffer, getAppRequestTags, ApplicationRequirementService,
   recordAppRequestActivity, addAppRequestNote, closeAppRequest, getAppRequestActivity,
   AppRequestActivityFilters, PeriodService, createAppRequest, Period, appConfig, AccessUser, ReqquestUser,
   AccessDatabase, cancelAppRequest, reopenAppRequest, returnAppRequest, acceptOffer, ApplicationPhase,
-  ApplicationService, RequirementPromptService
+  ApplicationService, RequirementPromptService,
+  AppRequestPhase
 } from '../internal.js'
 
 const appReqByIdLoader = new PrimaryKeyLoader({
@@ -125,8 +126,8 @@ export class AppRequestService extends AuthService<AppRequest> {
   }
 
   async getStatusReason (appRequest: AppRequest) {
-    if (appRequest.dbStatus === AppRequestStatusDB.STARTED) {
-      // TODO: implement different logic for different statuses
+    if (appRequest.phase === AppRequestPhase.STARTED) {
+      // TODO: implement different logic for different phases
     }
     // fallback to the first requirement with a status reason
     const requirements = await this.svc(ApplicationRequirementService).findByAppRequest(appRequest)
@@ -153,7 +154,7 @@ export class AppRequestService extends AuthService<AppRequest> {
   }
 
   isClosed (appRequest: AppRequest) {
-    return closedStatuses.has(appRequest.dbStatus)
+    return appRequest.dbStatus !== AppRequestStatusDB.OPEN
   }
 
   mayView (appRequest: AppRequest) {
@@ -239,8 +240,8 @@ export class AppRequestService extends AuthService<AppRequest> {
 
   mayCancel (appRequest: AppRequest) {
     if (!this.isOwn(appRequest)) return false
-    if (appRequest.dbStatus === AppRequestStatusDB.STARTED) return this.hasControl('AppRequestOwn', 'cancel')
-    if (appRequest.dbStatus === AppRequestStatusDB.SUBMITTED) return this.hasControl('AppRequestOwnReview', 'withdraw', appRequest.tags)
+    if (appRequest.phase === AppRequestPhase.STARTED) return this.hasControl('AppRequestOwn', 'cancel')
+    if (appRequest.phase === AppRequestPhase.SUBMITTED) return this.hasControl('AppRequestOwnReview', 'withdraw', appRequest.tags)
     return false
   }
 
@@ -265,13 +266,13 @@ export class AppRequestService extends AuthService<AppRequest> {
   }
 
   mayReturn (appRequest: AppRequest) {
-    if (appRequest.dbStatus !== AppRequestStatusDB.SUBMITTED) return false
+    if (appRequest.phase !== AppRequestPhase.SUBMITTED) return false
     if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false
     return this.hasControl('AppRequest', 'return', appRequest.tags)
   }
 
   mayOffer (appRequest: AppRequest) {
-    if (appRequest.dbStatus !== AppRequestStatusDB.SUBMITTED) return false
+    if (appRequest.phase !== AppRequestPhase.SUBMITTED) return false
     if (appRequest.status !== AppRequestStatus.REVIEW_COMPLETE) return false
     if (!this.isAcceptancePeriod(appRequest.periodId)) return false
     if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false

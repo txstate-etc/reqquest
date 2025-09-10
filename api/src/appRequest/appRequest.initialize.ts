@@ -1,5 +1,5 @@
 import { Queryable } from 'mysql2-async'
-import { AppRequestStatusDB, DatabaseMigration } from '../internal.js'
+import { AppRequestPhase, AppRequestStatusDB, DatabaseMigration } from '../internal.js'
 
 export const appRequestMigrations: DatabaseMigration[] = [
   {
@@ -10,7 +10,8 @@ export const appRequestMigrations: DatabaseMigration[] = [
           id INT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
           periodId INT UNSIGNED NOT NULL,
           userId INT UNSIGNED NOT NULL,
-          status VARCHAR(255) NOT NULL DEFAULT '${AppRequestStatusDB.STARTED}',
+          status VARCHAR(255) NOT NULL DEFAULT '${AppRequestStatusDB.OPEN}',
+          phase VARCHAR(255) NOT NULL DEFAULT '${AppRequestPhase.STARTED}',
           computedStatus VARCHAR(255) NOT NULL DEFAULT 'PREQUAL',
           createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
