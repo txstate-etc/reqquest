@@ -5,7 +5,7 @@ services:
         condition: service_healthy
     build:
       context: .
-      dockerfile: ${API_INSTANCE}/Dockerfile.dev
+      dockerfile: ${API_INSTANCE:-testserver}/Dockerfile.dev
     ports:
       - 81:80
       - 9229:9229
@@ -21,11 +21,11 @@ services:
     volumes:
       - ./api/src:/usr/app/api/src
       - ./api/dist:/usr/app/api/dist
-      - ./${API_INSTANCE}/src:/usr/app/${API_INSTANCE}/src
+      - ./${API_INSTANCE:-testserver}/src:/usr/app/${API_INSTANCE:-testserver}/src
   ui:
     build:
       context: .
-      dockerfile: ${UI_INSTANCE}/Dockerfile.dev
+      dockerfile: ${UI_INSTANCE:-ui}/Dockerfile.dev
     ports:
       - 80:80
     environment:
@@ -33,7 +33,7 @@ services:
       PUBLIC_AUTH_REDIRECT: http://localhost:3001/login?clientId=reqquest&returnUrl=http%3A%2F%2Flocalhost
       PUBLIC_ENVIRONMENT: 'DEV'
     volumes:
-      - .${UI_INSTANCE}/src:/usr/app/${UI_INSTANCE}/src
+      - .${UI_INSTANCE:-ui}/src:/usr/app/${UI_INSTANCE:-ui}/src
       - ./ui/.svelte-kit/types:/usr/app/.svelte-kit/types
       - ./ui/svelte.config.js:/usr/app/svelte.config.js
       - ./ui/vite.config.ts:/usr/app/vite.config.ts
