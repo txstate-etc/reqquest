@@ -7,7 +7,7 @@ COPY api/src src
 WORKDIR /usr/app/demos/simple/api
 COPY demos/simple/api/package.json ./
 COPY demos/simple/api/package-lock.json ./
-RUN npm ci
+RUN npm i
 COPY demos/simple/api/tsconfig.json ./
 COPY demos/simple/api/src src
 
