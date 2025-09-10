@@ -16,6 +16,7 @@ export const adopt_a_cat_program: ProgramDefinition = {
   key: 'adopt_a_cat_program',
   title: 'Adopt a Cat',
   requirementKeys: [
+    'which_state_req',
     'have_a_cat_tower_req',
     'not_allergic_to_tuna_req',
     'other_cats_applicant_req',

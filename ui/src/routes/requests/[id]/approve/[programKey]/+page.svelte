@@ -1,10 +1,13 @@
 <script lang="ts">
   import { Card, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { Form } from '@txstate-mws/svelte-forms'
-  import { Button } from 'carbon-components-svelte'
+  import { Button, Tooltip } from 'carbon-components-svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
+  import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
+  import WarningAltFilled from 'carbon-icons-svelte/lib/WarningAltFilled.svelte'
+  import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import { invalidate } from '$app/navigation'
-  import { api, enumRequirementType } from '$lib'
+  import { api, enumPromptVisibility, enumRequirementStatus, enumRequirementType } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../../local'
   import ApproveLayout from '../ApproveLayout.svelte'
@@ -19,6 +22,11 @@
   $: application = appRequest.applications.find(a => a.programKey === programKey)!
 
   type ApplicationRequirement = (typeof appRequest)['applications'][number]['requirements'][number]
+  const PromptIndicators = {
+    AUTOMATION: 1,
+    WARNING: 2,
+    DISQUALIFYING: 3
+  } as const
 
   // here we split the screen into sections based on the requirement type, but we
   // keep everything in order, so if a reviewer requirement appears between two
@@ -29,8 +37,13 @@
   let applicantReqs: ApplicationRequirement[]
   let reviewerReqs: ApplicationRequirement[]
   let acceptanceReqs: ApplicationRequirement[]
-  let blockingWorkflow: Record<string, { title: string, requirements: ApplicationRequirement[] }> = {}
-  let nonBlockingWorkflow: Record<string, { title: string, requirements: ApplicationRequirement[] }> = {}
+  let blockingWorkflow: Record<string, { title: string, requirements: ApplicationRequirement[] }>
+  let nonBlockingWorkflow: Record<string, { title: string, requirements: ApplicationRequirement[] }>
+  // it's not enough to show an indicator for the prompt's requirement status; since we only show the prompt
+  // once, we need to show the highest indicator for any requirement that uses this prompt. So if two requirements
+  // share a prompt and one requirement is disqualifying while the other is just a warning, we need to show the
+  // disqualifying indicator.
+  let promptIndicator: Record<string, { indicator: typeof PromptIndicators[keyof typeof PromptIndicators], reason: string | undefined } | undefined>
   $: {
     generalReqs = []
     applicantReqs = []
@@ -38,7 +51,18 @@
     acceptanceReqs = []
     blockingWorkflow = {}
     nonBlockingWorkflow = {}
+    promptIndicator = {}
     for (const req of application.requirements) {
+      for (const prompt of req.prompts) {
+        if (prompt.visibility === enumPromptVisibility.UNREACHABLE) continue
+        if (req.status === enumRequirementStatus.DISQUALIFYING && (promptIndicator[prompt.key]?.indicator ?? 0) < PromptIndicators.DISQUALIFYING) {
+          promptIndicator[prompt.key] = { indicator: PromptIndicators.DISQUALIFYING, reason: req.statusReason ?? undefined }
+        } else if (req.status === enumRequirementStatus.WARNING && (promptIndicator[prompt.key]?.indicator ?? 0) < PromptIndicators.WARNING) {
+          promptIndicator[prompt.key] = { indicator: PromptIndicators.WARNING, reason: req.statusReason ?? undefined }
+        } else if (uiRegistry.getPrompt(prompt.key).automation && (promptIndicator[prompt.key]?.indicator ?? 0) < PromptIndicators.AUTOMATION) {
+          promptIndicator[prompt.key] = { indicator: PromptIndicators.AUTOMATION, reason: 'This answer will be filled in by an automation.' }
+        }
+      }
       if (req.type === enumRequirementType.ACCEPTANCE) acceptanceReqs.push(req)
       else if (req.workflowStage) {
         const target = req.workflowStage.blocking ? blockingWorkflow : nonBlockingWorkflow
@@ -134,13 +158,34 @@
         {#each section.requirements as requirement (requirement.id)}
           {#each requirement.prompts as prompt (prompt.id)}
             {@const def = uiRegistry.getPrompt(prompt.key)}
-            {@const isReviewerQuestion = requirement.type === enumRequirementType.APPROVAL}
+            {@const isReviewerQuestion = requirement.type === enumRequirementType.APPROVAL && !def.automation}
+            {@const isAutomation = !!def.automation}
             {@const editMode = isReviewerQuestion && prompt.actions.update && def.formMode !== 'full'}
             {@const small = editMode && def.formMode !== 'full' ? def.formMode !== 'large' : def.displayMode !== 'large'}
             {@const large = editMode && def.formMode !== 'full' ? def.formMode === 'large' : def.displayMode === 'large'}
             {@const dtid = `dt-title-${prompt.id}`}
-            <dt class:small class:large class:isReviewerQuestion><div id={dtid}>{prompt.title}</div></dt>
-            <dd class:small class:large class:isReviewerQuestion role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
+            <dt class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation}>
+              {#if promptIndicator[prompt.key]?.indicator}
+                <div class="indicator-tooltip">
+                  <Tooltip align="start" direction="bottom">
+                    <svelte:fragment slot="icon">
+                      {#if promptIndicator[prompt.key]?.indicator === PromptIndicators.AUTOMATION}
+                        <MachineLearning size={20} />
+                      {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.WARNING}
+                        <WarningAltFilled size={20} class="warning-icon" />
+                      {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.DISQUALIFYING}
+                        <WarningFilled size={20} class="disqualifying-icon" />
+                      {/if}
+                    </svelte:fragment>
+                    {promptIndicator[prompt.key]?.reason}
+                  </Tooltip>
+                </div>
+              {/if}
+              <div id={dtid}>
+                {prompt.title}
+              </div>
+            </dt>
+            <dd class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
               {#if editMode}
                 <Form preload={appRequest.data[prompt.key]} submit={onPromptSubmit(prompt.id)} validate={onPromptValidate(prompt.id)} autoSave on:autosaved={onPromptSaved} let:data>
                   <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} fetched={prompt.fetchedData} configData={prompt.configurationRelatedData} />
@@ -186,6 +231,7 @@
     grid-template-columns: auto 1fr;
     align-items: stretch;
     gap: 0;
+    margin: -16px;
   }
   .prompts dt, .prompts dd {
     position: relative;
@@ -204,6 +250,8 @@
   .prompts dt {
     display: flex;
     align-items: center;
+    gap: 4px;
+    padding-left: 32px;
   }
   .prompts dd :global(.bx--btn.prompt-edit) {
     position: absolute;
@@ -218,5 +266,21 @@
   }
   .card dt {
     font-weight: bold;
+  }
+  .prompts dt .indicator-tooltip {
+    display: inline-block;
+    margin-left: -24px;
+  }
+  .prompts dt .indicator-tooltip :global(> div) {
+    line-height: 0;
+  }
+  .prompts dt .indicator-tooltip :global(> div .bx--tooltip--shown) {
+    line-height: 1.2;
+  }
+  .prompts dt :global(.warning-icon) {
+    fill: var(--cds-inverse-support-03, #f1c21b);
+  }
+  .prompts dt :global(.disqualifying-icon) {
+    fill: var(--cds-support-01, #da1e28);
   }
 </style>
