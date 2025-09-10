@@ -7,8 +7,8 @@ services:
       context: .
       dockerfile: ${API_INSTANCE:-testserver}/Dockerfile.dev
     ports:
-      - 81:80
-      - 9229:9229
+      - 127.0.0.1:81:80
+      - 127.0.0.1:9229:9229
     environment:
       TZ: America/Chicago
       NODE_ENV: development
@@ -27,7 +27,7 @@ services:
       context: .
       dockerfile: ${UI_INSTANCE:-ui}/Dockerfile.dev
     ports:
-      - 80:80
+      - 127.0.0.1:80:80
     environment:
       PUBLIC_API_BASE: http://localhost:81
       PUBLIC_AUTH_REDIRECT: http://localhost:3001/login?clientId=reqquest&returnUrl=http%3A%2F%2Flocalhost
@@ -41,11 +41,11 @@ services:
     image: registry.its.txstate.edu/unified-auth-stub:dev
     attach: false
     ports:
-      - 3001:80
+      - 127.0.0.1:3001:80
   mysql:
     image: percona/percona-server:8.4
     ports:
-      - 3306:3306
+      - 127.0.0.1:3306:3306
     environment:
       MYSQL_ROOT_PASSWORD: secret
       MYSQL_DATABASE: default_database
