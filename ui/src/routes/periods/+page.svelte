@@ -1,14 +1,16 @@
 <script lang="ts">
-  import { ColumnList, FieldDateTime, FieldTextInput, PanelFormDialog } from '@txstate-mws/carbon-svelte'
-  import { Modal } from 'carbon-components-svelte'
+  import { ColumnList, FieldDateTime, FieldSelect, FieldTextInput, Panel, PanelFormDialog, TagSet } from '@txstate-mws/carbon-svelte'
+  import { InlineNotification, Modal, Tag } from 'carbon-components-svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import SettingsEdit from 'carbon-icons-svelte/lib/SettingsEdit.svelte'
+  import Add from 'carbon-icons-svelte/lib/Add.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
   import { isBlank } from 'txstate-utils'
   import { invalidate } from '$app/navigation'
   import { base } from '$app/paths'
   import { api, type PeriodUpdate } from '$lib'
   import type { PageData } from './$types'
+    import { DateTime } from 'luxon'
 
   type Period = PageData['periods'][number]
 
@@ -50,6 +52,24 @@
     editingPeriod = undefined
   }
 
+  function displayPhase (period: Period) {
+    console.log(period)
+    let { openDate: oDate, closeDate: cDate, archiveDate: aDate } = period
+    const now = Date.now()
+    const openDate = DateTime.now().toMillis()
+
+    if (now < openDate) {
+      return [{ label: 'Start pending' }]
+    } else if (cDate) {
+      const closeDate = DateTime.fromISO(cDate).toMillis()
+      if (now < closeDate) return [{ label: 'OPEN' }]
+      else if (now > closeDate) return [{ label: 'CLOSED' }]
+      else if (aDate && now > DateTime.fromISO(aDate).toMillis()) return [{ label: 'ARCHIVED' }]
+    }
+    
+    return []
+  }
+
   async function onSaved () {
     closeDialog()
     await invalidate('api:getPeriodList')
@@ -73,33 +93,47 @@
   }
 </script>
 
-<ColumnList
+<Panel
+  title='Period'
+  actions={[
+    {
+      label: 'Add Period',
+      disabled: !access.createPeriod,
+      icon: Add,
+      onClick: () => { creatingPeriod = true; editingPeriod = undefined }
+    }
+]}>
+  <ColumnList
   title="Periods"
   columns={[
     { id: 'period', label: 'Period', get: 'name' },
+    { id: 'phase', label: 'Phase', tags: displayPhase },
     { id: 'openDate', label: 'Start Date', render: renderDate('openDate') },
     { id: 'closeDate', label: 'Close Date', render: renderDate('closeDate') },
     { id: 'archiveDate', label: 'Archive Date', render: renderDate('archiveDate') },
-    { id: 'status', label: 'Status', get: 'status' }
   ]}
   rows={periods}
-  listActions={[
-    {
-      label: 'Create Period',
-      disabled: !access.createPeriod,
-      icon: SettingsEdit,
-      onClick: () => { creatingPeriod = true; editingPeriod = undefined }
-    }
-  ]}
   actions={p => [
     { label: 'Configure', icon: SettingsEdit, href: `${base}/periods/${p.id}/configure` },
     { label: 'Edit', icon: Edit, onClick: () => { creatingPeriod = false; editingPeriod = p } },
     { label: 'Delete', icon: TrashCan, disabled: !p.actions.delete, onClick: () => openPeriodDeleteDialog(p) }
   ]}
 />
+</Panel>
 
 <PanelFormDialog open={creatingPeriod || !!editingPeriod} title={editingPeriod ? 'Edit Period' : 'Create Period'}
   preload={editingPeriod} {validate} {submit} on:saved={onSaved} on:cancel={closeDialog}>
+  <InlineNotification
+    kind='info'
+    title="Configuration Updated"
+    subtitle="You can update configurations once the new period is added."
+    lowContrast
+  />
+  <FieldSelect
+    labelText='Period configurations copied from'
+    helpText='Help Text'
+    items={periods.map(p => ({ value: p, label: p.name }))}
+  />
   <FieldTextInput path="name" labelText="Period Name" required notNull />
   <FieldTextInput path="code" labelText="Code" />
   <FieldDateTime path="openDate" labelText="Open Date" required defaultValue={new Date().toISOString()} />
