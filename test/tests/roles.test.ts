@@ -15,7 +15,11 @@ test.describe('Manage roles', () => {
             name
             scope
             description
-            groups
+            groups {
+              roleId
+              groupName
+              dateAdded
+            }
           }
           messages {
             message
@@ -24,12 +28,12 @@ test.describe('Manage roles', () => {
       }
     `
     const variables = { name, description, scope, groups }
-    const { roleCreate: { accessRole } } = await adminRequest.graphql<{ roleCreate: { accessRole: { id: number, name: string, scope: string, description: string, groups: string[] }, messages: { message: string }[] } }>(query, variables)
+    const { roleCreate: { accessRole } } = await adminRequest.graphql<{ roleCreate: { accessRole: { id: number, name: string, scope: string, description: string, groups: { roleId: string, groupName: string, date: string }[] }, messages: { message: string }[] } }>(query, variables)
     accessRoleId = accessRole.id
     expect(accessRole.name).toEqual(name)
     expect(accessRole.scope).toEqual(scope)
     expect(accessRole.description).toEqual(description)
-    expect(accessRole.groups[0]).toEqual(groups[0])
+    expect(accessRole.groups.map(group => group.groupName)[0]).toEqual(groups[0])
   })
   test('Admin - Update Applicant Parent role with three groups, one dupe, one empty', async ({ adminRequest }) => {
     name = 'Applicant Parent'
@@ -44,7 +48,11 @@ test.describe('Manage roles', () => {
             name
             scope
             description
-            groups
+            groups {
+              roleId
+              groupName
+              dateAdded
+            }
           }
           messages {
             message
@@ -72,7 +80,11 @@ test.describe('Manage roles', () => {
             name
             scope
             description
-            groups
+            groups {
+              roleId
+              groupName
+              dateAdded
+            }
           }
           messages {
             message
@@ -97,7 +109,11 @@ test.describe('Manage roles', () => {
             name
             scope
             description
-            groups
+            groups {
+              roleId
+              groupName
+              dateAdded
+            }
           }
           messages {
             message
@@ -122,7 +138,11 @@ test.describe('Manage roles', () => {
             name
             scope
             description
-            groups
+            groups {
+              roleId
+              groupName
+              dateAdded
+            }
           }
           messages {
             message
@@ -143,7 +163,11 @@ test.describe('Manage roles', () => {
             name
             scope
             description
-            groups
+            groups {
+              roleId
+              groupName
+              dateAdded
+            }
           }
           messages {
             message
@@ -164,7 +188,11 @@ test.describe('Manage roles', () => {
             name
             scope
             description
-            groups
+            groups {
+              roleId
+              groupName
+              dateAdded
+            }
           }
           messages {
             message
