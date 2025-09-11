@@ -15,7 +15,7 @@ import {
   RequirementPromptResolver, PeriodResolver, PeriodActionsResolver, ConfigurationResolver,
   ConfigurationActionsResolver, SnakeCaseString, SnakeCaseStringScalar, PeriodProgramActionsResolver,
   PeriodRequirementResolver, PeriodPromptResolver, initAccess, AppRequestIndexCategoryResolver,
-  AccessRoleGrantResolver, AccessGrantTagResolver, IndexCategoryResolver,
+  AccessRoleGroupResolver, AccessRoleGrantResolver, AccessGrantTagResolver, IndexCategoryResolver,
   AccessRoleGrantActionsResolver, AccessTagCategoryResolver, logMutation,
   AppRequestActivityResolver
 } from './internal.js'
@@ -57,6 +57,7 @@ export class RQServer extends GQLServer {
       AccessGrantTagResolver,
       AccessResolver,
       AccessRoleResolver,
+      AccessRoleGroupResolver,
       AccessRoleGrantActionsResolver,
       AccessRoleGrantResolver,
       AccessControlGroupResolver,

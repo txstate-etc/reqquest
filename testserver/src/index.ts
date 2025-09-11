@@ -35,7 +35,7 @@ async function main () {
         }
       },
       groups: async (groupnames: string[]) => {
-        return groupnames.map(groupname => ({ name: groupname, manager: { fullname: `${String(groupname).charAt(0).toLocaleUpperCase() + String(groupname).slice(1)} Lastname`, email: `${groupname.toLocaleLowerCase()}@txstate.edu` }, dateAdded: groupDateAdded(groupname) }))
+        return groupnames.map(groupName => ({ groupName, managers: [{ fullname: `${String(groupName).charAt(0).toLocaleUpperCase() + String(groupName).slice(1)} Lastname`, email: `${groupName.toLocaleLowerCase()}@txstate.edu` }], dateCreated: groupDateAdded(groupName) }))
       }
     },
     programGroups: [],

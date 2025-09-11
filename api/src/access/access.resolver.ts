@@ -8,8 +8,10 @@ import {
   AccessRoleGrantUpdate, appConfig, AccessTagCategory, AccessTag, AccessGrantTag,
   AccessRoleGrantActions, AccessRoleServiceInternal, AppRequestService, ControlGroupDefinitionProcessed,
   TagCategoryDefinition, PeriodService, RQContext,
-  AccessRoleGroup
+  AccessRoleGroup,
+  AccessRoleGroupManager
 } from '../internal.js'
+import { DateTime } from 'luxon'
 
 @Resolver(of => Access)
 export class AccessResolver {
@@ -69,6 +71,21 @@ export class AccessResolver {
   @FieldResolver(returns => Boolean, { description: 'Current user is permitted to view the app request list.' })
   async viewAppRequestList (@Ctx() ctx: Context) {
     return ctx.svc(AppRequestService).mayViewReviewerInterface()
+  }
+}
+
+@Resolver(of => AccessRoleGroup)
+export class AccessRoleGroupResolver {
+  @FieldResolver(returns => [AccessRoleGroupManager])
+  async managers (@Ctx() ctx: Context, @Root() accessRoleGroup: AccessRoleGroup) {
+    const remoteGroup = await ctx.svc(AccessRoleService).getRemoteGroupByGroupName(accessRoleGroup.groupName)
+    return remoteGroup?.managers
+  }
+
+  @FieldResolver(returns => DateTime)
+  async dateCreated (@Ctx() ctx: Context, @Root() accessRoleGroup: AccessRoleGroup) {
+    const remoteGroup = await ctx.svc(AccessRoleService).getRemoteGroupByGroupName(accessRoleGroup.groupName)
+    return remoteGroup?.dateCreated
   }
 }
 

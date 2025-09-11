@@ -63,6 +63,23 @@ export interface AccessGrantTag {
     __typename: 'AccessGrantTag'
 }
 
+export interface AccessRoleGroupManager {
+    fullname: string
+    email: string
+    __typename: 'AccessRoleGroupManager'
+}
+
+export interface AccessRoleGroup {
+    roleId: string
+    groupName: string
+    managers: (AccessRoleGroupManager[] | null)
+    /** The date the group was added to a role. */
+    dateAdded: Scalars['DateTime']
+    /** The name of the group. This should be unique even among all roleIds. */
+    dateCreated: (Scalars['DateTime'] | null)
+    __typename: 'AccessRoleGroup'
+}
+
 export interface AccessRole {
     actions: RoleActions
     /** A description of the grant. This is not used for anything, but can be useful for admins to understand what the grant was trying to do. */
@@ -680,6 +697,25 @@ export interface AccessGrantTagGenqlSelection{
     categoryLabel?: boolean | number
     label?: boolean | number
     tag?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface AccessRoleGroupManagerGenqlSelection{
+    fullname?: boolean | number
+    email?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface AccessRoleGroupGenqlSelection{
+    roleId?: boolean | number
+    /** The date the group was added to a role. */
+    dateAdded?: boolean | number
+    /** The name of the group. This should be unique even among all roleIds. */
+    groupName?: boolean | number
+    managers?: AccessRoleGroupManagerGenqlSelection
+    dateCreated?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }

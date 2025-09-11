@@ -1,7 +1,7 @@
 import { BaseService, MutationMessageType, ValidatedResponse } from '@txstate-mws/graphql-server'
 import { ManyJoinedLoader, OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { isBlank, keyby, unique } from 'txstate-utils'
-import { AuthService, AccessDatabase as database, AccessRoleFilter, AccessRoleValidatedResponse, AccessRoleGrant, AccessRole, AccessRoleGrantCreate, AccessRoleInput } from '../internal.js'
+import { AuthService, AccessDatabase as database, AccessRoleFilter, AccessRoleValidatedResponse, AccessRoleGrant, AccessRole, AccessRoleGrantCreate, AccessRoleInput, appConfig } from '../internal.js'
 
 const accessRolesByIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -17,6 +17,14 @@ const accessRolesByUserIdLoader = new ManyJoinedLoader({
     return rows.map(row => ({ key: row.userId, value: rolesById[row.roleId] }))
   },
   idLoader: accessRolesByIdLoader
+})
+
+const accessRemoteGroupsByGroupNames = new PrimaryKeyLoader({
+  fetch: async (groupNames: string[]) => {
+    if (!appConfig.groups) return []
+    return appConfig.groups(groupNames)
+  },
+  extractId: group => group.groupName
 })
 
 const accessRoleGrantsByIdLoader = new PrimaryKeyLoader({
@@ -83,6 +91,10 @@ export class AccessRoleService extends AuthService<AccessRole> {
 
   async getGroupsByRoleIds (roleIds: string[]) {
     return await this.loaders.loadMany(groupsByRoleIdLoader, roleIds)
+  }
+
+  async getRemoteGroupByGroupName (groupName: string) {
+    return await this.loaders.get(accessRemoteGroupsByGroupNames).load(groupName)
   }
 
   async getGrantsByRoleId (roleId: string) {

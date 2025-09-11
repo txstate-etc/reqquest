@@ -21,6 +21,12 @@ export interface ReqquestUser {
   otherIdentifiers?: { label: string, value: string }[]
 }
 
+export interface RemoteGroup {
+  groupName: string
+  managers?: { fullname: string, email?: string }[]
+  dateCreated?: DateTime
+}
+
 export interface AppDefinition {
   /**
    * Configure whether this system allows multiple app requests for the same user in the same period.
@@ -61,7 +67,7 @@ export interface AppDefinition {
    * The function should return a map of group names to group information, where the group information contains
    * the group name, manager (with firstname, lastname, and email), and dateAdded.
    */
-  groups?: (groupnames: string[]) => Promise<{ name: string, manager: { fullname: string, email: string }, dateAdded: DateTime }[]>
+  groups?: (groupnames: string[]) => Promise<RemoteGroup[]>
   /**
    * Authentication scopes. Provide a full list of scopes that might show up
    * on a valid JWT for this application. For instance, if your application has

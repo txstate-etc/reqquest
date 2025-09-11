@@ -1,6 +1,6 @@
 import { PUBLIC_API_BASE, PUBLIC_AUTH_REDIRECT } from '$env/static/public'
 import { APIBase } from '@txstate-mws/sveltekit-utils'
-import type { Feedback } from '@txstate-mws/svelte-forms'
+import { datetimeSerialize, type Feedback } from '@txstate-mws/svelte-forms'
 import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleGroup, type AccessRoleInput, type AppRequestActivityFilters, type AppRequestFilter, type PeriodUpdate, type PromptVisibility } from './typed-client/index.js'
 import { DateTime } from 'luxon'
 
@@ -658,7 +658,12 @@ class API extends APIBase {
         description: true,
         groups: {
           groupName: true,
-          dateAdded: true
+          // managers: {
+          //   fullname: true,
+          //   email: true
+          // },
+          dateAdded: true,
+          dateCreated: true
         },
         actions: {
           update: true,
@@ -670,7 +675,8 @@ class API extends APIBase {
     const roles = response.roles
     return roles.map(role => ({ ...role, groups: role.groups.map((group: AccessRoleGroup) => ({
       ...group,
-      dateAdded: DateTime.fromISO(group.dateAdded)
+      dateAdded: DateTime.fromISO(group.dateAdded),
+      dateCreated: group.dateCreated ? DateTime.fromISO(group.dateCreated) : undefined
     })) }))
   }
 
@@ -684,7 +690,12 @@ class API extends APIBase {
         description: true,
         groups: {
           groupName: true,
-          dateAdded: true
+          // managers: {
+          //   fullname: true,
+          //   email: true
+          // },
+          dateAdded: true,
+          dateCreated: true
         },
         grants: {
           id: true,
@@ -716,7 +727,8 @@ class API extends APIBase {
     const role = response.roles[0]
     return { ...role, groups: role.groups.map((group: AccessRoleGroup) => ({
       ...group,
-      dateAdded: DateTime.fromISO(group.dateAdded)
+      dateAdded: DateTime.fromISO(group.dateAdded),
+      dateCreated: group.dateCreated ? DateTime.fromISO(group.dateCreated) : undefined
     })) }
   }
 
