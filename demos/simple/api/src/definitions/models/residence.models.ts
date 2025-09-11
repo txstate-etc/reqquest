@@ -69,10 +69,26 @@ export const StateResidenceConfigRequirementSchema = {
 } as const satisfies SchemaObject
 export type StateResidenceConfigRequirementData = FromSchema<typeof StateResidenceConfigRequirementSchema>
 
+export const UploadInfoWithSumSchema = {
+  type: 'object',
+  properties: {
+    _type: { type: 'string' },
+    multipartIndex: { type: 'number' },
+    name: { type: 'string' },
+    mime: { type: 'string' },
+    size: { type: 'number' },
+    shasum: { type: 'string' }
+  },
+  required: ['_type', 'multipartIndex', 'name', 'mime', 'size', 'shasum'],
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type UploadInfoWithSumData = FromSchema<typeof UploadInfoWithSumSchema>
+
 export const StateResidencePromptSchema = {
   type: 'object',
   properties: {
-    residentOfRequiredState: { type: 'boolean' }
+    residentOfRequiredState: { type: 'boolean' },
+    residentIdDoc: UploadInfoWithSumSchema
   },
   additionalProperties: false
 } as const satisfies SchemaObject

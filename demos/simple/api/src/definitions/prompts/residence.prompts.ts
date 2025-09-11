@@ -11,6 +11,8 @@ export const state_residence_prompt: PromptDefinition = {
     const messages: MutationMessage[] = []
     if (data.residentOfRequiredState == null) {
       messages.push({ type: MutationMessageType.error, message: 'Please confirm specify you are a resident of the state.', arg: 'residentOfRequiredState' })
+    } else if (!data.residentOfRequiredState) {
+      messages.push({ type: MutationMessageType.warning, message: `Only ${allConfig.state_residence_req.residentOfState} residents qualify.`, arg: 'residentOfRequiredState' })
     }
     return messages
   }
