@@ -1,6 +1,6 @@
-import { Ctx, FieldResolver, Query, Resolver, Root } from 'type-graphql'
-import { Context } from '@txstate-mws/graphql-server'
-import { requirementRegistry, Requirement, ApplicationRequirement, Prompt, promptRegistry, RequirementPrompt, RequirementPromptService, Application, ApplicationService, Configuration, ConfigurationService, RQContext, PeriodProgramRequirement, PromptService, JsonData, PeriodPromptService, PeriodPrompt, PeriodWorkflowStage, ProgramService } from '../internal.js'
+import { Arg, Ctx, FieldResolver, Mutation, Query, Resolver, Root } from 'type-graphql'
+import { Context, ValidatedResponse } from '@txstate-mws/graphql-server'
+import { requirementRegistry, Requirement, ApplicationRequirement, Prompt, promptRegistry, RequirementPrompt, RequirementPromptService, Application, ApplicationService, Configuration, ConfigurationService, RQContext, PeriodProgramRequirement, PromptService, JsonData, PeriodPromptService, PeriodPrompt, PeriodWorkflowStage, ProgramService, PeriodRequirementService, PeriodService } from '../internal.js'
 
 @Resolver(of => Requirement)
 export class RequirementResolver {
@@ -55,5 +55,21 @@ export class PeriodRequirementResolver {
   @FieldResolver(type => Configuration, { description: 'The configuration for this requirement in the period.' })
   async configuration (@Ctx() ctx: RQContext, @Root() periodRequirement: PeriodProgramRequirement) {
     return ctx.svc(ConfigurationService).findByPeriodIdAndKey(periodRequirement.periodId, periodRequirement.key)
+  }
+
+  @Mutation(of => ValidatedResponse)
+  async updatePeriodProgram (@Ctx() ctx: Context,
+    @Arg('periodId') periodId: string,
+    @Arg('requirementKey') requirementKey: string,
+    @Arg('disabled') disabled: boolean
+  ) {
+    const period = await ctx.svc(PeriodService).findById(periodId)
+    if (!period) throw new Error('Period not found')
+    if (!ctx.svc(PeriodService).mayUpdate(period)) throw new Error('You are not allowed to update this period program.')
+    await ctx.svc(PeriodRequirementService).update(periodId, requirementKey, disabled)
+
+    return {
+      success: true
+    }
   }
 }

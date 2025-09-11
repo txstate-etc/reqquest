@@ -3,7 +3,8 @@ import {
   Application, AuthService, getApplicationRequirements, ApplicationRequirement,
   ApplicationRequirementFilter, PeriodProgramRequirement, getPeriodProgramRequirements,
   PeriodProgramKey, PeriodProgramRequirementKey, PeriodRequirementKey, AppRequest,
-  AppRequestService
+  AppRequestService,
+  updatePeriodProgramRequirement
 } from '../internal.js'
 
 const byIdLoader = new PrimaryKeyLoader({
@@ -93,6 +94,10 @@ export class PeriodRequirementService extends AuthService<PeriodProgramRequireme
 
   async findByKey (periodId: string, programKey: string, requirementKey: string) {
     return await this.loaders.get(periodRequirementByFullKeyLoader).load({ periodId, programKey, requirementKey })
+  }
+
+  async update (periodId: string, requirementKey: string, disabled: boolean) {
+    return await updatePeriodProgramRequirement(periodId, requirementKey, disabled)
   }
 
   mayConfigure (requirement: PeriodProgramRequirement) {

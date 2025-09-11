@@ -112,3 +112,7 @@ export async function getPeriodProgramRequirements (filter: PeriodProgramRequire
     ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
   `, binds)).map(row => new PeriodProgramRequirement(row))
 }
+
+export async function updatePeriodProgramRequirement (periodId: string, requirementKey: string, disabled: boolean) {
+  await db.update('UPDATE period_program_requirements SET disabled = ? WHERE periodId = ? AND requirementKey = ?', [disabled, periodId, requirementKey])
+}
