@@ -77,7 +77,7 @@ type AccessRole {
   """
   description: String
   grants: [AccessRoleGrant!]!
-  groups: [String!]!
+  groups: [AccessRoleGroup!]!
   id: ID!
   name: String!
   scope: String
@@ -136,6 +136,15 @@ input AccessRoleGrantUpdate {
   A list of tags to restrict a grant. For instance, if this is added to a grant on PromptAnswer-update, each tag refers to a subset of App Requests.
   """
   tags: [AccessTagInput!]
+}
+
+type AccessRoleGroup {
+  """The date the group was added to a role."""
+  dateAdded: DateTime!
+
+  """The name of the group. This should be unique even among all roleIds."""
+  groupName: String!
+  roleId: ID!
 }
 
 input AccessRoleInput {
@@ -933,6 +942,7 @@ type Mutation {
   submitAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
   updateConfiguration(data: JsonData!, key: String!, periodId: ID!, validateOnly: Boolean): ValidatedConfigurationResponse!
   updatePeriod(periodId: ID!, update: PeriodUpdate!, validateOnly: Boolean): ValidatedPeriodResponse!
+  updatePeriodProgram(disabled: Boolean!, periodId: String!, requirementKey: String!): ValidatedResponse!
 
   """Update the data for a prompt in this app request."""
   updatePrompt(

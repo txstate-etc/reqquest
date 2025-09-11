@@ -592,6 +592,17 @@ class API extends APIBase {
     return response.deletePeriod.success
   }
 
+  async disablePeriodProgramRequirements (periodId: string, requirementKey: string, disabled: boolean) {
+    const response = await this.client.mutation({
+      __name: 'updatePeriodProgram',
+      updatePeriodProgram: {
+        __args: { periodId, requirementKey, disabled },
+        success: true
+      }
+    })
+    return response.updatePeriodProgram.success
+  }
+
   async getPeriodConfigurations (periodId: string) {
     const response = await this.client.query({
       __name: 'GetPeriodConfigurations',

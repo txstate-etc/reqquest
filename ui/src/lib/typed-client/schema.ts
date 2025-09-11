@@ -63,12 +63,6 @@ export interface AccessGrantTag {
     __typename: 'AccessGrantTag'
 }
 
-export interface AccessRoleGroup {
-    roleId: string
-    groupName: string
-    dateAdded: Scalars['DateTime']
-}
-
 export interface AccessRole {
     actions: RoleActions
     /** A description of the grant. This is not used for anything, but can be useful for admins to understand what the grant was trying to do. */
@@ -109,6 +103,15 @@ export interface AccessRoleGrantActions {
     delete: Scalars['Boolean']
     update: Scalars['Boolean']
     __typename: 'AccessRoleGrantActions'
+}
+
+export interface AccessRoleGroup {
+    /** The date the group was added to a role. */
+    dateAdded: Scalars['DateTime']
+    /** The name of the group. This should be unique even among all roleIds. */
+    groupName: Scalars['String']
+    roleId: Scalars['ID']
+    __typename: 'AccessRoleGroup'
 }
 
 export interface AccessRoleValidatedResponse {
@@ -406,6 +409,7 @@ export interface Mutation {
     submitAppRequest: ValidatedAppRequestResponse
     updateConfiguration: ValidatedConfigurationResponse
     updatePeriod: ValidatedPeriodResponse
+    updatePeriodProgram: ValidatedResponse
     /** Update the data for a prompt in this app request. */
     updatePrompt: ValidatedAppRequestResponse
     __typename: 'Mutation'
@@ -680,14 +684,6 @@ export interface AccessGrantTagGenqlSelection{
     __scalar?: boolean | number
 }
 
-export interface AccessRoleGroupGenqlSelection{
-    roleId?: boolean | number
-    groupName?: boolean | number
-    dateAdded?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
 export interface AccessRoleGenqlSelection{
     actions?: RoleActionsGenqlSelection
     /** A description of the grant. This is not used for anything, but can be useful for admins to understand what the grant was trying to do. */
@@ -746,6 +742,16 @@ export interface AccessRoleGrantUpdate {allow: Scalars['Boolean'],controlGroup?:
 controls?: (Scalars['String'][] | null),
 /** A list of tags to restrict a grant. For instance, if this is added to a grant on PromptAnswer-update, each tag refers to a subset of App Requests. */
 tags?: (AccessTagInput[] | null)}
+
+export interface AccessRoleGroupGenqlSelection{
+    /** The date the group was added to a role. */
+    dateAdded?: boolean | number
+    /** The name of the group. This should be unique even among all roleIds. */
+    groupName?: boolean | number
+    roleId?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
 
 export interface AccessRoleInput {
 /** A description of the role. This is not used for anything, but can be useful for admins to understand what the role is trying to do. */
@@ -1117,6 +1123,7 @@ export interface MutationGenqlSelection{
     submitAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     updateConfiguration?: (ValidatedConfigurationResponseGenqlSelection & { __args: {data: Scalars['JsonData'], key: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     updatePeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {periodId: Scalars['ID'], update: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
+    updatePeriodProgram?: (ValidatedResponseGenqlSelection & { __args: {disabled: Scalars['Boolean'], periodId: Scalars['String'], requirementKey: Scalars['String']} })
     /** Update the data for a prompt in this app request. */
     updatePrompt?: (ValidatedAppRequestResponseGenqlSelection & { __args: {data: Scalars['JsonData'], 
     /** The data version of the app request at the time this prompt was loaded. If provided, the API will perform an optimistic concurrency check and fail the update if someone else has updated the data in the meantime. */
@@ -1434,6 +1441,14 @@ export interface ValidatedResponseGenqlSelection{
     export const isAccessRoleGrantActions = (obj?: { __typename?: any } | null): obj is AccessRoleGrantActions => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isAccessRoleGrantActions"')
       return AccessRoleGrantActions_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AccessRoleGroup_possibleTypes: string[] = ['AccessRoleGroup']
+    export const isAccessRoleGroup = (obj?: { __typename?: any } | null): obj is AccessRoleGroup => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAccessRoleGroup"')
+      return AccessRoleGroup_possibleTypes.includes(obj.__typename)
     }
     
 
