@@ -68,8 +68,7 @@ export class PeriodRequirementResolver {
     if (!ctx.svc(PeriodService).mayUpdate(period)) throw new Error('You are not allowed to update this period program.')
     await ctx.svc(PeriodRequirementService).update(periodId, requirementKey, disabled)
 
-    return {
-      success: true
-    }
+    const response = new ValidatedResponse()
+    return response
   }
 }
