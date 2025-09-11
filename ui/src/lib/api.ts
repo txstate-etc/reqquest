@@ -54,7 +54,12 @@ class API extends APIBase {
         applications: {
           id: true,
           title: true,
-          status: true
+          status: true,
+          statusReason: true,
+          requirements: {
+            status: true,
+            statusReason: true
+          }
         },
         actions: {
           cancel: true,

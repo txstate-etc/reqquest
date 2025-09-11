@@ -3,8 +3,8 @@
   import { base } from '$app/paths'
   import { getApplicationStatusInfo, getAppRequestStatusInfo, getNavigationButton } from '$lib/status-utils.js'
   import { longNumericTime } from '$lib/util.js'
-  import { Card, TagSet } from '@txstate-mws/carbon-svelte'
-  import { Button } from 'carbon-components-svelte'
+  import { Card, TagSet, BadgeNumber } from '@txstate-mws/carbon-svelte'
+  import { Button, Accordion, AccordionItem } from 'carbon-components-svelte'
   import type { DashboardAppRequest } from './types.js'
 
   export let request: DashboardAppRequest
@@ -46,18 +46,49 @@
     {#if request.applications.length > 0}
       {#each request.applications as application}
         {@const appStatusTag = getApplicationStatusInfo(application.status)}
-        <div class="program-status flex items-center py-2 px-4 mb-4">
-          <span class="font-medium">{application.title}</span>
-          <div class="tagwrap">
-            <TagSet tags={[{ label: appStatusTag.label, type: appStatusTag.color }]} />
+        <div class="program-status py-2 px-4 mb-4">
+          <div class="flex items-center">
+            <span class="font-medium">{application.title}</span>
+            <div class="tagwrap">
+              <TagSet tags={[{ label: appStatusTag.label, type: appStatusTag.color }]} />
+            </div>
+
+            <!-- Acceptance buttons -->
+            {#if showAcceptanceButtons && (request.status === 'ACCEPTANCE' || request.status === 'READY_TO_ACCEPT') && application.status === 'ELIGIBLE'}
+              <Button kind="primary" size="small" class="ml-auto"
+                on:click={handleAcceptanceClick}>
+                {request.status === 'READY_TO_ACCEPT' ? 'Accept Offer' : 'Review Offer'}
+              </Button>
+            {/if}
           </div>
 
-          <!-- Acceptance buttons -->
-          {#if showAcceptanceButtons && (request.status === 'ACCEPTANCE' || request.status === 'READY_TO_ACCEPT') && application.status === 'ELIGIBLE'}
-            <Button kind="primary" size="small" class="ml-auto"
-              on:click={handleAcceptanceClick}>
-              {request.status === 'READY_TO_ACCEPT' ? 'Accept Offer' : 'Review Offer'}
-            </Button>
+          <!-- Status reason -->
+          {#if application.statusReason && application.status !== 'INELIGIBLE'}
+            <p class="status-reason mt-2 mb-0 text-sm">{application.statusReason}</p>
+          {/if}
+
+          <!-- Failed requirements for INELIGIBLE applications -->
+          {#if application.status === 'INELIGIBLE' && application.requirements}
+            {@const failedRequirements = application.requirements.filter(req => req.status === 'DISQUALIFYING' && req.statusReason)}
+            {#if failedRequirements.length === 1}
+              <p class="status-reason mt-2 mb-0 text-sm">{failedRequirements[0].statusReason}</p>
+            {/if}
+            {#if failedRequirements.length > 1}
+            <div class="flex">
+              <BadgeNumber value={failedRequirements.length} class="mt-5 mr-2" style="--badge-bg: #FBE9EA; --badge-text:#a11c25" />
+              <div class="failed-requirements mt-2 w-full">
+                <Accordion align="start">
+                  <AccordionItem title="Multiple eligibility issues">
+                    <ol class="list-decimal">
+                      {#each failedRequirements as requirement}
+                        <li class="failed-requirement">{requirement.statusReason}</li>
+                      {/each}
+                    </ol>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+            </div>
+            {/if}
           {/if}
         </div>
       {/each}
