@@ -409,7 +409,7 @@ export interface Mutation {
     submitAppRequest: ValidatedAppRequestResponse
     updateConfiguration: ValidatedConfigurationResponse
     updatePeriod: ValidatedPeriodResponse
-    updatePeriodProgram: ValidatedResponse
+    updatePeriodProgramRequirement: ValidatedResponse
     /** Update the data for a prompt in this app request. */
     updatePrompt: ValidatedAppRequestResponse
     __typename: 'Mutation'
@@ -1123,7 +1123,7 @@ export interface MutationGenqlSelection{
     submitAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     updateConfiguration?: (ValidatedConfigurationResponseGenqlSelection & { __args: {data: Scalars['JsonData'], key: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     updatePeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {periodId: Scalars['ID'], update: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
-    updatePeriodProgram?: (ValidatedResponseGenqlSelection & { __args: {disabled: Scalars['Boolean'], periodId: Scalars['String'], requirementKey: Scalars['String']} })
+    updatePeriodProgramRequirement?: (ValidatedResponseGenqlSelection & { __args: {disabled: Scalars['Boolean'], periodId: Scalars['String'], requirementKey: Scalars['String']} })
     /** Update the data for a prompt in this app request. */
     updatePrompt?: (ValidatedAppRequestResponseGenqlSelection & { __args: {data: Scalars['JsonData'], 
     /** The data version of the app request at the time this prompt was loaded. If provided, the API will perform an optimistic concurrency check and fail the update if someone else has updated the data in the meantime. */

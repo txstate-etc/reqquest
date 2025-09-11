@@ -58,7 +58,7 @@ export class PeriodRequirementResolver {
   }
 
   @Mutation(of => ValidatedResponse)
-  async updatePeriodProgram (@Ctx() ctx: Context,
+  async updatePeriodProgramRequirement (@Ctx() ctx: Context,
     @Arg('periodId') periodId: string,
     @Arg('requirementKey') requirementKey: string,
     @Arg('disabled') disabled: boolean

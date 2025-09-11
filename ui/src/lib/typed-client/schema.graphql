@@ -942,7 +942,7 @@ type Mutation {
   submitAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
   updateConfiguration(data: JsonData!, key: String!, periodId: ID!, validateOnly: Boolean): ValidatedConfigurationResponse!
   updatePeriod(periodId: ID!, update: PeriodUpdate!, validateOnly: Boolean): ValidatedPeriodResponse!
-  updatePeriodProgram(disabled: Boolean!, periodId: String!, requirementKey: String!): ValidatedResponse!
+  updatePeriodProgramRequirement(disabled: Boolean!, periodId: String!, requirementKey: String!): ValidatedResponse!
 
   """Update the data for a prompt in this app request."""
   updatePrompt(

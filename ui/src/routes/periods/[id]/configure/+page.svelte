@@ -50,6 +50,12 @@
     await invalidate('api:getPeriodConfigurations')
     closeConfigurationDialog()
   }
+  
+  const disablePeriodProgram = (requirementKey: string) => async () => {
+    const res = await api.disablePeriodProgramRequirements($page.params.id!, requirementKey, true)
+    await invalidate('api:getPeriodConfigurations')
+  }
+
 </script>
 
 <!-- Configuring Pe{program.title}riod: {period.name}{#if period.code} ({period.code}){/if} -->
@@ -62,8 +68,9 @@
       <svelte:fragment slot='content'>
         <TabContent>
           {#each program.requirements.filter(r => r.enabled) as requirement (requirement.key)}
-            <Panel title={requirement.title} expandable noPrimaryAction actions={[{ label: 'Edit requirement', href: '/' }, { label: 'Disable Requirement', href: '/' }]} >
+            <Panel title={requirement.title} expandable noPrimaryAction actions={[{ label: 'Edit requirement', href: '/' }, { label: 'Disable Requirement', onClick: disablePeriodProgram(requirement.key) }]} >
               {@const reqDef = uiRegistry.getRequirement(requirement.key)}
+              <!-- <Button on:click={onClick('requirement', requirement)} type="primary" size="small" icon={SettingsEdit} iconDescription="Edit Configuration" disabled={reqDef.configureComponent == null || !requirement.configuration.actions.update} /> -->
               <ul class="prompts">
                 {#each requirement.prompts as prompt (prompt.key)}
                 {@const promptDef = uiRegistry.getPrompt(prompt.key)}

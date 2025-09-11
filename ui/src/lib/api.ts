@@ -595,12 +595,12 @@ class API extends APIBase {
   async disablePeriodProgramRequirements (periodId: string, requirementKey: string, disabled: boolean) {
     const response = await this.client.mutation({
       __name: 'updatePeriodProgram',
-      updatePeriodProgram: {
+      updatePeriodProgramRequirement: {
         __args: { periodId, requirementKey, disabled },
         success: true
       }
     })
-    return response.updatePeriodProgram.success
+    return response.updatePeriodProgramRequirement.success
   }
 
   async getPeriodConfigurations (periodId: string) {
