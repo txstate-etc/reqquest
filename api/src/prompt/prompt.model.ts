@@ -62,6 +62,7 @@ export class RequirementPrompt extends Prompt {
     this.userInternalId = row.userId
     this.answered = !!row.answered
     this.invalidated = !!row.invalidated
+    this.invalidatedReason = row.invalidatedReason ?? undefined
     this.visibility = row.visibility
   }
 
@@ -73,6 +74,9 @@ export class RequirementPrompt extends Prompt {
 
   @Field({ description: 'When true, this prompt has been invalidated by the answer to another prompt. The `answered` field should remain false until the user specifically answers this prompt again, regardless of the output of the definition\'s `complete` method.' })
   invalidated: boolean
+
+  @Field({ nullable: true, description: 'If the prompt has been invalidated, this may contain a reason why. It should be displayed to the user.' })
+  invalidatedReason?: string
 
   @Field(type => PromptVisibility, { description: 'The visibility of the prompt on the request. This is used to determine whether the prompt should be shown to the user in the UI.' })
   visibility: PromptVisibility

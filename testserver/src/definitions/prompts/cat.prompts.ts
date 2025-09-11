@@ -135,7 +135,7 @@ export const vaccine_review_prompt: PromptDefinition<VaccineReviewPromptData> = 
   },
   invalidUponChange: data => {
     return data?.distemper?.satisfactory === false || data?.rabies?.satisfactory === false || data?.felineLeukemia?.satisfactory === false || data?.felineHIV?.satisfactory === false
-      ? [other_cats_vaccines_prompt.key]
+      ? [{ promptKey: other_cats_vaccines_prompt.key, reason: 'One or more vaccination documents are invalid. Please re-upload.' }]
       : []
   },
   validUponChange: data => {

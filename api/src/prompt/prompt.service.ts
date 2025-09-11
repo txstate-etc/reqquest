@@ -158,7 +158,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
         previousAppPhases = (await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion, db))!
         recordAppRequestActivity(appRequest.internalId, this.user!.internalId, 'Prompt Updated', { data, description: prompt.title }, db)
       }
-      const promptsToInvalidate = promptRegistry.getInvalidatedPrompts(prompt.key, processedData)
+      const promptsToInvalidate = promptRegistry.getInvalidatedPrompts(prompt.key, processedData, allConfigData)
       await setRequirementPromptsInvalid(promptsToInvalidate, db)
       await setRequirementPromptValid(prompt, db)
     })

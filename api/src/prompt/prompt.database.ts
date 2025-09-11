@@ -1,6 +1,6 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { ApplicationRequirement, AppRequestPhase, AppRequestStatusDB, PeriodConfigurationRow, PeriodPrompt, PeriodPromptFilters, promptRegistry, PromptVisibility, RequirementPrompt, RequirementPromptFilter } from '../internal.js'
+import { ApplicationRequirement, AppRequestPhase, AppRequestStatusDB, InvalidatedResponse, PeriodConfigurationRow, PeriodPrompt, PeriodPromptFilters, promptRegistry, PromptVisibility, RequirementPrompt, RequirementPromptFilter } from '../internal.js'
 
 export interface PromptRow {
   id: number
@@ -16,6 +16,7 @@ export interface PromptRow {
   promptKey: string
   answered: 0 | 1
   invalidated: 0 | 1
+  invalidatedReason: string | null
   visibility: PromptVisibility
 }
 
@@ -59,12 +60,14 @@ export async function getRequirementPrompts (filter: RequirementPromptFilter, td
 }
 
 export async function setRequirementPromptValid (prompt: RequirementPrompt, tdb: Queryable = db) {
-  await tdb.update('UPDATE requirement_prompts SET invalidated = 0 WHERE id = ?', [prompt.internalId])
+  await tdb.update('UPDATE requirement_prompts SET invalidated = 0, invalidatedReason = NULL WHERE id = ?', [prompt.internalId])
 }
 
-export async function setRequirementPromptsInvalid (promptKeys: string[], tdb: Queryable = db) {
-  if (!promptKeys?.length) return
-  await tdb.update(`UPDATE requirement_prompts SET invalidated = 1 WHERE promptKey IN (${db.in([], promptKeys)})`, promptKeys)
+export async function setRequirementPromptsInvalid (invalidateResponses: InvalidatedResponse[], tdb: Queryable = db) {
+  if (!invalidateResponses?.length) return
+  for (const r of invalidateResponses) {
+    await tdb.update('UPDATE requirement_prompts SET invalidated = 1, invalidatedReason = ? WHERE promptKey = ?', [r.reason, r.promptKey])
+  }
 }
 
 export async function syncPromptRecords (requirement: ApplicationRequirement, db: Queryable) {

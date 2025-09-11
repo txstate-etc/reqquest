@@ -15,6 +15,7 @@ export const promptMigrations: DatabaseMigration[] = [
           evaluationOrder SMALLINT UNSIGNED NOT NULL DEFAULT 0,
           answered TINYINT UNSIGNED NOT NULL DEFAULT 0,
           invalidated TINYINT UNSIGNED NOT NULL DEFAULT 0,
+          invalidatedReason TEXT,
           visibility VARCHAR(50) NOT NULL DEFAULT 'UNREACHABLE',
           FOREIGN KEY (appRequestId) REFERENCES app_requests (id),
           FOREIGN KEY (applicationId) REFERENCES applications (id),

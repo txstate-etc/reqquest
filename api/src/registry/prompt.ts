@@ -258,7 +258,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * they answer no, we would invalidate the prompt asking the submitter to upload the
    * document. If the reviewer answers yes, we would not invalidate.
    */
-  invalidUponChange?: string[] | ((data: DataType) => string[])
+  invalidUponChange?: InvalidatedResponse[] | InvalidatorFunction
   /**
    * After answering a prompt that says another prompt is invalid, it's possible the
    * same user will change their answer back to something that would make the prompt
@@ -325,6 +325,13 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
   configuration?: ConfigurationDefinition
 }
 
+export interface InvalidatedResponse {
+  promptKey: string
+  reason?: string
+}
+
+export type InvalidatorFunction = (data: any, relatedConfig: Record<string, any>) => InvalidatedResponse[]
+
 const labelLookupCache = new Cache(async (tag: { category: string, value: string }) => {
   return await (promptRegistry as any).indexLookups[tag.category]?.(tag.value) ?? tag.value
 }, { freshseconds: 600 })
@@ -360,7 +367,7 @@ class PromptRegistry {
   protected indexLookups: Record<string, (tag: string) => Promise<string> | string> = {}
   protected validators: Record<string, ValidateFunction> = {}
   protected configValidators: Record<string, ValidateFunction> = {}
-  protected promptInvalidators: Record<string, (data: any) => string[]> = {}
+  protected promptInvalidators: Record<string, InvalidatorFunction> = {}
   public indexCategories: PromptIndexDefinition[] = []
   public indexCategoryMap: Record<string, PromptIndexDefinition> = {}
   public tagCategories: PromptTagDefinition[] = []
@@ -374,7 +381,7 @@ class PromptRegistry {
     if (isNotEmpty(prompt.schema)) this.validators[prompt.key] = registryAjv.compile(prompt.schema)
     if (isNotEmpty(prompt.configuration?.schema)) this.configValidators[prompt.key] = registryAjv.compile(prompt.configuration.schema)
     if (prompt.invalidUponChange == null) this.promptInvalidators[prompt.key] = () => []
-    else if (Array.isArray(prompt.invalidUponChange)) this.promptInvalidators[prompt.key] = () => prompt.invalidUponChange as string[]
+    else if (Array.isArray(prompt.invalidUponChange)) this.promptInvalidators[prompt.key] = () => prompt.invalidUponChange as InvalidatedResponse[]
     else this.promptInvalidators[prompt.key] = prompt.invalidUponChange
   }
 
@@ -481,10 +488,10 @@ class PromptRegistry {
     return valid
   }
 
-  getInvalidatedPrompts (key: string, data: any) {
+  getInvalidatedPrompts (key: string, data: any, relatedConfig: Record<string, any>) {
     const prompt = this.prompts[key]
     if (!prompt) throw new Error(`Prompt ${key} not found.`)
-    return this.promptInvalidators[key](data) ?? []
+    return this.promptInvalidators[key](data, relatedConfig) ?? []
   }
 
   migrations () {
