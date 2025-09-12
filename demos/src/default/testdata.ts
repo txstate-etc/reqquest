@@ -1,7 +1,7 @@
 import { createAppRequest, createPeriod, DatabaseMigration, AccessDatabase, updateAppRequestData, submitAppRequest, markPeriodReviewed } from '@reqquest/api'
 import { DateTime } from 'luxon'
 
-export const testMigrations: DatabaseMigration[] = [
+export const defaultTestMigrations: DatabaseMigration[] = [
   {
     id: '20250430210000',
     execute: async (db, installTestData) => {
@@ -27,7 +27,7 @@ export const testMigrations: DatabaseMigration[] = [
       await AccessDatabase.upsertAccessUser({ login: 'admin_01', fullname: 'Admin 01 full name prior to upsert', groups: ['administrators'] })
       const su01 = await db.getrow<{ id: number, login: string }>('SELECT * FROM accessUsers WHERE login = ?', ['su01'])
 
-      // Note: cloned from access.seed implementation to support creation of su style account in testserver
+      // Note: cloned from access.seed implementation to support creation of su style account in demos
       type AccessRoleGrantDefinition<AdditionalControlGroups = unknown, AdditionalControls = unknown> = {
         [roleName: string]: {
           scope?: string

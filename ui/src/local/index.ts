@@ -1,80 +1,121 @@
 import { UIRegistry } from '$lib'
+import { PUBLIC_DEMO_INSTANCE } from '$env/static/public'
+/** default */
 import DogWalker from 'carbon-icons-svelte/lib/DogWalker.svelte'
-import YardPromptDisplay from './YardPromptDisplay.svelte'
-import YardPrompt from './YardPrompt.svelte'
-import CatTowerPromptDisplay from './CatTowerPromptDisplay.svelte'
-import CatTowerPrompt from './CatTowerPrompt.svelte'
-import TunaAllergyPromptDisplay from './TunaAllergyPromptDisplay.svelte'
-import TunaAllergyPrompt from './TunaAllergyPrompt.svelte'
-import SeemsNicePrompt from './SeemsNicePrompt.svelte'
-import SeemsNicePromptDisplay from './SeemsNicePromptDisplay.svelte'
-import ExerciseConfigure from './ExerciseConfigure.svelte'
-import ExercisePrompt from './ExercisePrompt.svelte'
-import ExercisePromptDisplay from './ExercisePromptDisplay.svelte'
-import StatePrompt from './StatePrompt.svelte'
-import StatePromptDisplay from './StatePromptDisplay.svelte'
-import OtherCatsPrompt from './OtherCatsPrompt.svelte'
-import OtherCatsPromptDisplay from './OtherCatsPromptDisplay.svelte'
-import OtherCatsVaccinesPrompt from './OtherCatsVaccinesPrompt.svelte'
-import OtherCatsVaccinesPromptDisplay from './OtherCatsVaccinesPromptDisplay.svelte'
-import VaccineReviewPrompt from './VaccineReviewPrompt.svelte'
-import VaccineReviewPromptDisplay from './VaccineReviewPromptDisplay.svelte'
+import YardPromptDisplay from './default/YardPromptDisplay.svelte'
+import YardPrompt from './default/YardPrompt.svelte'
+import CatTowerPromptDisplay from './default/CatTowerPromptDisplay.svelte'
+import CatTowerPrompt from './default/CatTowerPrompt.svelte'
+import TunaAllergyPromptDisplay from './default/TunaAllergyPromptDisplay.svelte'
+import TunaAllergyPrompt from './default/TunaAllergyPrompt.svelte'
+import SeemsNicePrompt from './default/SeemsNicePrompt.svelte'
+import SeemsNicePromptDisplay from './default/SeemsNicePromptDisplay.svelte'
+import ExerciseConfigure from './default/ExerciseConfigure.svelte'
+import ExercisePrompt from './default/ExercisePrompt.svelte'
+import ExercisePromptDisplay from './default/ExercisePromptDisplay.svelte'
+import StatePrompt from './default/StatePrompt.svelte'
+import StatePromptDisplay from './default/StatePromptDisplay.svelte'
+import OtherCatsPrompt from './default/OtherCatsPrompt.svelte'
+import OtherCatsPromptDisplay from './default/OtherCatsPromptDisplay.svelte'
+import OtherCatsVaccinesPrompt from './default/OtherCatsVaccinesPrompt.svelte'
+import OtherCatsVaccinesPromptDisplay from './default/OtherCatsVaccinesPromptDisplay.svelte'
+import VaccineReviewPrompt from './default/VaccineReviewPrompt.svelte'
+import VaccineReviewPromptDisplay from './default/VaccineReviewPromptDisplay.svelte'
+
+/** simple */
+import ResidencePrompt from './simple/ResidencePrompt.svelte'
+import ResidencePromptDisplay from './simple/ResidencePromptDisplay.svelte'
+import ResidenceConfig from './simple/ResidenceConfig.svelte'
+
+const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts} =  configureDemoInstanceParams()
 
 export const uiRegistry = new UIRegistry({
-  appName: 'Adopt a Critter',
-  applicantDashboardIntroHeader: 'Start your Pet Journey Here!',
-  applicantDashboardIntroDetail: 'Submitting an adoption application is the first step in adopting a cat or dog. Based on your responses you will receive a list of "eligible benefits."',
-  applicantDashboardRecentDays: 30,
-  programs: [{
-    key: 'adopt_a_dog_program',
-    icon: DogWalker
-  }],
-  requirements: [
-    { key: 'have_big_yard_req' },
-    { key: 'have_adequate_personal_space_req' },
-    { key: 'have_a_cat_tower_req' },
-    { key: 'not_allergic_to_tuna_req' },
-    { key: 'applicant_seems_nice_req' },
-    { key: 'must_exercise_your_dog_req', configureComponent: ExerciseConfigure },
-    { key: 'which_state_req' },
-    { key: 'other_cats_applicant_req' },
-    { key: 'other_cats_reviewer_req' }
-  ],
-  prompts: [{
-    key: 'have_yard_prompt',
-    formComponent: YardPrompt,
-    displayComponent: YardPromptDisplay
-  }, {
-    key: 'have_a_cat_tower_prompt',
-    formComponent: CatTowerPrompt,
-    displayComponent: CatTowerPromptDisplay
-  }, {
-    key: 'not_allergic_to_tuna_prompt',
-    formComponent: TunaAllergyPrompt,
-    displayComponent: TunaAllergyPromptDisplay
-  }, {
-    key: 'applicant_seems_nice_prompt',
-    formComponent: SeemsNicePrompt,
-    displayComponent: SeemsNicePromptDisplay
-  }, {
-    key: 'must_exercise_your_dog_prompt',
-    formComponent: ExercisePrompt,
-    displayComponent: ExercisePromptDisplay
-  }, {
-    key: 'which_state_prompt',
-    formComponent: StatePrompt,
-    displayComponent: StatePromptDisplay
-  }, {
-    key: 'other_cats_prompt',
-    formComponent: OtherCatsPrompt,
-    displayComponent: OtherCatsPromptDisplay
-  }, {
-    key: 'other_cats_vaccines_prompt',
-    formComponent: OtherCatsVaccinesPrompt,
-    displayComponent: OtherCatsVaccinesPromptDisplay
-  }, {
-    key: 'vaccine_review_prompt',
-    formComponent: VaccineReviewPrompt,
-    displayComponent: VaccineReviewPromptDisplay
-  }]
+  appName,
+  applicantDashboardIntroHeader,
+  applicantDashboardIntroDetail,
+  applicantDashboardRecentDays,
+  programs,
+  requirements,
+  prompts
 })
+
+function configureDemoInstanceParams() {
+  if (PUBLIC_DEMO_INSTANCE === 'simple') {
+    return {
+      appName: 'Adopt a Pet',
+      applicantDashboardIntroHeader: 'Start your Pet Journey Here!',
+      applicantDashboardIntroDetail: 'Submitting an adoption application is the first step in adopting a pet. Based on your responses you will receive a list of "eligible benefits."',
+      applicantDashboardRecentDays: 30,
+      programs: [{
+        key: 'adopt_a_pet_program',
+        icon: DogWalker
+      }],
+      requirements: [
+        { key: 'state_residence_req', configureComponent: ResidenceConfig }
+      ],
+      prompts: [{
+        key: 'state_residence_prompt',
+        formComponent: ResidencePrompt,
+        displayComponent: ResidencePromptDisplay
+      }]
+    }
+  }
+  return {
+    appName: 'Adopt a Critter',
+    applicantDashboardIntroHeader: 'Start your Pet Journey Here!',
+    applicantDashboardIntroDetail: 'Submitting an adoption application is the first step in adopting a cat or dog. Based on your responses you will receive a list of "eligible benefits."',
+    applicantDashboardRecentDays: 30,
+    programs: [{
+      key: 'adopt_a_dog_program',
+      icon: DogWalker
+    }],
+    requirements: [
+      { key: 'have_big_yard_req' },
+      { key: 'have_adequate_personal_space_req' },
+      { key: 'have_a_cat_tower_req' },
+      { key: 'not_allergic_to_tuna_req' },
+      { key: 'applicant_seems_nice_req' },
+      { key: 'must_exercise_your_dog_req', configureComponent: ExerciseConfigure },
+      { key: 'which_state_req' },
+      { key: 'other_cats_applicant_req' },
+      { key: 'other_cats_reviewer_req' }
+    ],
+    prompts: [{
+      key: 'have_yard_prompt',
+      formComponent: YardPrompt,
+      displayComponent: YardPromptDisplay
+    }, {
+      key: 'have_a_cat_tower_prompt',
+      formComponent: CatTowerPrompt,
+      displayComponent: CatTowerPromptDisplay
+    }, {
+      key: 'not_allergic_to_tuna_prompt',
+      formComponent: TunaAllergyPrompt,
+      displayComponent: TunaAllergyPromptDisplay
+    }, {
+      key: 'applicant_seems_nice_prompt',
+      formComponent: SeemsNicePrompt,
+      displayComponent: SeemsNicePromptDisplay
+    }, {
+      key: 'must_exercise_your_dog_prompt',
+      formComponent: ExercisePrompt,
+      displayComponent: ExercisePromptDisplay
+    }, {
+      key: 'which_state_prompt',
+      formComponent: StatePrompt,
+      displayComponent: StatePromptDisplay
+    }, {
+      key: 'other_cats_prompt',
+      formComponent: OtherCatsPrompt,
+      displayComponent: OtherCatsPromptDisplay
+    }, {
+      key: 'other_cats_vaccines_prompt',
+      formComponent: OtherCatsVaccinesPrompt,
+      displayComponent: OtherCatsVaccinesPromptDisplay
+    }, {
+      key: 'vaccine_review_prompt',
+      formComponent: VaccineReviewPrompt,
+      displayComponent: VaccineReviewPromptDisplay
+    }]
+  }
+}

@@ -6,4 +6,5 @@ export interface StateResidencePromptData {
 
 export interface StateResidenceConfigRequirementData {
   stateNames: string[]
+  residentIdDoc: FieldUploadPreload
 }

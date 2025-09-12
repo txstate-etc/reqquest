@@ -1,7 +1,7 @@
 {
-  "name": "demos-simple",
+  "name": "reqquest-demo",
   "version": "1.0.0",
-  "description": "The simple demo instance for adopt a pet program.",
+  "description": "A demo service that pretends to facilitate a pet adoption process.",
   "type": "module",
   "scripts": {
     "start:nodemon": "nodemon",
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@txstate-mws/graphql-server": "^2.3.2",
-    "@reqquest/api": "file:../../../api",
+    "@reqquest/api": "file:../api",
     "luxon": "^3.6.1"
   },
   "devDependencies": {
@@ -22,8 +22,8 @@
     "typescript": "^5.1.6"
   },
   "nodemonConfig": {
-    "exec": "cd /usr/app/api && npm run build && cd /usr/app/demos/simple/api && npm run build && node --no-warnings --enable-source-maps ./dist/index.js",
+    "exec": "cd ../api && npm run build && cd ../demos && npm run build && node --no-warnings --enable-source-maps ./dist/index.js",
     "ext": "js,ts",
-    "watch": ["/usr/app/demos/simple/api/src", "/usr/app/api/src"]
+    "watch": ["/usr/app/demos/src", "/usr/app/api/src"]
   }
 }

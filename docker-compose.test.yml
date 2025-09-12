@@ -5,7 +5,7 @@ services:
         condition: service_healthy
     build:
       context: .
-      dockerfile: testserver/Dockerfile
+      dockerfile: demos/Dockerfile
     attach: true
     environment:
       TZ: America/Chicago
@@ -19,6 +19,7 @@ services:
       RESET_DB_ON_STARTUP: 'true'
       ELASTIC_APM_ACTIVE: 'false'
       VALID_ORIGIN_HOSTS: ui
+      DEMO_INSTANCE: '${DEMO_INSTANCE:-default}'
     healthcheck:
       test: ["CMD", "wget", "-q", "http://127.0.0.1/health"]
       interval: 2s
@@ -32,6 +33,7 @@ services:
     environment:
       PUBLIC_API_BASE: http://api
       PUBLIC_AUTH_REDIRECT: http://fakeauth/login?clientId=reqquest&returnUrl=http%3A%2F%2Fui
+      PUBLIC_DEMO_INSTANCE: '${DEMO_INSTANCE:-default}'
     healthcheck:
       test: ["CMD", "wget", "-q", "http://127.0.0.1/"]
       interval: 2s

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { FieldRadio, FieldUpload } from '@txstate-mws/carbon-svelte'
-  import { StateResidencePromptData } from './types.js'
+  import type { StateResidencePromptData } from './types.js'
   export let configData
   export let data: Partial<StateResidencePromptData>
   $: legendText = `Are you a resident of ${configData.state_residence_req.residentOfState}?`  

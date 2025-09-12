@@ -5,7 +5,7 @@ services:
         condition: service_healthy
     build:
       context: .
-      dockerfile: ${API_INSTANCE:-testserver}/Dockerfile.dev
+      dockerfile: demos/Dockerfile.dev
     ports:
       - 127.0.0.1:81:80
       - 127.0.0.1:9229:9229
@@ -18,22 +18,24 @@ services:
       MYSQL_PASS: password
       JWT_TRUSTED_ISSUERS: '[{ "iss": "unified-auth", "url": "http://fakeauth/jwks" }, { "iss": "reqquest", "secret": "reqquest" }]'
       RESET_DB_ON_STARTUP: 'true'
+      DEMO_INSTANCE: '${DEMO_INSTANCE:-default}'
     volumes:
       - ./api/src:/usr/app/api/src
       - ./api/dist:/usr/app/api/dist
-      - ./${API_INSTANCE:-testserver}/src:/usr/app/${API_INSTANCE:-testserver}/src
+      - ./demos/src:/usr/app/demos/src
   ui:
     build:
       context: .
-      dockerfile: ${UI_INSTANCE:-ui}/Dockerfile.dev
+      dockerfile: ui/Dockerfile.dev
     ports:
       - 127.0.0.1:80:80
     environment:
       PUBLIC_API_BASE: http://localhost:81
       PUBLIC_AUTH_REDIRECT: http://localhost:3001/login?clientId=reqquest&returnUrl=http%3A%2F%2Flocalhost
       PUBLIC_ENVIRONMENT: 'DEV'
+      PUBLIC_DEMO_INSTANCE: '${DEMO_INSTANCE:-default}'
     volumes:
-      - ./${UI_INSTANCE:-ui}/src:/usr/app/src
+      - ./ui/src:/usr/app/src
       - ./ui/.svelte-kit/types:/usr/app/.svelte-kit/types
       - ./ui/svelte.config.js:/usr/app/svelte.config.js
       - ./ui/vite.config.ts:/usr/app/vite.config.ts
