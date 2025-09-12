@@ -63,23 +63,6 @@ export interface AccessGrantTag {
     __typename: 'AccessGrantTag'
 }
 
-export interface AccessRoleGroupManager {
-    fullname: string
-    email: string
-    __typename: 'AccessRoleGroupManager'
-}
-
-export interface AccessRoleGroup {
-    roleId: string
-    groupName: string
-    managers: (AccessRoleGroupManager[] | null)
-    /** The date the group was added to a role. */
-    dateAdded: Scalars['DateTime']
-    /** The name of the group. This should be unique even among all roleIds. */
-    dateCreated: (Scalars['DateTime'] | null)
-    __typename: 'AccessRoleGroup'
-}
-
 export interface AccessRole {
     actions: RoleActions
     /** A description of the grant. This is not used for anything, but can be useful for admins to understand what the grant was trying to do. */
@@ -125,10 +108,20 @@ export interface AccessRoleGrantActions {
 export interface AccessRoleGroup {
     /** The date the group was added to a role. */
     dateAdded: Scalars['DateTime']
+    dateCreated: Scalars['DateTime']
     /** The name of the group. This should be unique even among all roleIds. */
     groupName: Scalars['String']
+    managers: AccessRoleGroupManager[]
     roleId: Scalars['ID']
     __typename: 'AccessRoleGroup'
+}
+
+export interface AccessRoleGroupManager {
+    /** The date the group was added to a role. */
+    email: (Scalars['String'] | null)
+    /** The date the group was added to a role. */
+    fullname: Scalars['String']
+    __typename: 'AccessRoleGroupManager'
 }
 
 export interface AccessRoleValidatedResponse {
@@ -586,6 +579,8 @@ export interface RequirementPrompt {
     id: Scalars['ID']
     /** When true, this prompt has been invalidated by the answer to another prompt. The `answered` field should remain false until the user specifically answers this prompt again, regardless of the output of the definition's `complete` method. */
     invalidated: Scalars['Boolean']
+    /** If the prompt has been invalidated, this may contain a reason why. It should be displayed to the user. */
+    invalidatedReason: (Scalars['String'] | null)
     /** A human and machine readable identifier for the prompt. Will be used to match prompt data with UI and API code that handles it. */
     key: Scalars['String']
     /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
@@ -701,25 +696,6 @@ export interface AccessGrantTagGenqlSelection{
     __scalar?: boolean | number
 }
 
-export interface AccessRoleGroupManagerGenqlSelection{
-    fullname?: boolean | number
-    email?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
-export interface AccessRoleGroupGenqlSelection{
-    roleId?: boolean | number
-    /** The date the group was added to a role. */
-    dateAdded?: boolean | number
-    /** The name of the group. This should be unique even among all roleIds. */
-    groupName?: boolean | number
-    managers?: AccessRoleGroupManagerGenqlSelection
-    dateCreated?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
-
 export interface AccessRoleGenqlSelection{
     actions?: RoleActionsGenqlSelection
     /** A description of the grant. This is not used for anything, but can be useful for admins to understand what the grant was trying to do. */
@@ -782,9 +758,20 @@ tags?: (AccessTagInput[] | null)}
 export interface AccessRoleGroupGenqlSelection{
     /** The date the group was added to a role. */
     dateAdded?: boolean | number
+    dateCreated?: boolean | number
     /** The name of the group. This should be unique even among all roleIds. */
     groupName?: boolean | number
+    managers?: AccessRoleGroupManagerGenqlSelection
     roleId?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface AccessRoleGroupManagerGenqlSelection{
+    /** The date the group was added to a role. */
+    email?: boolean | number
+    /** The date the group was added to a role. */
+    fullname?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -1358,6 +1345,8 @@ export interface RequirementPromptGenqlSelection{
     id?: boolean | number
     /** When true, this prompt has been invalidated by the answer to another prompt. The `answered` field should remain false until the user specifically answers this prompt again, regardless of the output of the definition's `complete` method. */
     invalidated?: boolean | number
+    /** If the prompt has been invalidated, this may contain a reason why. It should be displayed to the user. */
+    invalidatedReason?: boolean | number
     /** A human and machine readable identifier for the prompt. Will be used to match prompt data with UI and API code that handles it. */
     key?: boolean | number
     /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
@@ -1485,6 +1474,14 @@ export interface ValidatedResponseGenqlSelection{
     export const isAccessRoleGroup = (obj?: { __typename?: any } | null): obj is AccessRoleGroup => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isAccessRoleGroup"')
       return AccessRoleGroup_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AccessRoleGroupManager_possibleTypes: string[] = ['AccessRoleGroupManager']
+    export const isAccessRoleGroupManager = (obj?: { __typename?: any } | null): obj is AccessRoleGroupManager => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAccessRoleGroupManager"')
+      return AccessRoleGroupManager_possibleTypes.includes(obj.__typename)
     }
     
 

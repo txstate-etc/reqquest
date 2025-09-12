@@ -663,10 +663,10 @@ class API extends APIBase {
         description: true,
         groups: {
           groupName: true,
-          // managers: {
-          //   fullname: true,
-          //   email: true
-          // },
+          managers: {
+            fullname: true,
+            email: true
+          },
           dateAdded: true,
           dateCreated: true
         },
@@ -695,10 +695,10 @@ class API extends APIBase {
         description: true,
         groups: {
           groupName: true,
-          // managers: {
-          //   fullname: true,
-          //   email: true
-          // },
+          managers: {
+            fullname: true,
+            email: true
+          },
           dateAdded: true,
           dateCreated: true
         },

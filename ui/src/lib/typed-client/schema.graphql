@@ -141,10 +141,20 @@ input AccessRoleGrantUpdate {
 type AccessRoleGroup {
   """The date the group was added to a role."""
   dateAdded: DateTime!
+  dateCreated: DateTime!
 
   """The name of the group. This should be unique even among all roleIds."""
   groupName: String!
+  managers: [AccessRoleGroupManager!]!
   roleId: ID!
+}
+
+type AccessRoleGroupManager {
+  """The date the group was added to a role."""
+  email: String
+
+  """The date the group was added to a role."""
+  fullname: String!
 }
 
 input AccessRoleInput {
@@ -1281,6 +1291,11 @@ type RequirementPrompt {
   When true, this prompt has been invalidated by the answer to another prompt. The `answered` field should remain false until the user specifically answers this prompt again, regardless of the output of the definition's `complete` method.
   """
   invalidated: Boolean!
+
+  """
+  If the prompt has been invalidated, this may contain a reason why. It should be displayed to the user.
+  """
+  invalidatedReason: String
 
   """
   A human and machine readable identifier for the prompt. Will be used to match prompt data with UI and API code that handles it.
