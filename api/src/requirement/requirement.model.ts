@@ -78,6 +78,7 @@ export class ApplicationRequirement extends Requirement {
   appRequestId: string
   applicationInternalId: number
   applicationId: string
+  userInternalId: number
   periodId: string
   programKey: string
   appRequestTags?: Record<string, string[]>
@@ -96,6 +97,7 @@ export class ApplicationRequirement extends Requirement {
     this.appRequestInternalId = row.appRequestId
     this.appRequestId = String(row.appRequestId)
     this.periodId = String(row.periodId)
+    this.userInternalId = row.userId
     this.status = row.status
     this.statusReason = row.statusReason
     this.workflowStageKey = row.workflowStage

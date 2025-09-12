@@ -1,6 +1,6 @@
 import { Arg, Ctx, FieldResolver, Mutation, Query, Resolver, Root } from 'type-graphql'
 import { Context, ValidatedResponse } from '@txstate-mws/graphql-server'
-import { requirementRegistry, Requirement, ApplicationRequirement, Prompt, promptRegistry, RequirementPrompt, RequirementPromptService, Application, ApplicationService, Configuration, ConfigurationService, RQContext, PeriodProgramRequirement, PromptService, JsonData, PeriodPromptService, PeriodPrompt, PeriodWorkflowStage, ProgramService, PeriodRequirementService, PeriodService } from '../internal.js'
+import { requirementRegistry, Requirement, ApplicationRequirement, Prompt, promptRegistry, RequirementPrompt, RequirementPromptService, Application, ApplicationService, Configuration, ConfigurationService, RQContext, PeriodProgramRequirement, PromptService, JsonData, PeriodPromptService, PeriodPrompt, PeriodWorkflowStage, ProgramService, PeriodRequirementService, PeriodService, ApplicationRequirementService } from '../internal.js'
 
 @Resolver(of => Requirement)
 export class RequirementResolver {
@@ -29,7 +29,7 @@ export class ApplicationRequirementResolver {
 
   @FieldResolver(type => JsonData, { nullable: true, description: 'The configuration data for this requirement in the app request\'s period.' })
   async configurationData (@Ctx() ctx: RQContext, @Root() applicationRequirement: ApplicationRequirement) {
-    return ctx.svc(ConfigurationService).getData(applicationRequirement.periodId, applicationRequirement.key)
+    return ctx.svc(ApplicationRequirementService).getConfigurationData(applicationRequirement)
   }
 
   @FieldResolver(type => String, { description: 'The smart title for this requirement in the app request\'s period. For instance, might be "Applicant must have GPA over 3.4" instead of the regular title "Applicant must meet GPA requirement". Will fall back to the regular title for any requirement that does not provide a smart title.' })

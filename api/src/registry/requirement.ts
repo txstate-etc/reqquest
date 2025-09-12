@@ -1,5 +1,5 @@
 import { type ValidateFunction } from 'ajv'
-import { applicantRequirementTypes, AppRequestData, ConfigurationDefinition, programRegistry, promptRegistry, RequirementStatus, RequirementType, registryAjv } from '../internal.js'
+import { applicantRequirementTypes, AppRequestData, ConfigurationDefinition, programRegistry, promptRegistry, RequirementStatus, RequirementType, registryAjv, Prompt } from '../internal.js'
 import { isNotEmpty } from 'txstate-utils'
 
 export interface RequirementDefinition<ConfigurationDataType = any> {
@@ -143,6 +143,7 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
 export interface RequirementDefinitionProcessed extends RequirementDefinition {
   allPromptKeys: string[]
   visiblePromptKeys: string[]
+  visiblePrompts: Prompt[]
   promptKeySet: Set<string>
   anyOrderPromptKeySet: Set<string>
   noDisplayPromptKeySet: Set<string>
@@ -162,6 +163,7 @@ class RequirementRegistry {
       ...definition,
       allPromptKeys,
       visiblePromptKeys,
+      visiblePrompts: [],
       promptKeySet: new Set(allPromptKeys),
       anyOrderPromptKeySet: new Set(definition.promptKeysAnyOrder ?? []),
       noDisplayPromptKeySet: new Set(definition.promptKeysNoDisplay ?? [])
@@ -190,6 +192,10 @@ class RequirementRegistry {
     const reachableKeys = new Set(programRegistry.reachable.flatMap(program => program.requirementKeys))
     this.reachable = this.requirementsList.filter(requirement => reachableKeys.has(requirement.key))
     promptRegistry.finalize()
+    for (const reqKey of Object.keys(this.requirements)) {
+      const req = this.requirements[reqKey]
+      req.visiblePrompts = req.visiblePromptKeys.map(key => new Prompt(promptRegistry.get(key)))
+    }
   }
 
   validateConfig (key: string, data: any) {

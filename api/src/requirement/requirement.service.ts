@@ -3,9 +3,10 @@ import {
   Application, AuthService, getApplicationRequirements, ApplicationRequirement,
   ApplicationRequirementFilter, PeriodProgramRequirement, getPeriodProgramRequirements,
   PeriodProgramKey, PeriodProgramRequirementKey, PeriodRequirementKey, AppRequest,
-  AppRequestService,
-  updatePeriodProgramRequirement
+  AppRequestService, updatePeriodProgramRequirement, RequirementType,
+  ConfigurationService
 } from '../internal.js'
+import { BaseService } from '@txstate-mws/graphql-server'
 
 const byIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -29,7 +30,7 @@ const byAppRequestIdLoader = new OneToManyLoader({
   idLoader: [byIdLoader]
 })
 
-export class ApplicationRequirementService extends AuthService<ApplicationRequirement> {
+export class ApplicationRequirementServiceInternal extends BaseService<ApplicationRequirement> {
   async findById (id: string, appRequestTags?: Record<string, string[]>) {
     const req = await this.loaders.get(byIdLoader).load(id)
     req!.appRequestTags = appRequestTags ?? await this.svc(AppRequestService).getTags(req!.appRequestId)
@@ -46,6 +47,55 @@ export class ApplicationRequirementService extends AuthService<ApplicationRequir
     const reqs = await this.loaders.get(byApplicationIdLoader).load(application.id)
     for (const req of reqs) req.appRequestTags = application.appRequestTags
     return reqs
+  }
+}
+
+export class ApplicationRequirementService extends AuthService<ApplicationRequirement> {
+  raw = this.svc(ApplicationRequirementServiceInternal)
+  async findById (id: string, appRequestTags?: Record<string, string[]>) {
+    const req = await this.raw.findById(id, appRequestTags)
+    return this.removeUnauthorized(req)
+  }
+
+  async findByAppRequest (appRequest: AppRequest) {
+    const reqs = await this.raw.findByAppRequest(appRequest)
+    return this.removeUnauthorized(reqs)
+  }
+
+  async findByApplication (application: Application) {
+    const reqs = await this.raw.findByApplication(application)
+    return this.removeUnauthorized(reqs)
+  }
+
+  async getConfigurationData (requirement: ApplicationRequirement) {
+    if (!this.mayViewConfig(requirement)) return undefined
+    return await this.svc(ConfigurationService).getData(requirement.periodId, requirement.key)
+  }
+
+  isOwn (requirement: ApplicationRequirement): boolean {
+    return requirement.userInternalId === this.user?.internalId
+  }
+
+  // requirements need to be visible so that we can see the statusReason and show it
+  // to everyone who can see the app request, we have a mayViewDetails below to control
+  // elevated access like viewing the configuration data
+  mayView (requirement: ApplicationRequirement): boolean {
+    if (this.isOwn(requirement)) return true
+    return this.hasControl('AppRequest', 'review', requirement.appRequestTags)
+  }
+
+  mayViewConfig (requirement: ApplicationRequirement) {
+    const isReviewer = this.hasControl('AppRequest', 'review', requirement.appRequestTags) && (!this.isOwn(requirement) || this.hasControl('AppRequest', 'review_own', requirement.appRequestTags))
+    const isOwn = this.isOwn(requirement)
+    if (!isReviewer && !isOwn) return false
+
+    if ([RequirementType.ACCEPTANCE, RequirementType.POSTQUAL, RequirementType.PREQUAL, RequirementType.QUALIFICATION].includes(requirement.type)) return true
+
+    if (isReviewer) {
+      const visiblePrompts = requirement.definition.visiblePrompts
+      if (visiblePrompts.some(prompt => this.hasControl('PromptAnswer', 'view', { ...prompt.authorizationKeys, ...requirement.appRequestTags }))) return true
+    }
+    return false
   }
 }
 

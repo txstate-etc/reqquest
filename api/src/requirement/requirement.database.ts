@@ -7,6 +7,7 @@ export interface ApplicationRequirementRow {
   applicationId: number
   appRequestId: number
   periodId: number
+  userId: number
   requirementKey: string
   programKey: string
   workflowStage?: string
@@ -36,7 +37,7 @@ async function processFilters (filter: ApplicationRequirementFilter) {
 export async function getApplicationRequirements (filter: ApplicationRequirementFilter, tdb: Queryable = db) {
   const { where, binds } = await processFilters(filter)
   const rows = await tdb.getall<ApplicationRequirementRow>(`
-    SELECT r.*, a.periodId, app.programKey
+    SELECT r.*, a.periodId, app.programKey, a.userId
     FROM application_requirements r
     INNER JOIN applications app ON app.id=r.applicationId
     INNER JOIN app_requests a ON a.id=r.appRequestId
