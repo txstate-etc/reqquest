@@ -211,7 +211,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * on post-processed data. Be aware of the potential transformations when you set the `arg` for each
    * MutationMessage you return.
    */
-  validate?: (data: Partial<DataType>, config: ConfigurationDataType, allConfig: Record<string, any>) => MutationMessage[]
+  validate?: (data: Partial<DataType>, config: ConfigurationDataType, relatedConfig: Record<string, any>) => MutationMessage[]
   /**
    * In some cases you may want to provide MutationMessages that actually prevent saving, for instance
    * when a prompt has file uploads, and you want to create a file type or file size restriction. In this
@@ -222,7 +222,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * runs before the `preProcessData` function so it should expect the pre-processed data structure.
    * `preProcessData` will not be run at all if this returns any errors.
    */
-  preValidate?: (data: Partial<InputDataType>, config: ConfigurationDataType, allConfig: Record<string, any>) => MutationMessage[]
+  preValidate?: (data: Partial<InputDataType>, config: ConfigurationDataType, relatedConfig: Record<string, any>) => MutationMessage[]
   /**
    * A function that can be used to preload data for the prompt. This is useful for
    * prompts that depend on data from the database or other sources. Data provided by
@@ -232,7 +232,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    *
    * This function will not run if the user has already partially answered the prompt.
    */
-  preload?: (appRequest: AppRequest, config: ConfigurationDataType) => Promise<DataType> | DataType
+  preload?: (appRequest: AppRequest, config: ConfigurationDataType, relatedConfig: Record<string, any>) => Promise<DataType> | DataType
   /**
    * A function that can be used to fetch data from external sources that will
    * affect the prompt UI. The data from this function will be provided to the svelte
@@ -242,7 +242,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * any of this data is required for decision-making, you should store it alongside the
    * data collected from the user during the prompt, e.g. use FieldHidden.
    */
-  fetch?: (appRequest: AppRequest, config: ConfigurationDataType) => Promise<FetchType> | FetchType
+  fetch?: (appRequest: AppRequest, config: ConfigurationDataType, relatedConfig: Record<string, any>) => Promise<FetchType> | FetchType
   /**
    * A list of keys of other prompts that the person answering this prompt depends
    * upon in order to answer this prompt. When the answer to any of these prompts
@@ -310,7 +310,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * evaluation routine, so it has to operate on post-processed data. Be aware of the potential
    * transformations when you set the `arg` for each MutationMessage returned by `validate`.
    */
-  preProcessData?: (data: InputDataType, ctx: RQContext, appRequest: AppRequest) => Promise<DataType> | DataType
+  preProcessData?: (data: InputDataType, ctx: RQContext, appRequest: AppRequest, relatedConfig: Record<string, any>) => Promise<DataType> | DataType
   /**
    * Sometimes, you will want to allow application administrators to control various aspects of
    * how the prompt will be displayed or evaluated. For example, you might want administrators to

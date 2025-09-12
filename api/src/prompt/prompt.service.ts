@@ -106,10 +106,13 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
   }
 
   async getPreloadData (requirementPrompt: RequirementPrompt) {
-    const appRequest = (await this.svc(AppRequestServiceInternal).findByInternalId(requirementPrompt.appRequestInternalId))!
-    const data = await this.svc(AppRequestServiceInternal).getData(requirementPrompt.appRequestInternalId)
-    const config = await this.svc(ConfigurationService).getData(appRequest.periodId, requirementPrompt.key)
-    if (data[requirementPrompt.definition.key] == null) return await requirementPrompt.definition.preload?.(appRequest, config)
+    const [appRequest, data] = await Promise.all([
+      this.svc(AppRequestServiceInternal).findByInternalId(requirementPrompt.appRequestInternalId),
+      this.svc(AppRequestServiceInternal).getData(requirementPrompt.appRequestInternalId)
+    ])
+    const relatedConfig = await this.svc(ConfigurationService).getRelatedData(appRequest!.periodId, requirementPrompt.key)
+    const config = relatedConfig[requirementPrompt.key] ?? {}
+    if (data[requirementPrompt.definition.key] == null) return await requirementPrompt.definition.preload?.(appRequest!, config, relatedConfig)
     return data[requirementPrompt.definition.key]
   }
 
@@ -161,7 +164,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
       if (!appRequest) throw new Error('AppRequest not found')
       for (const message of prompt.definition.preValidate?.(data, allConfigData[prompt.key] ?? {}, allConfigData) ?? []) response.addMessage(message.message, message.arg, message.type)
       const hadPrevalidateErrors = response.hasErrors()
-      const processedData = prompt.definition.preProcessData ? await prompt.definition.preProcessData(data, this.ctx, appRequest) : data
+      const processedData = prompt.definition.preProcessData ? await prompt.definition.preProcessData(data, this.ctx, appRequest, allConfigData) : data
       for (const message of prompt.definition.validate?.(processedData, allConfigData[prompt.key] ?? {}, allConfigData) ?? []) response.addMessage(message.message, message.arg, message.type)
       if (dataVersion != null && appRequest.dataVersion !== dataVersion) {
         throw new Error('Someone else is working on the same request and made changes since you loaded. Copy any unsaved work into another document and reload the page to see what has changed.')

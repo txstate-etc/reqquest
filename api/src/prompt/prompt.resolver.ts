@@ -23,8 +23,9 @@ export class RequirementPromptResolver {
     if (savedAtVersion && savedAtVersion < promptRegistry.latestMigration()) throw new Error('Client is out of date. Please refresh.')
     const appRequest = await ctx.svc(AppRequestService).findByInternalId(requirementPrompt.appRequestInternalId)
     if (!appRequest) throw new Error('AppRequest not found')
-    const configData = await ctx.svc(ConfigurationService).getData(appRequest.periodId, requirementPrompt.key)
-    return await requirementPrompt.definition.fetch?.(appRequest, configData)
+    const relatedConfig = await ctx.svc(ConfigurationService).getRelatedData(appRequest.periodId, requirementPrompt.key)
+    const config = relatedConfig[requirementPrompt.key] ?? {}
+    return await requirementPrompt.definition.fetch?.(appRequest, config, relatedConfig)
   }
 
   @FieldResolver(type => JsonData, { nullable: true, description: 'Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user.' })
