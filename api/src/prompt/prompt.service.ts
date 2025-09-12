@@ -49,13 +49,7 @@ const periodPromptByPeroidIdLoader = new OneToManyLoader({
   idLoader: periodPromptByPeriodIdAndPromptKeyLoader
 })
 
-export class PromptServiceInternal extends BaseService<Prompt> {
-
-}
-
 export class PromptService extends AuthService<Prompt> {
-  raw = this.svc(PromptServiceInternal)
-
   async find () {
     return promptRegistry.list().map(prompt => new Prompt(prompt))
   }
@@ -65,7 +59,7 @@ export class PromptService extends AuthService<Prompt> {
   }
 }
 
-export class RequirementPromptService extends AuthService<RequirementPrompt> {
+export class RequirementPromptServiceInternal extends BaseService<RequirementPrompt> {
   async findByInternalId (internalId: number) {
     const prompt = await this.loaders.get(byInternalIdLoader).load(internalId)
     if (prompt) prompt.appRequestTags = await this.svc(AppRequestService).getTags(prompt.appRequestId)
@@ -86,6 +80,29 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     const prompts = await this.loaders.get(byRequirementIdLoader).load(requirement.id)
     for (const prompt of prompts) prompt.appRequestTags = requirement.appRequestTags
     return prompts
+  }
+}
+
+export class RequirementPromptService extends AuthService<RequirementPrompt> {
+  raw = this.svc(RequirementPromptServiceInternal)
+
+  async findByInternalId (internalId: number) {
+    const prompt = await this.raw.findByInternalId(internalId)
+    return this.removeUnauthorized(prompt)
+  }
+
+  async findById (id: string) {
+    return await this.findByInternalId(Number(id))
+  }
+
+  async findByAppRequest (appRequest: AppRequest) {
+    const prompts = await this.raw.findByAppRequest(appRequest)
+    return this.removeUnauthorized(prompts)
+  }
+
+  async findByApplicationRequirement (requirement: ApplicationRequirement) {
+    const prompts = await this.raw.findByApplicationRequirement(requirement)
+    return this.removeUnauthorized(prompts)
   }
 
   async getPreloadData (requirementPrompt: RequirementPrompt) {

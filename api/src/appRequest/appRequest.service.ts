@@ -114,14 +114,11 @@ export class AppRequestService extends AuthService<AppRequest> {
     if (!appRequest) return {} as AppRequestData
     const [data, prompts] = await Promise.all([
       this.raw.getData(appRequestInternalId),
+      // this will filter out unauthorized prompts so we can clean up the data object
       this.svc(RequirementPromptService).findByAppRequest(appRequest)
     ])
-    const allowedPromptKeys = new Set<string>()
-    for (const prompt of prompts) {
-      if (this.svc(RequirementPromptService).mayView(prompt)) allowedPromptKeys.add(prompt.definition.key)
-    }
     const cleanData: AppRequestData = { savedAtVersion: data.savedAtVersion }
-    for (const key of allowedPromptKeys) cleanData[key] = data[key]
+    for (const key of prompts.map(p => p.key)) cleanData[key] = data[key]
     return cleanData
   }
 
