@@ -1,26 +1,26 @@
 <script lang="ts">
   import type { UIRegistry } from '$lib/registry.js'
-  import type { ApplicationDetailsData, SelectedApplication, PromptSection } from './types.js'
-  import { TagSet, Panel } from '@txstate-mws/carbon-svelte'
   import { getAppRequestStatusInfo, getApplicationStatusInfo } from '$lib/status-utils.js'
+  import type { Scalars } from '$lib/typed-client/schema'
+  import { Panel, TagSet } from '@txstate-mws/carbon-svelte'
+  import type { DashboardAppRequest, AnsweredPrompt, PromptSection } from './types'
 
-  // Props
-  export let selectedApplication: SelectedApplication | undefined = undefined
-
-  export let applicationDetails: ApplicationDetailsData | undefined = undefined
-
+  export let appRequest: DashboardAppRequest | undefined = undefined
+  export let appData: Scalars['JsonData'] = {}
+  export let prequalPrompts: AnsweredPrompt[] | undefined = undefined
+  export let postqualPrompts: AnsweredPrompt[] | undefined = undefined
   export let loading = false
   export let uiRegistry: UIRegistry
 
   // Group prompts by sections, showing only answered prompts
   $: sections = (() => {
-    if (!applicationDetails) return []
+    if (!appRequest) return []
 
     const sections: PromptSection[] = []
 
     // General Questions === PREQUAL prompts
-    if (applicationDetails.prequalPrompts && applicationDetails.prequalPrompts.length > 0) {
-      const answeredPrequal = applicationDetails.prequalPrompts.filter(p => p.answered)
+    if (prequalPrompts && prequalPrompts.length > 0) {
+      const answeredPrequal = prequalPrompts.filter(p => p.answered)
       if (answeredPrequal.length > 0) {
         sections.push({
           title: 'General Questions',
@@ -29,22 +29,9 @@
       }
     }
 
-    // Program-specific sections
-
-    applicationDetails.applications.forEach(app => {
-      const allAppPrompts = app.requirements.flatMap(r => r.prompts)
-      const answeredAppPrompts = allAppPrompts.filter(p => p.answered)
-      if (answeredAppPrompts.length > 0) {
-        sections.push({
-          title: app.navTitle,
-          prompts: answeredAppPrompts
-        })
-      }
-    })
-
     // Additional Questions === POSTQUAL prompts
-    if (applicationDetails.postqualPrompts && applicationDetails.postqualPrompts.length > 0) {
-      const answeredPostqual = applicationDetails.postqualPrompts.filter(p => p.answered)
+    if (postqualPrompts && postqualPrompts.length > 0) {
+      const answeredPostqual = postqualPrompts.filter(p => p.answered)
       if (answeredPostqual.length > 0) {
         sections.push({
           title: 'Additional Questions',
@@ -57,19 +44,28 @@
   })()
 </script>
 
-{#if selectedApplication}
+{#if appRequest}
   <div class="application-details flow">
     <!-- Application Status Panel -->
-    <Panel title="{selectedApplication.period.name} - Status">
+    <div class="app-view-intro text-center">
+      <h2 class="text-xl mb-3">View your {appRequest.period.name} application</h2>
+      <p class="app-view-subtitle mb-3">Select document names to preview them.</p>
+    </div>
+    <section>
       <div class="status-content">
-        <p class="mb-4 status-text">Overall Status: <strong>{getAppRequestStatusInfo(selectedApplication.status).label}</strong></p>
+        <dl class="status-list-item flex items-center justify-between px-4 py-3 border-b ">
+          <dt class="status-list-label font-medium">Application Status</dt>
+          <dd>
+            <TagSet tags={[{ label: getAppRequestStatusInfo(appRequest.status).label, type: getAppRequestStatusInfo(appRequest.status).color }]} />
+          </dd>
+        </dl>
 
         <!-- Application Status List -->
-        {#if selectedApplication.applications && selectedApplication.applications.length > 0}
+        {#if appRequest.applications.length > 0}
           <div class="status-list border rounded">
-            {#each selectedApplication.applications as application}
+            {#each appRequest.applications as application}
               {@const appStatusTag = getApplicationStatusInfo(application.status)}
-              <dl class="status-list-item flex items-center justify-between px-4 py-3 border-b last:border-b-0">
+              <dl class="status-list-item flex items-center justify-between px-4 py-3 border-b ">
                 <dt class="status-list-label font-medium">{application.title}</dt>
                 <dd>
                   <TagSet tags={[{ label: appStatusTag.label, type: appStatusTag.color }]} />
@@ -79,7 +75,7 @@
           </div>
         {/if}
       </div>
-    </Panel>
+    </section>
 
     <!-- Prompt Sections -->
     {#if loading}
@@ -95,14 +91,12 @@
               <dl class="prompt-list mb-4 last:mb-0 p-3 border-b-2 border-solid">
                 <dt class="prompt-term font-semibold mb-2">{prompt.title}</dt>
                 <dd class="prompt-answer">
-                  {#if applicationDetails}
-                    {#if applicationDetails.data[prompt.key] && def.displayComponent}
-                      <svelte:component this={def.displayComponent} data={applicationDetails.data[prompt.key]} />
-                    {:else if applicationDetails.data[prompt.key]}
-                      <em>Answered (display component not found)</em>
-                    {:else}
-                      <em>Answered (no data available)</em>
-                    {/if}
+                  {#if appData[prompt.key] && def.displayComponent}
+                    <svelte:component this={def.displayComponent} data={appData[prompt.key]} />
+                  {:else if appData[prompt.key]}
+                    <em>Answered (display component not found)</em>
+                  {:else}
+                    <em>Answered (no data available)</em>
                   {/if}
                 </dd>
               </dl>
@@ -122,6 +116,17 @@
 {/if}
 
 <style>
+
+  .app-view-subtitle {
+    color: var(--cds-text-02);
+    /* margin-top: -0.5rem; */
+    margin-bottom: 1rem;
+  }
+
+  .status-list-item {
+    border-bottom: 1px solid var(--cds-border-subtle);
+
+  }
   dl:not(:has(dl)) {
     display:grid;
     grid-template-columns: 2fr 1fr;
@@ -132,10 +137,6 @@
     display:grid;
     grid-template-columns: 2fr 1fr;
     row-gap:0.5rem;
-  }
-
-  .status-text {
-    color: var(--cds-text-02);
   }
 
   .status-list {
