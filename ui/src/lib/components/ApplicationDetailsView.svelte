@@ -1,11 +1,25 @@
 <script lang="ts">
   import type { UIRegistry } from '$lib/registry.js'
   import { getAppRequestStatusInfo, getApplicationStatusInfo } from '$lib/status-utils.js'
-  import type { Scalars } from '$lib/typed-client/schema'
+  import type { Scalars, AppRequestStatus, ApplicationStatus } from '$lib/typed-client/schema'
   import { Panel, TagSet } from '@txstate-mws/carbon-svelte'
-  import type { DashboardAppRequest, AnsweredPrompt, PromptSection } from './types'
+  import type { AnsweredPrompt, PromptSection } from './types'
 
-  export let appRequest: DashboardAppRequest | undefined = undefined
+  // Local interface for what this component actually needs
+  interface AppRequestForDetails {
+    id: string
+    status: AppRequestStatus
+    period: { name: string }
+    applications: {
+      title: string
+      status: ApplicationStatus
+    }[]
+    createdAt?: string
+    updatedAt?: string
+    actions?: any
+  }
+
+  export let appRequest: AppRequestForDetails | undefined = undefined
   export let appData: Scalars['JsonData'] = {}
   export let prequalPrompts: AnsweredPrompt[] | undefined = undefined
   export let postqualPrompts: AnsweredPrompt[] | undefined = undefined

@@ -1,26 +1,20 @@
 <script lang="ts">
-  import type { PageData } from './$types'
-  import { getAppRequestStatusInfo } from '$lib/status-utils.js'
   import { ApplicationDetailsView } from '$lib/components'
   import { uiRegistry } from '../../../../local'
+  import type { PageData } from './$types'
 
   export let data: PageData
-  $: ({ selectedApplication, applicationDetails } = data)
+  $: ({ appRequest, appData, prequalPrompts, postqualPrompts } = data)
 </script>
 
-{#if selectedApplication}
-  <div class="application-header flow ">
-    <div class="application-title text-xl font-bold ">Application Export</div>
-    <div class="application-period font-bold">{selectedApplication.period.name}</div>
-    <div class="application-status">
-      Status: <strong>{getAppRequestStatusInfo(selectedApplication.status).label}</strong>
-    </div>
-  </div>
+{#if appRequest}
 
   <div class="export-content max-w-4xl ">
     <ApplicationDetailsView
-      {selectedApplication}
-      {applicationDetails}
+      {appRequest}
+      {appData}
+      {prequalPrompts}
+      {postqualPrompts}
       loading={false}
       {uiRegistry}
     />

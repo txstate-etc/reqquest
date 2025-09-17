@@ -2,11 +2,13 @@
   import { goto, invalidate } from '$app/navigation'
   import { base } from '$app/paths'
   import { api } from '$lib'
-  import { ApplicationDetailsView, AppRequestCard, type ApplicationDetailsData, type DashboardAppRequest } from '$lib/components'
-  import { getPeriodDisplayInfo, getStatusActionType, getSubmitButtonText } from '$lib/status-utils.js'
-  import { CardGrid, FieldMultiselect, FieldSelect, FilterUI, PanelDialog, PanelFormDialog, Toasts } from '@txstate-mws/carbon-svelte'
+  import { ApplicationDetailsView, AppRequestCard, IntroPanel } from '$lib/components'
+  import type { DashboardAppRequest, ApplyNavigationResponse, AnsweredPrompt } from '$lib/components/types'
+  import { getAppRequestStatusInfo, getPeriodDisplayInfo, getPeriodStatus, getStatusActionType, getSubmitButtonText } from '$lib/status-utils.js'
+  import type { AppRequestStatus, Scalars } from '$lib/typed-client/schema'
+  import { CardGrid, FieldMultiselect, FieldSelect, FilterUI, Panel, PanelDialog, PanelFormDialog, TagSet, Toasts } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
-  import { Button, InlineNotification, Modal } from 'carbon-components-svelte'
+  import { Button, Dropdown, InlineNotification, Modal, Tooltip } from 'carbon-components-svelte'
   import { Close, DocumentExport, Download, Reset, Warning } from 'carbon-icons-svelte'
   import { uiRegistry } from '../../../local/index.js'
   import type { PageData } from './$types'
@@ -17,26 +19,66 @@
     yearSubmitted?: string[]
   }
 
-  export let data: PageData
+  const IN_PROGRESS_STATUSES: AppRequestStatus[] = ['STARTED', 'READY_TO_SUBMIT']
 
+  export let data: PageData
   $: ({ appRequests, availableYears, access, openPeriods } = data)
 
   let dialog = false
   let sidePanelOpen = false
-  let selectedApplication: DashboardAppRequest | null = null
   let loading = false
-  let applicationDetails: ApplicationDetailsData | null = null
-  let cancelConfirmation: { open: boolean, requestId: string | null } = { open: false, requestId: null }
-  let filterDataSearch: FilterState | undefined
+
+  // Selected Items
+  let selectedAppRequest: DashboardAppRequest | null = null
+  let selectedPeriodId: string | undefined = undefined
   let lastInsertedId: string | undefined
+
+  // Application Details Data (loaded when side panel opens)
+  let appData: Scalars['JsonData'] = {}
+  let prequalPrompts: ApplyNavigationResponse['prequalPrompts'] | undefined = undefined
+  let postqualPrompts: ApplyNavigationResponse['postqualPrompts'] | undefined = undefined
+  let filterDataSearch: FilterState | undefined
+
+  // Modal State
+  let cancelConfirmation: { open: boolean, requestId: string | null } = { open: false, requestId: null }
+
+  // Auto-select period. Only for single period scenarios
+  $: if (openPeriods.length === 1 && !selectedPeriodId) {
+    selectedPeriodId = openPeriods[0].id
+  }
+  $: displayablePeriods = openPeriods.length > 0 ? getOpenAndUpcomingPeriods(openPeriods) : []
+  $: currentPeriod = getCurrentPeriod(displayablePeriods, selectedPeriodId)
+  $: periodInfo = currentPeriod ? getPeriodDisplayInfo(currentPeriod) : null
+
+  // ==========================================
+  // Period Management Helper Functions
+  // ==========================================
+  function getCurrentPeriod (periods: typeof openPeriods, selectedId: string | undefined) {
+    if (periods.length === 1) return periods[0]
+    if (selectedId) return periods.find(p => p.id === selectedId) ?? null
+    return null
+  }
+
+  function getExistingApplicationForPeriod (periodName: string): DashboardAppRequest | undefined {
+    return appRequests.find(req => req.period.name === periodName)
+  }
+
+  function getOpenAndUpcomingPeriods (periods: typeof openPeriods): typeof openPeriods {
+    return periods
+      .filter(period => {
+        const status = getPeriodStatus(period)
+        return status === 'open' || status === 'upcoming'
+      })
+      .sort((a, b) => new Date(a.openDate).getTime() - new Date(b.openDate).getTime())
+  }
 
   function showError (message: string) {
     toasts.add(message, 'error', 7000)
   }
 
-  // ========================================
-  // === Action Handler ===
-  // ========================================
+  // ==========================================
+  // API Action Handlers
+  // ==========================================
 
   async function handleApiAction (
     action: () => Promise<any>,
@@ -51,7 +93,7 @@
           toasts.add(successMessage, 'success', 5000)
         }
       } else {
-        const error = result.messages?.find((m: any) => m.type === 'error')?.message
+        const error = result.messages?.find((m: { type: string, message: string }) => m.type === 'error')?.message
         showError(error ?? errorMessage)
       }
     } catch (error) {
@@ -59,9 +101,9 @@
     }
   }
 
-  // ========================================
-  // === UI Card ActionSet ===
-  // ========================================
+  // ==========================================
+  // UI Card Action Builders
+  // ==========================================
 
   // TODO probably switch this to hide actions instead of disable, but it is nice to see them for now.
   // In general these actions are based off of the text info in https://www.figma.com/design/VXFWNXZ6UNlDxmGNwVoEuu/ReqQuest?node-id=954-101490&m=dev
@@ -109,9 +151,9 @@
     ]
   }
 
-  // ========================================
-  // === App actions ===
-  // ========================================
+  // ==========================================
+  // Application Actions
+  // ==========================================
   const appealDecision = async (requestId: string) =>
     await handleApiAction(
       async () => await api.returnAppRequest(requestId),
@@ -142,30 +184,26 @@
     await goto(`${base}/requests/${requestId}/export`)
   }
 
-  // ========================================
-  // === Panel Dialog Management ===
-  // ========================================
+  // ==========================================
+  // Panel Dialog Management
+  // ==========================================
 
   async function openSidePanel (appRequest: DashboardAppRequest) {
-    selectedApplication = appRequest
+    selectedAppRequest = appRequest
     sidePanelOpen = true
     loading = true
 
     try {
-      // Fetch all application details in one go
-      const [details, appData] = await Promise.all([
+      // Fetch additional application details for the side panel
+      const [details, requestAppData] = await Promise.all([
         api.getApplyNavigation(appRequest.id),
         api.getAppRequestData(appRequest.id)
       ])
 
       if (details.appRequest) {
-        applicationDetails = {
-          ...details.appRequest,
-          data: appData,
-          prequalPrompts: details.prequalPrompts,
-          postqualPrompts: details.postqualPrompts,
-          applications: details.appRequest.applications as ApplicationDetailsData['applications']
-        }
+        appData = requestAppData
+        prequalPrompts = details.prequalPrompts
+        postqualPrompts = details.postqualPrompts
       }
     } catch (error) {
       showError('Failed to load application details')
@@ -177,8 +215,10 @@
 
   function closeSidePanel () {
     sidePanelOpen = false
-    selectedApplication = null
-    applicationDetails = null
+    selectedAppRequest = null
+    appData = {}
+    prequalPrompts = undefined
+    postqualPrompts = undefined
   }
 
   async function handleCancelConfirm () {
@@ -195,9 +235,9 @@
 
   // Handle submit action based on status action type, used for PanelDialog, specifically for the App View-only side panel
   async function handleSubmitAction () {
-    if (!selectedApplication) return
+    if (!selectedAppRequest) return
 
-    const { status, id } = selectedApplication
+    const { status, id } = selectedAppRequest
     const actionType = getStatusActionType(status)
 
     switch (actionType) {
@@ -216,17 +256,16 @@
     }
   }
 
-  // ========================================
-  // === Form Handlers ===
-  // ========================================
+  // ==========================================
+  // Form Handlers
+  // ==========================================
 
   async function clickCreateAppRequest () {
-    if (openPeriods.length === 1) {
-      const { success } = await submitAppRequest({ periodId: openPeriods[0].id })
-      if (success) await onSaved()
-    } else {
-      dialog = true
-    }
+    // Use selected period for multiple, or first period for single
+    const periodId = openPeriods.length > 1 ? selectedPeriodId : openPeriods[0]?.id
+    if (!periodId) return
+    const { success } = await submitAppRequest({ periodId })
+    if (success) await onSaved()
   }
 
   function closeDialog () {
@@ -253,9 +292,9 @@
     }
   }
 
-  // ========================================
-  // === FilterUI Helper Functions ===
-  // ========================================
+  // ==========================================
+  // FilterUI Helper Functions
+  // ==========================================
 
   function getAvailableYears (years: number[]) {
     return years.map(year => ({ value: year.toString(), label: year.toString() }))
@@ -264,11 +303,9 @@
   // Reactive statements for filter options
   $: yearOptions = getAvailableYears(availableYears)
   $: recentDays = uiRegistry.config.applicantDashboardRecentDays ?? 30
-  // TODO: only display 3 periods max for now pending final design
-  $: displayedPeriods = openPeriods.slice(0, 3)
 </script>
 
-<div class="flow">
+<div class="flow applicant-dashboard">
   <!-- Filter UI for recent/past applications -->
   <FilterUI
     search={filterDataSearch?.tab === 'past_applications'}
@@ -286,46 +323,97 @@
   </FilterUI>
 
   {#if filterDataSearch?.tab !== 'past_applications'}
-  <!-- TODO break this into component. Loooks like it will be used throughout app -->
-    <section class="intro-panel text-2xl p-4 flex flex-col lg:flex-row gap-4">
-      <div class="intro-text flow max-w-lg">
-        <h2 class="intro-header">{uiRegistry.config.applicantDashboardIntroHeader}</h2>
-        <p class="intro-subtitle">{uiRegistry.config.applicantDashboardIntroDetail}</p>
-      </div>
-      <div class="period-controls lg:ml-auto flex gap-6 items-center">
-        {#if openPeriods.length > 0}
-          <div class="flex flex-row gap-4">
-            {#each displayedPeriods as period}
-              {@const periodInfo = getPeriodDisplayInfo(period)}
-                <section class="h-full flex items-center justify-cente pr-6 text-base text-center flex-col gap-2">
-                  <h3 class="font-bold text-base">{period.name}</h3>
-                  <dl class="flex flex-col text-sm">
+    <IntroPanel
+      title={uiRegistry.config.applicantDashboardIntroHeader}
+      subtitle={uiRegistry.config.applicantDashboardIntroDetail}
+
+    >
+      <!-- Status badges in default slot -->
+      {#if currentPeriod}
+        {@const existingApp = getExistingApplicationForPeriod(currentPeriod.name)}
+        {#if existingApp}
+          {#if IN_PROGRESS_STATUSES.includes(existingApp.status)}
+          <div class="flex items-center">
+            <TagSet
+              tags={[{ label: 'In progress', type: 'teal' }]}
+              size="sm"
+            />
+            <Tooltip triggerText="">
+              <p>See recent applications below for details</p>
+            </Tooltip>
+            </div>
+          {:else}
+            {@const statusInfo = getAppRequestStatusInfo(existingApp.status)}
+            <TagSet
+              tags={[{ label: statusInfo.label, type: statusInfo.color }]}
+              size="sm"
+            />
+          {/if}
+        {/if}
+      {/if}
+
+      <svelte:fragment slot="block-end">
+        {#if displayablePeriods.length > 0}
+          <!-- Show period info and action for selected period -->
+          {#if currentPeriod && periodInfo}
+            <div class="flex flex-wrap gap-4 items-center">
+              <!-- Period Information Section -->
+              <section class="text-base text-center flex-col gap-2">
+                <!-- <h3 class="font-bold text-base">{currentPeriod.name}</h3> -->
+                <dl class="flex gap-4  text-sm">
+                  <div class="flex flex-col bg-[var(--cds-ui-03,#d9d9d9)] py-4 px-4  justify-center">
                     <dt class="font-bold">Application opens:</dt>
                     <dd>
                       <time datetime={periodInfo.openDateMachineFormat}>
                         {periodInfo.openLabel}
                       </time>
                     </dd>
+                  </div>
+                  {#if currentPeriod.closeDate}
+                  <div class="flex flex-col bg-[var(--cds-ui-03,#d9d9d9)] py-4 px-4  justify-center">
                     <dt class="font-bold">Application closes:</dt>
                     <dd>
                       <time datetime={periodInfo.closeDateMachineFormat}>
                         {periodInfo.closeDate}
                       </time>
                     </dd>
-                  </dl>
-                </section>
-            {/each}
-          </div>
-          {@const primaryPeriodInfo = getPeriodDisplayInfo(openPeriods[0])}
-          <Button on:click={clickCreateAppRequest} disabled={!access.createAppRequestSelf || !primaryPeriodInfo.canStartNew}>
-            {primaryPeriodInfo.canStartNew ? 'Start application' : 'Applications closed'}
-          </Button>
+                  </div>
+                  {/if}
+                </dl>
+              </section>
+
+              <!-- Period selector (if multiple) -->
+              {#if displayablePeriods.length > 1}
+                <div class="min-w-[250px]">
+                  <Dropdown
+                    size="sm"
+                    titleText="Select a term"
+                    placeholder="Choose a period"
+                    bind:selectedId={selectedPeriodId}
+                    items={displayablePeriods.map(p => ({
+                      id: p.id,
+                      text: p.name
+                    }))}
+                  />
+                </div>
+              {/if}
+
+              <!-- Action Button. Only show start button if no existing application and user can act -->
+              {#if periodInfo.canStartNew && access.createAppRequestSelf}
+                <Button
+                  on:click={clickCreateAppRequest}
+                  kind="primary"
+                >
+                  Start application
+                </Button>
+              {/if}
+            </div>
+          {/if}
         {:else}
           <p>No application periods are currently available.</p>
-          <Button disabled={true}>Start New Application</Button>
         {/if}
-      </div>
-    </section>
+      </svelte:fragment>
+    </IntroPanel>
   {/if}
   <!-- Application Cards -->
   {#if appRequests.length === 0}
@@ -345,7 +433,8 @@
       />
     {/if}
   {:else}
-    <CardGrid cardSize="500px">
+    <Panel title="All recent Applications">
+      <CardGrid cardSize="500px">
       {#each appRequests as request}
         <AppRequestCard
           {request}
@@ -354,6 +443,7 @@
         />
       {/each}
     </CardGrid>
+    </Panel>
   {/if}
 
   <PanelFormDialog open={dialog} title="Create App Request" validate={validateAppRequest} submit={submitAppRequest} on:cancel={closeDialog} on:saved={onSaved}>
@@ -369,14 +459,16 @@
   <!-- Inlined Application Details Panel -->
   <PanelDialog
     open={sidePanelOpen}
-    title={selectedApplication?.period.name ?? 'Application Details'}
+    title={selectedAppRequest?.period.name ?? 'Application Details'}
     cancelText="Close"
-    submitText={selectedApplication?.status ? getSubmitButtonText(selectedApplication.status) : ''}
+    submitText={selectedAppRequest?.status ? getSubmitButtonText(selectedAppRequest.status) : ''}
     on:cancel={closeSidePanel}
     on:submit={handleSubmitAction}>
     <ApplicationDetailsView
-      selectedApplication={selectedApplication ?? undefined}
-      applicationDetails={applicationDetails ?? undefined}
+      appRequest={selectedAppRequest ?? undefined}
+      {appData}
+      {prequalPrompts}
+      {postqualPrompts}
       {loading}
       {uiRegistry}
     />
@@ -396,20 +488,9 @@
 
   <Toasts />
 </div>
+
 <style>
-  .intro-panel {
-    background-color: var(--cds-ui-01)
-  }
-  .intro-header {
-    color: var(--cds-text-01, #1A1A1A);
-    font-size: 1.25rem;
-    font-weight: 400;
-    line-height: 28px; /* 140% */
-  }
-  .intro-subtitle {
-    color: var(--cds-text-02);
-    font-size: 0.875rem;
-    line-height: 18px;
-    letter-spacing: 0.16px;
+  .applicant-dashboard {
+    --repel-vertical-alignment:top;
   }
 </style>

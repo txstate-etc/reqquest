@@ -3,12 +3,17 @@
   import { base } from '$app/paths'
   import { getApplicationStatusInfo, getAppRequestStatusInfo, getNavigationButton } from '$lib/status-utils.js'
   import { longNumericTime } from '$lib/util.js'
-  import { Card, TagSet, BadgeNumber } from '@txstate-mws/carbon-svelte'
-  import { Button, Accordion, AccordionItem } from 'carbon-components-svelte'
-  import type { DashboardAppRequest } from './types.js'
+  import type { ActionItem } from '@txstate-mws/carbon-svelte'
+  import { BadgeNumber, Card, TagSet } from '@txstate-mws/carbon-svelte'
+  import { Accordion, AccordionItem, Button } from 'carbon-components-svelte'
+  import type { PageData } from '../../routes/dashboards/applicant/$types'
+
+  // Type for the partial AppRequest data passed from dashboard
+  type DashboardAppRequest = PageData['appRequests'][number]
+
 
   export let request: DashboardAppRequest
-  export let actions: any[] = []
+  export let actions: ActionItem[] = []
   export let showAcceptanceButtons = true
   export let onAcceptanceNavigate: ((requestId: string) => void) | undefined = undefined
 
