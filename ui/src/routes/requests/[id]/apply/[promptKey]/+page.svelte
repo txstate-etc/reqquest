@@ -24,6 +24,23 @@
 
   let store: FormStore | undefined
   let continueAfterSave = false
+  let hasPreviousPrompt = false
+
+  async function checkPreviousPrompt () {
+    const previousPrompt = await api.getPreviousPrompt($page.params.id!, prompt.key)
+    hasPreviousPrompt = !!previousPrompt
+  }
+
+  async function handleBack () {
+    const previousPrompt = await api.getPreviousPrompt($page.params.id!, prompt.key)
+    if (previousPrompt) {
+      await goto(`${base}/requests/${$page.params.id}/apply/${previousPrompt.key}`)
+    }
+  }
+
+  $: if (prompt.key) {
+    checkPreviousPrompt().catch(console.error)
+  }
 
   async function onSubmit (data: any) {
     const { success, messages } = await api.updatePrompt(prompt.id, data, false, dataVersion)
@@ -66,16 +83,17 @@
   <Form bind:store submitText="Save & Continue" submit={onSubmit} validate={onValidate} preload={appRequestData[prompt.key]} on:saved={onSaved} let:data>
     <svelte:component this={def.formComponent} {data} {appRequestData} fetched={prompt.fetchedData} configData={prompt.configurationRelatedData} />
     <svelte:fragment slot="submit" let:submitting>
-      <div class='form-submit'>
-        <Button icon={submitting && !continueAfterSave ? ButtonLoadingIcon : Save} type="submit" disabled={submitting} on:click={() => { continueAfterSave = false }}>Save</Button>
-        <Button icon={submitting && continueAfterSave ? ButtonLoadingIcon : NextOutline} type="submit" disabled={submitting} on:click={() => { continueAfterSave = true }}>Save & Continue</Button>
+      <div class='form-submit flex gap-12 justify-center mt-16'>
+        {#if hasPreviousPrompt}
+          <Button kind="ghost" on:click={handleBack}>Back</Button>
+        {/if}
+        <Button type="submit" disabled={submitting} on:click={() => { continueAfterSave = false }}>Save</Button>
+        <Button type="submit" disabled={submitting} on:click={() => { continueAfterSave = true }}>Continue</Button>
       </div>
     </svelte:fragment>
   </Form>
 {/if}
 
 <style>
-  .form-submit {
-    text-align: right;
-  }
+
 </style>

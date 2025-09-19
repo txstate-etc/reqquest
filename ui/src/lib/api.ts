@@ -110,6 +110,41 @@ class API extends APIBase {
     return undefined
   }
 
+  async getPreviousPrompt (appRequestId: string, currentPromptKey: string) {
+    const response = await this.client.query({
+      __name: 'GetPreviousPrompt',
+      appRequests: {
+        __args: { filter: { ids: [appRequestId] } },
+        applications: {
+          requirements: {
+            prompts: {
+              id: true,
+              key: true,
+              answered: true,
+              visibility: true
+            }
+          }
+        }
+      }
+    })
+    const allPrompts: { id: string, key: string, answered: boolean, visibility: string }[] = []
+    for (const applications of response.appRequests[0]?.applications ?? []) {
+      for (const requirement of applications.requirements) {
+        for (const prompt of requirement.prompts) {
+          if (prompt.visibility === enumPromptVisibility.AVAILABLE) {
+            allPrompts.push(prompt)
+          }
+        }
+      }
+    }
+
+    const currentIndex = allPrompts.findIndex(p => p.key === currentPromptKey)
+    if (currentIndex > 0) {
+      return allPrompts[currentIndex - 1]
+    }
+    return undefined
+  }
+
   async getApplyNavigation (appRequestId: string) {
     const response = await this.client.query({
       __name: 'GetApplyNavigation',
