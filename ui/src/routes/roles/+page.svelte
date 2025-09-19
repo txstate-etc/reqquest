@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ColumnList, FieldMore, FieldMultiselect, FieldTextArea, FieldTextInput, FilterUI, PanelFormDialog, TabRadio, type ComboMenuItem } from '@txstate-mws/carbon-svelte'
+  import { ColumnList, FieldMore, FieldMultiselect, FieldTextArea, FieldTextInput, FilterUI, PanelFormDialog, type ComboMenuItem } from '@txstate-mws/carbon-svelte'
   import { InlineNotification, Modal } from 'carbon-components-svelte'
   import Add from 'carbon-icons-svelte/lib/Add.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
@@ -9,21 +9,9 @@
   import { invalidate } from '$app/navigation'
   import { api, type AccessRole, type AccessRoleGroup } from '$lib'
   import type { PageData } from './$types'
-  import type { AdminManagementTabs } from './+page';
-
-  interface AdminManagementState {
-    tab?: AdminManagementTabs
-    search?: string
-    institutionalRoles?: string[]
-  }
 
   export let data: PageData
-  $: ({ roles, users, access } = data)
-
-  // Reactive statements for filter options
-  $: availableInstitutionalRoles = getInstitutionalRoles()
-
-  let adminManagementState: AdminManagementState
+  $: ({ roles, access } = data)
 
   // Group updates to Roles accept only the group name and not a group object.
   type AccessRoleUpdateForm = Omit<AccessRole, 'groups'> & { groups: string[] }
@@ -81,36 +69,8 @@
       console.error(e)
     }
   }
-
-  function getInstitutionalRoles(): ComboMenuItem[] {
-    return [{value: 'Faculty'}, {value: 'Staff'}, {value: 'Student'}]
-  }
 </script>
 
-<div class="flow">
-  <!-- Filter UI for role management, users and eventually become user applications -->
-  <FilterUI
-    search={adminManagementState?.tab === 'users'}
-    tabs={[
-      { label: 'Role Management', value: 'role_management' },
-      { label: 'Users', value: 'users' }
-    ]}
-    on:apply={e => { adminManagementState = e.detail }}
-    on:mount={e => { adminManagementState = e.detail }}>
-    <svelte:fragment slot="quickfilters">
-      {#if adminManagementState?.tab === 'users'}
-      <FieldMultiselect path="institutionalRoles" label="Institutional Roles" items={availableInstitutionalRoles} />
-      {/if}
-    </svelte:fragment>
-  </FilterUI>
-
-{#if adminManagementState?.tab === 'users'}
-<InlineNotification
-  kind="info"
-  title="No results found."
-  subtitle="You may need to refine your searched terms, filters or try again."
-  lowContrast/>
-{:else if adminManagementState?.tab === 'role_management'}
 <ColumnList
   title="Roles"
   columns={[
@@ -172,5 +132,3 @@
   <p>Are you sure you want to delete the role {deleteDialogRole?.name}?</p>
   <p>This action cannot be undone.</p>
 </Modal>
-{/if}
-</div>

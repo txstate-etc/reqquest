@@ -64,17 +64,22 @@
       }]
     },
     {
-      title: 'Manage Roles',
+      title: 'Admin Settings',
       group: 'Administration',
       hideFromSideNav: !access.viewRoleManagement,
       icon: Settings,
       routeId: '/roles',
-      children: [
-        {
+      children: [{
+        title: 'Roles Management',
+        routeId: '/roles',
+        children: [{
           title: $page => `Role: ${$page.data.role.name}`,
           routeId: '/roles/[id]'
-        }
-      ]
+        }]
+      }, {
+        title: 'Users',
+        routeId: '/roles/users'
+      }]
     },
     {
       title: 'Manage Periods',
