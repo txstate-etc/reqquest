@@ -3,7 +3,7 @@ import { expect, test } from './fixtures.js'
 import { DateTime } from 'luxon'
 import { promptMapApplicantQualified, promptMapApplicantUnqualified } from './promptdata.js'
 
-test.describe.skip('App Request - App Phase - workflows', () => {
+test.describe('App Request - App Phase - workflows', () => {
   const name = '2025 app-req App Phase'
   const code = 'APP_REQ_APP-255'
   const timeZone = 'America/Chicago'
@@ -458,10 +458,10 @@ test.describe.skip('App Request - App Phase - workflows', () => {
       }
     `
     const variables = { appRequestId: appRequest2Id }
-    const response = await applicant2Request.graphql<{ errors: { message: string }[] }>(query, variables)
+    const response = await applicant2Request.graphql<{ errors: { message: string }[] }>(query, variables)    
     expect(response.errors[0].message).toEqual('You may not close this app request.')
   })
-  test.fixme('Reviewer - Close applicant request prior to submit', async ({ reviewerRequest }) => {
+  test('Reviewer - Close applicant request prior to submit', async ({ reviewerRequest }) => {
     const query = `
       mutation CloseAppRequest($appRequestId: ID!) {
         closeAppRequest(appRequestId: $appRequestId) {
@@ -475,25 +475,9 @@ test.describe.skip('App Request - App Phase - workflows', () => {
       }
     `
     const variables = { appRequestId: appRequest2Id }
-    const response = await reviewerRequest.graphql<{ errors: { message: string }[] }>(query, variables)
-    expect(response.errors[0].message).toEqual('You may not close this app request.')
-  })
-  test('Applicant 2 - Cancel / withdraw request prior to submit', async ({ applicant2Request }) => {
-    const query = `
-      mutation CancelAppRequest($appRequestId: ID!) {
-        cancelAppRequest(appRequestId:$appRequestId) {
-          success
-          appRequest {
-            status
-            statusReason
-          }
-        }
-      }
-    `
-    const variables = { appRequestId: appRequest2Id }
-    const response = await applicant2Request.graphql<{ cancelAppRequest: { success: boolean, appRequest: { status: string, statusReason: string } } }>(query, variables)
-    expect(response.cancelAppRequest.success).toEqual(true)
-    expect(response.cancelAppRequest.appRequest.status).toEqual('CANCELLED')
+    const response = await reviewerRequest.graphql<{ success: boolean,  appRequest:{ status: string, statusReason: string, closedAt: string } }>(query, variables)
+    expect(response.success).toEqual(true)
+    expect(response.appRequest.status).toEqual('CANCELED')
   })
   test('Applicant 2 - Cancel / withdraw previously canceled prior to submit', async ({ applicant2Request }) => {
     const query = `
@@ -533,7 +517,7 @@ test.describe.skip('App Request - App Phase - workflows', () => {
     const response = await applicant2Request.graphql<{ errors: { message: string }[] }>(query, variables)
     expect(response.errors[0].message).toEqual('You may not submit this app request.')
   })
-  test.fixme('Applicant 2 - Reopen previously canceled app request', async ({ applicant2Request }) => {
+  test('Applicant 2 - Reopen previously canceled app request', async ({ applicant2Request }) => {
     const query = `
       mutation ReOpenAppRequest($appRequestId:ID!) {
         reopenAppRequest(appRequestId:$appRequestId) {
@@ -550,7 +534,7 @@ test.describe.skip('App Request - App Phase - workflows', () => {
     expect(response.reopenAppRequest.success).toEqual(true)
   })
 
-  test.fixme('Applicant 2 - Cancel / withdraw request prior to submit to allow reviewer reopen', async ({ applicant2Request }) => {
+  test('Applicant 2 - Cancel / withdraw request prior to submit to allow reviewer reopen', async ({ applicant2Request }) => {
     const query = `
       mutation CancelAppRequest($appRequestId: ID!) {
         cancelAppRequest(appRequestId:$appRequestId) {
@@ -567,7 +551,7 @@ test.describe.skip('App Request - App Phase - workflows', () => {
     expect(response.cancelAppRequest.success).toEqual(true)
     expect(response.cancelAppRequest.appRequest.status).toEqual('CANCELLED')
   })
-  test.fixme('Reviewer - Uncancel / reopen applicant request prior to submit', async ({ reviewerRequest }) => {
+  test('Reviewer - Uncancel / reopen applicant request prior to submit', async ({ reviewerRequest }) => {
     const query = `
       mutation ReOpenAppRequest($appRequestId:ID!) {
         reopenAppRequest(appRequestId:$appRequestId) {
