@@ -1,5 +1,5 @@
 import { api } from '$lib'
-import type { PageLoad } from '../../$types'
+import type { PageLoad } from './$types'
 
 export const load: PageLoad = async ({ url, depends }) => {
   const users = []
