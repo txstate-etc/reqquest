@@ -69,17 +69,17 @@
       hideFromSideNav: !access.viewRoleManagement,
       icon: Settings,
       routeId: '/roles',
-      // children: [{
-      //   title: 'Roles Management',
-      //   routeId: '/roles',
-      //   children: [{
-      //     title: $page => `Role: ${$page.data.role.name}`,
-      //     routeId: '/roles/[id]'
-      //   }, {
-      //     title: 'Users',
-      //     routeId: '/roles/users'
-      //   }]
-      // }]
+      children: [{
+        title: 'Roles Management',
+        routeId: '/roles',
+        children: [{
+          title: $page => `Role: ${$page.data.role.name}`,
+          routeId: '/roles/[id]'
+        }, {
+          title: 'Users',
+          routeId: '/roles/users'
+        }]
+      }]
     },
     {
       title: 'Manage Periods',
