@@ -11,7 +11,6 @@ export const state_residence_req: RequirementDefinition<StateResidenceConfigRequ
   promptKeys: ['state_residence_prompt'],
   resolve: (data, config) => {
     const stateResidencePromptData = data.state_residence_prompt as StateResidencePromptData
-    console.log(`State residence is ${JSON.stringify(stateResidencePromptData)}`)
     if (stateResidencePromptData?.residentOfRequiredState == null) return { status: RequirementStatus.PENDING }
     if (stateResidencePromptData?.residentOfRequiredState === true) return { status: RequirementStatus.MET }
     return { status: RequirementStatus.DISQUALIFYING, reason: `You must reside in ${config.residentOfState} to qualify.` }
