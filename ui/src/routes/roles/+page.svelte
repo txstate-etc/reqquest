@@ -108,7 +108,7 @@
       { id: 'added', label: 'Added Date', render: row => (row.dateAdded) ? (row.dateAdded as DateTime).toFormat('MM/dd/yyyy') : '--/--/----' }
     ]}
     noItemsTitle='There are no groups associated with this Role'
-    rows={role.groups}/>
+    rows={role.groups.map(g => ({...g, id: g.roleId + g.groupName}))}/>
 </Card>
 {/each}
 </div>
