@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ColumnList, FieldMore, FieldMultiselect, FieldTextArea, FieldTextInput, FilterUI, PanelFormDialog, type ComboMenuItem } from '@txstate-mws/carbon-svelte'
+  import { ActionSet, Card, ColumnList, FieldMore, FieldMultiselect, FieldTextArea, FieldTextInput, PanelFormDialog, type ComboMenuItem } from '@txstate-mws/carbon-svelte'
   import { InlineNotification, Modal } from 'carbon-components-svelte'
   import Add from 'carbon-icons-svelte/lib/Add.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
@@ -7,18 +7,20 @@
   import View from 'carbon-icons-svelte/lib/View.svelte'
   import { pick } from 'txstate-utils'
   import { invalidate } from '$app/navigation'
-  import { api, type AccessRole, type AccessRoleGroup } from '$lib'
+  import { api, type AccessRole, type AccessRoleGroup, type AccessRoleInput } from '$lib'
   import type { PageData } from './$types'
+  import { DateTime } from 'luxon';
 
   export let data: PageData
   $: ({ roles, access } = data)
+  // console.log(`Datat-ROLES-svelte: ${JSON.stringify(data)}`)
 
   // Group updates to Roles accept only the group name and not a group object.
-  type AccessRoleUpdateForm = Omit<AccessRole, 'groups'> & { groups: string[] }
+  type AccessRoleUpdateForm = Omit<AccessRoleInput, 'groups'> & { groups: string[] }
   function transformFromAPI (data: PageData['roles'][number]): AccessRoleUpdateForm {
     return {
-      ...pick(data, 'scope', 'name', 'id', 'grants', 'description', 'actions', '__typename'),
-      groups: data.groups.map((group: AccessRoleGroup) => group.groupName)
+      ...pick(data, 'id', 'name', 'description'),
+      groups: data.groups.map(group => group.groupName)
     }
   }
 
@@ -71,46 +73,45 @@
   }
 </script>
 
-<ColumnList
-  title="Roles"
-  columns={[
-    { id: 'role', label: 'Role', get: 'name' },
-    { id: 'groups', label: 'Groups', render: role => role.groups.map(group => group.groupName).join(', ') },
-    { id: 'description', label: 'Description', get: 'description' }
-  ]}
-  rows={roles}
-  listActions={[
-    {
-      label: 'Create Role',
-      icon: Add,
-      disabled: !access.createRole,
-      onClick: () => {
-        createDialog = true
-        editingRole = undefined
-      }
+<div class="flow">
+<ActionSet actions={[
+  {
+    label: 'Create Role',
+    icon: Add,
+    disabled: !access.createRole,
+    onClick: () => {
+      createDialog = true
+      editingRole = undefined
     }
-  ]}
-  actions={row => [
-    {
-      label: 'View',
-      icon: View,
-      href: `/roles/${row.id}`
-    },
-    {
-      label: 'Edit',
-      icon: Edit,
-      onClick: () => {
-        createDialog = true
-        editingRole = transformFromAPI(row)
+  }
+]}/>
+
+{#each roles ?? [] as role, index (role.id)}
+<Card
+  title={role.name}
+  subhead={role.description ?? 'no descritpion is available'}
+  actions={[
+    { label: 'View', icon: View, href: `/roles/${role.id}` },
+    { label: 'Edit', icon: Edit, onClick: () => {
+        createDialog = true;
+        editingRole = transformFromAPI(role)
       }
     },
-    {
-      label: 'Delete',
-      icon: TrashCan,
-      onClick: () => openRoleDeleteDialog(row)
-    }
+    { label: 'Delete', icon: TrashCan, onClick: () => openRoleDeleteDialog(role) }
   ]}
-/>
+  >
+  <ColumnList
+    title='Groups'
+    columns={[
+      { id: 'group', label: 'Group', get: 'groupName'},
+      { id: 'manager', label: 'Manager', render: row => (Array.isArray(row.managers) && row.managers.length > 0) ? row.managers[0].fullname + '<br/>' + row.managers[0].email : 'no manager information' },
+      { id: 'added', label: 'Added Date', render: row => (row.dateAdded) ? (row.dateAdded as DateTime).toFormat('MM/dd/yyyy') : '--/--/----' }
+    ]}
+    noItemsTitle='There are no groups associated with this Role'
+    rows={role.groups}/>
+</Card>
+{/each}
+</div>
 
 {#if createDialog}
   <PanelFormDialog open title="Create Role" preload={editingRole ? pick(editingRole, 'name', 'description', 'groups') : undefined} submit={onSubmit} {validate} on:saved={onSaved} on:cancel={closeDialog}>
