@@ -582,6 +582,7 @@ class API extends APIBase {
         __args: { filter: { openNow: true } },
         id: true,
         name: true,
+        code: true,
         openDate: true,
         closeDate: true,
         archiveDate: true,

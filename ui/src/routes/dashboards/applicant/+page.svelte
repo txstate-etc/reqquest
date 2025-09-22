@@ -50,6 +50,7 @@
   $: currentPeriod = getCurrentPeriod(displayablePeriods, selectedPeriodId)
   $: periodInfo = currentPeriod ? getPeriodDisplayInfo(currentPeriod) : null
 
+
   // ==========================================
   // Period Management Helper Functions
   // ==========================================

@@ -255,14 +255,14 @@ export function getApplicationStatusInfo (status: string): ApplicationStatusTagI
 // ========================================
 // === Periods ===
 // ========================================
+const noClosePeriodDate = '9999-12-031T23:59:59.000-06:00'
 
 export function getPeriodStatus (period: any) {
-  if (!period.openDate || !period.closeDate) return 'unknown'
+  if (!period.openDate) return 'unknown'
   const now = new Date()
   const openDate = new Date(period.openDate)
-  const closeDate = new Date(period.closeDate)
-
-  if (now < openDate) return 'upcoming'
+  const closeDate = (!period.closeDate) ? new Date(noClosePeriodDate) : new Date(period.closeDate)
+  if (now < openDate) return 'upcoming'  
   if (now > closeDate) return 'closed'
   return 'open'
 }
@@ -274,8 +274,8 @@ export function getPeriodDisplayInfo (period: any) {
     openLabel: status === 'closed' ? '' : longNumericTime(period.openDate),
     openDateMachineFormat: period.openDate,
     closeLabel: status === 'closed' ? 'Application closed' : 'Application closes',
-    closeDate: longNumericTime(period.closeDate),
-    closeDateMachineFormat: period.closeDate,
+    closeDate: (!period.closeDate) ? longNumericTime(noClosePeriodDate) : longNumericTime(period.closeDate),
+    closeDateMachineFormat: (!period.closeDate) ? new Date(noClosePeriodDate) : period.closeDate,
     canStartNew: status === 'open'
   }
 }
