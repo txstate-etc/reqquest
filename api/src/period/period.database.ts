@@ -82,9 +82,9 @@ function processFilters (filters?: PeriodFilters) {
   }
   if (filters?.openNow != null) {
     if (filters.openNow) {
-      where.push('p.openDate < NOW() AND p.closeDate > NOW()')
+      where.push('p.openDate < NOW() AND ( p.closeDate > NOW() OR p.closeDate IS NULL )')
     } else {
-      where.push('p.openDate > NOW() OR p.closeDate < NOW()')
+      where.push('p.openDate > NOW() OR (p.openDate > NOW() AND p.closeDate is NULL) OR p.closeDate < NOW()')
     }
   }
   return { where, binds }

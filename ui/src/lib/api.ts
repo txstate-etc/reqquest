@@ -564,6 +564,7 @@ class API extends APIBase {
         openDate: true,
         closeDate: true,
         archiveDate: true,
+        reviewed: true,
         actions: {
           update: true,
           delete: true,
@@ -583,7 +584,8 @@ class API extends APIBase {
         name: true,
         openDate: true,
         closeDate: true,
-        archiveDate: true
+        archiveDate: true,
+        reviewed: true
       }
     })
     return response.periods
@@ -654,6 +656,7 @@ class API extends APIBase {
         openDate: true,
         closeDate: true,
         archiveDate: true,
+        reviewed: true,
         programs: {
           key: true,
           title: true,
