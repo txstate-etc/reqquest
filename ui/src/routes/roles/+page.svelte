@@ -74,7 +74,7 @@
 </script>
 
 <div class="flow">
-<ActionSet actions={[
+<ActionSet includeLabels actions={[
   {
     label: 'Create Role',
     icon: Add,
