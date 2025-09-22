@@ -65,7 +65,7 @@ function processFilters (filters?: PeriodFilters) {
     binds.push(filters.opensBefore.toJSDate())
   }
   if (filters?.closesAfter) {
-    where.push('p.closeDate > ?')
+    where.push('p.closeDate > ? OR p.closeDate IS NULL')
     binds.push(filters.closesAfter.toJSDate())
   }
   if (filters?.closesBefore) {
@@ -73,7 +73,7 @@ function processFilters (filters?: PeriodFilters) {
     binds.push(filters.closesBefore.toJSDate())
   }
   if (filters?.archiveAfter) {
-    where.push('p.archiveDate > ?')
+    where.push('p.archiveDate > ? OR p.archiveDate IS NULL')
     binds.push(filters.archiveAfter.toJSDate())
   }
   if (filters?.archiveBefore) {
@@ -82,9 +82,9 @@ function processFilters (filters?: PeriodFilters) {
   }
   if (filters?.openNow != null) {
     if (filters.openNow) {
-      where.push('p.openDate < NOW() AND ( p.closeDate > NOW() OR p.closeDate IS NULL )')
+      where.push('p.openDate < NOW() AND (NOW() < p.closeDate OR p.closeDate IS NULL)')
     } else {
-      where.push('p.openDate > NOW() OR (p.openDate > NOW() AND p.closeDate is NULL) OR p.closeDate < NOW()')
+      where.push('NOW() < p.openDate OR p.closeDate < NOW()')
     }
   }
   return { where, binds }
