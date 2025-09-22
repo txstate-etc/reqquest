@@ -19,8 +19,6 @@
     yearSubmitted?: string[]
   }
 
-  const IN_PROGRESS_STATUSES: AppRequestStatus[] = ['STARTED', 'READY_TO_SUBMIT']
-
   export let data: PageData
   $: ({ appRequests, availableYears, access, openPeriods } = data)
 
@@ -49,7 +47,6 @@
   $: displayablePeriods = openPeriods.length > 0 ? getOpenAndUpcomingPeriods(openPeriods) : []
   $: currentPeriod = getCurrentPeriod(displayablePeriods, selectedPeriodId)
   $: periodInfo = currentPeriod ? getPeriodDisplayInfo(currentPeriod) : null
-
 
   // ==========================================
   // Period Management Helper Functions
@@ -329,30 +326,6 @@
       subtitle={uiRegistry.config.applicantDashboardIntroDetail}
 
     >
-      <!-- Status badges in default slot -->
-      {#if currentPeriod}
-        {@const existingApp = getExistingApplicationForPeriod(currentPeriod.name)}
-        {#if existingApp}
-          {#if IN_PROGRESS_STATUSES.includes(existingApp.status)}
-          <div class="flex items-center">
-            <TagSet
-              tags={[{ label: 'In progress', type: 'teal' }]}
-              size="sm"
-            />
-            <Tooltip triggerText="">
-              <p>See recent applications below for details</p>
-            </Tooltip>
-            </div>
-          {:else}
-            {@const statusInfo = getAppRequestStatusInfo(existingApp.status)}
-            <TagSet
-              tags={[{ label: statusInfo.label, type: statusInfo.color }]}
-              size="sm"
-            />
-          {/if}
-        {/if}
-      {/if}
-
       <svelte:fragment slot="block-end">
         {#if displayablePeriods.length > 0}
           <!-- Show period info and action for selected period -->
