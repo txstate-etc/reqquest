@@ -25,7 +25,7 @@
   }
 
   let createDialog = false
-  let editingRole: PageData['roles'][number] | undefined
+  let editingRole: AccessRoleInput | undefined
 
   async function validate (role: AccessRoleUpdateForm) {
     const response = await api.upsertRole(editingRole?.id, role, true)
