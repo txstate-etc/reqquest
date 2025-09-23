@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Panel, PanelFormDialog, Card, ColumnList, ActionSet } from '@txstate-mws/carbon-svelte'
+  import { Panel, PanelFormDialog, Card, ColumnList, ActionSet, TagSet } from '@txstate-mws/carbon-svelte'
   import { Accordion, AccordionItem, Button, Tab, TabContent, Tabs, Tag } from 'carbon-components-svelte'
   import SettingsEdit from 'carbon-icons-svelte/lib/SettingsEdit.svelte'
   import { invalidate } from '$app/navigation'
@@ -7,9 +7,22 @@
   import { api } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../local'
+    import { Modal } from '@txstate-mws/svelte-components'
 
   export let data: PageData
   $: ({ programs, period } = data)
+
+  $: sharedProgramRequirements = programs.reduce((acc, curr) => {
+    curr.requirements.forEach(r => {
+      console.log(r)
+      if (!acc[r.key]) acc[r.key] = [curr.key]
+      else acc[r.key].push(curr.key)
+    })
+    console.log(acc)
+    return acc
+  }, {})
+
+  console.log(sharedProgramRequirements)
 
   type Requirement = PageData['programs'][number]['requirements'][number]
   type Prompt = PageData['programs'][number]['requirements'][number]['prompts'][number]
@@ -56,6 +69,10 @@
     await invalidate('api:getPeriodConfigurations')
   }
 
+  const openModal = (key: string) => () => {
+
+  }
+
 </script>
 
 <!-- Configuring Pe{program.title}riod: {period.name}{#if period.code} ({period.code}){/if} -->
@@ -68,10 +85,16 @@
       <svelte:fragment slot='content'>
         <TabContent>
           {#each program.requirements.filter(r => r.enabled) as requirement (requirement.key)}
-            <Panel title={requirement.title} expandable noPrimaryAction actions={[{ label: 'Edit requirement', href: '/' }, { label: 'Disable Requirement', onClick: disablePeriodProgram(requirement.key) }]} >
-              {@const reqDef = uiRegistry.getRequirement(requirement.key)}
-              <!-- <Button on:click={onClick('requirement', requirement)} type="primary" size="small" icon={SettingsEdit} iconDescription="Edit Configuration" disabled={reqDef.configureComponent == null || !requirement.configuration.actions.update} /> -->
-              <ul class="prompts">
+            {@const reqDef = uiRegistry.getRequirement(requirement.key)}
+            <Panel title={requirement.title} expandable noPrimaryAction actions={[{ label: 'Configure requirement', onClick: onClick('requirement', requirement), disabled: reqDef.configureComponent == null || !requirement.configuration.actions.update }, { label: 'Disable Requirement', onClick: disablePeriodProgram(requirement.key) }]}>
+              <!-- <Button on:click={onClick('requirement', requirement)} type="primary" size="small" icon={SettingsEdit} iconDescription="Edit Configuration" disabled={reqDef.configureComponent == null || !requirement.configuration.actions.update} />  -->
+              
+            <div style="display: content" slot="headerRight">
+              {@const tags = sharedProgramRequirements[requirement.key]?.length > 1  ? [{ label: 'Shared', onClick: openModal(requirement.key) }] : []}
+              <TagSet tags={tags} />
+            </div>
+
+             <ul class="prompts">
                 {#each requirement.prompts as prompt (prompt.key)}
                 {@const promptDef = uiRegistry.getPrompt(prompt.key)}
                 <li class="prompt justify-between">
@@ -125,6 +148,10 @@
     </PanelFormDialog>
   {/if}
 {/if}
+
+<!-- <Modal>
+
+</Modal> -->
 
 <style>
   ul {
