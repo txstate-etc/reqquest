@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Panel, PanelFormDialog, Card, ColumnList, ActionSet, TagSet } from '@txstate-mws/carbon-svelte'
-  import { Accordion, AccordionItem, Button, Tab, TabContent, Tabs, Tag } from 'carbon-components-svelte'
+  import { Accordion, AccordionItem, Button, InlineNotification, NotificationActionButton, Tab, TabContent, Tabs, Tag } from 'carbon-components-svelte'
   import SettingsEdit from 'carbon-icons-svelte/lib/SettingsEdit.svelte'
   import { invalidate } from '$app/navigation'
   import { page } from '$app/stores'
@@ -73,9 +73,19 @@
 
   }
 
+  function confirmReview () {
+
+  }
+
 </script>
 
 <!-- Configuring Pe{program.title}riod: {period.name}{#if period.code} ({period.code}){/if} -->
+
+<InlineNotification kind='warning' lowContrast title='Confirm Fall 2026 period configurations:' subtitle={`Please confirm when ${period.name} configuration updatess are complete`} >
+  <svelte:fragment slot="actions">
+    <NotificationActionButton>Confirm Review</NotificationActionButton>
+  </svelte:fragment>
+</InlineNotification>
 
 {#each programs as program (program.key)}
   <Panel title={program.title} expandable expanded>
