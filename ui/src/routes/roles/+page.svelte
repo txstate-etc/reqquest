@@ -16,7 +16,7 @@
   // console.log(`Datat-ROLES-svelte: ${JSON.stringify(data)}`)
 
   // Group updates to Roles accept only the group name and not a group object.
-  type AccessRoleUpdateForm = Omit<AccessRoleInput, 'groups'> & { groups: string[] }
+  type AccessRoleUpdateForm = Omit<AccessRoleInput, 'groups'> & { groups: string[], id: string }
   function transformFromAPI (data: PageData['roles'][number]): AccessRoleUpdateForm {
     return {
       ...pick(data, 'id', 'name', 'description'),
@@ -25,7 +25,7 @@
   }
 
   let createDialog = false
-  let editingRole: AccessRoleInput | undefined
+  let editingRole: AccessRoleUpdateForm | undefined
 
   async function validate (role: AccessRoleUpdateForm) {
     const response = await api.upsertRole(editingRole?.id, role, true)
