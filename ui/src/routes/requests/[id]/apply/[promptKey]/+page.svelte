@@ -6,15 +6,13 @@
    * the app request since the prompt should only be visible in a single spot.
    */
 
-  import { Form } from '@txstate-mws/carbon-svelte'
-  import type { FormStore } from '@txstate-mws/svelte-forms'
-  import { Button } from 'carbon-components-svelte'
-  import NextOutline from 'carbon-icons-svelte/lib/NextOutline.svelte'
-  import Save from 'carbon-icons-svelte/lib/Save.svelte'
   import { afterNavigate, beforeNavigate, goto, invalidate } from '$app/navigation'
   import { base } from '$app/paths'
   import { page } from '$app/stores'
   import { api, ButtonLoadingIcon } from '$lib'
+  import { Form } from '@txstate-mws/carbon-svelte'
+  import type { FormStore } from '@txstate-mws/svelte-forms'
+  import { Button } from 'carbon-components-svelte'
   import { uiRegistry } from '../../../../../local/index.js'
   import type { PageData } from './$types.js'
 
@@ -80,6 +78,10 @@
 </script>
 
 {#if !hideForm}
+<div class="prompt-intro flow max-w-screen-md mx-auto pt-10 px-6">
+    <h2 class="font-medium text-xl text-center">{prompt.title}</h2>
+    <p class="text-center"> {prompt.description}</p>
+</div>
   <Form bind:store submitText="Save & Continue" submit={onSubmit} validate={onValidate} preload={appRequestData[prompt.key]} on:saved={onSaved} let:data>
     <svelte:component this={def.formComponent} {data} {appRequestData} fetched={prompt.fetchedData} configData={prompt.configurationRelatedData} />
     <svelte:fragment slot="submit" let:submitting>
@@ -87,8 +89,8 @@
         {#if hasPreviousPrompt}
           <Button kind="ghost" on:click={handleBack}>Back</Button>
         {/if}
-        <Button type="submit" disabled={submitting} on:click={() => { continueAfterSave = false }}>Save</Button>
-        <Button type="submit" disabled={submitting} on:click={() => { continueAfterSave = true }}>Continue</Button>
+        <Button icon={submitting && !continueAfterSave ? ButtonLoadingIcon : null} type="submit" kind="secondary" disabled={submitting} on:click={() => { continueAfterSave = false }}>Save</Button>
+        <Button icon={submitting && !continueAfterSave ? ButtonLoadingIcon : null} type="submit" disabled={submitting} on:click={() => { continueAfterSave = true }}>Continue</Button>
       </div>
     </svelte:fragment>
   </Form>

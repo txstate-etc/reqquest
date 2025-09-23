@@ -205,6 +205,8 @@ class API extends APIBase {
             prompts: {
               id: true,
               key: true,
+              title: true,
+              description: true,
               visibility: true,
               fetchedData: true,
               configurationRelatedData: true
