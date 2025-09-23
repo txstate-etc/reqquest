@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { ActionSet, Card, ColumnList, FieldMore, FieldMultiselect, FieldTextArea, FieldTextInput, PanelFormDialog, type ComboMenuItem } from '@txstate-mws/carbon-svelte'
-  import { InlineNotification, Modal } from 'carbon-components-svelte'
+  import { ActionSet, Card, CardGrid, ColumnList, FieldMore, FieldMultiselect, FieldTextArea, FieldTextInput, PanelFormDialog, type ComboMenuItem } from '@txstate-mws/carbon-svelte'
+  import { Modal } from 'carbon-components-svelte'
   import Add from 'carbon-icons-svelte/lib/Add.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
@@ -73,23 +73,12 @@
   }
 </script>
 
-<div class="flow">
-<ActionSet includeLabels actions={[
-  {
-    label: 'Create Role',
-    icon: Add,
-    disabled: !access.createRole,
-    onClick: () => {
-      createDialog = true
-      editingRole = undefined
-    }
-  }
-]}/>
-
+<CardGrid cardSize="100">
 {#each roles ?? [] as role, index (role.id)}
 <Card
   title={role.name}
   subhead={role.description ?? 'no descritpion is available'}
+  forceOverflow={false}
   actions={[
     { label: 'View', icon: View, href: `/roles/${role.id}` },
     { label: 'Edit', icon: Edit, onClick: () => {
@@ -111,7 +100,19 @@
     rows={role.groups.map(g => ({...g, id: g.roleId + g.groupName}))}/>
 </Card>
 {/each}
-</div>
+</CardGrid>
+<div id="role-menu"></div>
+<ActionSet includeLabels menuAlign="bottomleft" actions={[
+  {
+    label: 'Create Role',
+    icon: Add,
+    disabled: !access.createRole,
+    onClick: () => {
+      createDialog = true
+      editingRole = undefined
+    }
+  }
+]}/>
 
 {#if createDialog}
   <PanelFormDialog open title="Create Role" preload={editingRole ? pick(editingRole, 'name', 'description', 'groups') : undefined} submit={onSubmit} {validate} on:saved={onSaved} on:cancel={closeDialog}>
