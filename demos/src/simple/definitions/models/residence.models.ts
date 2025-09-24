@@ -69,6 +69,16 @@ export const StateResidenceConfigRequirementSchema = {
 } as const satisfies SchemaObject
 export type StateResidenceConfigRequirementData = FromSchema<typeof StateResidenceConfigRequirementSchema>
 
+export const StateResidenceConfirmationRequirementSchema = {
+  type: 'object',
+  properties: {
+    confirmedResidentOfState: { type: 'boolean' }
+  },
+  required: ['confirmedResidentOfState'],
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type StateResidenceConfirmationRequirementData = FromSchema<typeof StateResidenceConfirmationRequirementSchema>
+
 export const UploadInfoWithSumSchema = {
   type: 'object',
   properties: {
@@ -79,7 +89,7 @@ export const UploadInfoWithSumSchema = {
     size: { type: 'number' },
     shasum: { type: 'string' }
   },
-  required: ['_type', 'multipartIndex', 'name', 'mime', 'size', 'shasum'],
+  required: ['_type', 'multipartIndex', 'name', 'mime', 'size'],
   additionalProperties: false
 } as const satisfies SchemaObject
 export type UploadInfoWithSumData = FromSchema<typeof UploadInfoWithSumSchema>
@@ -87,9 +97,27 @@ export type UploadInfoWithSumData = FromSchema<typeof UploadInfoWithSumSchema>
 export const StateResidencePromptSchema = {
   type: 'object',
   properties: {
-    residentOfRequiredState: { type: 'boolean' },
-    residentIdDoc: UploadInfoWithSumSchema
+    residentOfRequiredState: { type: 'boolean' },    
+    firstName: { type: 'string' },
+    lastName: { type: 'string' },
+    streetAddress: { type: 'string' },
+    emailAddress: { type: 'string' },
+    phoneNumber: { type: 'string' },
+    city: { type: 'string' },
+    zipCode: { type: 'string' },
+    residentIdDoc: UploadInfoWithSumSchema,
   },
+  required: ['residentOfRequiredState'],
   additionalProperties: false
 } as const satisfies SchemaObject
 export type StateResidencePromptData = FromSchema<typeof StateResidencePromptSchema>
+
+export const StateResidenceConfirmationPromptSchema = {
+  type: 'object',
+  properties: {
+    residentOfRequiredState: { type: 'boolean' }
+  },
+  required: ['residentOfRequiredState'],
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type StateResidenceConfirmationPromptData = FromSchema<typeof StateResidenceConfirmationPromptSchema>

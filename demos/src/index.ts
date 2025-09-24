@@ -1,7 +1,7 @@
 import { RQServer } from '@reqquest/api'
 import { analyticsPlugin, unifiedAuthenticate } from 'fastify-txstate'
 import { have_yard_prompt, adopt_a_dog_program, have_big_yard_req, have_adequate_personal_space_req, adopt_a_cat_program, cat_tower_req, not_allergic_to_tuna_req, have_a_cat_tower_prompt, not_allergic_to_tuna_prompt, applicant_seems_nice_req, applicant_seems_nice_prompt, must_exercise_your_dog_req, must_exercise_your_dog_prompt, which_state_req, which_state_prompt, other_cats_applicant_req, other_cats_prompt, other_cats_vaccines_prompt, other_cats_reviewer_req, vaccine_review_prompt } from './default/index.js'
-import { adopt_a_pet_program, state_residence_prompt, state_residence_req } from './simple/index.js'
+import { adopt_a_pet_program, state_residence_confirmation_prompt, state_residence_confirmation_req, state_residence_prompt, state_residence_req } from './simple/index.js'
 import { defaultTestMigrations } from './default/testdata.js'
 import { simpleTestMigrations } from './simple/testdata.js'
 import { DateTime } from 'luxon'
@@ -57,8 +57,8 @@ function configureDemoInstanceParams() {
   if (process.env.DEMO_INSTANCE === 'simple') return { 
     programGroups: [],
     programs: [adopt_a_pet_program],
-    requirements: [state_residence_req],
-    prompts: [state_residence_prompt],
+    requirements: [state_residence_req, state_residence_confirmation_req],
+    prompts: [state_residence_prompt, state_residence_confirmation_prompt],
     migrations: simpleTestMigrations
   }
   return {

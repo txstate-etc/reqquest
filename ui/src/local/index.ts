@@ -26,6 +26,8 @@ import VaccineReviewPromptDisplay from './default/VaccineReviewPromptDisplay.sve
 import ResidencePrompt from './simple/ResidencePrompt.svelte'
 import ResidencePromptDisplay from './simple/ResidencePromptDisplay.svelte'
 import ResidenceConfig from './simple/ResidenceConfig.svelte'
+import ResidenceConfirmationReviewPrompt from './simple/ResidenceConfirmationReviewPrompt.svelte'
+import ResidenceConfirmationReviewPromptDisplay from './simple/ResidenceConfirmationReviewPromptDisplay.svelte'
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts} =  configureDemoInstanceParams()
 
@@ -51,13 +53,20 @@ function configureDemoInstanceParams() {
         icon: DogWalker
       }],
       requirements: [
-        { key: 'state_residence_req', configureComponent: ResidenceConfig }
+        { key: 'state_residence_req', configureComponent: ResidenceConfig },
+        { key: 'state_residence_confirmation_req' }
       ],
       prompts: [{
-        key: 'state_residence_prompt',
-        formComponent: ResidencePrompt,
-        displayComponent: ResidencePromptDisplay
-      }]
+          key: 'state_residence_prompt',
+          formComponent: ResidencePrompt,
+          displayComponent: ResidencePromptDisplay
+        },
+        {
+          key: 'state_residence_confirmation_prompt',
+          formComponent: ResidenceConfirmationReviewPrompt,
+          displayComponent: ResidenceConfirmationReviewPromptDisplay
+        }
+      ]
     }
   }
   return {

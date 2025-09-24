@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { StateResidenceConfigRequirementData, StateResidencePromptData } from '../models/index.js'
+import { StateResidenceConfigRequirementData, StateResidenceConfirmationPromptData, StateResidenceConfirmationRequirementData, StateResidencePromptData } from '../models/index.js'
 
 export const state_residence_req: RequirementDefinition<StateResidenceConfigRequirementData> = {
   type: RequirementType.QUALIFICATION,
@@ -26,3 +26,20 @@ export const state_residence_req: RequirementDefinition<StateResidenceConfigRequ
     default: { residentOfState: 'Texas' }
   }  
 }
+
+export const state_residence_confirmation_req: RequirementDefinition<StateResidenceConfirmationRequirementData> = {
+  type: RequirementType.APPROVAL,
+  key: 'state_residence_confirmation_req',
+  title: 'Confirm resident of required state',
+  navTitle: 'Confirm residency',
+  description: 'Reviewer must validate ID provided and confirm as resident of state.',
+  promptKeys: ['state_residence_confirmation_prompt'],
+  resolve: (data, config, allConfig) => {
+    const resPromptData = data['state_residence_confirmation_prompt'] as StateResidenceConfirmationPromptData
+    if (resPromptData?.residentOfRequiredState == null) return { status: RequirementStatus.PENDING }
+    if (resPromptData.residentOfRequiredState) return { status: RequirementStatus.MET }
+    return { status: RequirementStatus.DISQUALIFYING, reason: `Applicant does not reside in ${allConfig.state_residence_req.residentOfState}.` }
+  }
+}
+
+
