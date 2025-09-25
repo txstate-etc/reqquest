@@ -53,7 +53,6 @@
   }
 
   function displayPhase (period: Period) {
-    console.log(period)
     let { openDate: oDate, closeDate: cDate, archiveDate: aDate } = period
     const now = Date.now()
     const openDate = DateTime.now().toMillis()
