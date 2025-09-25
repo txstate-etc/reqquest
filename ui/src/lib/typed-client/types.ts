@@ -1063,7 +1063,7 @@ export default {
                     ]
                 }
             ],
-            "updatePeriodProgramRequirement": [
+            "updatePeriodRequirement": [
                 72,
                 {
                     "disabled": [
