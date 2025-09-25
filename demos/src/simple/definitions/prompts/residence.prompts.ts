@@ -34,7 +34,7 @@ export const state_residence_prompt: PromptDefinition = {
 
 export const state_residence_confirmation_prompt: PromptDefinition = {
   key: 'state_residence_confirmation_prompt',
-  title: 'State residency',
+  title: 'State residency confirmation',
   description: 'Applicant will identify if they reside in the required state.',
   schema: StateResidenceConfirmationPromptSchema,
   fetch: async (data, config, allConfig) => { 
