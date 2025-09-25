@@ -217,7 +217,7 @@ type AccessUser {
   A JSON object containing any information about the user that the implementing application wants to store. Could be useful for constructing personalized UI.
   """
   otherInfo: JsonData
-  roles: AccessRole!
+  roles: [AccessRole!]!
 
   """
   True as long as the lookupUser.byLogins function still returns this user. False otherwise. Likely this user has been deactivated.

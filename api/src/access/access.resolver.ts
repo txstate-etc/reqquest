@@ -228,7 +228,7 @@ export class AccessUserResolver {
     return ctx.svc(AccessUserService).getGroupsByUserId(accessUser.internalId)
   }
 
-  @FieldResolver(returns => AccessRole)
+  @FieldResolver(returns => [AccessRole])
   async roles (@Ctx() ctx: Context, @Root() accessUser: AccessUser) {
     return await ctx.svc(AccessRoleService).findAccessRolesByUserId(accessUser.internalId)
   }

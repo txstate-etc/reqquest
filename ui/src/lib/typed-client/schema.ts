@@ -157,7 +157,7 @@ export interface AccessUser {
     otherIdentifiers: AccessUserIdentifier[]
     /** A JSON object containing any information about the user that the implementing application wants to store. Could be useful for constructing personalized UI. */
     otherInfo: (Scalars['JsonData'] | null)
-    roles: AccessRole
+    roles: AccessRole[]
     /** True as long as the lookupUser.byLogins function still returns this user. False otherwise. Likely this user has been deactivated. */
     stillValid: Scalars['Boolean']
     __typename: 'AccessUser'
