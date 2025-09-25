@@ -23,7 +23,7 @@ export const load: PageLoad = async ({ url, depends }) => {
   if (searchFlag) {
     const users = await api.getAccessUsers(accessUsersFilter)
     depends('api:getAccessUsers')
-    return { users }
+    return { users, searchFlag }
   }
-  return { users: [] }
+  return { users: [], searchFlag }
 }

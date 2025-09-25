@@ -1,7 +1,5 @@
 <script lang="ts">
   import { ColumnList, FieldMultiselect, FilterUI } from '@txstate-mws/carbon-svelte'
-  import { InlineNotification, Modal, Row } from 'carbon-components-svelte'
-  import { invalidate } from '$app/navigation'
   import type { PageData } from './$types'
   import { DateTime } from 'luxon';
 
@@ -12,7 +10,7 @@
   }
 
   export let data: PageData
-  $: ({ users, availableApplicationRoles, availableInstitutionalRoles } = data)
+  $: ({ users, searchFlag, availableApplicationRoles, availableInstitutionalRoles } = data)
 
   let usersSearchFormData: UsersSearchForm | undefined
 
@@ -63,10 +61,10 @@
     { id: 'otherId', label: 'ID', get: 'otherId' },
 //    { id: 'applicationRoles', label: 'Application Roles', render: user => user['applicationRoles'].join(', ') },
     { id: 'groups', label: 'Groups', render: user => user['groups'].join(', ') },
-    { id: 'institutionalRoles', label: 'Institutional Roles', render: user => user['institutionalRoles'].join(', ') },
+    { id: 'institutionalRoles', label: 'Institutional Roles', render: user => user['institutionalRoles'] ? user['institutionalRoles'].join(', ') : '' },
     { id: 'lastLogin', label: 'Last Login', get: 'lastLogin' }
   ]}
   rows={transformFromAPI(users)}
-  noItemsTitle='Please enter search query to retrieve data'
+  noItemsTitle={(searchFlag) ? 'No results were found.' : 'Please enter a search query to retrieve data' }
 >
 </ColumnList>
