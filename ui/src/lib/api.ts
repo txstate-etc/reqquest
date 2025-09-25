@@ -36,6 +36,28 @@ class API extends APIBase {
     return response.access
   }
 
+  async getAccessUsers (accessUsersFilter = {}) {
+    const filter = accessUsersFilter
+    const response = await this.client.query({
+      __name: 'GetAccessUsers',
+      accessUsers: {
+        __args: { filter },
+        login: true,
+        fullname: true,
+        groups: true,
+        // roles: {
+        //   name: true
+        // },
+        otherIdentifiers: {
+          id: true,
+          label: true
+        },
+        otherInfo: true
+      }
+    })
+    return response.accessUsers
+  }
+
   async getApplicantRequests (additionalFilters = {}) {
     const filter = { own: true, ...additionalFilters }
     const response = await this.client.query({
