@@ -18,7 +18,7 @@
     // Local data
     id: string
     fullname: string
-//    applicationRoles: string[]
+    applicationRoles: string[]
     groups: string[]
     // External data
     email?: string
@@ -34,7 +34,7 @@
       // However the API schema shows single role.
       // and is returning undefined causing API to return 500
       // if applicaton roles field is requested.
-//      applicationRoles: [u.roles.name],
+      applicationRoles: u.roles.map(r => r.name),
       groups: u.groups,
       // External Data
       email: u.otherInfo?.email,
@@ -59,7 +59,7 @@
   columns= {[
     { id: 'contact', label: 'Name', render: user => user['email'] ? user['fullname'] + '<br>' + user['email'] : user['fullname'] },
     { id: 'otherId', label: 'ID', get: 'otherId' },
-//    { id: 'applicationRoles', label: 'Application Roles', render: user => user['applicationRoles'].join(', ') },
+    { id: 'applicationRoles', label: 'Application Roles', render: user => user['applicationRoles'].join(', ') },
     { id: 'groups', label: 'Groups', render: user => user['groups'].join(', ') },
     { id: 'institutionalRoles', label: 'Institutional Roles', render: user => user['institutionalRoles'] ? user['institutionalRoles'].join(', ') : '' },
     { id: 'lastLogin', label: 'Last Login', get: 'lastLogin' }

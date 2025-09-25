@@ -45,9 +45,9 @@ class API extends APIBase {
         login: true,
         fullname: true,
         groups: true,
-        // roles: {
-        //   name: true
-        // },
+        roles: {
+          name: true
+        },
         otherIdentifiers: {
           id: true,
           label: true
