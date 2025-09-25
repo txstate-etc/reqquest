@@ -38,13 +38,18 @@ export const state_residence_confirmation_prompt: PromptDefinition = {
   description: 'Applicant will identify if they reside in the required state.',
   schema: StateResidenceConfirmationPromptSchema,
   fetch: async (data, config, allConfig) => { 
-    console.log(`***All config  ${JSON.stringify(allConfig)}`)
-    return { residentOfState: allConfig.state_residence_req.residentOfState }
+    console.log(`***All config for residence confirmation prompt  ${JSON.stringify(allConfig)}`)
+    return { residentOfState: 'Texas' } //TODO ...this is a HACK as currently fetch does not have access to other requirement or prompt data
   },
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = []
+    console.log(`**Validate all config ${JSON.stringify(allConfig)}`)
+    //TODO ...this is a HACK as currently validate does not have access to other requirement or prompt data .. hardcoded TEXAS below
     if (data.residentOfRequiredState == null) {
-      messages.push({ type: MutationMessageType.error, message: `Please confirm whether applicant is a resident of ${allConfig.state_residence_req.residentOfState}.`, arg: 'residentOfRequiredState' })
+      messages.push({ type: MutationMessageType.error, message: `Please confirm whether applicant is a resident of Texas.`, arg: 'residentOfRequiredState' })
+    } 
+    if (data.residenceIsHome == null) {
+      messages.push({ type: MutationMessageType.error, message: `Please validate whether applicant address provided is a home in Texas.`, arg: 'residenceIsHome' })
     } 
     return messages
   }

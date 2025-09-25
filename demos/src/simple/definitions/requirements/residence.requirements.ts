@@ -36,9 +36,12 @@ export const state_residence_confirmation_req: RequirementDefinition<StateReside
   promptKeys: ['state_residence_confirmation_prompt'],
   resolve: (data, config, allConfig) => {
     const resPromptData = data['state_residence_confirmation_prompt'] as StateResidenceConfirmationPromptData
-    if (resPromptData?.residentOfRequiredState == null) return { status: RequirementStatus.PENDING }
-    if (resPromptData.residentOfRequiredState) return { status: RequirementStatus.MET }
-    return { status: RequirementStatus.DISQUALIFYING, reason: `Applicant does not reside in ${allConfig.state_residence_req.residentOfState}.` }
+    if (resPromptData == null) {
+      return { status: RequirementStatus.PENDING }
+    } else {
+      if (resPromptData.residentOfRequiredState && resPromptData.residenceIsHome) return { status: RequirementStatus.MET }
+    }
+    return { status: RequirementStatus.DISQUALIFYING, reason: `Applicant does not reside in a home in ${allConfig.state_residence_req.residentOfState}.` }
   }
 }
 
