@@ -73,7 +73,7 @@
   }
 </script>
 
-<CardGrid cardSize="100">
+<CardGrid cardSize="100" class="admin-settings">
 {#each roles ?? [] as role, index (role.id)}
 <Card
   title={role.name}
@@ -134,3 +134,23 @@
   <p>Are you sure you want to delete the role {deleteDialogRole?.name}?</p>
   <p>This action cannot be undone.</p>
 </Modal>
+
+<style>
+  :global(div.admin-settings div.card) {
+    border: 2px solid #fff;
+    --tw-shadow: none
+  }
+  :global(div.admin-settings header.card-header) {
+    background-color: #fff;
+  }
+  :global(div.admin-settings div.column-list-head) {
+    background-color: #fff;
+    border-bottom: 1px solid var(--cds-border-subtle, #e0e0e0);
+  }
+  :global(div.admin-settings div.column-list-cols) {
+    background-color: #fff;
+  }
+  /* #bottom-menu button {
+    --flex-row-reverse
+  } */
+</style>
