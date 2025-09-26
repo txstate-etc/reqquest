@@ -10,5 +10,8 @@ COPY demos/package-lock.json ./
 RUN npm ci
 COPY demos/tsconfig.json ./
 COPY demos/src src
+RUN mkdir -p /files
+RUN mkdir -p /files/tmp
+RUN mkdir -p /files/storage
 
 CMD [ "npm", "run", "start:nodemon" ]
