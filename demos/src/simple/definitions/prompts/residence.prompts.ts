@@ -9,11 +9,6 @@ export const state_residence_prompt: PromptDefinition = {
   title: 'State residency',
   description: 'Applicant will identify if they reside in the required state.',
   schema: StateResidencePromptSchema,
-  preload: (data, config, allConfig) => {
-    console.log(`**preload data: ${JSON.stringify(data)}`)
-    console.log(`**preload config: ${JSON.stringify(config)}`)
-    console.log(`**preload allConfig: ${JSON.stringify(allConfig)}`)
-  },
   preValidate: (data, config) => {
     const messages: MutationMessage[] = []
     const doc = data['residentIdDoc']
