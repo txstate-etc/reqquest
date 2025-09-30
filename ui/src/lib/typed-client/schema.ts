@@ -1128,7 +1128,7 @@ export interface MutationGenqlSelection{
     closeAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Create a new app request. */
     createAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {login: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
-    createPeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {period: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
+    createPeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {copyPeriodId?: (Scalars['String'] | null), period: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
     deletePeriod?: (ValidatedResponseGenqlSelection & { __args: {periodId: Scalars['ID']} })
     /** Make an offer on the app request. If all applications are ineligible, or if there are no acceptance requirements, the applications will advance to the non-blocking workflow, or absent that, be marked complete. */
     offerAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })

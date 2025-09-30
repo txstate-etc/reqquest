@@ -30,8 +30,11 @@ export class PeriodResolver {
   }
 
   @Mutation(returns => ValidatedPeriodResponse)
-  async createPeriod (@Ctx() ctx: RQContext, @Arg('period', type => PeriodUpdate) period: PeriodUpdate, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
-    return await ctx.svc(PeriodService).create(period, validateOnly)
+  async createPeriod (@Ctx() ctx: RQContext,
+    @Arg('period', type => PeriodUpdate) period: PeriodUpdate,
+    @Arg('copyPeriodId', type => String, { nullable: true }) copyPeriodId?: string,
+    @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
+    return await ctx.svc(PeriodService).create(period, copyPeriodId, validateOnly)
   }
 
   @Mutation(returns => ValidatedPeriodResponse)

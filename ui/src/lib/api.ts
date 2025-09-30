@@ -616,11 +616,11 @@ class API extends APIBase {
     return response.periods
   }
 
-  async createPeriod (period: PeriodUpdate, validateOnly: boolean) {
+  async createPeriod (period: PeriodUpdate, validateOnly: boolean, copyPeriodId?: string) {
     const response = await this.client.mutation({
       __name: 'CreatePeriod',
       createPeriod: {
-        __args: { period, validateOnly },
+        __args: { period, validateOnly, copyPeriodId },
         success: true,
         messages: {
           message: true,

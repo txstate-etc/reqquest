@@ -895,6 +895,9 @@ export default {
             "createPeriod": [
                 71,
                 {
+                    "copyPeriodId": [
+                        68
+                    ],
                     "period": [
                         57,
                         "PeriodUpdate!"

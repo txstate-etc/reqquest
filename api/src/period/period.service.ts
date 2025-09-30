@@ -89,12 +89,12 @@ export class PeriodService extends AuthService<Period> {
     return response
   }
 
-  async create (period: PeriodUpdate, validateOnly?: boolean) {
+  async create (period: PeriodUpdate, copyPeriodId?: string, validateOnly?: boolean) {
     if (!this.mayCreate()) throw new Error('You are not allowed to create a period.')
     const response = await this.validate(period)
     if (validateOnly || response.hasErrors()) return response
     try {
-      const id = await createPeriod(period)
+      const id = await createPeriod(period, copyPeriodId)
       this.loaders.clear()
       response.period = await this.findById(String(id))
     } catch (e: any) {

@@ -197,7 +197,7 @@ export async function copyConfigurations (fromPeriodId: number | string | undefi
   }
 }
 
-export async function createPeriod (period: PeriodUpdate) {
+export async function createPeriod (period: PeriodUpdate, copyPeriodId?: string) {
   const { code, name, openDate, closeDate, archiveDate, reviewed } = period
   const prevId = await db.getval<number>('SELECT id FROM periods ORDER BY id DESC LIMIT 1')
   return await db.transaction(async db => {
@@ -205,7 +205,7 @@ export async function createPeriod (period: PeriodUpdate) {
       INSERT INTO periods (code, name, openDate, closeDate, archiveDate, reviewed)
       VALUES (?, ?, ?, ?, ?, ?)
     `, [code, name, openDate?.toJSDate(), closeDate?.toJSDate(), archiveDate?.toJSDate(), !!reviewed])
-    await copyConfigurations(prevId, periodId, db)
+    await copyConfigurations(copyPeriodId ?? prevId, periodId, db)
     await ensureConfigurationRecords([periodId], db)
     return periodId
   })

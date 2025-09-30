@@ -12,7 +12,7 @@
   import type { PageData } from './$types'
     import { DateTime } from 'luxon'
 
-  type Period = PageData['periods'][number]
+  type Period = PageData['periods'][number] & { copyPeriodId?: string }
 
   export let data: PageData
   $: ({ periods, access } = data)
@@ -36,7 +36,7 @@
   }
 
   async function submit (period: Period) {
-    const response = editingPeriod ? await api.updatePeriod(editingPeriod.id, periodToPeriodUpdate(period), false) : await api.createPeriod(periodToPeriodUpdate(period), false)
+    const response = editingPeriod ? await api.updatePeriod(editingPeriod.id, periodToPeriodUpdate(period), false) : await api.createPeriod(periodToPeriodUpdate(period), false, period.copyPeriodId)
     return {
       ...response,
       data: period
@@ -131,7 +131,8 @@
   <FieldSelect
     labelText='Period configurations copied from'
     helpText='Help Text'
-    items={periods.map(p => ({ value: p, label: p.name }))}
+    items={periods.map(p => ({ value: p.id, label: p.name }))}
+    path='copyPeriod'
   />
   <FieldTextInput path="name" labelText="Period Name" required notNull />
   <FieldTextInput path="code" labelText="Code" />

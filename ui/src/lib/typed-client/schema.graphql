@@ -924,7 +924,7 @@ type Mutation {
 
   """Create a new app request."""
   createAppRequest(login: String!, periodId: ID!, validateOnly: Boolean): ValidatedAppRequestResponse!
-  createPeriod(period: PeriodUpdate!, validateOnly: Boolean): ValidatedPeriodResponse!
+  createPeriod(copyPeriodId: String, period: PeriodUpdate!, validateOnly: Boolean): ValidatedPeriodResponse!
   deletePeriod(periodId: ID!): ValidatedResponse!
 
   """
