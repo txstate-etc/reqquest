@@ -20,6 +20,7 @@ import {
   AppRequestActivityResolver
 } from './internal.js'
 import { scheduler, schedulerMigration } from './util/scheduler.js'
+import { installDownloadRoutes } from './download/download.routes.js'
 
 export interface RQStartOpts extends Omit<GQLStartOpts, 'resolvers'> {
   resolvers?: NonEmptyArray<Function>
@@ -115,6 +116,7 @@ export class RQServer extends GQLServer {
     programRegistry.finalize()
     await initializeDb([...periodMigrations, ...promptMigrations, ...requirementMigrations, ...accessMigrations, ...appRequestMigrations, ...applicationMigrations, schedulerMigration, ...(options?.migrations ?? [])])
     await initAccess()
+    await installDownloadRoutes(this.app)
     await ensureConfigurationRecords()
     await super.start({ ...options, resolvers })
     await scheduler.start()

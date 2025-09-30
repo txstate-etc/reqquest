@@ -109,7 +109,9 @@ export interface AppDefinition {
 }
 
 export const appConfig = {
-  getCtx (req: FastifyRequest) {
-    return new appConfig.customContext(req)
+  async getCtx (req: FastifyRequest) {
+    const ctx = new appConfig.customContext(req)
+    await ctx.waitForAuth()
+    return ctx
   }
-} as AppDefinition & { customContext: RQContextClass, getCtx: (req: FastifyRequest) => RQContext }
+} as AppDefinition & { customContext: RQContextClass, getCtx: (req: FastifyRequest) => Promise<RQContext> }
