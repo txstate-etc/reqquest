@@ -64,6 +64,7 @@ export class RequirementPrompt extends Prompt {
     this.invalidated = !!row.invalidated
     this.invalidatedReason = row.invalidatedReason ?? undefined
     this.visibility = row.visibility
+    this.moot = !!row.moot
   }
 
   @Field(type => ID)
@@ -80,6 +81,9 @@ export class RequirementPrompt extends Prompt {
 
   @Field(type => PromptVisibility, { description: 'The visibility of the prompt on the request. This is used to determine whether the prompt should be shown to the user in the UI.' })
   visibility: PromptVisibility
+
+  @Field({ description: 'This prompt\'s requirement follows a requirement that has already marked the application as ineligible. The prompt still has visibility of AVAILABLE OR REQUEST_DUPE OR APPLICATION_DUPE as normal, but should probably be shown to the user as disabled or not shown at all.' })
+  moot: boolean
 
   internalId: number
   appRequestInternalId: number

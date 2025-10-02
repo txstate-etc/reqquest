@@ -14,6 +14,7 @@ export const promptMigrations: DatabaseMigration[] = [
           promptKey VARCHAR(255) NOT NULL,
           evaluationOrder SMALLINT UNSIGNED NOT NULL DEFAULT 0,
           answered TINYINT UNSIGNED NOT NULL DEFAULT 0,
+          moot TINYINT UNSIGNED NOT NULL DEFAULT 0,
           invalidated TINYINT UNSIGNED NOT NULL DEFAULT 0,
           invalidatedReason TEXT,
           visibility VARCHAR(50) NOT NULL DEFAULT 'UNREACHABLE',

@@ -6,44 +6,40 @@
    * the app request since the prompt should only be visible in a single spot.
    */
 
-  import { afterNavigate, beforeNavigate, goto, invalidate } from '$app/navigation'
-  import { base } from '$app/paths'
-  import { page } from '$app/stores'
-  import { api, ButtonLoadingIcon } from '$lib'
   import { Form } from '@txstate-mws/carbon-svelte'
   import type { FormStore } from '@txstate-mws/svelte-forms'
   import { Button } from 'carbon-components-svelte'
+  import { getContext } from 'svelte'
+  import { afterNavigate, beforeNavigate, goto, invalidate } from '$app/navigation'
+  import { page } from '$app/stores'
+  import { api, ButtonLoadingIcon } from '$lib'
   import { uiRegistry } from '../../../../../local/index.js'
   import type { PageData } from './$types.js'
 
   export let data: PageData
   $: ({ prompt, appRequestData, dataVersion } = data)
-  $: def = uiRegistry.getPrompt($page.params.promptKey!)
+  $: def = uiRegistry.getPrompt($page.params.promptKey)
+  const getNextHref = getContext<() => { nextHref: string, prevHref: string | undefined }>('nextHref')
 
   let store: FormStore | undefined
   let continueAfterSave = false
   let hasPreviousPrompt = false
 
-  async function checkPreviousPrompt () {
-    const previousPrompt = await api.getPreviousPrompt($page.params.id!, prompt.key)
-    hasPreviousPrompt = !!previousPrompt
+  function checkPreviousPrompt () {
+    hasPreviousPrompt = getNextHref().prevHref != null
   }
 
   async function handleBack () {
-    const previousPrompt = await api.getPreviousPrompt($page.params.id!, prompt.key)
-    if (previousPrompt) {
-      await goto(`${base}/requests/${$page.params.id}/apply/${previousPrompt.key}`)
+    const previousHref = getNextHref().prevHref
+    if (previousHref) {
+      await goto(previousHref)
     }
-  }
-
-  $: if (prompt.key) {
-    checkPreviousPrompt().catch(console.error)
   }
 
   async function onSubmit (data: any) {
     const { success, messages } = await api.updatePrompt(prompt.id, data, false, dataVersion)
     return {
-      success,
+      success: !messages.some(m => m.type === 'error' || m.type === 'system'),
       messages,
       data
     }
@@ -55,13 +51,9 @@
   }
 
   async function onSaved () {
-    const [nextPrompt] = await Promise.all([
-      api.getNextPrompt($page.params.id!, prompt.key),
-      invalidate('request:apply')
-    ])
-    if (continueAfterSave) {
-      if (nextPrompt) await goto(`${base}/requests/${$page.params.id}/apply/${nextPrompt.key}`)
-      else await goto(`${base}/requests/${$page.params.id}/apply/review`)
+    await invalidate('request:apply')
+    if (continueAfterSave && prompt.answered) {
+      await goto(getNextHref().nextHref)
     } else await store?.setData(appRequestData[prompt.key] as object)
   }
 
@@ -74,6 +66,7 @@
   })
   afterNavigate(() => {
     hideForm = false
+    checkPreviousPrompt()
   })
 </script>
 

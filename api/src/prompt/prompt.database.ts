@@ -15,6 +15,7 @@ export interface PromptRow {
   userId: number
   promptKey: string
   answered: 0 | 1
+  moot: 0 | 1
   invalidated: 0 | 1
   invalidatedReason: string | null
   visibility: PromptVisibility
@@ -96,7 +97,7 @@ export async function syncPromptRecords (requirement: ApplicationRequirement, db
 
 export async function updatePromptComputed (prompts: RequirementPrompt[], db: Queryable) {
   for (const prompt of prompts) {
-    await db.update('UPDATE requirement_prompts SET visibility = ?, answered = ? WHERE id = ?', [prompt.visibility, prompt.answered, prompt.internalId])
+    await db.update('UPDATE requirement_prompts SET visibility = ?, answered = ?, moot = ? WHERE id = ?', [prompt.visibility, prompt.answered, prompt.moot, prompt.internalId])
   }
 }
 

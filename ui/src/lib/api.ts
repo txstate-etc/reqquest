@@ -1,7 +1,7 @@
 import { PUBLIC_API_BASE, PUBLIC_AUTH_REDIRECT } from '$env/static/public'
 import { APIBase } from '@txstate-mws/sveltekit-utils'
 import { datetimeSerialize, type Feedback } from '@txstate-mws/svelte-forms'
-import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleGroup, type AccessRoleInput, type AppRequestActivityFilters, type AppRequestFilter, type PeriodUpdate, type PromptVisibility } from './typed-client/index.js'
+import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleGroup, type AccessRoleInput, type Application, type AppRequestActivityFilters, type AppRequestFilter, type PeriodUpdate, type PromptVisibility, type RequirementPrompt } from './typed-client/index.js'
 import { DateTime } from 'luxon'
 
 class API extends APIBase {
@@ -109,7 +109,8 @@ class API extends APIBase {
               id: true,
               key: true,
               answered: true,
-              visibility: true
+              visibility: true,
+              moot: true
             }
           }
         }
@@ -177,6 +178,7 @@ class API extends APIBase {
         applications: {
           id: true,
           status: true,
+          ineligiblePhase: true,
           statusReason: true,
           title: true,
           navTitle: true,
@@ -191,23 +193,33 @@ class API extends APIBase {
               title: true,
               navTitle: true,
               answered: true,
-              visibility: true
+              visibility: true,
+              moot: true
             }
           }
         }
       }
     })
     if (response.appRequests.length === 0) return { prequalPrompts: [], appRequest: undefined }
+    type ResponseApplication = (typeof response)['appRequests'][0]['applications'][0]
+    type ResponseRequirement = ResponseApplication['requirements'][0]
+    type ResponsePrompt = ResponseRequirement['prompts'][0]
     const appRequest = response.appRequests[0]
-    const prequalPrompts = appRequest.applications.flatMap(application => application.requirements.filter(r => r.type === enumRequirementType.PREQUAL).flatMap(r => r.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE)))
-    const postqualPrompts = appRequest.applications.flatMap(application => application.requirements.filter(r => r.type === enumRequirementType.POSTQUAL).flatMap(r => r.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE)))
-    const applications = appRequest.applications.map(application => ({
-      ...application,
-      requirements: application.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION).map(requirement => ({
-        ...requirement,
-        prompts: requirement.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE)
-      }))
-    }))
+    const prequalPrompts: ResponsePrompt[] = []
+    const postqualPrompts: ResponsePrompt[] = []
+    const applications: ResponseApplication[] = []
+    const visibilitiesToShow = new Set<PromptVisibility>([enumPromptVisibility.AVAILABLE, enumPromptVisibility.REQUEST_DUPE])
+    for (const application of appRequest.applications) {
+      const applicantRequirements: ResponseRequirement[] = []
+      let ineligible = false
+      for (const requirement of application.requirements) {
+        if (requirement.type === enumRequirementType.PREQUAL) prequalPrompts.push(...requirement.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE))
+        else if (!ineligible && requirement.type === enumRequirementType.POSTQUAL) postqualPrompts.push(...requirement.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE))
+        else if (!ineligible && requirement.type === enumRequirementType.QUALIFICATION) applicantRequirements.push(requirement)
+        ineligible ||= requirement.status === 'DISQUALIFYING'
+      }
+      applications.push({ ...application, requirements: applicantRequirements.map(r => ({ ...r, prompts: r.prompts.filter(p => visibilitiesToShow.has(p.visibility)) })) })
+    }
     return { prequalPrompts, postqualPrompts, appRequest: { ...appRequest, applications } }
   }
 
@@ -229,6 +241,7 @@ class API extends APIBase {
               key: true,
               title: true,
               description: true,
+              answered: true,
               visibility: true,
               fetchedData: true,
               configurationRelatedData: true

@@ -467,6 +467,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
             : [...prequalRequirements, ...qualificationRequirements, ...preapprovalRequirements, ...approvalRequirements, ...blockingWorkflowRequirements]
 
       const promptsSeenInApplication = new Set<string>()
+      let applicationIsIneligible = false
       for (const requirement of sortedRequirements) {
         const requiredData = {} as AppRequestData
         const prompts = promptLookup[requirement.id] ?? []
@@ -495,6 +496,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
         hasUnanswered ||= !anyOrderAllAnswered
 
         for (const prompt of regularPrompts) {
+          prompt.moot = applicationIsIneligible && requirement.type !== RequirementType.WORKFLOW
           if (hasUnanswered || resolveInfo.status !== RequirementStatus.PENDING) prompt.visibility = PromptVisibility.UNREACHABLE
           else {
             if (promptsSeenInApplication.has(prompt.key)) prompt.visibility = PromptVisibility.APPLICATION_DUPE
@@ -511,15 +513,16 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
 
         requirement.status = resolveInfo.status
         requirement.statusReason = resolveInfo.reason
+        if (requirement.status === RequirementStatus.DISQUALIFYING) applicationIsIneligible = true
       }
 
       const firstFailingRequirement = sortedRequirements.find(r => r.status === RequirementStatus.DISQUALIFYING)
       const firstPendingRequirement = sortedRequirements.find(r => r.status === RequirementStatus.PENDING)
       const nonPassingRequirement = firstFailingRequirement ?? firstPendingRequirement
-      const requirementsResolution = firstPendingRequirement != null
-        ? 'pending'
-        : firstFailingRequirement != null
-          ? 'fail'
+      const requirementsResolution = firstFailingRequirement != null
+        ? 'fail'
+        : firstPendingRequirement != null
+          ? 'pending'
           : 'pass'
 
       application.status = phase === 'nonblocking'

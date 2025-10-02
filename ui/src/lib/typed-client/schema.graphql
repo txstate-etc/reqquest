@@ -1303,6 +1303,11 @@ type RequirementPrompt {
   key: String!
 
   """
+  This prompt's requirement follows a requirement that has already marked the application as ineligible. The prompt still has visibility of AVAILABLE OR REQUEST_DUPE OR APPLICATION_DUPE as normal, but should probably be shown to the user as disabled or not shown at all.
+  """
+  moot: Boolean!
+
+  """
   A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used.
   """
   navTitle: String!

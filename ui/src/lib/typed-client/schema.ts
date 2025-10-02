@@ -583,6 +583,8 @@ export interface RequirementPrompt {
     invalidatedReason: (Scalars['String'] | null)
     /** A human and machine readable identifier for the prompt. Will be used to match prompt data with UI and API code that handles it. */
     key: Scalars['String']
+    /** This prompt's requirement follows a requirement that has already marked the application as ineligible. The prompt still has visibility of AVAILABLE OR REQUEST_DUPE OR APPLICATION_DUPE as normal, but should probably be shown to the user as disabled or not shown at all. */
+    moot: Scalars['Boolean']
     /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
     navTitle: Scalars['String']
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
@@ -1349,6 +1351,8 @@ export interface RequirementPromptGenqlSelection{
     invalidatedReason?: boolean | number
     /** A human and machine readable identifier for the prompt. Will be used to match prompt data with UI and API code that handles it. */
     key?: boolean | number
+    /** This prompt's requirement follows a requirement that has already marked the application as ineligible. The prompt still has visibility of AVAILABLE OR REQUEST_DUPE OR APPLICATION_DUPE as normal, but should probably be shown to the user as disabled or not shown at all. */
+    moot?: boolean | number
     /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
     navTitle?: boolean | number
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
