@@ -3,21 +3,24 @@
   import { Modal } from 'carbon-components-svelte'
   import Add from 'carbon-icons-svelte/lib/Add.svelte'
   import Settings from 'carbon-icons-svelte/lib/Settings.svelte'
-  import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
+  // Edit is using Settings icon
+  // import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
   import View from 'carbon-icons-svelte/lib/View.svelte'
-  import { pick } from 'txstate-utils'
+  import Copy from 'carbon-icons-svelte/lib/Copy.svelte'
+  import { omit, pick } from 'txstate-utils'
   import { invalidate } from '$app/navigation'
   import { api, type AccessRole, type AccessRoleGroup, type AccessRoleInput } from '$lib'
   import type { PageData } from './$types'
   import { DateTime } from 'luxon';
 
   export let data: PageData
+  export let rolenames = new Set()
   $: ({ roles, access } = data)
-  // console.log(`Datat-ROLES-svelte: ${JSON.stringify(data)}`)
+  $: for (const role of roles ?? []) rolenames.add(role.name)
 
   // Group updates to Roles accept only the group name and not a group object.
-  type AccessRoleUpdateForm = Omit<AccessRoleInput, 'groups'> & { groups: string[], id: string }
+  type AccessRoleUpdateForm = Omit<AccessRoleInput, 'groups'> & { groups: string[], id?: string }
   function transformFromAPI (data: PageData['roles'][number]): AccessRoleUpdateForm {
     return {
       ...pick(data, 'id', 'name', 'description'),
@@ -101,6 +104,23 @@
       }
     },
     { label: 'View', icon: View, href: `/roles/${role.id}`,  },
+    { label: 'Duplicate', icon: Copy, onClick: () => {
+        createDialog = true;
+        const duplicateRole = transformFromAPI(role)
+        let name = duplicateRole.name
+        while (rolenames.has(name)) {
+          let s = name.search(/[0-9]+$/g);
+          if (s !== -1) {
+            let count = parseInt(name.slice(s))
+            name = name.slice(0, s) + (count + 1).toString()
+          } else {
+            name = name + '-1'
+          }
+        }
+        rolenames.add(name)
+        editingRole = { ...omit(duplicateRole, 'name', 'id'), name }
+      }
+    },
     { label: 'Delete', icon: TrashCan, onClick: () => openRoleDeleteDialog(role) }
   ]}
   noItemsTitle='There are no groups associated with this Role'
