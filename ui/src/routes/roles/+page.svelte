@@ -2,6 +2,7 @@
   import { ActionSet, Card, CardGrid, ColumnList, FieldMore, FieldMultiselect, FieldTextArea, FieldTextInput, PanelFormDialog, type ComboMenuItem } from '@txstate-mws/carbon-svelte'
   import { Modal } from 'carbon-components-svelte'
   import Add from 'carbon-icons-svelte/lib/Add.svelte'
+  import Settings from 'carbon-icons-svelte/lib/Settings.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
   import View from 'carbon-icons-svelte/lib/View.svelte'
@@ -73,36 +74,9 @@
   }
 </script>
 
-<CardGrid cardSize="100" class="admin-settings">
-{#each roles ?? [] as role, index (role.id)}
-<Card
-  title={role.name}
-  subhead={role.description ?? 'no descritpion is available'}
-  forceOverflow={false}
-  actions={[
-    { label: 'View', icon: View, href: `/roles/${role.id}` },
-    { label: 'Edit', icon: Edit, onClick: () => {
-        createDialog = true;
-        editingRole = transformFromAPI(role)
-      }
-    },
-    { label: 'Delete', icon: TrashCan, onClick: () => openRoleDeleteDialog(role) }
-  ]}
-  >
-  <ColumnList
-    title='Groups'
-    columns={[
-      { id: 'group', label: 'Group', get: 'groupName'},
-      { id: 'manager', label: 'Manager', render: row => (Array.isArray(row.managers) && row.managers.length > 0) ? row.managers[0].fullname + '<br/>' + row.managers[0].email : 'no manager information' },
-      { id: 'added', label: 'Added Date', render: row => (row.dateAdded) ? (row.dateAdded as DateTime).toFormat('MM/dd/yyyy') : '--/--/----' }
-    ]}
-    noItemsTitle='There are no groups associated with this Role'
-    rows={role.groups.map(g => ({...g, id: g.roleId + g.groupName}))}/>
-</Card>
-{/each}
-</CardGrid>
-<div id="role-menu"></div>
-<ActionSet includeLabels menuAlign="bottomleft" actions={[
+<!-- maxRowActionButton={1} -->
+<!-- title={role.name + '<br>' + role.description} -->
+<ActionSet includeLabels actions={[
   {
     label: 'Create Role',
     icon: Add,
@@ -113,6 +87,32 @@
     }
   }
 ]}/>
+
+{#each roles ?? [] as role, index (role.id)}
+<div class="admin-settings">
+  <h2 class="text-lg">{role.name}</h2>
+  <p>{role.description}</p>
+<ColumnList
+  title={role.name}
+  listActions={[
+    { label: 'Edit', icon: Settings, onClick: () => {
+        createDialog = true;
+        editingRole = transformFromAPI(role)
+      }
+    },
+    { label: 'View', icon: View, href: `/roles/${role.id}`,  },
+    { label: 'Delete', icon: TrashCan, onClick: () => openRoleDeleteDialog(role) }
+  ]}
+  noItemsTitle='There are no groups associated with this Role'
+  noItemsSubtitle=''
+  columns={[
+    { id: 'group', label: 'Group', get: 'groupName' },
+    { id: 'manager', label: 'Manager', render: row => (Array.isArray(row.managers) && row.managers.length > 0) ? row.managers[0].fullname + '<br/>' + row.managers[0].email : 'no manager information' },
+    { id: 'added', label: 'Added Date', render: row => (row.dateAdded) ? (row.dateAdded as DateTime).toFormat('MM/dd/yyyy') : '--/--/----' }
+  ]}
+  rows={role.groups.map(g => ({...g, id: g.roleId + g.groupName}))}/>
+</div>
+{/each}
 
 {#if createDialog}
   <PanelFormDialog open title="Create Role" preload={editingRole ? pick(editingRole, 'name', 'description', 'groups') : undefined} submit={onSubmit} {validate} on:saved={onSaved} on:cancel={closeDialog}>
@@ -136,21 +136,15 @@
 </Modal>
 
 <style>
-  :global(div.admin-settings div.card) {
-    border: 2px solid #fff;
-    --tw-shadow: none
+  :global(div.admin-settings) {
+    margin: 0 0 20px 0;
+    background: var(--cds-layer);
   }
-  :global(div.admin-settings header.card-header) {
-    background-color: #fff;
+  :global(div.admin-settings h2) {
+    padding: 8px 8px 0 8px;
   }
-  :global(div.admin-settings div.column-list-head) {
-    background-color: #fff;
-    border-bottom: 1px solid var(--cds-border-subtle, #e0e0e0);
+  :global(div.admin-settings p) {
+    padding: 0 8px 8px 8px;
+    line-height: calc(2rem - 10px);
   }
-  :global(div.admin-settings div.column-list-cols) {
-    background-color: #fff;
-  }
-  /* #bottom-menu button {
-    --flex-row-reverse
-  } */
 </style>
