@@ -117,7 +117,7 @@
             name = name + '-1'
           }
         }
-        rolenames.add(name)
+        // rolenames.add(name)
         editingRole = { ...omit(duplicateRole, 'name', 'id'), name }
       }
     },
