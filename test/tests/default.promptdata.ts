@@ -1,4 +1,4 @@
-import { YardPromptData, CatTowerPromptData, TunaAllergyPromptData, NicePromptData, OtherCatsPromptData, ExercisePromptData } from '../../demos/src/definitions/models/index.js'
+import { YardPromptData, CatTowerPromptData, TunaAllergyPromptData, NicePromptData, OtherCatsPromptData, ExercisePromptData } from '../../demos/src/default/definitions/models/index.js'
 
 export const promptMapApplicantQualified: Map<string, Map<string, any>> = new Map([
   ['which_state_prompt', new Map<string, any>([['pass_0', { state: 'TX', stateName: 'Texas' }]])],

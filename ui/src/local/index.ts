@@ -2,6 +2,8 @@ import { UIRegistry } from '$lib'
 import { PUBLIC_DEMO_INSTANCE } from '$env/static/public'
 /** default */
 import DogWalker from 'carbon-icons-svelte/lib/DogWalker.svelte'
+import Gamification from 'carbon-icons-svelte/lib/Gamification.svelte'
+import PedestrianFamily from 'carbon-icons-svelte/lib/PedestrianFamily.svelte'
 import YardPromptDisplay from './default/YardPromptDisplay.svelte'
 import YardPrompt from './default/YardPrompt.svelte'
 import CatTowerPromptDisplay from './default/CatTowerPromptDisplay.svelte'
@@ -68,6 +70,69 @@ function configureDemoInstanceParams() {
         }
       ]
     }
+  }
+  else if (PUBLIC_DEMO_INSTANCE === 'multi') { //TODO - Update one spec for multi complete, currently mirror demo
+    return {
+      appName: 'Adopt a Critter',
+      applicantDashboardIntroHeader: 'Start your Pet Journey Here!',
+      applicantDashboardIntroDetail: 'Submitting an adoption application is the first step in adopting a cat or dog. Based on your responses you will receive a list of "eligible benefits."',
+      applicantDashboardRecentDays: 30,
+      programs: [{
+        key: 'adopt_a_dog_program',
+        icon: DogWalker
+      }],
+      requirements: [
+        { key: 'have_big_yard_req' },
+        { key: 'have_adequate_personal_space_req' },
+        { key: 'have_a_cat_tower_req' },
+        { key: 'not_allergic_to_tuna_req' },
+        { key: 'applicant_seems_nice_req' },
+        { key: 'must_exercise_your_dog_req', configureComponent: ExerciseConfigure },
+        { key: 'which_state_req' },
+        { key: 'other_cats_applicant_req' },
+        { key: 'other_cats_reviewer_req' }
+      ],
+      prompts: [{
+        key: 'have_yard_prompt',
+        formComponent: YardPrompt,
+        displayComponent: YardPromptDisplay
+      }, {
+        key: 'have_a_cat_tower_prompt',
+        formComponent: CatTowerPrompt,
+        displayComponent: CatTowerPromptDisplay
+      }, {
+        key: 'not_allergic_to_tuna_prompt',
+        formComponent: TunaAllergyPrompt,
+        displayComponent: TunaAllergyPromptDisplay
+      }, {
+        key: 'applicant_seems_nice_prompt',
+        formComponent: SeemsNicePrompt,
+        displayComponent: SeemsNicePromptDisplay
+      }, {
+        key: 'must_exercise_your_dog_prompt',
+        formComponent: ExercisePrompt,
+        displayComponent: ExercisePromptDisplay
+      }, {
+        key: 'which_state_prompt',
+        formComponent: StatePrompt,
+        displayComponent: StatePromptDisplay
+      }, {
+        key: 'other_cats_prompt',
+        formComponent: OtherCatsPrompt,
+        displayComponent: OtherCatsPromptDisplay
+      }, {
+        key: 'other_cats_vaccines_prompt',
+        formComponent: OtherCatsVaccinesPrompt,
+        displayComponent: OtherCatsVaccinesPromptDisplay
+      }, {
+        key: 'vaccine_review_prompt',
+        formComponent: VaccineReviewPrompt,
+        displayComponent: VaccineReviewPromptDisplay
+      }]
+    }
+  }
+  else if (PUBLIC_DEMO_INSTANCE === 'complex') {
+    
   }
   return {
     appName: 'Adopt a Critter',

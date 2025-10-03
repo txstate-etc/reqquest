@@ -1,7 +1,7 @@
 import { expect, test } from './fixtures.js'
 import { DateTime } from 'luxon'
 
-test.describe.serial('Manage period configurations', () => {
+test.describe.serial('Manage period configurations',  { tag: '@default' }, () => {
   const name = '2025 Config'
   const code = '2025-config'
   const timeZone = 'America/Chicago'

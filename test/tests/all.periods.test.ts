@@ -1,6 +1,6 @@
 import { expect, test } from './fixtures.js'
 
-test.describe('Manage periods', () => {
+test.describe('Manage periods', { tag: '@all' }, () => {
   const name = '2025 Per'
   const code = 'PER-255'
   const openDate = '2025-09-01T00:00:00.000-05:00'

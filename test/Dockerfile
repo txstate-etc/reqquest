@@ -6,4 +6,4 @@ COPY test/tsconfig.json ./
 COPY test/playwright.config.ts ./
 COPY test/tests tests
 
-CMD ["npm", "run", "playwright"]
+CMD ["npm", "run", "playwright", "test", "--grep='@all|@default'"]

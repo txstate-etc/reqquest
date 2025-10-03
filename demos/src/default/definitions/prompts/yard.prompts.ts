@@ -17,7 +17,7 @@ export const have_yard_prompt: PromptDefinition<YardPromptData, YardPromptData> 
         messages.push({ type: MutationMessageType.error, message: 'Please enter a valid square footage.', arg: 'squareFootage' })
       }
       if (data.totalPets == null) messages.push({ type: MutationMessageType.error, message: 'Please enter the number of pets.', arg: 'totalPets' })
-      else if (data.totalPets < 1) {
+      else if (data.totalPets < 0) {
         messages.push({ type: MutationMessageType.error, message: 'Please enter a valid number of pets.' + (data.totalPets === 0 ? ' Remember to include this pet in your total.' : ''), arg: 'totalPets' })
       }
     }

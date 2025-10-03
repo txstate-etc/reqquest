@@ -1,9 +1,9 @@
 import { Hash } from 'crypto'
 import { expect, test } from './fixtures.js'
 import { DateTime } from 'luxon'
-import { promptMapApplicantQualified, promptMapApplicantUnqualified } from './promptdata.js'
+import { promptMapApplicantQualified, promptMapApplicantUnqualified } from './default.promptdata.js'
 
-test.describe.skip('App Request - App Phase - workflows', () => {
+test.describe.skip('App Request - App Phase - workflows', { tag: '@default' }, () => {
   const name = '2025 app-req App Phase'
   const code = 'APP_REQ_APP-255'
   const timeZone = 'America/Chicago'

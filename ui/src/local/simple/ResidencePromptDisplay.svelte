@@ -43,7 +43,7 @@
    <p>
       <b>
         {data.firstName} {data.lastName} <br/>
-        {data.streetAddress}
+        {data.streetAddress} <br/>
         {data.city}, ##configData.state## {data.zipCode}
       </b>
    </p>  
