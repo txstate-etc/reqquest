@@ -3,7 +3,7 @@ import { expect, test } from './fixtures.js'
 import { DateTime } from 'luxon'
 import { promptMapApplicantQualified, promptMapApplicantUnqualified } from './default.promptdata.js' // TODO: Once multi spec is in place update prompt data refs
 
-test.describe.skip('App Request - App Phase - workflows', { tag: '@multi' }, () => {
+test.describe.serial('App Request - App Phase - workflows', { tag: '@multi' }, () => {
   const name = '2025 multi app-req App Phase'
   const code = 'APP_REQ_APP-255=multi'
   const timeZone = 'America/Chicago'

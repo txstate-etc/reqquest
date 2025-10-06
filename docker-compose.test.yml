@@ -53,6 +53,7 @@ services:
     attach: true
     environment:
       AUTH_REDIRECT: http://fakeauth/login?clientId=reqquest&returnUrl=http%3A%2F%2Fui
+      TEST_TAGS: '${TEST_TAGS:-@all|@default}'
     volumes:
       - ./test/test-results:/test-results
   fakeauth:

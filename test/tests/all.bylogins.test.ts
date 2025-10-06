@@ -1,9 +1,9 @@
 import { expect, test } from './fixtures.js'
 
-test.describe('ByLogins admin flow', () => {
+test.describe('ByLogins admin flow', { tag: '@all' }, () => {
   const uniqueAdmin: string = 'admin_01'
   test.use({ login: uniqueAdmin })
-  test('Account details should be updated from seed data post upsert',  { tag: '@all' }, async ({ request }) => {
+  test('Account details should be updated from seed data post upsert', async ({ request }) => {
     const { accessUsers } = await request.graphql<{ accessUsers: { login: string, fullname: string, otherInfo: { email: string } }[] }>(`
       {
         accessUsers (filter: { self: true }) {

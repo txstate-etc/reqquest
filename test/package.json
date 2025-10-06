@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "playwright": "playwright test"
+    "playwright": "playwright test",
+    "playwright:grep": "playwright test --grep \"${TEST_TAGS}\""
   },
   "dependencies": {
     "@playwright/test": "~1.53.2",
