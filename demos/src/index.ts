@@ -1,4 +1,4 @@
-import { RQServer } from '@reqquest/api'
+import { RQServer, SearchUsersFilter } from '@reqquest/api'
 import { analyticsPlugin, unifiedAuthenticate } from 'fastify-txstate'
 import { have_yard_prompt, adopt_a_dog_program, have_big_yard_req, have_adequate_personal_space_req, adopt_a_cat_program, cat_tower_req, not_allergic_to_tuna_req, have_a_cat_tower_prompt, not_allergic_to_tuna_prompt, applicant_seems_nice_req, applicant_seems_nice_prompt, must_exercise_your_dog_req, must_exercise_your_dog_prompt, which_state_req, which_state_prompt, other_cats_applicant_req, other_cats_prompt, other_cats_vaccines_prompt, other_cats_reviewer_req, vaccine_review_prompt } from './default/index.js'
 import { adopt_a_pet_program, state_residence_confirmation_prompt, state_residence_confirmation_req, state_residence_prompt, state_residence_req } from './simple/index.js'
@@ -37,8 +37,9 @@ async function main () {
         byLogins: async (logins: string[], applicableGroups: string[]) => {
           return logins.filter(login => userTypePrefixes.some(p => login.startsWith(p))).map(login => ({ login, fullname: `${login} Full Name`, groups: userTypes[userTypePrefixes.find(p => login.startsWith(p))!].groups, otherInfo: { email: `${login}@txstate.edu` } }))
         },
-        searchUsers: async (searchQuery: string) => {
-          return [{ groups: ['applicants'], otherInfo: { email: 'applicant@txstate.edu' }, login: 'applicant', fullname: 'Applicant Fullname' }]
+        searchUsers: async (query: SearchUsersFilter) => {
+          return query.users ?? []
+          // return [{ groups: ['applicants'], otherInfo: { email: 'applicant@txstate.edu' }, login: 'applicant', fullname: 'Applicant Fullname' }]
         }
       },
       groups: async (groupnames: string[]) => {

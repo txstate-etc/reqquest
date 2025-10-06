@@ -1,5 +1,5 @@
 import { ManyJoinedLoader, OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { AuthService } from '../internal.js'
+import { appConfig, AuthService } from '../internal.js'
 import { AccessDatabase as database } from './access.database.js'
 import { type AccessUserFilter, AccessUser } from './access.model.js'
 import { intersect } from 'txstate-utils'
@@ -32,6 +32,13 @@ export class AccessUserService extends AuthService<AccessUser> {
       filter.internalIds = intersect({ skipEmpty: true }, filter.internalIds, [this.user.internalId])
     }
     const users = await database.getAccessUsers(filter)
+
+    if (appConfig.userLookups.searchUsers && Array.isArray(users) && users.length > 0) {
+      const identifiers = users.map(u => ({ label: 'login', id: u.login }))
+      // const query = { search: filter?.search, identifiers, groupings: filter?.otherGroupingsByLabel }
+      // const remoteUsers = await appConfig.userLookups.searchUsers(query)
+    }
+
     this.loaders.prime(accessUsersByIdLoader, users)
     return users
   }

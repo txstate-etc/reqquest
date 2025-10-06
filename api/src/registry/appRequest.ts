@@ -1,5 +1,5 @@
 import { FastifyRequest } from 'fastify'
-import { AccessRoleGroup, AccessUserGroupingInput, AccessUserIdentifierInput, ApplicationPhase, AppRequest, AppRequestStatus, RQContext, RQContextClass } from '../internal.js'
+import { AccessRoleGroup, AccessUser, AccessUserGroupingInput, AccessUserIdentifierInput, ApplicationPhase, AppRequest, AppRequestStatus, RQContext, RQContextClass } from '../internal.js'
 import { DateTime } from 'luxon'
 
 export interface AppRequestData {
@@ -27,6 +27,12 @@ export interface RemoteGroup {
   dateCreated?: DateTime
 }
 
+export interface SearchUsersFilter {
+  users?: ReqquestUser[]
+  identifiers?: AccessUserIdentifierInput[]
+  groupings?: AccessUserGroupingInput[]
+}
+
 export interface AppDefinition {
   /**
    * Configure whether this system allows multiple app requests for the same user in the same period.
@@ -50,17 +56,17 @@ export interface AppDefinition {
      */
     byLogins: (logins: string[], applicableGroups: string[]) => Promise<ReqquestUser[]>
     /**
-     * Provide a function that will return a list of users and their groups, given a search query string,
+     * Provide a function that will return a list of users, given a search query users,
      * identifiers, or grouping information.
      *
      * The function should return the search results of user objects, where the user object contains the login,
-     * fullname, and groups the user belongs to. The list of users objects may be retrieved locally or from an
-     * outside database or system such as LDAP.
+     * fullname, and groups (application or institution) the user belongs to. The list of users objects may be
+     * retrieved locally or from an outside database or system such as LDAP.
      *
-     * The searchQuery parameter may be a set of keywords or substrings of the account that reqquest is
-     * interested in.
+     * The query parameter may be used to update a list of users with associated remote data and further
+     * filter that list via the retrieved list of identifiers and groups.
      */
-    searchUsers?: (searchQuery: string, identifiers: AccessUserIdentifierInput[], groupings: AccessUserGroupingInput[]) => Promise<ReqquestUser[]>
+    searchUsers?: (query: SearchUsersFilter) => Promise<ReqquestUser[]>
   }
   /**
    * Provide a function that will return a list of group properties, given a list of group names.
