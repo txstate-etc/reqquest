@@ -262,7 +262,7 @@ export function getPeriodStatus (period: any) {
   const now = new Date()
   const openDate = new Date(period.openDate)
   const closeDate = (!period.closeDate) ? new Date(noClosePeriodDate) : new Date(period.closeDate)
-  if (now < openDate) return 'upcoming'  
+  if (now < openDate) return 'upcoming'
   if (now > closeDate) return 'closed'
   return 'open'
 }
@@ -275,7 +275,7 @@ export function getPeriodDisplayInfo (period: any) {
     openDateMachineFormat: period.openDate,
     closeLabel: status === 'closed' ? 'Application closed' : 'Application closes',
     closeDate: (!period.closeDate) ? longNumericTime(noClosePeriodDate) : longNumericTime(period.closeDate),
-    closeDateMachineFormat: (!period.closeDate) ? new Date(noClosePeriodDate) : period.closeDate,
-    canStartNew: status === 'open'
+    closeDateMachineFormat: period.closeDate ?? new Date(noClosePeriodDate),
+    canStartNew: status === 'open' && period.reviewed === true
   }
 }

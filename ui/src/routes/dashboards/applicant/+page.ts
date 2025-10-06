@@ -4,11 +4,35 @@ import { uiRegistry } from '../../../local/index.js'
 import type { PageLoad } from './$types'
 import type { AppRequestFilter } from '$lib/typed-client/schema'
 
-// TODO: This is pending a review of how apps should be categorized by tab...previously this was current/past and more status based
 function getRecentCutoffDate (daysAgo: number): string {
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - daysAgo)
   return cutoff.toISOString()
+}
+
+function buildApiFilters (
+  currentTab: string,
+  filters: ReturnType<typeof extractMergedFilters>,
+  recentCutoffIso: string
+): AppRequestFilter {
+  const baseFilter: AppRequestFilter = { own: true }
+
+  if (currentTab === 'past_applications') {
+    return {
+      ...baseFilter,
+      updatedBefore: recentCutoffIso,
+      ...(filters.yearSubmitted?.length > 0 && {
+        createdAfter: `${Math.min(...filters.yearSubmitted.map(Number))}-01-01T00:00:00Z`,
+        createdBefore: `${Math.max(...filters.yearSubmitted.map(Number))}-12-31T23:59:59Z`
+      }),
+      ...(filters.search && { search: filters.search })
+    }
+  }
+
+  return {
+    ...baseFilter,
+    updatedAfter: recentCutoffIso
+  }
 }
 
 export const load: PageLoad = async ({ url, depends }) => {
@@ -19,45 +43,30 @@ export const load: PageLoad = async ({ url, depends }) => {
   const recentDays = uiRegistry.config.applicantDashboardRecentDays ?? 30
   const recentCutoffIso = getRecentCutoffDate(recentDays)
 
-  const apiFilters: AppRequestFilter = { own: true }
+  const apiFilters = buildApiFilters(currentTab, filters, recentCutoffIso)
 
-  if (currentTab === 'past_applications') {
-    // Past applications: not updated within recent threshold
-    apiFilters.updatedBefore = recentCutoffIso
-
-    // Add year filtering if specified (based on creation year)
-    if (filters.yearSubmitted?.length > 0) {
-      const years = filters.yearSubmitted.map(Number)
-      apiFilters.createdAfter = `${Math.min(...years)}-01-01T00:00:00Z`
-      apiFilters.createdBefore = `${Math.max(...years)}-12-31T23:59:59Z`
-    }
-
-    // Add search if specified
-    if (filters.search) {
-      apiFilters.search = filters.search
-    }
-  } else {
-    // Recent applications tab - shows applications updated within recent days
-    apiFilters.updatedAfter = recentCutoffIso
-  }
-
-  // Load applications and open periods
-  const [appRequests, openPeriods] = await Promise.all([
+  const [appRequests, openPeriods, access] = await Promise.all([
     api.getApplicantRequests(apiFilters),
-    api.getOpenPeriods()
+    api.getOpenPeriods(),
+    api.getAccess()
   ])
 
-  // Extract available years for the year filter dropdown
-  const requestsForYearExtraction = currentTab === 'past_applications'
-    ? await api.getApplicantRequests({ own: true, updatedBefore: recentCutoffIso })
-    : appRequests
-  const availableYears = [...new Set(
-    requestsForYearExtraction.map(req => new Date(req.createdAt).getFullYear())
-  )].sort((a, b) => b - a) // Sort newest year first
+  // Extract available years for the year filter dropdown (only used on past_applications tab)
+  let availableYears: number[] = []
+  if (currentTab === 'past_applications' && (!filters.yearSubmitted || filters.yearSubmitted.length === 0)) {
+    const allPastRequests = await api.getApplicantRequests({
+      own: true,
+      updatedBefore: recentCutoffIso
+    })
+    availableYears = [...new Set(
+      allPastRequests.map(req => new Date(req.createdAt).getFullYear())
+    )].sort((a, b) => b - a)
+  }
 
-  // Get access data
-  const access = await api.getAccess()
-
+  // Register dependencies for cache invalidation
   depends('api:getApplicantRequests')
+  depends('api:getOpenPeriods')
+  depends('api:getAccess')
+
   return { appRequests, availableYears, openPeriods, access, initialFilters: filters }
 }

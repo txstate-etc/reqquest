@@ -3,12 +3,12 @@
   import { base } from '$app/paths'
   import { api } from '$lib'
   import { ApplicationDetailsView, AppRequestCard, IntroPanel } from '$lib/components'
-  import type { DashboardAppRequest, ApplyNavigationResponse, AnsweredPrompt } from '$lib/components/types'
-  import { getAppRequestStatusInfo, getPeriodDisplayInfo, getPeriodStatus, getStatusActionType, getSubmitButtonText } from '$lib/status-utils.js'
-  import type { AppRequestStatus, Scalars } from '$lib/typed-client/schema'
-  import { CardGrid, FieldMultiselect, FieldSelect, FilterUI, Panel, PanelDialog, PanelFormDialog, TagSet, Toasts } from '@txstate-mws/carbon-svelte'
+  import type { ApplyNavigationResponse, DashboardAppRequest } from '$lib/components/types'
+  import { getPeriodDisplayInfo, getPeriodStatus, getStatusActionType, getSubmitButtonText } from '$lib/status-utils.js'
+  import type { Scalars } from '$lib/typed-client/schema'
+  import { CardGrid, FieldMultiselect, FieldSelect, FilterUI, Panel, PanelDialog, PanelFormDialog, Toasts } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
-  import { Button, Dropdown, InlineNotification, Modal, Tooltip } from 'carbon-components-svelte'
+  import { Button, Dropdown, InlineNotification, Modal } from 'carbon-components-svelte'
   import { Close, DocumentExport, Download, Reset, Warning } from 'carbon-icons-svelte'
   import { uiRegistry } from '../../../local/index.js'
   import type { PageData } from './$types'
@@ -40,11 +40,11 @@
   // Modal State
   let cancelConfirmation: { open: boolean, requestId: string | null } = { open: false, requestId: null }
 
-  // Auto-select period. Only for single period scenarios
-  $: if (openPeriods.length === 1 && !selectedPeriodId) {
-    selectedPeriodId = openPeriods[0].id
-  }
+  // Auto-select first displayable period
   $: displayablePeriods = openPeriods.length > 0 ? getOpenAndUpcomingPeriods(openPeriods) : []
+  $: if (displayablePeriods.length > 0 && !selectedPeriodId) {
+    selectedPeriodId = displayablePeriods[0].id
+  }
   $: currentPeriod = getCurrentPeriod(displayablePeriods, selectedPeriodId)
   $: periodInfo = currentPeriod ? getPeriodDisplayInfo(currentPeriod) : null
 
@@ -57,15 +57,12 @@
     return null
   }
 
-  function getExistingApplicationForPeriod (periodName: string): DashboardAppRequest | undefined {
-    return appRequests.find(req => req.period.name === periodName)
-  }
-
   function getOpenAndUpcomingPeriods (periods: typeof openPeriods): typeof openPeriods {
     return periods
       .filter(period => {
         const status = getPeriodStatus(period)
-        return status === 'open' || status === 'upcoming'
+        // Only show periods that are open/upcoming AND have been reviewed
+        return (status === 'open' || status === 'upcoming') && period.reviewed
       })
       .sort((a, b) => new Date(a.openDate).getTime() - new Date(b.openDate).getTime())
   }
@@ -259,10 +256,9 @@
   // ==========================================
 
   async function clickCreateAppRequest () {
-    // Use selected period for multiple, or first period for single
-    const periodId = openPeriods.length > 1 ? selectedPeriodId : openPeriods[0]?.id
-    if (!periodId) return
-    const { success } = await submitAppRequest({ periodId })
+    // Use the currently selected period
+    if (!selectedPeriodId) return
+    const { success } = await submitAppRequest({ periodId: selectedPeriodId })
     if (success) await onSaved()
   }
 
@@ -301,12 +297,14 @@
   // Reactive statements for filter options
   $: yearOptions = getAvailableYears(availableYears)
   $: recentDays = uiRegistry.config.applicantDashboardRecentDays ?? 30
+  $: showIntroPanel = filterDataSearch?.tab !== 'past_applications'
+  $: hasPastApps = filterDataSearch?.tab === 'past_applications' && yearOptions.length > 0
 </script>
 
 <div class="flow applicant-dashboard">
   <!-- Filter UI for recent/past applications -->
   <FilterUI
-    search={filterDataSearch?.tab === 'past_applications'}
+    search={hasPastApps}
     tabs={[
       { label: 'Recent applications', value: 'recent_applications' },
       { label: 'Past applications', value: 'past_applications' }
@@ -314,13 +312,13 @@
     on:apply={e => { filterDataSearch = e.detail }}
     on:mount={e => { filterDataSearch = e.detail }}>
     <svelte:fragment slot="quickfilters">
-      {#if filterDataSearch?.tab === 'past_applications'}
+      {#if hasPastApps}
         <FieldMultiselect path="yearSubmitted" label="Year Submitted" items={yearOptions} />
       {/if}
     </svelte:fragment>
   </FilterUI>
 
-  {#if filterDataSearch?.tab !== 'past_applications'}
+  {#if showIntroPanel}
     <IntroPanel
       title={uiRegistry.config.applicantDashboardIntroHeader}
       subtitle={uiRegistry.config.applicantDashboardIntroDetail}
@@ -395,7 +393,7 @@
       <InlineNotification
         kind="info"
         title="No results found."
-        subtitle="You may need to refine your searched terms, filters or try again."
+        subtitle={hasPastApps ? "You may need to refine your searched terms, filters or try again." : undefined}
         lowContrast
       />
     {:else}
