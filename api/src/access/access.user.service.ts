@@ -31,12 +31,10 @@ export class AccessUserService extends AuthService<AccessUser> {
       filter ??= {}
       filter.internalIds = intersect({ skipEmpty: true }, filter.internalIds, [this.user.internalId])
     }
-    const users = await database.getAccessUsers(filter)
+    let users = await database.getAccessUsers(filter)
 
     if (appConfig.userLookups.searchUsers && Array.isArray(users) && users.length > 0) {
-      const identifiers = users.map(u => ({ label: 'login', id: u.login }))
-      // const query = { search: filter?.search, identifiers, groupings: filter?.otherGroupingsByLabel }
-      // const remoteUsers = await appConfig.userLookups.searchUsers(query)
+      users = await appConfig.userLookups.searchUsers({ users })
     }
 
     this.loaders.prime(accessUsersByIdLoader, users)

@@ -28,7 +28,7 @@ export interface RemoteGroup {
 }
 
 export interface SearchUsersFilter {
-  users?: ReqquestUser[]
+  users?: AccessUser[]
   identifiers?: AccessUserIdentifierInput[]
   groupings?: AccessUserGroupingInput[]
 }
@@ -66,7 +66,7 @@ export interface AppDefinition {
      * The query parameter may be used to update a list of users with associated remote data and further
      * filter that list via the retrieved list of identifiers and groups.
      */
-    searchUsers?: (query: SearchUsersFilter) => Promise<ReqquestUser[]>
+    searchUsers?: (query: SearchUsersFilter) => Promise<AccessUser[]>
   }
   /**
    * Provide a function that will return a list of group properties, given a list of group names.
