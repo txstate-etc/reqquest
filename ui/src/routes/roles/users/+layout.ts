@@ -7,8 +7,7 @@ export const load: LayoutLoad = async ({ url, depends }) => {
   // Get access data
   const availableInstitutionalRoles: ComboMenuItem[] = [{ value: 'Faculty' }, { value: 'Staff' }, { value: 'Student' }]
   const appRoles = (await api.getRoleList()) ?? []
-  const availableApplicationRoles: ComboMenuItem[] = appRoles.map(role => ({ label: role.name, value: role.id }))
-
+  const availableApplicationRoles: ComboMenuItem[] = appRoles.map(role => ({ value: role.name }))
   depends('api:getRoleList')
   return { availableApplicationRoles, availableInstitutionalRoles }
 }

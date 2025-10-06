@@ -5,6 +5,8 @@ import {
   AccessRoleGroup
 } from '../internal.js'
 
+const AccessUserLabelApplicationRole = 'applicationRole'
+
 export interface AccessUserRow {
   id: number
   login: string
@@ -101,12 +103,28 @@ export namespace AccessDatabase {
       `)
     }
 
+    if (filter?.otherGroupingsByLabel) {
+      const applicationRoles = []
+      for (const group of filter.otherGroupingsByLabel) if (group.label === AccessUserLabelApplicationRole) applicationRoles.push(group.id)
+      if (applicationRoles.length > 0) {
+        joins.set('applicationUserRoles', `
+          LEFT JOIN (
+            SELECT DISTINCT userId, GROUP_CONCAT(accessRoles.name SEPARATOR " ") AS roleNames
+            FROM accessUserGroups
+            LEFT JOIN accessRoleGroups ON accessUserGroups.groupName = accessRoleGroups.groupName
+            LEFT JOIN accessRoles ON accessRoleGroups.roleId = accessRoles.id
+            WHERE accessRoles.name IN (${db.in(joinbinds, applicationRoles)})
+            GROUP BY userId
+          ) AS applicationUserRoles ON accessUsers.id = applicationUserRoles.userId
+        `)
+        where.push('applicationUserRoles.roleNames IS NOT NULL')
+      }
+    }
     return { where, params: [...joinbinds, ...params], joins }
   }
 
   export async function getAccessUsers (filter?: AccessUserFilter): Promise<AccessUser[]> {
     const { where, params, joins } = accessUserProcessFilter(filter)
-
     const rows = await db.getall<AccessUserRow>(`
       select * FROM accessUsers
       ${Array.from(joins.values()).join('\n')}
