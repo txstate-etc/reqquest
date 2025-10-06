@@ -835,11 +835,15 @@ export interface AccessUserGenqlSelection{
     __scalar?: boolean | number
 }
 
-export interface AccessUserFilter {logins?: (Scalars['ID'][] | null),
+export interface AccessUserFilter {logins?: (Scalars['ID'][] | null),otherGroupingsByLabel?: (AccessUserGroupingInput[] | null),
 /** Filter by identifiers aside from username, like an Employee ID. */
 otherIdentifiers?: (Scalars['String'][] | null),otherIdentifiersByLabel?: (AccessUserIdentifierInput[] | null),search?: (Scalars['String'] | null),
 /** If true, only return the user that is currently logged in. */
 self?: (Scalars['Boolean'] | null)}
+
+
+/** A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutionalRole", id: "Staff" }, { label: "group", id: "Admin" }] */
+export interface AccessUserGroupingInput {id: Scalars['ID'],label: Scalars['String']}
 
 
 /** A label and ID pair for an external user unique ID. For example, { label: "Student ID", id: "123456" } */

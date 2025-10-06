@@ -40,6 +40,15 @@ export class AccessUserIdentifierInput {
   label!: string
 }
 
+@InputType({ description: 'A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutionalRole", id: "Staff" }, { label: "group", id: "Admin" }]' })
+export class AccessUserGroupingInput {
+  @Field(() => ID)
+  id!: string
+
+  @Field()
+  label!: string
+}
+
 @ObjectType({ description: 'A label and ID pair for an external user unique ID. For example, { label: "Student ID", id: "123456" }' })
 export class AccessUserIdentifier {
   constructor (row: AccessUserIdentifierRow) {
@@ -72,6 +81,9 @@ export class AccessUserFilter {
 
   @Field(() => [AccessUserIdentifierInput], { nullable: true })
   otherIdentifiersByLabel?: AccessUserIdentifierInput[]
+
+  @Field(() => [AccessUserGroupingInput], { nullable: true })
+  otherGroupingsByLabel?: AccessUserGroupingInput[]
 
   @Field({ nullable: true })
   search?: string

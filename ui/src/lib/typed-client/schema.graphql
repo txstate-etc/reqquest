@@ -227,6 +227,7 @@ type AccessUser {
 
 input AccessUserFilter {
   logins: [ID!]
+  otherGroupingsByLabel: [AccessUserGroupingInput!]
 
   """Filter by identifiers aside from username, like an Employee ID."""
   otherIdentifiers: [String!]
@@ -235,6 +236,14 @@ input AccessUserFilter {
 
   """If true, only return the user that is currently logged in."""
   self: Boolean
+}
+
+"""
+A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutionalRole", id: "Staff" }, { label: "group", id: "Admin" }]
+"""
+input AccessUserGroupingInput {
+  id: ID!
+  label: String!
 }
 
 """

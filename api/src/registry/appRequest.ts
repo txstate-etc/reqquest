@@ -1,5 +1,5 @@
 import { FastifyRequest } from 'fastify'
-import { AccessRoleGroup, ApplicationPhase, AppRequest, AppRequestStatus, RQContext, RQContextClass } from '../internal.js'
+import { AccessRoleGroup, AccessUserGroupingInput, AccessUserIdentifierInput, ApplicationPhase, AppRequest, AppRequestStatus, RQContext, RQContextClass } from '../internal.js'
 import { DateTime } from 'luxon'
 
 export interface AppRequestData {
@@ -50,7 +50,8 @@ export interface AppDefinition {
      */
     byLogins: (logins: string[], applicableGroups: string[]) => Promise<ReqquestUser[]>
     /**
-     * Provide a function that will return a list of users and their groups, given a search query string.
+     * Provide a function that will return a list of users and their groups, given a search query string,
+     * identifiers, or grouping information.
      *
      * The function should return the search results of user objects, where the user object contains the login,
      * fullname, and groups the user belongs to. The list of users objects may be retrieved locally or from an
@@ -59,7 +60,7 @@ export interface AppDefinition {
      * The searchQuery parameter may be a set of keywords or substrings of the account that reqquest is
      * interested in.
      */
-    searchUsers?: (searchQuery: string) => Promise<ReqquestUser[]>
+    searchUsers?: (searchQuery: string, identifiers: AccessUserIdentifierInput[], groupings: AccessUserGroupingInput[]) => Promise<ReqquestUser[]>
   }
   /**
    * Provide a function that will return a list of group properties, given a list of group names.
