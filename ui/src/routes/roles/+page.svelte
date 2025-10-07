@@ -97,6 +97,8 @@
   <p>{role.description}</p>
 <ColumnList
   title={role.name}
+  listActionsMaxButtons={2}
+  listActionsIncludeLabels={false}
   listActions={[
     { label: 'Edit', icon: Settings, onClick: () => {
         createDialog = true;
