@@ -230,7 +230,7 @@ export class AccessUserResolver {
 
   @FieldResolver(returns => [AccessRole])
   async roles (@Ctx() ctx: Context, @Root() accessUser: AccessUser) {
-    return await ctx.svc(AccessRoleService).findAccessRolesByUserId(accessUser.internalId)
+    return (await ctx.svc(AccessRoleService).findAccessRolesByUserId(accessUser.internalId)) ?? []
   }
 
   @FieldResolver(returns => [AccessUserIdentifier])
