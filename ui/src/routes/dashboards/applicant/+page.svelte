@@ -8,7 +8,7 @@
   import type { Scalars } from '$lib/typed-client/schema'
   import { CardGrid, FieldMultiselect, FieldSelect, FilterUI, Panel, PanelDialog, PanelFormDialog, Toasts } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
-  import { Button, Dropdown, InlineNotification, Modal } from 'carbon-components-svelte'
+  import { Button, Dropdown, InlineNotification, Modal, Tooltip } from 'carbon-components-svelte'
   import { Close, DocumentExport, Download, Reset, Warning } from 'carbon-icons-svelte'
   import { uiRegistry } from '../../../local/index.js'
   import type { PageData } from './$types'
@@ -126,12 +126,6 @@
         icon: DocumentExport
       },
       {
-        label: 'Withdraw Application',
-        onClick: async () => await withdrawApplication(request.id),
-        icon: Close,
-        disabled: !request.actions.close
-      },
-      {
         label: 'Cancel Application',
         onClick: () => { cancelConfirmation = { open: true, requestId: request.id } },
         icon: Close,
@@ -154,13 +148,6 @@
       async () => await api.returnAppRequest(requestId),
       'Failed to appeal decision',
       'Appeal submitted successfully'
-    )
-
-  const withdrawApplication = async (requestId: string) =>
-    await handleApiAction(
-      async () => await api.cancelAppRequest(requestId),
-      'Failed to withdraw application',
-      'Application withdrawn successfully'
     )
 
   const reinstateApplication = async (requestId: string) =>
@@ -353,32 +340,39 @@
                   {/if}
                 </dl>
               </section>
+              <section class="flex flex-wrap gap-4 items-end intro-actions">
+                <!-- Period selector (if multiple) -->
+                {#if displayablePeriods.length > 1}
+                  <div class="min-w-[250px] intro-dropdown-wrapper">
+                    <Dropdown
+                      size="lg"
+                      titleText="Select a {uiRegistry.getWord('period').toLowerCase()}"
+                      placeholder="Choose a {uiRegistry.getWord('period').toLowerCase()}"
+                      bind:selectedId={selectedPeriodId}
+                      items={displayablePeriods.map(p => ({
+                        id: p.id,
+                        text: p.name
+                      }))}
+                    />
+                  </div>
+                {/if}
 
-              <!-- Period selector (if multiple) -->
-              {#if displayablePeriods.length > 1}
-                <div class="min-w-[250px]">
-                  <Dropdown
-                    size="sm"
-                    titleText="Select a term"
-                    placeholder="Choose a period"
-                    bind:selectedId={selectedPeriodId}
-                    items={displayablePeriods.map(p => ({
-                      id: p.id,
-                      text: p.name
-                    }))}
-                  />
-                </div>
-              {/if}
+                <!-- Action Button. Only show start button if no existing application and user can act -->
+                {#if periodInfo.canStartNew && access.createAppRequestSelf}
+                  <Button
+                    on:click={clickCreateAppRequest}
+                    kind="primary"
+                    size="field"
+                  >
+                    Start application
+                  </Button>
+                {:else if periodInfo.canStartNew && !access.createAppRequestSelf}
+                  <Tooltip>
+                    <p>Application started, see dashboard card for details.</p>
+                  </Tooltip>
+                {/if}
+              </section>
 
-              <!-- Action Button. Only show start button if no existing application and user can act -->
-              {#if periodInfo.canStartNew && access.createAppRequestSelf}
-                <Button
-                  on:click={clickCreateAppRequest}
-                  kind="primary"
-                >
-                  Start application
-                </Button>
-              {/if}
             </div>
           {/if}
         {:else}
@@ -393,7 +387,7 @@
       <InlineNotification
         kind="info"
         title="No results found."
-        subtitle={hasPastApps ? "You may need to refine your searched terms, filters or try again." : undefined}
+        subtitle={hasPastApps ? 'You may need to refine your searched terms, filters or try again.' : undefined}
         lowContrast
       />
     {:else}
@@ -420,16 +414,17 @@
 
   <PanelFormDialog open={dialog} title="Create App Request" validate={validateAppRequest} submit={submitAppRequest} on:cancel={closeDialog} on:saved={onSaved}>
     <FieldSelect
-      labelText="Period"
+      labelText={uiRegistry.getWord('period')}
       path="periodId"
       items={openPeriods.map(p => ({ value: p.id, label: p.name }))}
       required
-      helperText="Select the period in which you want to create an app request."
+      helperText="Select the {uiRegistry.getWord('period').toLowerCase()} in which you want to create an {uiRegistry.getWord('appRequest').toLowerCase()}."
     />
   </PanelFormDialog>
 
   <!-- Inlined Application Details Panel -->
   <PanelDialog
+    size="large"
     open={sidePanelOpen}
     title={selectedAppRequest?.period.name ?? 'Application Details'}
     cancelText="Close"
@@ -464,5 +459,14 @@
 <style>
   .applicant-dashboard {
     --repel-vertical-alignment:top;
+  }
+
+  .intro-dropdown-wrapper :global(.bx--dropdown__wrapper.bx--list-box__wrapper) {
+    display: flex;
+    flex-direction: column;
+    margin-top:-5px;
+  }
+  .intro-actions :global(.bx--list-box__field) {
+    background: var(--cds-field-02,#ffffff);
   }
 </style>
