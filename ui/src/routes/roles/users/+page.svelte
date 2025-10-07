@@ -58,7 +58,7 @@
   title='Users'
   columns= {[
     { id: 'contact', label: 'Name', render: user => user['email'] ? user['fullname'] + '<br>' + user['email'] : user['fullname'] },
-    { id: 'otherId', label: 'ID', get: 'otherId' },
+    { id: 'id', label: 'IDs', render: user => [user['id'], user['otherId']].filter(id => id != null).join('<br>') },
     { id: 'applicationRoles', label: 'Application Roles', render: user => user['applicationRoles'].join(', ') },
     { id: 'groups', label: 'Groups', render: user => user['groups'].join(', ') },
     { id: 'institutionalRoles', label: 'Institutional Roles', render: user => user['institutionalRoles'] ? user['institutionalRoles'].join(', ') : '' },
