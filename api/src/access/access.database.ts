@@ -80,7 +80,7 @@ export namespace AccessDatabase {
           GROUP BY userId
         ) AS otherIdGrouped ON accessUsers.id = otherIdGrouped.userId
       `)
-      where.push('(login LIKE ? OR fullname LIKE ? OR otherIdGrouped.otherIdentifiers LIKE ?)')
+      where.push('login LIKE ? OR fullname LIKE ? OR otherIdGrouped.otherIdentifiers LIKE ?')
       params.push(`%${filter.search}%`, `%${filter.search}%`, `%${filter.search}%`)
     }
 
