@@ -79,5 +79,9 @@ export const accessMigrations: DatabaseMigration[] = [{
       PRIMARY KEY (userId, groupName),
       FOREIGN KEY (userId) REFERENCES accessUsers(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
+
+    // TODO: add a table to index user properties for searching/filtering
+    // should look a lot like app_request_tags
+    // can make a separate tag_labels table or use the same one and add an enum
   }
 }]

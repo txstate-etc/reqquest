@@ -96,7 +96,7 @@ export namespace AccessDatabase {
 
     if (filter?.otherIdentifiersByLabel) {
       joins.set('otherIdAnyByLabel', `
-        LEFT JOIN (
+        INNER JOIN (
           SELECT DISTINCT userId
           FROM accessUserIdentifiers
           WHERE (label, id) IN (${db.in(joinbinds, filter.otherIdentifiersByLabel.map((r: any) => [r.label, r.id]))})
@@ -122,6 +122,9 @@ export namespace AccessDatabase {
         where.push('applicationUserRoles.roleNames IS NOT NULL')
       }
     }
+
+    // TODO: add filtering by user indexes, look at appRequestProcessFilter in appRequest.database.ts for an example
+
     return { where, params: [...joinbinds, ...params], joins }
   }
 
@@ -130,7 +133,7 @@ export namespace AccessDatabase {
     const rows = await db.getall<AccessUserRow>(`
       select * FROM accessUsers
       ${Array.from(joins.values()).join('\n')}
-      ${where.length > 0 ? `WHERE ${where.join(' AND ')}` : ''}
+      ${where.length > 0 ? `WHERE (${where.join(') AND (')})` : ''}
       order by accessUsers.login asc
     `, params)
     return rows.map(row => new AccessUser(row))
@@ -159,6 +162,11 @@ export namespace AccessDatabase {
         `, dbinds)
       } else {
         await db.delete('DELETE FROM accessUserIdentifiers WHERE userId = ?', [userId])
+      }
+
+      if (appConfig.userLookups?.indexes?.length) {
+        // TODO: execute the extract function and store the result in the database
+        // appRequest.database.ts line 354 has an example bit of code for synchronizing tags
       }
 
       if (user.groups?.length) {

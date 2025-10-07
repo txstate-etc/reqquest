@@ -85,6 +85,8 @@ export class AccessUserFilter {
   @Field(() => [AccessUserGroupingInput], { nullable: true })
   otherGroupingsByLabel?: AccessUserGroupingInput[]
 
+  // TODO: add filtering by user indexes, probably want a special input type like AppRequestIndexFilter
+
   @Field({ nullable: true })
   search?: string
 }

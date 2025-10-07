@@ -33,6 +33,48 @@ export interface SearchUsersFilter {
   groupings?: AccessUserGroupingInput[]
 }
 
+export interface UserIndexDefinition<DataType = any> {
+  /**
+   * A unique, case-insensitive, stable key for the index. This will be used to namespace
+   * individual index values.
+   */
+  category: string
+  /**
+   * A human readable name for the index that will be shown to the admin when creating a grant.
+   * Does not need to be stable, but should be unique among all the AppRequest indexes/tags.
+   */
+  categoryLabel?: string
+  /**
+   * Set this to a non-zero positive integer to indicate that this index should be displayed
+   * in the AppRequest list view. This number indicates the priority of the column. Lower priority
+   * numbers will be the first to disappear when the screen gets too small. Probably a good
+   * idea to stay between 1 and 100 for sanity.
+   */
+  useInUserList?: number
+  /**
+   * Set this to a non-zero positive integer to indicate that this index should be used for
+   * filtering the main AppRequest list view. This number indicates the priority of the column.
+   * The two or three highest priority filters will be used as quick filters, the rest will be
+   * in the filter UI popout. Probably a good idea to stay between 1 and 100 for sanity.
+   */
+  useInListFilters?: number
+  /**
+   * Provide a function that will take the data from the AppRequest and return any index
+   * values that are associated.
+   */
+  extract: (data: DataType) => string[]
+  /**
+   * This function should return a tag label for the given value in this category. This is used to
+   * display the tags on a saved grant or generated from the AppRequest.
+   *
+   * It may be called many times in parallel so it should be dataloaded or cached if possible.
+   *
+   * ReqQuest will cache these results in its database in case values disappear from the available
+   * list but appeared in the past.
+   */
+  getLabel?: (tag: string) => Promise<string | undefined> | string | undefined
+}
+
 export interface AppDefinition {
   /**
    * Configure whether this system allows multiple app requests for the same user in the same period.
@@ -67,6 +109,10 @@ export interface AppDefinition {
      * filter that list via the retrieved list of identifiers and groups.
      */
     searchUsers?: (query: SearchUsersFilter) => Promise<AccessUser[]>
+    /**
+     * TODO: explain!
+     */
+    indexes?: UserIndexDefinition[]
   }
   /**
    * Provide a function that will return a list of group properties, given a list of group names.
