@@ -10,7 +10,7 @@
   }
 
   export let data: PageData
-  $: ({ users, searchFlag, availableApplicationRoles, availableInstitutionalRoles } = data)
+  $: ({ users, availableApplicationRoles, availableInstitutionalRoles } = data)
 
   let usersSearchFormData: UsersSearchForm | undefined
 
@@ -65,6 +65,5 @@
     { id: 'lastLogin', label: 'Last Login', get: 'lastLogin' }
   ]}
   rows={transformFromAPI(users)}
-  noItemsTitle={(searchFlag) ? 'No results were found.' : 'Please enter a search query to retrieve data' }
 >
 </ColumnList>
