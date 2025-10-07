@@ -94,7 +94,7 @@ export class AccessUserFilter {
 export class AccessRole {
   constructor (row: AccessRoleRow) {
     this.id = String(row.id)
-    this.name = row.name
+    this.name = row.name ?? 'unnamed'
     this.scope = row.scope
     this.description = row.description
   }
