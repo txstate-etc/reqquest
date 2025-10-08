@@ -68,5 +68,5 @@ export const load: PageLoad = async ({ url, depends }) => {
   depends('api:getOpenPeriods')
   depends('api:getAccess')
 
-  return { appRequests, availableYears, openPeriods, access, initialFilters: filters }
+  return { appRequests, availableYears, openPeriods, access, initialFilters: filters, recentCutoffIso, recentDays }
 }

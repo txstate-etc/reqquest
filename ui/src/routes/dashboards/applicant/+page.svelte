@@ -6,7 +6,7 @@
   import type { ApplyNavigationResponse, DashboardAppRequest } from '$lib/components/types'
   import { getPeriodDisplayInfo, getPeriodStatus, getStatusActionType, getSubmitButtonText } from '$lib/status-utils.js'
   import type { Scalars } from '$lib/typed-client/schema'
-  import { CardGrid, FieldMultiselect, FieldSelect, FilterUI, Panel, PanelDialog, PanelFormDialog, Toasts } from '@txstate-mws/carbon-svelte'
+  import { CardGrid, FieldMultiselect, FilterUI, Panel, PanelDialog, Toasts } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
   import { Button, Dropdown, InlineNotification, Modal, Tooltip } from 'carbon-components-svelte'
   import { Close, DocumentExport, Download, Reset, Warning } from 'carbon-icons-svelte'
@@ -20,9 +20,8 @@
   }
 
   export let data: PageData
-  $: ({ appRequests, availableYears, access, openPeriods } = data)
+  $: ({ appRequests, availableYears, access, openPeriods, recentCutoffIso, recentDays } = data)
 
-  let dialog = false
   let sidePanelOpen = false
   let loading = false
 
@@ -38,10 +37,10 @@
   let filterDataSearch: FilterState | undefined
 
   // Modal State
-  let cancelConfirmation: { open: boolean, requestId: string | null } = { open: false, requestId: null }
+  let cancelConfirmation: { open: boolean, requestId: string | null, isWithdraw: boolean } = { open: false, requestId: null, isWithdraw: false }
 
   // Auto-select first displayable period
-  $: displayablePeriods = openPeriods.length > 0 ? getOpenAndUpcomingPeriods(openPeriods) : []
+  $: displayablePeriods = openPeriods.length > 0 ? getOpenAndUpcomingPeriods(openPeriods, recentCutoffIso) : []
   $: if (displayablePeriods.length > 0 && !selectedPeriodId) {
     selectedPeriodId = displayablePeriods[0].id
   }
@@ -57,18 +56,30 @@
     return null
   }
 
-  function getOpenAndUpcomingPeriods (periods: typeof openPeriods): typeof openPeriods {
+  function getOpenAndUpcomingPeriods (periods: typeof openPeriods, recentCutoffIso: string): typeof openPeriods {
+    const recentCutoff = new Date(recentCutoffIso)
+
     return periods
       .filter(period => {
         const status = getPeriodStatus(period)
-        // Only show periods that are open/upcoming AND have been reviewed
-        return (status === 'open' || status === 'upcoming') && period.reviewed
+        // Show periods that are open/upcoming AND have been reviewed
+        if ((status === 'open' || status === 'upcoming') && period.reviewed) return true
+        // Also show closed periods that closed within the recent window
+        if (status === 'closed' && period.closeDate) {
+          const closeDate = new Date(period.closeDate)
+          return closeDate >= recentCutoff && period.reviewed
+        }
+        return false
       })
       .sort((a, b) => new Date(a.openDate).getTime() - new Date(b.openDate).getTime())
   }
 
   function showError (message: string) {
     toasts.add(message, 'error', 7000)
+  }
+
+  function isSubmitted (status: string): boolean {
+    return status !== 'STARTED' && status !== 'READY_TO_SUBMIT'
   }
 
   // ==========================================
@@ -103,6 +114,9 @@
   // TODO probably switch this to hide actions instead of disable, but it is nice to see them for now.
   // In general these actions are based off of the text info in https://www.figma.com/design/VXFWNXZ6UNlDxmGNwVoEuu/ReqQuest?node-id=954-101490&m=dev
   function buildCardActions (request: DashboardAppRequest) {
+    const submitted = isSubmitted(request.status)
+    const cancelWithdrawLabel = submitted ? 'Withdraw Application' : 'Cancel Application'
+
     return [
       {
         label: 'View Application',
@@ -126,8 +140,8 @@
         icon: DocumentExport
       },
       {
-        label: 'Cancel Application',
-        onClick: () => { cancelConfirmation = { open: true, requestId: request.id } },
+        label: cancelWithdrawLabel,
+        onClick: () => { cancelConfirmation = { open: true, requestId: request.id, isWithdraw: submitted } },
         icon: Close,
         disabled: !request.actions.cancel
       },
@@ -206,13 +220,14 @@
   async function handleCancelConfirm () {
     if (!cancelConfirmation.requestId) return
 
+    const actionType = cancelConfirmation.isWithdraw ? 'withdraw' : 'cancel'
     await handleApiAction(
       async () => await api.cancelAppRequest(cancelConfirmation.requestId!),
-      'Failed to cancel application',
-      'Application cancelled successfully'
+      `Failed to ${actionType} application`,
+      `Application ${actionType === 'withdraw' ? 'withdrawn' : 'cancelled'} successfully`
     )
 
-    cancelConfirmation = { open: false, requestId: null }
+    cancelConfirmation = { open: false, requestId: null, isWithdraw: false }
   }
 
   // Handle submit action based on status action type, used for PanelDialog, specifically for the App View-only side panel
@@ -249,19 +264,9 @@
     if (success) await onSaved()
   }
 
-  function closeDialog () {
-    dialog = false
-  }
-
   async function onSaved () {
-    closeDialog()
     toasts.add('Application created successfully', 'success', 5000)
     await goto(`${base}/requests/${lastInsertedId}/apply`)
-  }
-
-  async function validateAppRequest (data: { periodId: string }) {
-    const response = await api.createAppRequest(data.periodId, access.user!.login, true)
-    return response.messages
   }
 
   async function submitAppRequest (data: { periodId: string }) {
@@ -283,7 +288,6 @@
 
   // Reactive statements for filter options
   $: yearOptions = getAvailableYears(availableYears)
-  $: recentDays = uiRegistry.config.applicantDashboardRecentDays ?? 30
   $: showIntroPanel = filterDataSearch?.tab !== 'past_applications'
   $: hasPastApps = filterDataSearch?.tab === 'past_applications' && yearOptions.length > 0
 </script>
@@ -318,7 +322,6 @@
             <div class="flex flex-wrap gap-4 items-center">
               <!-- Period Information Section -->
               <section class="text-base text-center flex-col gap-2">
-                <!-- <h3 class="font-bold text-base">{currentPeriod.name}</h3> -->
                 <dl class="flex gap-4  text-sm">
                   <div class="flex flex-col bg-[var(--cds-ui-03,#d9d9d9)] py-4 px-4  justify-center">
                     <dt class="font-bold">Application opens:</dt>
@@ -366,7 +369,7 @@
                   >
                     Start application
                   </Button>
-                {:else if periodInfo.canStartNew && !access.createAppRequestSelf}
+                {:else if (!periodInfo.canStartNew || !access.createAppRequestSelf) && appRequests.length > 0}
                   <Tooltip>
                     <p>Application started, see dashboard card for details.</p>
                   </Tooltip>
@@ -382,45 +385,35 @@
     </IntroPanel>
   {/if}
   <!-- Application Cards -->
-  {#if appRequests.length === 0}
-    {#if filterDataSearch?.tab === 'past_applications'}
-      <InlineNotification
-        kind="info"
-        title="No results found."
-        subtitle={hasPastApps ? 'You may need to refine your searched terms, filters or try again.' : undefined}
-        lowContrast
-      />
-    {:else}
-      <InlineNotification
-        kind="info"
-        title="No recent applications found."
-        subtitle="You have no applications created or modified in the last {recentDays} days. Check under Past applications tab."
-        lowContrast
-      />
-    {/if}
-  {:else}
-    <Panel title="All recent Applications">
-      <CardGrid cardSize="500px">
-      {#each appRequests as request}
-        <AppRequestCard
-          {request}
-          actions={buildCardActions(request)}
-          showAcceptanceButtons={true}
+  <Panel title="All recent Applications">
+    {#if appRequests.length === 0}
+      {#if filterDataSearch?.tab === 'past_applications'}
+        <InlineNotification
+          kind="info"
+          title="No results found."
+          subtitle={hasPastApps ? 'You may need to refine your searched terms, filters or try again.' : undefined}
+          lowContrast
         />
-      {/each}
-    </CardGrid>
-    </Panel>
-  {/if}
-
-  <PanelFormDialog open={dialog} title="Create App Request" validate={validateAppRequest} submit={submitAppRequest} on:cancel={closeDialog} on:saved={onSaved}>
-    <FieldSelect
-      labelText={uiRegistry.getWord('period')}
-      path="periodId"
-      items={openPeriods.map(p => ({ value: p.id, label: p.name }))}
-      required
-      helperText="Select the {uiRegistry.getWord('period').toLowerCase()} in which you want to create an {uiRegistry.getWord('appRequest').toLowerCase()}."
-    />
-  </PanelFormDialog>
+      {:else}
+        <InlineNotification
+          kind="info"
+          title="No recent applications found."
+          subtitle="You have no applications created or modified in the last {recentDays} days. Check under Past applications tab."
+          lowContrast
+        />
+      {/if}
+    {:else}
+      <CardGrid cardSize="500px">
+        {#each appRequests as request}
+          <AppRequestCard
+            {request}
+            actions={buildCardActions(request)}
+            showAcceptanceButtons={true}
+          />
+        {/each}
+      </CardGrid>
+    {/if}
+  </Panel>
 
   <!-- Inlined Application Details Panel -->
   <PanelDialog
@@ -443,14 +436,20 @@
 
   <Modal
     bind:open={cancelConfirmation.open}
-    modalHeading="Cancel Application"
-    primaryButtonText="Yes, Cancel Application"
+    modalHeading={cancelConfirmation.isWithdraw ? 'Withdraw Application' : 'Cancel Application'}
+    primaryButtonText={cancelConfirmation.isWithdraw ? 'Yes, Withdraw Application' : 'Yes, Cancel Application'}
     secondaryButtonText="Keep Application"
-    on:click:button--secondary={() => { cancelConfirmation = { open: false, requestId: null } }}
+    on:click:button--secondary={() => { cancelConfirmation = { open: false, requestId: null, isWithdraw: false } }}
     on:submit={handleCancelConfirm}
-    on:close={() => { cancelConfirmation = { open: false, requestId: null } }}
+    on:close={() => { cancelConfirmation = { open: false, requestId: null, isWithdraw: false } }}
   >
-    <p>Are you sure you want to cancel this application? This action cannot be undone.</p>
+    <p>
+      {#if cancelConfirmation.isWithdraw}
+        Withdrawing your application will remove it from consideration and any approved benefits will be lost. You can reopen and edit this application to resubmit it, as long as the application window is still open.
+      {:else}
+        Canceling your application will remove it from consideration. You can reinstate and submit it later, as long as the application window is still open.
+      {/if}
+    </p>
   </Modal>
 
   <Toasts />

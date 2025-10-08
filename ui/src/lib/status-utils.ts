@@ -271,7 +271,7 @@ export function getPeriodDisplayInfo (period: any) {
   const status = getPeriodStatus(period)
   return {
     status,
-    openLabel: status === 'closed' ? '' : longNumericTime(period.openDate),
+    openLabel: status === 'closed' ? 'TBD' : longNumericTime(period.openDate),
     openDateMachineFormat: period.openDate,
     closeLabel: status === 'closed' ? 'Application closed' : 'Application closes',
     closeDate: (!period.closeDate) ? longNumericTime(noClosePeriodDate) : longNumericTime(period.closeDate),
