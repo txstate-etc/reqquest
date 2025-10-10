@@ -14,6 +14,7 @@ export const state_residence_req: RequirementDefinition<StateResidenceConfigRequ
     const stateResidencePromptData = data.state_residence_prompt as StateResidencePromptData
     //if (stateResidencePromptData?.residentOfRequiredState == null) return { status: RequirementStatus.PENDING }
     //if (stateResidencePromptData?.residentOfRequiredState === true) return { status: RequirementStatus.MET }
+    // query usps with input address to get details
     return { status: RequirementStatus.DISQUALIFYING, reason: `You must reside in ${config.residentOfState} to qualify.` }
   },
   configuration: {
