@@ -40,32 +40,32 @@ export interface UserIndexDefinition<DataType = any> {
    */
   category: string
   /**
-   * A human readable name for the index that will be shown to the admin when creating a grant.
-   * Does not need to be stable, but should be unique among all the AppRequest indexes/tags.
+   * A human readable name for the index that will be associated with the user.
+   * Does not need to be stable, but should be unique among all the AppRequest indexes.
    */
   categoryLabel?: string
   /**
    * Set this to a non-zero positive integer to indicate that this index should be displayed
-   * in the AppRequest list view. This number indicates the priority of the column. Lower priority
+   * in the User list view. This number indicates the priority of the column. Lower priority
    * numbers will be the first to disappear when the screen gets too small. Probably a good
    * idea to stay between 1 and 100 for sanity.
    */
   useInUserList?: number
   /**
    * Set this to a non-zero positive integer to indicate that this index should be used for
-   * filtering the main AppRequest list view. This number indicates the priority of the column.
+   * filtering the main User list view. This number indicates the priority of the column.
    * The two or three highest priority filters will be used as quick filters, the rest will be
    * in the filter UI popout. Probably a good idea to stay between 1 and 100 for sanity.
    */
   useInListFilters?: number
   /**
-   * Provide a function that will take the data from the AppRequest and return any index
+   * Provide a function that will take the data from the ReqquestUser and return any index
    * values that are associated.
    */
   extract: (data: DataType) => string[]
   /**
    * This function should return a tag label for the given value in this category. This is used to
-   * display the tags on a saved grant or generated from the AppRequest.
+   * display the tags generated from the ReqquestUser.
    *
    * It may be called many times in parallel so it should be dataloaded or cached if possible.
    *

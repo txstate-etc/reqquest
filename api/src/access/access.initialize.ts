@@ -80,8 +80,22 @@ export const accessMigrations: DatabaseMigration[] = [{
       FOREIGN KEY (userId) REFERENCES accessUsers(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
 
-    // TODO: add a table to index user properties for searching/filtering
-    // should look a lot like app_request_tags
-    // can make a separate tag_labels table or use the same one and add an enum
+    /**
+     * Index user otherInfo properties for searching/filtering. Looks similar to app_request_tags.
+     * Separate from accessUserIdentifiers table, which requires a one to one unique id and label
+     * mapping to userId, however, both sets of data reside within the otherInfo field; so there
+     * may be field collisions within the otherInfo property. To avoid this will namespace fields
+     * within otherInfo property. otherInfo substructures looks like:
+     *   - identifiers sub-property for accessUserIdentifiers labels
+     *   - groupings sub-property for accessUserGroupings labels
+     *   - meta sub-property for non-indexed associated data
+     */
+    await db.execute(`CREATE TABLE IF NOT EXISTS accessUserGroupings (
+      userId INT UNSIGNED NOT NULL,
+      label VARCHAR(128) NOT NULL, -- ex: Staff
+      id VARCHAR(128) NOT NULL, -- ex: institutionalRole
+      PRIMARY KEY (userId, label, id),
+      FOREIGN KEY (userId) REFERENCES accessUsers(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
   }
 }]
