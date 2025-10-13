@@ -3,7 +3,7 @@
   import { base } from '$app/paths'
   import { api } from '$lib'
   import { ApplicationDetailsView, AppRequestCard, IntroPanel } from '$lib/components'
-  import type { ApplyNavigationResponse, DashboardAppRequest } from '$lib/components/types'
+  import type { AppRequestForDetails, AppRequestForExportResponse, DashboardAppRequest } from '$lib/components/types'
   import { getPeriodDisplayInfo, getPeriodStatus, getStatusActionType, getSubmitButtonText } from '$lib/status-utils.js'
   import type { Scalars } from '$lib/typed-client/schema'
   import { CardGrid, FieldMultiselect, FilterUI, Panel, PanelDialog, Toasts } from '@txstate-mws/carbon-svelte'
@@ -26,14 +26,14 @@
   let loading = false
 
   // Selected Items
-  let selectedAppRequest: DashboardAppRequest | null = null
+  let selectedAppRequest: AppRequestForDetails | undefined = undefined
   let selectedPeriodId: string | undefined = undefined
   let lastInsertedId: string | undefined
 
   // Application Details Data (loaded when side panel opens)
   let appData: Scalars['JsonData'] = {}
-  let prequalPrompts: ApplyNavigationResponse['prequalPrompts'] | undefined = undefined
-  let postqualPrompts: ApplyNavigationResponse['postqualPrompts'] | undefined = undefined
+  let prequalPrompts: AppRequestForExportResponse['prequalPrompts'] | undefined = undefined
+  let postqualPrompts: AppRequestForExportResponse['postqualPrompts'] | undefined = undefined
   let filterDataSearch: FilterState | undefined
 
   // Modal State
@@ -185,19 +185,17 @@
   // ==========================================
 
   async function openSidePanel (appRequest: DashboardAppRequest) {
-    selectedAppRequest = appRequest
     sidePanelOpen = true
     loading = true
 
     try {
       // Fetch additional application details for the side panel
-      const [details, requestAppData] = await Promise.all([
-        api.getApplyNavigation(appRequest.id),
-        api.getAppRequestData(appRequest.id)
-      ])
+      const details = await api.getAppRequestForExport(appRequest.id)
+
+      selectedAppRequest = details.appRequest
 
       if (details.appRequest) {
-        appData = requestAppData
+        appData = details.appRequest.data
         prequalPrompts = details.prequalPrompts
         postqualPrompts = details.postqualPrompts
       }
@@ -211,7 +209,7 @@
 
   function closeSidePanel () {
     sidePanelOpen = false
-    selectedAppRequest = null
+    selectedAppRequest = undefined
     appData = {}
     prequalPrompts = undefined
     postqualPrompts = undefined

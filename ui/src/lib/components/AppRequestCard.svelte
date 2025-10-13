@@ -11,7 +11,6 @@
   // Type for the partial AppRequest data passed from dashboard
   type DashboardAppRequest = PageData['appRequests'][number]
 
-
   export let request: DashboardAppRequest
   export let actions: ActionItem[] = []
   export let showAcceptanceButtons = true

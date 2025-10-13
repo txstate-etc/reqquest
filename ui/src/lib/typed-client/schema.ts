@@ -569,7 +569,7 @@ export interface RequirementPrompt {
     /** The configuration data for this prompt in the app request's period. */
     configurationData: (Scalars['JsonData'] | null)
     /** All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it. */
-    configurationRelatedData: (Scalars['JsonData'] | null)
+    configurationRelatedData: Scalars['JsonData']
     /** The data that has been gathered from the user in response to this prompt. The schema is controlled by the question's implementation. */
     data: (Scalars['JsonData'] | null)
     /** A brief description of the prompt. This should be shown to administrators to help explain the full meaning of the prompt while assigning permissions or editing its configuration. */

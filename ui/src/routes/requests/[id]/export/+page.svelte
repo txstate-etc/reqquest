@@ -38,10 +38,6 @@
       display: none !important;
     }
 
-    .application-header {
-      break-inside: avoid;
-    }
-
     .export-content {
       break-inside: avoid;
     }

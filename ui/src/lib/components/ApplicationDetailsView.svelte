@@ -1,23 +1,9 @@
 <script lang="ts">
   import type { UIRegistry } from '$lib/registry.js'
   import { getAppRequestStatusInfo, getApplicationStatusInfo } from '$lib/status-utils.js'
-  import type { Scalars, AppRequestStatus, ApplicationStatus } from '$lib/typed-client/schema'
+  import type { Scalars } from '$lib/typed-client/schema'
   import { Panel, TagSet } from '@txstate-mws/carbon-svelte'
-  import type { AnsweredPrompt, PromptSection } from './types'
-
-  // Local interface for what this component actually needs
-  interface AppRequestForDetails {
-    id: string
-    status: AppRequestStatus
-    period: { name: string }
-    applications: {
-      title: string
-      status: ApplicationStatus
-    }[]
-    createdAt?: string
-    updatedAt?: string
-    actions?: any
-  }
+  import type { AnsweredPrompt, PromptSection, AppRequestForDetails } from './types'
 
   export let appRequest: AppRequestForDetails | undefined = undefined
   export let appData: Scalars['JsonData'] = {}
@@ -106,7 +92,7 @@
                 <dt class="prompt-term font-semibold mb-2">{prompt.title}</dt>
                 <dd class="prompt-answer">
                   {#if appData[prompt.key] && def.displayComponent}
-                    <svelte:component this={def.displayComponent} data={appData[prompt.key]} />
+                    <svelte:component this={def.displayComponent} appRequestId={appRequest.id} data={appData[prompt.key]} appRequestData={appData} configData={prompt.configurationRelatedData[prompt.key]} configRelatedData={prompt.configurationRelatedData} />
                   {:else if appData[prompt.key]}
                     <em>Answered (display component not found)</em>
                   {:else}
@@ -130,7 +116,6 @@
 {/if}
 
 <style>
-
   .app-view-subtitle {
     color: var(--cds-text-02);
     /* margin-top: -0.5rem; */

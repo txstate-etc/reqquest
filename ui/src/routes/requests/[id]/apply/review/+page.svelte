@@ -15,6 +15,10 @@
   export let data: PageData
   $: ({ appRequestForNavigation, prequalPrompts, appRequestData } = data)
   $: prompts = prequalPrompts.concat(appRequestForNavigation.applications.flatMap(a => a.requirements.flatMap(r => r.prompts)))
+  $: configRelatedDataByPromptKey = appRequestData.applications.flatMap(a => a.requirements.flatMap(r => r.prompts)).reduce<Record<string, any>>((acc, curr) => ({
+    ...acc,
+    [curr.key]: curr.configurationRelatedData
+  }), {})
 
   async function onSubmit () {
     const { success, messages } = await api.submitAppRequest(appRequestForNavigation.id)
@@ -25,12 +29,12 @@
 <dl>
   {#each prompts as prompt (prompt.id)}
     {@const def = uiRegistry.getPrompt(prompt.key)}
-    {@const promptData = appRequestData[prompt.key]}
+    {@const promptData = appRequestData.data[prompt.key]}
     <dt><div>{prompt.title}</div></dt>
     <dd>
       <div>
         {#if prompt.answered}
-          <svelte:component this={def.displayComponent} data={promptData} />
+          <svelte:component this={def.displayComponent} data={promptData} appRequestId={appRequestForNavigation.id} appRequestData={appRequestData} configData={configRelatedDataByPromptKey[prompt.key][prompt.key]} configRelatedData={configRelatedDataByPromptKey[prompt.key]} />
         {:else}
           Incomplete
         {/if}

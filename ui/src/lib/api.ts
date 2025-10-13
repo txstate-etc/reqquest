@@ -200,10 +200,11 @@ class API extends APIBase {
         }
       }
     })
-    if (response.appRequests.length === 0) return { prequalPrompts: [], appRequest: undefined }
-    type ResponseApplication = (typeof response)['appRequests'][0]['applications'][0]
+    type ResponseAppRequest = (typeof response)['appRequests'][0]
+    type ResponseApplication = ResponseAppRequest['applications'][0]
     type ResponseRequirement = ResponseApplication['requirements'][0]
     type ResponsePrompt = ResponseRequirement['prompts'][0]
+    if (response.appRequests.length === 0) return { prequalPrompts: [] as ResponsePrompt[], postqualPrompts: [] as ResponsePrompt[], appRequest: undefined as ResponseAppRequest | undefined }
     const appRequest = response.appRequests[0]
     const prequalPrompts: ResponsePrompt[] = []
     const postqualPrompts: ResponsePrompt[] = []
@@ -300,12 +301,81 @@ class API extends APIBase {
       appRequests: {
         __args: { filter: { ids: [appRequestId] } },
         id: true,
-        data: true
+        data: true,
+        applications: {
+          requirements: {
+            prompts: {
+              key: true,
+              configurationRelatedData: true
+            }
+          }
+        }
       }
     })
-    if (response.appRequests.length === 0) return {}
+    if (response.appRequests.length === 0) return { data: {}, applications: [] as typeof response.appRequests[0]['applications'] }
     const appRequest = response.appRequests[0]
-    return appRequest.data
+    return appRequest
+  }
+
+  async getAppRequestForExport (appRequestId: string) {
+    const response = await this.client.query({
+      __name: 'GetApplyNavigation',
+      appRequests: {
+        __args: { filter: { ids: [appRequestId] } },
+        id: true,
+        status: true,
+        data: true,
+        period: {
+          name: true
+        },
+        applications: {
+          id: true,
+          status: true,
+          ineligiblePhase: true,
+          statusReason: true,
+          title: true,
+          navTitle: true,
+          requirements: {
+            id: true,
+            type: true,
+            status: true,
+            statusReason: true,
+            prompts: {
+              id: true,
+              key: true,
+              title: true,
+              navTitle: true,
+              answered: true,
+              visibility: true,
+              moot: true,
+              configurationRelatedData: true
+            }
+          }
+        }
+      }
+    })
+    type ResponseAppRequest = (typeof response)['appRequests'][0]
+    type ResponseApplication = ResponseAppRequest['applications'][0]
+    type ResponseRequirement = ResponseApplication['requirements'][0]
+    type ResponsePrompt = ResponseRequirement['prompts'][0]
+    if (response.appRequests.length === 0) return { prequalPrompts: [] as ResponsePrompt[], postqualPrompts: [] as ResponsePrompt[], appRequest: undefined as ResponseAppRequest | undefined }
+    const appRequest = response.appRequests[0]
+    const prequalPrompts: ResponsePrompt[] = []
+    const postqualPrompts: ResponsePrompt[] = []
+    const applications: ResponseApplication[] = []
+    const visibilitiesToShow = new Set<PromptVisibility>([enumPromptVisibility.AVAILABLE])
+    for (const application of appRequest.applications) {
+      const applicantRequirements: ResponseRequirement[] = []
+      let ineligible = false
+      for (const requirement of application.requirements) {
+        if (requirement.type === enumRequirementType.PREQUAL) prequalPrompts.push(...requirement.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE))
+        else if (!ineligible && requirement.type === enumRequirementType.POSTQUAL) postqualPrompts.push(...requirement.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE))
+        else if (!ineligible && requirement.type === enumRequirementType.QUALIFICATION) applicantRequirements.push(requirement)
+        ineligible ||= requirement.status === 'DISQUALIFYING'
+      }
+      applications.push({ ...application, requirements: applicantRequirements.map(r => ({ ...r, prompts: r.prompts.filter(p => visibilitiesToShow.has(p.visibility)) })) })
+    }
+    return { prequalPrompts, postqualPrompts, appRequest: { ...appRequest, applications } }
   }
 
   async createAppRequest (periodId?: string, login?: string, validateOnly?: boolean) {

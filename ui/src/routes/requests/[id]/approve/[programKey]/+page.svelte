@@ -221,7 +221,7 @@
     let:data
   >
     {@const def = uiRegistry.getPrompt(promptBeingEdited.key)}
-    <svelte:component this={def.formComponent} {data} appRequestData={promptBeingEdited.data} fetched={promptBeingEdited.fetchedData} configData={promptBeingEdited.configurationRelatedData} />
+    <svelte:component this={def.formComponent} appRequestId={appRequest.id} {data} appRequestData={promptBeingEdited.data} fetched={promptBeingEdited.fetchedData} configData={promptBeingEdited.configurationRelatedData[promptBeingEdited.key]} configRelatedData={promptBeingEdited.configurationRelatedData} />
   </PanelFormDialog>
 {/if}
 
