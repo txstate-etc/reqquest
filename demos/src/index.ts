@@ -25,16 +25,28 @@ async function main () {
     applicant: { groups: ['applicants'], otherInfo: { email: {} } }
   }
   const userTypePrefixes = Object.keys(userTypes)
-  const groupDateAdded = function (groupname: string): DateTime {
-    if (['sudoers', 'administrators', 'reviewers', 'applicants'].includes(groupname)) return DateTime.fromFormat('20240101080000', 'yyyyMMddHHmmss')
-    return DateTime.fromFormat('20250601080000', 'yyyyMMddHHmmss')
-  }
   await server.start({
     appConfig: {
       multipleRequestsPerPeriod,
       userLookups: {
         byLogins: async (logins: string[], applicableGroups: string[]) => {
-          return logins.filter(login => userTypePrefixes.some(p => login.startsWith(p))).map(login => ({ login, fullname: `${login} Full Name`, groups: userTypes[userTypePrefixes.find(p => login.startsWith(p))!].groups, otherInfo: { email: `${login}@txstate.edu` } }))
+          const pseudoInstitutionalRoles = (login: string) => {
+            if (login.startsWith('su')) return ['Staff']
+            if (login.startsWith('admin')) return ['Staff', 'Faculty']
+            if (login.startsWith('review')) return ['Faculty']
+            return ['Student']
+          }
+          return logins.filter(login => userTypePrefixes.some(p => login.startsWith(p))).map(
+            login => ({
+              login,
+              fullname: `${login} Full Name`,
+              groups: userTypes[userTypePrefixes.find(p => login.startsWith(p))!].groups,
+              otherInfo: {
+                email: `${login}@txstate.edu`,
+                institutionalRoles: pseudoInstitutionalRoles(login)
+              }
+            })
+          )
         },
         searchUsers: async (query: SearchUsersFilter) => {
           const pseudoInstitutionalRoles = (login: string) => {
@@ -43,29 +55,30 @@ async function main () {
             if (login.startsWith('review')) return ['Faculty']
             return ['Student']
           }
-          const pseudoLastLogin = (roles: string[]) => {
-            const seconds = new Date().getTime() / 1000
-            if (roles.includes('Staff')) return DateTime.fromSeconds(seconds - 60)
-            if (roles.includes('Faculty')) return DateTime.fromSeconds(seconds - 60 * 60)
-            return DateTime.fromSeconds(seconds - 60 * 60 * 24)
-          }
+          // Last login is now saved in the database and should be updated upon login
+          // const pseudoLastLogin = (roles: string[]) => {
+          //   const seconds = new Date().getTime() / 1000
+          //   if (roles.includes('Staff')) return DateTime.fromSeconds(seconds - 60)
+          //   if (roles.includes('Faculty')) return DateTime.fromSeconds(seconds - 60 * 60)
+          //   return DateTime.fromSeconds(seconds - 60 * 60 * 24)
+          // }
           const rolesMatch = (filterRoles: string[], userRoles: string[]): boolean => {
             for (const fr of filterRoles) {
               if (userRoles.includes(fr)) return true
             }
             return false
           }
-          const institutionalRolesFilter = query.groupings?.filter(g => g.label === 'institutionalRole').map(g => g.id) ?? []
+          const institutionalRolesFilter = query.groups ?? []
           const users: AccessUser[] = []
           // if query users exists then add external information and filter
           if (Array.isArray(query.users) && query.users.length > 0) {
             for (const user of query.users) {
               const institutionalRoles = pseudoInstitutionalRoles(user.login)
-              const lastLogin = pseudoLastLogin(institutionalRoles)
+              // const lastLogin = pseudoLastLogin(institutionalRoles)
               if (institutionalRolesFilter.length === 0 || rolesMatch(institutionalRolesFilter, institutionalRoles)) {
                 user.otherInfo = user.otherInfo ?? {}
                 user.otherInfo.institutionalRoles = institutionalRoles
-                user.otherInfo.lastLogin = lastLogin
+                // user.otherInfo.lastLogin = lastLogin
                 users.push(user)
               }
             }
@@ -74,9 +87,19 @@ async function main () {
           }
           return users
           // return [{ groups: ['applicants'], otherInfo: { email: 'applicant@txstate.edu' }, login: 'applicant', fullname: 'Applicant Fullname' }]
-        }
+        },
+        indexes: [{
+          label: 'institutional-roles',
+          displayLabel: 'Institutional Roles',
+          useInFilters: true,
+          useInList: true
+        }]
       },
       groups: async (groupnames: string[]) => {
+        const groupDateAdded = (groupname: string): DateTime => {
+          if (['sudoers', 'administrators', 'reviewers', 'applicants'].includes(groupname)) return DateTime.fromFormat('20240101080000', 'yyyyMMddHHmmss')
+          return DateTime.fromFormat('20250601080000', 'yyyyMMddHHmmss')
+        }
         return groupnames.map(groupName => ({ groupName, managers: [{ fullname: `${String(groupName).charAt(0).toLocaleUpperCase() + String(groupName).slice(1)} Lastname`, email: `${groupName.toLocaleLowerCase()}@txstate.edu` }], dateCreated: groupDateAdded(groupName) }))
       }
     },

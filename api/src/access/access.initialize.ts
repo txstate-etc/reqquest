@@ -77,6 +77,7 @@ export const accessMigrations: DatabaseMigration[] = [{
       userId INT UNSIGNED NOT NULL,
       groupName VARCHAR(128) NOT NULL,
       PRIMARY KEY (userId, groupName),
+      INDEX (groupName, userId), -- Speed up user filter search joins
       FOREIGN KEY (userId) REFERENCES accessUsers(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
 
@@ -92,9 +93,10 @@ export const accessMigrations: DatabaseMigration[] = [{
      */
     await db.execute(`CREATE TABLE IF NOT EXISTS accessUserGroupings (
       userId INT UNSIGNED NOT NULL,
-      label VARCHAR(128) NOT NULL, -- ex: Staff
-      id VARCHAR(128) NOT NULL, -- ex: institutionalRole
-      PRIMARY KEY (userId, label, id),
+      label VARCHAR(128) NOT NULL, -- ex: institutional-role
+      id VARCHAR(128) NOT NULL, -- ex: Staff
+      PRIMARY KEY (userId, label, id), -- Used for adding/removing user associated values
+      INDEX (id, label, userId), -- Dual use for generating distinct labels and user filter searches
       FOREIGN KEY (userId) REFERENCES accessUsers(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
   }

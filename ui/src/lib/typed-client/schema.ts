@@ -835,15 +835,19 @@ export interface AccessUserGenqlSelection{
     __scalar?: boolean | number
 }
 
-export interface AccessUserFilter {logins?: (Scalars['ID'][] | null),otherGroupingsByLabel?: (AccessUserGroupingInput[] | null),
+export interface AccessUserFilter {
+/** Filter users by associated Application Groups */
+groups?: (Scalars['String'][] | null),logins?: (Scalars['ID'][] | null),
+/** One to Many groupings Filter, like a institutional role people may belong to. */
+otherGroupingsByLabel?: (AccessUserGroupingInput[] | null),
 /** Filter by identifiers aside from username, like an Employee ID. */
 otherIdentifiers?: (Scalars['String'][] | null),otherIdentifiersByLabel?: (AccessUserIdentifierInput[] | null),search?: (Scalars['String'] | null),
 /** If true, only return the user that is currently logged in. */
 self?: (Scalars['Boolean'] | null)}
 
 
-/** A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutionalRole", id: "Staff" }, { label: "group", id: "Admin" }] */
-export interface AccessUserGroupingInput {id: Scalars['ID'],label: Scalars['String']}
+/** A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutional-role", ids: ["Staff", "Student"] }, { label: "last-login", ids: ["2025-09-01T10:20:04"] }] */
+export interface AccessUserGroupingInput {ids: Scalars['ID'][],label: Scalars['String']}
 
 
 /** A label and ID pair for an external user unique ID. For example, { label: "Student ID", id: "123456" } */

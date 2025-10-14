@@ -30,49 +30,49 @@ export interface RemoteGroup {
 export interface SearchUsersFilter {
   users?: AccessUser[]
   identifiers?: AccessUserIdentifierInput[]
+  groups?: string[]
   groupings?: AccessUserGroupingInput[]
 }
 
+/**
+ * The UserIndexDefinition is used to create the Admin User list columns and create
+ * indexes to group users. The data will be generated and updated upon each user login\
+ * and saved in the database.
+ *
+ * NOTE: As category keys and values are indexes the distinct values for each category
+ * may be quickly be pulled directly from the database. For example an institutional
+ * list of roles including Faculty, Staff and Students would only return Staff and Students
+ * if there are only Staff and Students within the database during the time of the query.
+ * If the list is empty then the User list should skip displaying the Label as a column.
+ * The filter should also exclude the category as that would just return an empty set if
+ * any role was used as a filter value.
+ */
 export interface UserIndexDefinition<DataType = any> {
   /**
    * A unique, case-insensitive, stable key for the index. This will be used to namespace
-   * individual index values.
+   * grouping values for a label.
    */
-  category: string
+  label: string
   /**
-   * A human readable name for the index that will be associated with the user.
-   * Does not need to be stable, but should be unique among all the AppRequest indexes.
+   * Used to display the grouping label name and does not need to be Unique, nor is required
+   * as the label value may be used to display when this field is left absent.
    */
-  categoryLabel?: string
+  displayLabel?: string
   /**
-   * Set this to a non-zero positive integer to indicate that this index should be displayed
-   * in the User list view. This number indicates the priority of the column. Lower priority
-   * numbers will be the first to disappear when the screen gets too small. Probably a good
-   * idea to stay between 1 and 100 for sanity.
+   * Set this to true should be displayed as a column in the User list view.
    */
-  useInUserList?: number
+  useInList?: boolean
   /**
-   * Set this to a non-zero positive integer to indicate that this index should be used for
-   * filtering the main User list view. This number indicates the priority of the column.
-   * The two or three highest priority filters will be used as quick filters, the rest will be
-   * in the filter UI popout. Probably a good idea to stay between 1 and 100 for sanity.
+   * Set this to true should be available as a filter in the User list view.
+   * The two or three of the first available filters will be used as quick filters,
+   * the rest will be in the filter UI popout. Note that if Filter will only be available
+   * should there be more then one value to filter on.
    */
-  useInListFilters?: number
-  /**
-   * Provide a function that will take the data from the ReqquestUser and return any index
-   * values that are associated.
-   */
-  extract: (data: DataType) => string[]
-  /**
-   * This function should return a tag label for the given value in this category. This is used to
-   * display the tags generated from the ReqquestUser.
-   *
-   * It may be called many times in parallel so it should be dataloaded or cached if possible.
-   *
-   * ReqQuest will cache these results in its database in case values disappear from the available
-   * list but appeared in the past.
-   */
-  getLabel?: (tag: string) => Promise<string | undefined> | string | undefined
+  useInFilters?: boolean
+  // /**
+  //  * Get all existing distinct ids associate with the label
+  //  */
+  // ids?: (data: DataType) => string[]
 }
 
 export interface AppDefinition {
@@ -95,22 +95,25 @@ export interface AppDefinition {
      *
      * The applicableGroups parameter is a list of groups that reqquest is interested in. If you prefer, you can
      * limit your query to only return those groups, but returning extra groups is also acceptable.
+     *
+     * groupings data will included within the otherData field and utilized by the login to filter through
+     * the retrieved UserIndexDefinition(s) and update the local database with the remote data that was
+     * retrieved.
      */
     byLogins: (logins: string[], applicableGroups: string[]) => Promise<ReqquestUser[]>
     /**
      * Provide a function that will return a list of users, given a search query users,
-     * identifiers, or grouping information.
+     * identifiers, groups, or other indexed grouping information.
      *
      * The function should return the search results of user objects, where the user object contains the login,
-     * fullname, and groups (application or institution) the user belongs to. The list of users objects may be
-     * retrieved locally or from an outside database or system such as LDAP.
+     * fullname, and (application) groups, or other groupings (such as Institution Roles) the user belongs to.
+     * The list of users objects may be retrieved locally or from an outside database or system such as LDAP.
+     * Upon login the data will be retrieved per user and updated and saved within the database.
      *
-     * The query parameter may be used to update a list of users with associated remote data and further
-     * filter that list via the retrieved list of identifiers and groups.
      */
     searchUsers?: (query: SearchUsersFilter) => Promise<AccessUser[]>
     /**
-     * TODO: explain!
+     * List of grouping categories to index, ordered by how they are displayed in the user listing columns.
      */
     indexes?: UserIndexDefinition[]
   }

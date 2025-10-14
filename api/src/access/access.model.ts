@@ -40,10 +40,10 @@ export class AccessUserIdentifierInput {
   label!: string
 }
 
-@InputType({ description: 'A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutionalRole", id: "Staff" }, { label: "group", id: "Admin" }]' })
+@InputType({ description: 'A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutional-role", ids: ["Staff", "Student"] }, { label: "last-login", ids: ["2025-09-01T10:20:04"] }]' })
 export class AccessUserGroupingInput {
-  @Field(() => ID)
-  id!: string
+  @Field(type => [ID])
+  ids!: string[]
 
   @Field()
   label!: string
@@ -82,10 +82,12 @@ export class AccessUserFilter {
   @Field(() => [AccessUserIdentifierInput], { nullable: true })
   otherIdentifiersByLabel?: AccessUserIdentifierInput[]
 
-  @Field(() => [AccessUserGroupingInput], { nullable: true })
-  otherGroupingsByLabel?: AccessUserGroupingInput[]
+  @Field(() => [String], { nullable: true, description: 'Filter users by associated Application Groups' })
+  groups?: string[]
 
-  // TODO: add filtering by user indexes, probably want a special input type like AppRequestIndexFilter
+  // Filtering by user groupings similar to input type like AppRequestIndexFilter
+  @Field(() => [AccessUserGroupingInput], { nullable: true, description: 'One to Many groupings Filter, like a institutional role people may belong to.' })
+  otherGroupingsByLabel?: AccessUserGroupingInput[]
 
   @Field({ nullable: true })
   search?: string

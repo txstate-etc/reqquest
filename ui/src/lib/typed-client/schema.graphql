@@ -226,7 +226,13 @@ type AccessUser {
 }
 
 input AccessUserFilter {
+  """Filter users by associated Application Groups"""
+  groups: [String!]
   logins: [ID!]
+
+  """
+  One to Many groupings Filter, like a institutional role people may belong to.
+  """
   otherGroupingsByLabel: [AccessUserGroupingInput!]
 
   """Filter by identifiers aside from username, like an Employee ID."""
@@ -239,10 +245,10 @@ input AccessUserFilter {
 }
 
 """
-A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutionalRole", id: "Staff" }, { label: "group", id: "Admin" }]
+A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutional-role", ids: ["Staff", "Student"] }, { label: "last-login", ids: ["2025-09-01T10:20:04"] }]
 """
 input AccessUserGroupingInput {
-  id: ID!
+  ids: [ID!]!
   label: String!
 }
 

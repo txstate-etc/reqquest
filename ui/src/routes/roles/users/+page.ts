@@ -4,18 +4,20 @@ import type { PageLoad } from './$types'
 import type { AccessUserFilter } from '$lib'
 
 export const load: PageLoad = async ({ url, depends }) => {
-  const { search, institutionalRoles, applicationRoles } = extractMergedFilters(url)
+  const { search, applicationRoles } = extractMergedFilters(url)
   // Get access data
-  const groupings: { label: string, id: string }[] = []
   const accessUsersFilter: AccessUserFilter = {}
   if (search) accessUsersFilter.search = search
-  if (Array.isArray(institutionalRoles) && institutionalRoles.length > 0) {
-    for (const id of institutionalRoles) groupings.push({ label: 'institutionalRole', id })
-  }
+  // groupings is a map<label, ids>
+  const groupings = new Map<string, string[]>()
   if (Array.isArray(applicationRoles) && applicationRoles.length > 0) {
-    for (const id of applicationRoles) groupings.push({ label: 'applicationRole', id })
+    groupings.set('applicationRole', applicationRoles)
   }
-  if (groupings.length > 0) accessUsersFilter.otherGroupingsByLabel = groupings
+  // Dynamically add groupings
+  // if (Array.isArray(institutionalRoles) && institutionalRoles.length > 0) {
+  //   for (const id of institutionalRoles) groupings.push({ label: 'institutionalRole', id })
+  // }
+  if (groupings.size > 0) accessUsersFilter.otherGroupingsByLabel = Array.from(groupings).map(g => ({ label: g[0], ids: g[1] }))
   const users = await api.getAccessUsers(accessUsersFilter)
   depends('api:getAccessUsers')
   return { users }

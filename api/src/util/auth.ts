@@ -84,7 +84,10 @@ const allGroupCache = new Cache(async () => {
 async function lookupUser (login: string): Promise<ReqquestUser | undefined> {
   try {
     const groups = await allGroupCache.get()
-    return (await appConfig.userLookups.byLogins([login], Array.from(new Set(groups.map(g => g.groupName)))))[0]
+    const user = (await appConfig.userLookups.byLogins([login], Array.from(new Set(groups.map(g => g.groupName)))))[0]
+    // Save user's remote information (e.g. grouping indexes) upon user lookups and logins
+    await AccessDatabase.upsertAccessUser(user)
+    return user
   } catch (e: any) {
     console.error('Error looking up user info for login', login, e)
     // we're going to try to fall back to our local copy if the remote user provider

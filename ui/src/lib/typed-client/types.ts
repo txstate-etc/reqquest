@@ -343,6 +343,9 @@ export default {
             ]
         },
         "AccessUserFilter": {
+            "groups": [
+                69
+            ],
             "logins": [
                 42
             ],
@@ -366,7 +369,7 @@ export default {
             ]
         },
         "AccessUserGroupingInput": {
-            "id": [
+            "ids": [
                 42
             ],
             "label": [
