@@ -89,7 +89,7 @@ async function main () {
           // return [{ groups: ['applicants'], otherInfo: { email: 'applicant@txstate.edu' }, login: 'applicant', fullname: 'Applicant Fullname' }]
         },
         indexes: [{
-          label: 'institutional-roles',
+          label: 'institutionalRoles',
           displayLabel: 'Institutional Roles',
           useInFilters: true,
           useInList: true

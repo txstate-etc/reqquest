@@ -105,20 +105,6 @@ export namespace AccessDatabase {
       `)
     }
 
-    if (filter?.groups && Array.isArray(filter.groups) && filter.groups.length > 0) {
-      joins.set('applicationUserRoles', `
-        LEFT JOIN (
-          SELECT DISTINCT userId, GROUP_CONCAT(accessRoles.name SEPARATOR " ") AS roleNames
-          FROM accessUserGroups
-          LEFT JOIN accessRoleGroups ON accessUserGroups.groupName = accessRoleGroups.groupName
-          LEFT JOIN accessRoles ON accessRoleGroups.roleId = accessRoles.id
-          WHERE accessRoles.name IN (${db.in(joinbinds, filter.groups)})
-          GROUP BY userId
-        ) AS applicationUserRoles ON accessUsers.id = applicationUserRoles.userId
-      `)
-      where.push('applicationUserRoles.roleNames IS NOT NULL')
-    }
-
     // Filtering by user appRequest defined indexes.
     // look at appRequestProcessFilter in appRequest.database.ts for an example of updates.
     if (filter?.otherGroupingsByLabel && Array.isArray(filter.otherGroupingsByLabel)) {
@@ -136,6 +122,18 @@ export namespace AccessDatabase {
             ) AS ${joinName} ON accessUsers.id = ${joinName}.userId
           `)
           where.push(`${joinName}.ids IS NOT NULL`)
+        } else if (group.label === 'applicationRoles') {
+          joins.set('applicationUserRoles', `
+            LEFT JOIN (
+              SELECT DISTINCT userId, GROUP_CONCAT(accessRoles.name SEPARATOR " ") AS roleNames
+              FROM accessUserGroups
+              LEFT JOIN accessRoleGroups ON accessUserGroups.groupName = accessRoleGroups.groupName
+              LEFT JOIN accessRoles ON accessRoleGroups.roleId = accessRoles.id
+              WHERE accessRoles.name IN (${db.in(joinbinds, group.ids)})
+              GROUP BY userId
+            ) AS applicationUserRoles ON accessUsers.id = applicationUserRoles.userId
+          `)
+          where.push('applicationUserRoles.roleNames IS NOT NULL')
         }
       }
     }
@@ -201,10 +199,10 @@ export namespace AccessDatabase {
       }
 
       for (const idx of (appConfig.userLookups.indexes ?? [])) {
-        if (user.otherInfo && Array.isArray(user.otherInfo[idx.label])) {
+        if (user.otherInfo && Array.isArray(user.otherInfo[idx.label] && user.otherInfo[idx.label].length)) {
           const ibinds: any[] = []
           await db.insert(`
-            INSERT INTO acessUserGroupings (userId, label, id)
+            INSERT INTO accessUserGroupings (userId, label, id)
             VALUES ${db.in(ibinds, user.otherInfo[idx.label].map((g: string) => [userId, idx.label, g]))}
             ON DUPLICATE KEY UPDATE userId = userId
           `, ibinds)
@@ -234,7 +232,7 @@ export namespace AccessDatabase {
     const where: string[] = []
     const joins = new Map<string, string>()
     const params: any[] = []
-    if (filter?.ids) {
+    if (filter?.ids?.length) {
       where.push(`ar.id IN (${db.in(params, filter.ids)})`)
     }
     if (filter?.names?.length) {
