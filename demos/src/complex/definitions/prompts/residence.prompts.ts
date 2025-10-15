@@ -28,6 +28,9 @@ export const state_residence_prompt: PromptDefinition = {
     }     
     return data
   },
+ // invalidUponChange: (data, relatedConfig) => {
+    
+ // },
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = []
     if (data.residentOfRequiredState == null) {
@@ -66,5 +69,8 @@ export const state_residence_autoupdate_prompt: PromptDefinition = {
   key: 'state_residence_autoupdate_prompt',
   title: 'State residency update',
   description: 'Applicant will confirm whether the auto updated address should be accepted.',
-  schema: StateResidenceAutoUpdatePromptSchema
+  schema: StateResidenceAutoUpdatePromptSchema,
+  fetch: (data, config, relatedConfig) => {
+    
+  }
 }

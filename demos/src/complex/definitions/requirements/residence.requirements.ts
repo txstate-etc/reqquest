@@ -9,12 +9,12 @@ export const state_residence_req: RequirementDefinition<StateResidenceConfigRequ
   title: 'Provide state residency information',
   navTitle: 'State Residency',
   description: 'Provide identifying information for applicants state of residence',
-  promptKeys: ['state_residence_prompt'],
+  promptKeys: ['state_residence_prompt', 'state_residence_confirmation_prompt'],
   resolve: (data, config) => {
     const stateResidencePromptData = data.state_residence_prompt as StateResidencePromptData
     //if (stateResidencePromptData?.residentOfRequiredState == null) return { status: RequirementStatus.PENDING }
     //if (stateResidencePromptData?.residentOfRequiredState === true) return { status: RequirementStatus.MET }
-    // query usps with input address to get details
+    // query usps with input address to get details .. or is this done at the prompt level
     return { status: RequirementStatus.DISQUALIFYING, reason: `You must reside in ${config.residentOfState} to qualify.` }
   },
   configuration: {
