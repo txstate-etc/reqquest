@@ -57,9 +57,9 @@ export const state_residence_confirmation_prompt: PromptDefinition = {
   title: 'State residency confirmation',
   description: 'Applicant will identify if they reside in the required state.',
   schema: StateResidenceConfirmationPromptSchema,
-  fetch: async (data, config, allConfig) => { 
-    return { residentOfState: 'Texas' } //TODO ...this is a HACK as currently fetch does not have access to other requirement or prompt data
-  },
+  //fetch: async (data, config, allConfig) => { 
+  //  return { residentOfState: 'Texas' } //TODO ...this is a HACK as currently fetch does not have access to other requirement or prompt data
+  //},
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = []
     //TODO ...this is a HACK as currently validate does not have access to other requirement or prompt data .. hardcoded TEXAS below

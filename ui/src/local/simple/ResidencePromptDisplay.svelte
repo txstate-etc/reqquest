@@ -4,21 +4,22 @@
   import { Button, Modal, ToastNotification } from 'carbon-components-svelte'
   import type { StateResidencePromptData } from './types.js'
   export let data: Partial<StateResidencePromptData>
-  export let configData
-  const appReqId = 1 // TODO - Needs to get app request id from prop once supported in RQ core
+  export let relatedConfigData
+  export let appRequestId
   const prompt_key = 'state_residence_prompt'
   const promptIdFileChecksum = 'residentIdDoc/shasum'
   const token = sessionStorage.getItem('token')
   let objURL: string | null = null
   let displayIdFileErr: string | null
   let modalOpen = false
+  $: requiredResidentState = 'FIX TO USER RELATEDCONFIG or CONFIGRELATED'
   async function displayIdFile(): Promise<boolean> {
     if (objURL) { // id file already downloaded
       displayIdFileErr = null
       return true 
     }
     try {
-      const ep = `${PUBLIC_API_BASE}/download/${appReqId}/${prompt_key}/${promptIdFileChecksum}`
+      const ep = `${PUBLIC_API_BASE}/download/${appRequestId}/${prompt_key}/${promptIdFileChecksum}`
       const res = await fetch(ep, {
         method: 'GET',
         headers: {
@@ -36,15 +37,17 @@
     return true
   }
 </script>
-
+{#each Object.entries($$props) as [key, value]}
+    <p>{key}: {JSON.stringify(value)}</p>
+{/each}
 {#if data.residentOfRequiredState}
-   <p>Resident of ##configData is { configData ? '' : 'NOT ' } available to display state##</p><!-- Config data does not seem to be available for display prompt {resultText}. -->
+   <p>Resident of {requiredResidentState} </p><!-- Config data does not seem to be available for display prompt {resultText}. -->
    <br>
    <p>
       <b>
         {data.firstName} {data.lastName} <br/>
         {data.streetAddress} <br/>
-        {data.city}, ##configData.state## {data.zipCode}
+        {data.city}, {requiredResidentState} {data.zipCode}
       </b>
    </p>  
    <br/> 
@@ -52,7 +55,7 @@
       <Button on:click={async () => modalOpen = await displayIdFile()}>Display Id file</Button>      
    </p>
 {:else}
-  <p>Non resident.</p>
+  <p>Not a resident of {relatedConfigData.state_residence_req.residentOfState}.</p>
 {/if}
 
 <Modal
