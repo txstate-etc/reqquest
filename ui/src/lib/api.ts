@@ -64,7 +64,9 @@ class API extends APIBase {
           perPage: true,
           groupings: {
             ids: true,
-            label: true
+            label: true,
+            useInFilters: true,
+            useInList: true
           }
         }
       }
