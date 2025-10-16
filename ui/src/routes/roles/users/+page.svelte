@@ -7,8 +7,7 @@
   export let data: PageData
   $: ({ users, availableApplicationRoles, pageInfo } = data)
   $: page = pageInfo?.currentPage ?? 1
-  export let pageSize = 25
-  export let totalItems = pageInfo?.totalItems
+  $: totalItems = pageInfo?.totalItems
   let groupings = pageInfo?.groupings
 
   function handlePagination(event: CustomEvent<{ page: number, pageSize: number, totalItems: number }>) {
@@ -79,5 +78,5 @@
   rows={transformFromAPI(users)}
 >
 </ColumnList>
-<Pagination {page} {pageSize} {totalItems} chooseSize on:update={handlePagination} noun="user" nounPlural="users" />
+<Pagination {page} {totalItems} on:update={handlePagination} noun="user" nounPlural="users" />
 
