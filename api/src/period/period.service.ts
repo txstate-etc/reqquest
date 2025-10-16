@@ -68,13 +68,10 @@ export class PeriodService extends AuthService<Period> {
   async validate (period: PeriodUpdate, id?: string) {
     const response = new ValidatedPeriodResponse({ success: true })
     const existingName = period.name ? await getPeriods({ names: [period.name] }) : []
-    const existingCode = period.code ? await getPeriods({ codes: [period.code] }) : []
     if (id) {
       if (existingName.length && !existingName.find(p => p.id === id)) response.addMessage('Name is already in use.', 'period.name')
-      if (existingCode.length && !existingCode.find(p => p.id === id)) response.addMessage('Code is already in use.', 'period.code')
     } else {
       if (existingName.length) response.addMessage('Name is already in use.', 'period.name')
-      if (existingCode.length) response.addMessage('Code is already in use.', 'period.code')
     }
     if (isBlank(period.name)) response.addMessage('Name is required.', 'period.name')
     if (period.openDate == null) response.addMessage('Open date is required.', 'period.openDate')

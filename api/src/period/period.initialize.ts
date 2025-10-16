@@ -14,7 +14,6 @@ export const periodMigrations: DatabaseMigration[] = [
           archiveDate DATETIME,
           reviewed TINYINT(1) NOT NULL DEFAULT 0,
           UNIQUE (name),
-          UNIQUE (code),
           INDEX (openDate),
           INDEX (closeDate),
           INDEX (archiveDate)
