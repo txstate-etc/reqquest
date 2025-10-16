@@ -1,7 +1,7 @@
 import { PUBLIC_API_BASE, PUBLIC_AUTH_REDIRECT } from '$env/static/public'
 import { APIBase } from '@txstate-mws/sveltekit-utils'
 import { datetimeSerialize, type Feedback } from '@txstate-mws/svelte-forms'
-import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleGroup, type AccessRoleInput, type Application, type AppRequestActivityFilters, type AppRequestFilter, type PeriodUpdate, type PromptVisibility, type RequirementPrompt } from './typed-client/index.js'
+import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleGroup, type AccessRoleInput, type AccessUserFilter, type Application, type AppRequestActivityFilters, type AppRequestFilter, type Pagination, type PeriodUpdate, type PromptVisibility, type RequirementPrompt } from './typed-client/index.js'
 import { DateTime } from 'luxon'
 
 class API extends APIBase {
@@ -36,9 +36,10 @@ class API extends APIBase {
     return response.access
   }
 
-  async getAccessUsers (accessUsersFilter = {}, pageFilter = {}) {
+  async getAccessUsers (accessUsersFilter: AccessUserFilter, pageFilter: Pagination) {
     const filter = accessUsersFilter
     const paged = pageFilter
+    console.log(`pageFilter: ${JSON.stringify(paged)}`)
     const response = await this.client.query({
       __name: 'GetAccessUsers',
       accessUsers: {
@@ -59,6 +60,8 @@ class API extends APIBase {
         accessUsers: {
           currentPage: true,
           totalItems: true,
+          hasNextPage: true,
+          perPage: true,
           groupings: {
             ids: true,
             label: true
