@@ -76,7 +76,7 @@
     <p class="text-center"> {prompt.description}</p>
 </div>
   <Form bind:store submitText="Save & Continue" submit={onSubmit} validate={onValidate} preload={appRequestData[prompt.key]} on:saved={onSaved} let:data>
-    <svelte:component this={def.formComponent} {data} appRequestId={appRequestForNavigation.id} {appRequestData} fetched={prompt.fetchedData} configData={prompt.configurationRelatedData[prompt.key]} relatedConfigData={prompt.configurationRelatedData} />
+    <svelte:component this={def.formComponent} {data} appRequestId={appRequestForNavigation.id} {appRequestData} fetched={prompt.fetchedData} configData={prompt.relatedConfigurationData[prompt.key]} relatedConfigData={prompt.relatedConfigurationData} />
     <svelte:fragment slot="submit" let:submitting>
       <div class='form-submit flex gap-12 justify-center mt-16'>
         {#if hasPreviousPrompt}

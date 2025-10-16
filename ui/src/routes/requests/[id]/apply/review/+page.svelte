@@ -15,9 +15,9 @@
   export let data: PageData
   $: ({ appRequestForNavigation, prequalPrompts, appRequestData } = data)
   $: prompts = prequalPrompts.concat(appRequestForNavigation.applications.flatMap(a => a.requirements.flatMap(r => r.prompts)))
-  $: configRelatedDataByPromptKey = appRequestData.applications.flatMap(a => a.requirements.flatMap(r => r.prompts)).reduce<Record<string, any>>((acc, curr) => ({
+  $: relatedConfigDataByPromptKey = appRequestData.applications.flatMap(a => a.requirements.flatMap(r => r.prompts)).reduce<Record<string, any>>((acc, curr) => ({
     ...acc,
-    [curr.key]: curr.configurationRelatedData
+    [curr.key]: curr.relatedConfigurationData
   }), {})
 
   async function onSubmit () {
@@ -34,7 +34,7 @@
     <dd>
       <div>
         {#if prompt.answered}
-          <svelte:component this={def.displayComponent} data={promptData} appRequestId={appRequestForNavigation.id} appRequestData={appRequestData} configData={configRelatedDataByPromptKey[prompt.key][prompt.key]} configRelatedData={configRelatedDataByPromptKey[prompt.key]} />
+          <svelte:component this={def.displayComponent} data={promptData} appRequestId={appRequestForNavigation.id} appRequestData={appRequestData} configData={relatedConfigDataByPromptKey[prompt.key][prompt.key]} relatedConfigData={relatedConfigDataByPromptKey[prompt.key]} />
         {:else}
           Incomplete
         {/if}

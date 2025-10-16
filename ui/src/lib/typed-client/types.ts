@@ -1517,7 +1517,7 @@ export default {
             "configurationData": [
                 48
             ],
-            "configurationRelatedData": [
+            "relatedConfigurationData": [
                 48
             ],
             "data": [

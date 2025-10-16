@@ -12,7 +12,7 @@
   let objURL: string | null = null
   let displayIdFileErr: string | null
   let modalOpen = false
-  $: requiredResidentState = 'FIX TO USER RELATEDCONFIG or CONFIGRELATED'
+  $: requiredResidentState = `${relatedConfigData.state_residence_req.requiredResidentState}`
   async function displayIdFile(): Promise<boolean> {
     if (objURL) { // id file already downloaded
       displayIdFileErr = null
@@ -55,7 +55,7 @@
       <Button on:click={async () => modalOpen = await displayIdFile()}>Display Id file</Button>      
    </p>
 {:else}
-  <p>Not a resident of {relatedConfigData.state_residence_req.residentOfState}.</p>
+  <p>Not a resident of {requiredResidentState}.</p>
 {/if}
 
 <Modal

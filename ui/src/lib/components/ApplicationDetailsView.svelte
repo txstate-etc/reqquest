@@ -92,7 +92,7 @@
                 <dt class="prompt-term font-semibold mb-2">{prompt.title}</dt>
                 <dd class="prompt-answer">
                   {#if appData[prompt.key] && def.displayComponent}
-                    <svelte:component this={def.displayComponent} appRequestId={appRequest.id} data={appData[prompt.key]} appRequestData={appData} configData={prompt.configurationRelatedData[prompt.key]} configRelatedData={prompt.configurationRelatedData} />
+                    <svelte:component this={def.displayComponent} appRequestId={appRequest.id} data={appData[prompt.key]} appRequestData={appData} configData={prompt.relatedConfigurationData[prompt.key]} relatedConfigData={prompt.relatedConfigurationData} />
                   {:else if appData[prompt.key]}
                     <em>Answered (display component not found)</em>
                   {:else}

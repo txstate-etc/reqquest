@@ -260,7 +260,7 @@ class API extends APIBase {
               answered: true,
               visibility: true,
               fetchedData: true,
-              configurationRelatedData: true
+              relatedConfigurationData: true
             }
           }
         }
@@ -321,7 +321,7 @@ class API extends APIBase {
           requirements: {
             prompts: {
               key: true,
-              configurationRelatedData: true
+              relatedConfigurationData: true
             }
           }
         }
@@ -363,7 +363,7 @@ class API extends APIBase {
               answered: true,
               visibility: true,
               moot: true,
-              configurationRelatedData: true
+              relatedConfigurationData: true
             }
           }
         }
@@ -613,7 +613,7 @@ class API extends APIBase {
               navTitle: true,
               answered: true,
               visibility: true,
-              configurationRelatedData: true,
+              relatedConfigurationData: true,
               fetchedData: true,
               actions: {
                 update: true
@@ -667,7 +667,7 @@ class API extends APIBase {
           __args: { promptId },
           data: true,
           preloadData: true,
-          configurationRelatedData: true,
+          relatedConfigurationData: true,
           fetchedData: true
         }
       }
