@@ -17,7 +17,8 @@ import {
   PeriodRequirementResolver, PeriodPromptResolver, initAccess, AppRequestIndexCategoryResolver,
   AccessRoleGroupResolver, AccessRoleGrantResolver, AccessGrantTagResolver, IndexCategoryResolver,
   AccessRoleGrantActionsResolver, AccessTagCategoryResolver, logMutation,
-  AppRequestActivityResolver
+  AppRequestActivityResolver,
+  PaginationResolver
 } from './internal.js'
 import { scheduler, schedulerMigration } from './util/scheduler.js'
 import { installDownloadRoutes } from './download/download.routes.js'
@@ -76,6 +77,7 @@ export class RQServer extends GQLServer {
       AppRequestResolver,
       ConfigurationResolver,
       ConfigurationActionsResolver,
+      PaginationResolver,
       PeriodResolver,
       PeriodActionsResolver,
       PeriodProgramActionsResolver,

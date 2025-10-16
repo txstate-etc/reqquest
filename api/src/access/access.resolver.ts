@@ -9,7 +9,9 @@ import {
   AccessRoleGrantActions, AccessRoleServiceInternal, AppRequestService, ControlGroupDefinitionProcessed,
   TagCategoryDefinition, PeriodService, RQContext,
   AccessRoleGroup,
-  AccessRoleGroupManager
+  AccessRoleGroupManager,
+  Pagination,
+  PaginationInfoWithTotalItems
 } from '../internal.js'
 import { DateTime } from 'luxon'
 
@@ -219,8 +221,10 @@ export class RoleActionsResolver {
 @Resolver(of => AccessUser)
 export class AccessUserResolver {
   @Query(returns => [AccessUser])
-  async accessUsers (@Ctx() ctx: Context, @Arg('filter', { nullable: true }) filter?: AccessUserFilter) {
-    return await ctx.svc(AccessUserService).find(filter)
+  async accessUsers (@Ctx() ctx: RQContext, @Arg('filter', { nullable: true }) filter?: AccessUserFilter, @Arg('paged', { nullable: true }) paged?: Pagination) {
+    return await ctx.executePaginated('accessUsers', paged, new PaginationInfoWithTotalItems(), async pageInfo => {
+      return await ctx.svc(AccessUserService).find(pageInfo, filter, paged)
+    })
   }
 
   @FieldResolver(returns => [String])

@@ -7,6 +7,7 @@ export * from './access/access.structure.js'
 export * from './access/access.seed.js'
 
 /** Models */
+export * from './common/pagination.model.js'
 export * from './access/access.model.js'
 export * from './period/period.model.js'
 export * from './application/application.model.js'
@@ -19,6 +20,7 @@ export * from './requirement/requirement.model.js'
 export * from './registry/index.js'
 
 /** Resolvers */
+export * from './common/pagination.resolver.js'
 export * from './access/access.resolver.js'
 export * from './application/application.resolver.js'
 export * from './appRequest/appRequest.resolver.js'

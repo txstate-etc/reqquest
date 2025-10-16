@@ -362,6 +362,14 @@ export interface ConfigurationAccess {
     __typename: 'ConfigurationAccess'
 }
 
+export interface Groupings {
+    /** IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"] */
+    ids: Scalars['String'][]
+    /** Label is the name of the grouping. Groupings are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles */
+    label: Scalars['String']
+    __typename: 'Groupings'
+}
+
 
 /** This represents an index as registered by one of the project's prompt definitions. */
 export interface IndexCategory {
@@ -436,6 +444,25 @@ export interface MutationMessage {
 }
 
 export type MutationMessageType = 'error' | 'success' | 'warning'
+
+export interface PaginationInfoWithTotalItems {
+    /** The current page number, starting at 1. This is always provided - if pagination was not requested, will return 1. */
+    currentPage: Scalars['Float']
+    /** List of indexed grouping data related to items within a page. Often used for filtering items. */
+    groupings: (Groupings[] | null)
+    /** Indicates whether requesting the next page would provide more results. Especially useful for models that cannot provide total item count for practical reasons. Note that over time, more results can appear and make this answer wrong, so in some circumstances it makes sense to request another page anyway. */
+    hasNextPage: Scalars['Boolean']
+    /** The number of items per page. Null if pagination was not requested/forced because results per page is unlimited. */
+    perPage: (Scalars['Float'] | null)
+    /** If possible, the total number of results will be provided. The API may return null if calculating the total is impractical. If pagination was not requested/forced, will equal the result count. */
+    totalItems: (Scalars['Float'] | null)
+    __typename: 'PaginationInfoWithTotalItems'
+}
+
+export interface PaginationResponse {
+    accessUsers: (PaginationInfoWithTotalItems | null)
+    __typename: 'PaginationResponse'
+}
 
 export interface Period {
     actions: PeriodActions
@@ -551,6 +578,7 @@ export interface Query {
     appRequests: AppRequest[]
     /** This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant. */
     controlGroups: AccessControlGroup[]
+    pageInfo: PaginationResponse
     periods: Period[]
     programs: Program[]
     roles: AccessRole[]
@@ -1093,6 +1121,15 @@ periodCodes?: (Scalars['String'][] | null),
 /** Return configurations for these period IDs. */
 periodIds?: (Scalars['ID'][] | null)}
 
+export interface GroupingsGenqlSelection{
+    /** IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"] */
+    ids?: boolean | number
+    /** Label is the name of the grouping. Groupings are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles */
+    label?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
 
 /** This represents an index as registered by one of the project's prompt definitions. */
 export interface IndexCategoryGenqlSelection{
@@ -1172,6 +1209,31 @@ export interface MutationMessageGenqlSelection{
     message?: boolean | number
     /** The type of error message. See the enum descriptions for more detail. */
     type?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface Pagination {
+/** The page number to retrieve. If not provided, will default to 1. */
+page?: (Scalars['Int'] | null),perPage?: (Scalars['Int'] | null)}
+
+export interface PaginationInfoWithTotalItemsGenqlSelection{
+    /** The current page number, starting at 1. This is always provided - if pagination was not requested, will return 1. */
+    currentPage?: boolean | number
+    /** List of indexed grouping data related to items within a page. Often used for filtering items. */
+    groupings?: GroupingsGenqlSelection
+    /** Indicates whether requesting the next page would provide more results. Especially useful for models that cannot provide total item count for practical reasons. Note that over time, more results can appear and make this answer wrong, so in some circumstances it makes sense to request another page anyway. */
+    hasNextPage?: boolean | number
+    /** The number of items per page. Null if pagination was not requested/forced because results per page is unlimited. */
+    perPage?: boolean | number
+    /** If possible, the total number of results will be provided. The API may return null if calculating the total is impractical. If pagination was not requested/forced, will equal the result count. */
+    totalItems?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface PaginationResponseGenqlSelection{
+    accessUsers?: PaginationInfoWithTotalItemsGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -1315,13 +1377,14 @@ export interface QueryGenqlSelection{
      *   
      */
     access?: AccessGenqlSelection
-    accessUsers?: (AccessUserGenqlSelection & { __args?: {filter?: (AccessUserFilter | null)} })
+    accessUsers?: (AccessUserGenqlSelection & { __args?: {filter?: (AccessUserFilter | null), paged?: (Pagination | null)} })
     appRequestIndexes?: (IndexCategoryGenqlSelection & { __args?: {categories?: (Scalars['String'][] | null), 
     /** Returns indexes that are flagged to appear in this destination. Also sorts for this destination. */
     for?: (AppRequestIndexDestination | null)} })
     appRequests?: (AppRequestGenqlSelection & { __args?: {filter?: (AppRequestFilter | null)} })
     /** This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant. */
     controlGroups?: AccessControlGroupGenqlSelection
+    pageInfo?: PaginationResponseGenqlSelection
     periods?: (PeriodGenqlSelection & { __args?: {filter?: (PeriodFilters | null)} })
     programs?: (ProgramGenqlSelection & { __args?: {filter?: (ProgramFilters | null)} })
     roles?: (AccessRoleGenqlSelection & { __args?: {filter?: (AccessRoleFilter | null)} })
@@ -1610,6 +1673,14 @@ export interface ValidatedResponseGenqlSelection{
     
 
 
+    const Groupings_possibleTypes: string[] = ['Groupings']
+    export const isGroupings = (obj?: { __typename?: any } | null): obj is Groupings => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isGroupings"')
+      return Groupings_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const IndexCategory_possibleTypes: string[] = ['IndexCategory']
     export const isIndexCategory = (obj?: { __typename?: any } | null): obj is IndexCategory => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isIndexCategory"')
@@ -1638,6 +1709,22 @@ export interface ValidatedResponseGenqlSelection{
     export const isMutationMessage = (obj?: { __typename?: any } | null): obj is MutationMessage => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isMutationMessage"')
       return MutationMessage_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PaginationInfoWithTotalItems_possibleTypes: string[] = ['PaginationInfoWithTotalItems']
+    export const isPaginationInfoWithTotalItems = (obj?: { __typename?: any } | null): obj is PaginationInfoWithTotalItems => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPaginationInfoWithTotalItems"')
+      return PaginationInfoWithTotalItems_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PaginationResponse_possibleTypes: string[] = ['PaginationResponse']
+    export const isPaginationResponse = (obj?: { __typename?: any } | null): obj is PaginationResponse => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPaginationResponse"')
+      return PaginationResponse_possibleTypes.includes(obj.__typename)
     }
     
 

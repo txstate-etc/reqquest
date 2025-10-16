@@ -836,6 +836,18 @@ Date and Time in ISO 8601 string format. JSON parser should convert to javascrip
 """
 scalar DateTime
 
+type Groupings {
+  """
+  IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"]
+  """
+  ids: [String!]!
+
+  """
+  Label is the name of the grouping. Groupings are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles
+  """
+  label: String!
+}
+
 """
 This represents an index as registered by one of the project's prompt definitions.
 """
@@ -1010,6 +1022,43 @@ enum MutationMessageType {
   The mutation can and/or did complete, but the user should receive the warning anyway (e.g. "Your password sucks but I'll allow it.").
   """
   warning
+}
+
+input Pagination {
+  """The page number to retrieve. If not provided, will default to 1."""
+  page: Int
+  perPage: Int
+}
+
+type PaginationInfoWithTotalItems {
+  """
+  The current page number, starting at 1. This is always provided - if pagination was not requested, will return 1.
+  """
+  currentPage: Float!
+
+  """
+  List of indexed grouping data related to items within a page. Often used for filtering items.
+  """
+  groupings: [Groupings!]
+
+  """
+  Indicates whether requesting the next page would provide more results. Especially useful for models that cannot provide total item count for practical reasons. Note that over time, more results can appear and make this answer wrong, so in some circumstances it makes sense to request another page anyway.
+  """
+  hasNextPage: Boolean!
+
+  """
+  The number of items per page. Null if pagination was not requested/forced because results per page is unlimited.
+  """
+  perPage: Float
+
+  """
+  If possible, the total number of results will be provided. The API may return null if calculating the total is impractical. If pagination was not requested/forced, will equal the result count.
+  """
+  totalItems: Float
+}
+
+type PaginationResponse {
+  accessUsers: PaginationInfoWithTotalItems
 }
 
 type Period {
@@ -1233,7 +1282,7 @@ enum PromptVisibility {
 type Query {
   "\n    This is the global access object. Each field represents a global permission\n    like the ability to view the role management interface.\n  "
   access: Access!
-  accessUsers(filter: AccessUserFilter): [AccessUser!]!
+  accessUsers(filter: AccessUserFilter, paged: Pagination): [AccessUser!]!
   appRequestIndexes(
     categories: [String!]
 
@@ -1248,6 +1297,7 @@ type Query {
   This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant.
   """
   controlGroups: [AccessControlGroup!]!
+  pageInfo: PaginationResponse!
   periods(filter: PeriodFilters): [Period!]!
   programs(filter: ProgramFilters): [Program!]!
   roles(filter: AccessRoleFilter): [AccessRole!]!

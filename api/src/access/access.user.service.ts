@@ -1,5 +1,5 @@
 import { ManyJoinedLoader, OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { appConfig, AuthService } from '../internal.js'
+import { AuthService, Pagination, PaginationInfoWithTotalItems } from '../internal.js'
 import { AccessDatabase as database } from './access.database.js'
 import { type AccessUserFilter, AccessUser } from './access.model.js'
 import { intersect } from 'txstate-utils'
@@ -26,19 +26,33 @@ const groupsByUserInternalIdLoader = new ManyJoinedLoader({
 })
 
 export class AccessUserService extends AuthService<AccessUser> {
-  async find (filter?: AccessUserFilter) {
+  async find (pageInfo: PaginationInfoWithTotalItems, filter?: AccessUserFilter, paged?: Pagination) {
     if (filter?.self && this.user) {
       filter ??= {}
       filter.internalIds = intersect({ skipEmpty: true }, filter.internalIds, [this.user.internalId])
     }
-    let users = await database.getAccessUsers(filter)
-    // NOTE: Only upon a users login do we perform searchUsers.
-    //   Remote data should be saved within the otherInfo Field
-    // if (appConfig.userLookups.searchUsers && Array.isArray(users) && users.length > 0) {
-    //   users = await appConfig.userLookups.searchUsers({ users, identifiers: filter?.otherIdentifiersByLabel, groups: filter?.groups, groupings: filter?.otherGroupingsByLabel })
-    // }
+    // PAGING
+    // TODO: Push counting and paging/limit to database
+    let start = 0
+    let end = undefined
+    const users = await database.getAccessUsers(filter)
     this.loaders.prime(accessUsersByIdLoader, users)
-    return users
+    const total = users.length
+    if (paged?.page || paged?.perPage) {
+      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+      pageInfo.perPage = paged?.perPage || 100 // 0 should also be overridden, so || is better than nullish coalescing ??
+      pageInfo.totalItems = total
+      pageInfo.hasNextPage = total > pageInfo.currentPage * pageInfo.perPage
+      start = ((paged.page ?? 1) - 1) * pageInfo.perPage
+      end = start + pageInfo.perPage
+      return users.slice(start, end)
+    } else {
+      pageInfo.totalItems = total
+      pageInfo.currentPage = 1
+      pageInfo.perPage = undefined
+      pageInfo.hasNextPage = false
+      return users
+    }
   }
 
   async findByInternalId (internalUserId: number) {

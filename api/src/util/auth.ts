@@ -1,7 +1,8 @@
 import { AuthorizedServiceSync, Context, MockContext } from '@txstate-mws/graphql-server'
 import { FastifyRequest } from 'fastify'
 import { Cache, isNotBlank } from 'txstate-utils'
-import { AccessUser, appConfig, AccessDatabase, AccessRoleServiceInternal, getAcceptancePeriodIds, ReqquestUser } from '../internal.js'
+import { AccessUser, appConfig, AccessDatabase, AccessRoleServiceInternal, getAcceptancePeriodIds, ReqquestUser, PaginationInfoShared, Pagination, PaginationWithCursor } from '../internal.js'
+import { sleep } from 'txstate-utils'
 
 type RoleLookup = Record<string, Record<string, Record<number, Record<string, Set<string>>>>>
 
@@ -153,6 +154,10 @@ export interface RQContext extends Context {
   login: string
 
   waitForAuth: () => Promise<void>
+
+  executePaginated: <T, P extends PaginationInfoShared> (queryType: string, paged: Pagination | PaginationWithCursor | undefined, pageInfo: P, work: (pageInfo: P) => Promise<T> | T) => Promise<T | undefined>
+
+  getPaginationInfo: <P extends PaginationInfoShared = PaginationInfoShared> (queryType: string) => Promise<P | undefined>
 }
 
 export type RQContextClass = typeof Context & (new (req: FastifyRequest) => RQContext)
@@ -160,6 +165,7 @@ export type RQMockContextClass = typeof Context & (new (claims: any) => RQContex
 
 export function rqContextMixin (Ctx: typeof Context): RQContextClass {
   return class extends Ctx {
+    // AuthN
     authInfo!: AuthInfo
 
     get login () {
@@ -171,6 +177,43 @@ export function rqContextMixin (Ctx: typeof Context): RQContextClass {
       if (!this.login) return
       this.authInfo = await authCache.get(this.login, this)
       this.authInfo.impersonationUser = this.auth?.impersonatedBy ? await userCache.get(this.auth.impersonatedBy, this) : undefined
+    }
+
+    // Pagination
+    protected paginationPromises: Record<string, Promise<PaginationInfoShared>> = {}
+    protected allPaginationPromises: Record<string, Promise<PaginationInfoShared>> = {}
+
+    async executePaginated <T, P extends PaginationInfoShared> (queryType: string, paged: Pagination | PaginationWithCursor | undefined, pageInfo: P, work: (pageInfo: P) => Promise<T> | T) {
+      const paginationRequested = paged != null && (paged.page != null || ('cursor' in paged && paged.cursor != null))
+      if (paginationRequested && this.paginationPromises[queryType] != null) throw new Error('Cannot execute more than one paginated request per top-level Query resolver.')
+      if (!paged) (pageInfo as any).currentPage = 1
+      else if (!('cursor' in paged)) (pageInfo as any).currentPage = paged.page ?? 1
+      let ret: T | undefined
+      const executePromise = new Promise<P>((resolve, reject) => {
+        try {
+          const result = work(pageInfo)
+          if (result instanceof Promise) {
+            result.then(r => {
+              ret = r
+              resolve(pageInfo)
+            }).catch(reject)
+          } else {
+            ret = result
+            resolve(pageInfo)
+          }
+        } catch (e) {
+          reject(e)
+        }
+      })
+      if (paginationRequested) this.paginationPromises[queryType] = executePromise
+      else this.allPaginationPromises[queryType] = executePromise
+      await executePromise
+      return ret
+    }
+
+    async getPaginationInfo <P extends PaginationInfoShared = PaginationInfoShared> (queryType: string): Promise<P | undefined> {
+      await sleep(1)
+      return (await (this.paginationPromises[queryType] ?? this.allPaginationPromises[queryType])) as P
     }
   }
 }
