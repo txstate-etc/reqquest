@@ -64,6 +64,7 @@ class API extends APIBase {
           groupings: {
             ids: true,
             label: true,
+            displayLabel: true,
             useInFilters: true,
             useInList: true
           }

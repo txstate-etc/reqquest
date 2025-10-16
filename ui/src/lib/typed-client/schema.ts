@@ -363,6 +363,8 @@ export interface ConfigurationAccess {
 }
 
 export interface Groupings {
+    /** Displayed Label for grouping. i.e. Institutional Roles */
+    displayLabel: Scalars['String']
     /** IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"] */
     ids: Scalars['String'][]
     /** Label is the name of the grouping. Groupings are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles */
@@ -600,8 +602,6 @@ export interface RequirementPrompt {
     answered: Scalars['Boolean']
     /** The configuration data for this prompt in the app request's period. */
     configurationData: (Scalars['JsonData'] | null)
-    /** All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it. */
-    relatedConfigurationData: Scalars['JsonData']
     /** The data that has been gathered from the user in response to this prompt. The schema is controlled by the question's implementation. */
     data: (Scalars['JsonData'] | null)
     /** A brief description of the prompt. This should be shown to administrators to help explain the full meaning of the prompt while assigning permissions or editing its configuration. */
@@ -621,6 +621,8 @@ export interface RequirementPrompt {
     navTitle: Scalars['String']
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
     preloadData: (Scalars['JsonData'] | null)
+    /** All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it. */
+    relatedConfigurationData: Scalars['JsonData']
     /** The requirement that this prompt is associated with. */
     requirement: ApplicationRequirement
     /** A human readable title for the prompt. This is what will be shown to users. */
@@ -1126,6 +1128,8 @@ periodCodes?: (Scalars['String'][] | null),
 periodIds?: (Scalars['ID'][] | null)}
 
 export interface GroupingsGenqlSelection{
+    /** Displayed Label for grouping. i.e. Institutional Roles */
+    displayLabel?: boolean | number
     /** IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"] */
     ids?: boolean | number
     /** Label is the name of the grouping. Groupings are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles */
@@ -1411,8 +1415,6 @@ export interface RequirementPromptGenqlSelection{
     answered?: boolean | number
     /** The configuration data for this prompt in the app request's period. */
     configurationData?: boolean | number
-    /** All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it. */
-    relatedConfigurationData?: boolean | number
     /** The data that has been gathered from the user in response to this prompt. The schema is controlled by the question's implementation. */
     data?: { __args: {
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
@@ -1438,6 +1440,8 @@ export interface RequirementPromptGenqlSelection{
     preloadData?: { __args: {
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
+    /** All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it. */
+    relatedConfigurationData?: boolean | number
     /** The requirement that this prompt is associated with. */
     requirement?: ApplicationRequirementGenqlSelection
     /** A human readable title for the prompt. This is what will be shown to users. */

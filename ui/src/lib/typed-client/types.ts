@@ -789,6 +789,9 @@ export default {
         "DateTime": {},
         "Float": {},
         "Groupings": {
+            "displayLabel": [
+                73
+            ],
             "ids": [
                 73
             ],
@@ -1517,9 +1520,6 @@ export default {
             "configurationData": [
                 48
             ],
-            "relatedConfigurationData": [
-                48
-            ],
             "data": [
                 48,
                 {
@@ -1564,6 +1564,9 @@ export default {
                         73
                     ]
                 }
+            ],
+            "relatedConfigurationData": [
+                48
             ],
             "requirement": [
                 34

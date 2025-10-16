@@ -32,7 +32,7 @@ const allGroupingsCache = new Cache(async () => {
   const groupings = []
   for (const i in indexes) {
     const index = indexes[i]
-    groupings.push({ label: index.label, ids: ids[i], useInFilters: index.useInFilters, useInList: index.useInList })
+    groupings.push({ label: index.label, displayLabel: index.displayLabel, ids: ids[i], useInFilters: index.useInFilters, useInList: index.useInList })
   }
   return groupings
 }, { freshseconds: 30, staleseconds: 600 }) // 30 seconds, 5 minutes

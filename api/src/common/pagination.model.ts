@@ -20,6 +20,9 @@ export class Groupings {
   @Field({ description: 'Label is the name of the grouping. Groupings are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles' })
   label!: string
 
+  @Field({ description: 'Displayed Label for grouping. i.e. Institutional Roles' })
+  displayLabel?: string
+
   @Field(type => [String], { description: 'IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"]' })
   ids!: string[]
 

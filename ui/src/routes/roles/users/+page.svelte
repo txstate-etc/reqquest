@@ -3,15 +3,18 @@
   import type { PageData } from './$types'
   import { Pagination } from '@txstate-mws/carbon-svelte'
   import { DateTime } from 'luxon';
+    import type { Groupings } from '$lib';
 
   export let data: PageData
   $: ({ users, availableApplicationRoles, pageInfo } = data)
-  $: page = pageInfo?.currentPage ?? 1
+  $: page = pageInfo?.currentPage
   $: totalItems = pageInfo?.totalItems
-  let groupings = pageInfo?.groupings
+  $: groupings = pageInfo?.groupings
 
-  function handlePagination(event: CustomEvent<{ page: number, pageSize: number, totalItems: number }>) {
+  function handlePagination(event: CustomEvent<{ page: number, pageSize: number, totalItems: number, groupings: Groupings[]}>) {
     page = event.detail.page
+    totalItems = event.detail.totalItems
+    groupings = event.detail.groupings
   }
 
   // TODO: Dynamically add groupings
@@ -19,11 +22,12 @@
     search?: string
     applicationRoles?: string[]
     // institutionalRoles?: string[]
+    [key: string]: string | string[] | undefined
   }
   let usersSearchFormData: UsersSearchForm | undefined
 
   // TODO: Dynamically add groupings
-  type UsersSearchDisplay = {
+  interface UsersSearchDisplay {
     // Local data
     id: string
     fullname: string
@@ -32,9 +36,12 @@
     // Remote data
     email?: string
     otherId?: string
+    otherInfo?: any
     // institutionalRoles?: string[]
     // lastLogin?: string
+    // [key: string]: string | string[] | undefined
   }
+  
   const columns: ColumnDefinition<UsersSearchDisplay>[] = [
     { id: 'contact', label: 'Name', render: user => user['email'] ? user['fullname'] + '<br>' + user['email'] : user['fullname'] },
     { id: 'id', label: 'IDs', render: user => [user['id'], user['otherId']].filter(id => id != null).join('<br>') },
@@ -44,6 +51,11 @@
     // { id: 'institutionalRoles', label: 'Institutional Roles', render: user => user['institutionalRoles'] ? user['institutionalRoles'].join(', ') : '' },
     // { id: 'lastLogin', label: 'Last Login', get: 'lastLogin' }
   ]
+  for (const group of pageInfo?.groupings ?? []) {
+    if (group.useInList) columns.push({ id: group.label, label: group.displayLabel ? group.displayLabel : group.label, render: user => (!user.otherInfo || user.otherInfo[group.label] == undefined) ? '' : (Array.isArray(user.otherInfo[group.label])) ? user.otherInfo[group.label].join(', ') : user.otherInfo[group.label].toString() })
+    // if (group.useInFilters) 
+  }
+
   function transformFromAPI (users: PageData['users']): UsersSearchDisplay[] {
     return users.map(u => ({
       id: u.login,
