@@ -863,13 +863,13 @@ export interface AccessUserGenqlSelection{
     __scalar?: boolean | number
 }
 
-export interface AccessUserFilter {
-/** Filter users by associated Application Groups */
-groups?: (Scalars['String'][] | null),logins?: (Scalars['ID'][] | null),
+export interface AccessUserFilter {logins?: (Scalars['ID'][] | null),
 /** One to Many groupings Filter, like a institutional role people may belong to. */
 otherGroupingsByLabel?: (AccessUserGroupingInput[] | null),
 /** Filter by identifiers aside from username, like an Employee ID. */
-otherIdentifiers?: (Scalars['String'][] | null),otherIdentifiersByLabel?: (AccessUserIdentifierInput[] | null),search?: (Scalars['String'] | null),
+otherIdentifiers?: (Scalars['String'][] | null),otherIdentifiersByLabel?: (AccessUserIdentifierInput[] | null),
+/** Filter users by associated Application Roles */
+roles?: (Scalars['String'][] | null),search?: (Scalars['String'] | null),
 /** If true, only return the user that is currently logged in. */
 self?: (Scalars['Boolean'] | null)}
 

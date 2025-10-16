@@ -82,8 +82,8 @@ export class AccessUserFilter {
   @Field(() => [AccessUserIdentifierInput], { nullable: true })
   otherIdentifiersByLabel?: AccessUserIdentifierInput[]
 
-  @Field(() => [String], { nullable: true, description: 'Filter users by associated Application Groups' })
-  groups?: string[]
+  @Field(() => [String], { nullable: true, description: 'Filter users by associated Application Roles' })
+  roles?: string[]
 
   // Filtering by user groupings similar to input type like AppRequestIndexFilter
   @Field(() => [AccessUserGroupingInput], { nullable: true, description: 'One to Many groupings Filter, like a institutional role people may belong to.' })

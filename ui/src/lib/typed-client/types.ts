@@ -343,9 +343,6 @@ export default {
             ]
         },
         "AccessUserFilter": {
-            "groups": [
-                73
-            ],
             "logins": [
                 43
             ],
@@ -357,6 +354,9 @@ export default {
             ],
             "otherIdentifiersByLabel": [
                 21
+            ],
+            "roles": [
+                73
             ],
             "search": [
                 73

@@ -36,12 +36,13 @@ class API extends APIBase {
     return response.access
   }
 
-  async getAccessUsers (accessUsersFilter = {}) {
+  async getAccessUsers (accessUsersFilter = {}, pageFilter = {}) {
     const filter = accessUsersFilter
+    const paged = pageFilter
     const response = await this.client.query({
       __name: 'GetAccessUsers',
       accessUsers: {
-        __args: { filter },
+        __args: { filter, paged },
         login: true,
         fullname: true,
         groups: true,
@@ -53,9 +54,19 @@ class API extends APIBase {
           label: true
         },
         otherInfo: true
+      },
+      pageInfo: {
+        accessUsers: {
+          currentPage: true,
+          totalItems: true,
+          groupings: {
+            ids: true,
+            label: true
+          }
+        }
       }
     })
-    return response.accessUsers
+    return { users: response.accessUsers, pageInfo: response.pageInfo.accessUsers }
   }
 
   async getApplicantRequests (additionalFilters = {}) {

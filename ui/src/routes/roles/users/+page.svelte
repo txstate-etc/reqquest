@@ -1,11 +1,19 @@
 <script lang="ts">
   import { ColumnList, FieldMultiselect, FilterUI, type ColumnDefinition } from '@txstate-mws/carbon-svelte'
   import type { PageData } from './$types'
+  import { Pagination } from '@txstate-mws/carbon-svelte'
   import { DateTime } from 'luxon';
 
-
   export let data: PageData
-  $: ({ users, availableApplicationRoles } = data)
+  $: ({ users, availableApplicationRoles, pageInfo } = data)
+  $: page = pageInfo?.currentPage ?? 1
+  export let pageSize = 25
+  export let totalItems = pageInfo?.totalItems
+  let groupings = pageInfo?.groupings
+
+  function handlePagination(event: CustomEvent<{ page: number, pageSize: number, totalItems: number }>) {
+    page = event.detail.page
+  }
 
   // TODO: Dynamically add groupings
   interface UsersSearchForm {
@@ -71,3 +79,5 @@
   rows={transformFromAPI(users)}
 >
 </ColumnList>
+<Pagination {page} {pageSize} {totalItems} chooseSize on:update={handlePagination} noun="user" nounPlural="users" />
+

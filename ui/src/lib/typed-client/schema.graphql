@@ -226,8 +226,6 @@ type AccessUser {
 }
 
 input AccessUserFilter {
-  """Filter users by associated Application Groups"""
-  groups: [String!]
   logins: [ID!]
 
   """
@@ -238,6 +236,9 @@ input AccessUserFilter {
   """Filter by identifiers aside from username, like an Employee ID."""
   otherIdentifiers: [String!]
   otherIdentifiersByLabel: [AccessUserIdentifierInput!]
+
+  """Filter users by associated Application Roles"""
+  roles: [String!]
   search: String
 
   """If true, only return the user that is currently logged in."""

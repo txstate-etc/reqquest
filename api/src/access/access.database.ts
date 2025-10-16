@@ -105,6 +105,20 @@ export namespace AccessDatabase {
       `)
     }
 
+    if (filter?.roles && Array.isArray(filter.roles) && filter.roles.length) {
+      joins.set('applicationUserRoles', `
+        LEFT JOIN (
+          SELECT DISTINCT userId, GROUP_CONCAT(accessRoles.name SEPARATOR " ") AS roleNames
+          FROM accessUserGroups
+          LEFT JOIN accessRoleGroups ON accessUserGroups.groupName = accessRoleGroups.groupName
+          LEFT JOIN accessRoles ON accessRoleGroups.roleId = accessRoles.id
+          WHERE accessRoles.name IN (${db.in(joinbinds, filter.roles)})
+          GROUP BY userId
+        ) AS applicationUserRoles ON accessUsers.id = applicationUserRoles.userId
+      `)
+      where.push('applicationUserRoles.roleNames IS NOT NULL')
+    }
+
     // Filtering by user appRequest defined indexes.
     // look at appRequestProcessFilter in appRequest.database.ts for an example of updates.
     if (filter?.otherGroupingsByLabel && Array.isArray(filter.otherGroupingsByLabel)) {
@@ -112,7 +126,7 @@ export namespace AccessDatabase {
       const labels = appConfig.userLookups.indexes?.map(i => i.label) ?? []
       for (const group of filter.otherGroupingsByLabel) {
         const joinName = `accessUserGroupings${group.label}`
-        if (labels.includes(group.label) && group.ids.length > 0 && !joins.has(joinName)) {
+        if (labels.includes(group.label) && group.ids.length && !joins.has(joinName)) {
           joins.set(joinName, `
             LEFT JOIN (
               SELECT DISTINCT userId, GROUP_CONCAT(accessUserGroupings.id SEPARATOR " ") AS ids
@@ -122,18 +136,6 @@ export namespace AccessDatabase {
             ) AS ${joinName} ON accessUsers.id = ${joinName}.userId
           `)
           where.push(`${joinName}.ids IS NOT NULL`)
-        } else if (group.label === 'applicationRoles') {
-          joins.set('applicationUserRoles', `
-            LEFT JOIN (
-              SELECT DISTINCT userId, GROUP_CONCAT(accessRoles.name SEPARATOR " ") AS roleNames
-              FROM accessUserGroups
-              LEFT JOIN accessRoleGroups ON accessUserGroups.groupName = accessRoleGroups.groupName
-              LEFT JOIN accessRoles ON accessRoleGroups.roleId = accessRoles.id
-              WHERE accessRoles.name IN (${db.in(joinbinds, group.ids)})
-              GROUP BY userId
-            ) AS applicationUserRoles ON accessUsers.id = applicationUserRoles.userId
-          `)
-          where.push('applicationUserRoles.roleNames IS NOT NULL')
         }
       }
     }
