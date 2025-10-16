@@ -39,7 +39,6 @@ class API extends APIBase {
   async getAccessUsers (accessUsersFilter: AccessUserFilter, pageFilter: Pagination) {
     const filter = accessUsersFilter
     const paged = pageFilter
-    console.log(`pageFilter: ${JSON.stringify(paged)}`)
     const response = await this.client.query({
       __name: 'GetAccessUsers',
       accessUsers: {
