@@ -1,6 +1,6 @@
 import { Context, ValidatedResponse, ValidatedResponseArgs } from '@txstate-mws/graphql-server'
 import { ObjectType, InputType, Field, ID } from 'type-graphql'
-import { AccessRoleGrantRow, AccessRoleGrantTagRow, AccessRoleRow, AccessRoleService, AccessUserIdentifierRow, AccessUserRow, ControlDefinition, JsonData, safeParse, ControlGroupDefinitionProcessed, controlGroups, TagCategoryDefinition, AccessRoleGroupRow } from '../internal.js'
+import { AccessRoleGrantRow, AccessRoleGrantTagRow, AccessRoleRow, AccessRoleService, AccessUserIdentifierRow, AccessUserRow, ControlDefinition, JsonData, safeParse, ControlGroupDefinitionProcessed, controlGroups, TagCategoryDefinition, AccessRoleGroupRow, appConfig } from '../internal.js'
 import { DateTime } from 'luxon'
 
 @ObjectType()
@@ -40,7 +40,7 @@ export class AccessUserIdentifierInput {
   label!: string
 }
 
-@InputType({ description: 'A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutional-role", ids: ["Staff", "Student"] }, { label: "last-login", ids: ["2025-09-01T10:20:04"] }]' })
+@InputType({ description: 'A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutionalRole", ids: ["Staff", "Student"] }, { label: "last-login", ids: ["2025-09-01T10:20:04"] }]' })
 export class AccessUserGroupingInput {
   @Field(type => [ID])
   ids!: string[]

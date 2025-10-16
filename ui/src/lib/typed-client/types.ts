@@ -795,6 +795,12 @@ export default {
             "label": [
                 73
             ],
+            "useInFilters": [
+                36
+            ],
+            "useInList": [
+                36
+            ],
             "__typename": [
                 73
             ]

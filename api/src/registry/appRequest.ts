@@ -69,10 +69,12 @@ export interface UserIndexDefinition<DataType = any> {
    * should there be more then one value to filter on.
    */
   useInFilters?: boolean
-  // /**
-  //  * Get all existing distinct ids associate with the label
-  //  */
-  // ids?: (data: DataType) => string[]
+  /**
+   * Convert all existing distinct DataType/ids associate with the label
+   * into an array of strings to be saved and indexed into the database.
+   * If already an array of strings then may be optional.
+   */
+  save?: (data: DataType) => string[]
 }
 
 export interface AppDefinition {

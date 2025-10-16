@@ -124,14 +124,14 @@ export namespace AccessDatabase {
     if (filter?.otherGroupingsByLabel && Array.isArray(filter.otherGroupingsByLabel)) {
       // Verify matches one of the UserIndexDefinition.labels
       const labels = appConfig.userLookups.indexes?.map(i => i.label) ?? []
-      for (const group of filter.otherGroupingsByLabel) {
-        const joinName = `accessUserGroupings${group.label}`
-        if (labels.includes(group.label) && group.ids.length && !joins.has(joinName)) {
+      for (const oGroup of filter.otherGroupingsByLabel) {
+        const joinName = `accessUserGroupings${oGroup.label}`
+        if (labels.includes(oGroup.label) && oGroup.ids.length && !joins.has(joinName)) {
           joins.set(joinName, `
             LEFT JOIN (
               SELECT DISTINCT userId, GROUP_CONCAT(accessUserGroupings.id SEPARATOR " ") AS ids
               FROM accessUserGroupings
-              WHERE accessUserGroupings.label = ${group.label} AND accessUserGroupings.id IN (${db.in(joinbinds, group.ids)})
+              WHERE accessUserGroupings.label = ${oGroup.label} AND accessUserGroupings.id IN (${db.in(joinbinds, oGroup.ids)})
               GROUP BY userId
             ) AS ${joinName} ON accessUsers.id = ${joinName}.userId
           `)
@@ -203,15 +203,16 @@ export namespace AccessDatabase {
       for (const idx of (appConfig.userLookups.indexes ?? [])) {
         if (user.otherInfo && Array.isArray(user.otherInfo[idx.label] && user.otherInfo[idx.label].length)) {
           const ibinds: any[] = []
+          const ids = idx.save ? idx.save(user.otherInfo[idx.label]) : user.otherInfo[idx.label]
           await db.insert(`
             INSERT INTO accessUserGroupings (userId, label, id)
-            VALUES ${db.in(ibinds, user.otherInfo[idx.label].map((g: string) => [userId, idx.label, g]))}
+            VALUES ${db.in(ibinds, ids)}
             ON DUPLICATE KEY UPDATE userId = userId
           `, ibinds)
           const dbinds: any[] = [userId, idx.label]
           await db.delete(`
             DELETE FROM accessUserGroupings
-            WHERE userId = ? AND label = ? AND id NOT IN (${db.in(dbinds, user.otherInfo[idx.label])})`)
+            WHERE userId = ? AND label = ? AND id NOT IN (${db.in(dbinds, ids.map((id: string) => [userId, idx.label, id]))})`)
         } else {
           await db.delete('DELETE FROM accessUserGroupings WHERE userId = ? AND label = ?', [userId, idx.label])
         }

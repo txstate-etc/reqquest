@@ -367,6 +367,10 @@ export interface Groupings {
     ids: Scalars['String'][]
     /** Label is the name of the grouping. Groupings are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles */
     label: Scalars['String']
+    /** Set this to true should be available as a filter in the User list view. */
+    useInFilters: (Scalars['Boolean'] | null)
+    /** Set this to true should be displayed as a column in the User list view. */
+    useInList: (Scalars['Boolean'] | null)
     __typename: 'Groupings'
 }
 
@@ -874,7 +878,7 @@ roles?: (Scalars['String'][] | null),search?: (Scalars['String'] | null),
 self?: (Scalars['Boolean'] | null)}
 
 
-/** A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutional-role", ids: ["Staff", "Student"] }, { label: "last-login", ids: ["2025-09-01T10:20:04"] }] */
+/** A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutionalRole", ids: ["Staff", "Student"] }, { label: "last-login", ids: ["2025-09-01T10:20:04"] }] */
 export interface AccessUserGroupingInput {ids: Scalars['ID'][],label: Scalars['String']}
 
 
@@ -1126,6 +1130,10 @@ export interface GroupingsGenqlSelection{
     ids?: boolean | number
     /** Label is the name of the grouping. Groupings are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles */
     label?: boolean | number
+    /** Set this to true should be available as a filter in the User list view. */
+    useInFilters?: boolean | number
+    /** Set this to true should be displayed as a column in the User list view. */
+    useInList?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }

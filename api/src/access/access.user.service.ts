@@ -1,5 +1,5 @@
 import { ManyJoinedLoader, OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { AuthService, Pagination, PaginationInfoWithTotalItems } from '../internal.js'
+import { appConfig, AuthService, Pagination, PaginationInfoWithTotalItems } from '../internal.js'
 import { AccessDatabase as database } from './access.database.js'
 import { type AccessUserFilter, AccessUser } from './access.model.js'
 import { intersect } from 'txstate-utils'
@@ -38,6 +38,7 @@ export class AccessUserService extends AuthService<AccessUser> {
     const users = await database.getAccessUsers(filter)
     this.loaders.prime(accessUsersByIdLoader, users)
     const total = users.length
+    // pageInfo.groupings = GroupingsCached.get()
     if (paged?.page || paged?.perPage) {
       // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
       pageInfo.perPage = paged?.perPage || 100 // 0 should also be overridden, so || is better than nullish coalescing ??

@@ -246,7 +246,7 @@ input AccessUserFilter {
 }
 
 """
-A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutional-role", ids: ["Staff", "Student"] }, { label: "last-login", ids: ["2025-09-01T10:20:04"] }]
+A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutionalRole", ids: ["Staff", "Student"] }, { label: "last-login", ids: ["2025-09-01T10:20:04"] }]
 """
 input AccessUserGroupingInput {
   ids: [ID!]!
@@ -847,6 +847,16 @@ type Groupings {
   Label is the name of the grouping. Groupings are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles
   """
   label: String!
+
+  """
+  Set this to true should be available as a filter in the User list view.
+  """
+  useInFilters: Boolean
+
+  """
+  Set this to true should be displayed as a column in the User list view.
+  """
+  useInList: Boolean
 }
 
 """

@@ -22,6 +22,12 @@ export class Groupings {
 
   @Field(type => [String], { description: 'IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"]' })
   ids!: string[]
+
+  @Field({ nullable: true, description: 'Set this to true should be displayed as a column in the User list view.' })
+  useInList?: boolean
+
+  @Field({ nullable: true, description: 'Set this to true should be available as a filter in the User list view.' })
+  useInFilters?: boolean
 }
 
 @ObjectType()

@@ -43,7 +43,8 @@ async function main () {
               groups: userTypes[userTypePrefixes.find(p => login.startsWith(p))!].groups,
               otherInfo: {
                 email: `${login}@txstate.edu`,
-                institutionalRoles: pseudoInstitutionalRoles(login)
+                institutionalRoles: pseudoInstitutionalRoles(login),
+                lastLogin: DateTime.fromJSDate(new Date())
               }
             })
           )
@@ -92,6 +93,11 @@ async function main () {
           label: 'institutionalRoles',
           displayLabel: 'Institutional Roles',
           useInFilters: true,
+          useInList: true
+        }, {
+          label: 'lastLogin',
+          displayLabel: 'Last Login',
+          useInFilters: false,
           useInList: true
         }]
       },
