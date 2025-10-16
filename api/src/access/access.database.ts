@@ -201,18 +201,24 @@ export namespace AccessDatabase {
       }
 
       for (const idx of (appConfig.userLookups.indexes ?? [])) {
-        if (user.otherInfo && Array.isArray(user.otherInfo[idx.label] && user.otherInfo[idx.label].length)) {
+        if (user.otherInfo && user.otherInfo[idx.label] != null) {
           const ibinds: any[] = []
           const ids = idx.save ? idx.save(user.otherInfo[idx.label]) : user.otherInfo[idx.label]
-          await db.insert(`
-            INSERT INTO accessUserGroupings (userId, label, id)
-            VALUES ${db.in(ibinds, ids)}
-            ON DUPLICATE KEY UPDATE userId = userId
-          `, ibinds)
-          const dbinds: any[] = [userId, idx.label]
-          await db.delete(`
-            DELETE FROM accessUserGroupings
-            WHERE userId = ? AND label = ? AND id NOT IN (${db.in(dbinds, ids.map((id: string) => [userId, idx.label, id]))})`)
+          // NOTE: DataType may not be an array, so save method should exist to convert into string[]
+          // But if save method is not implemented for incompatible DataType skipe saving as
+          // we do not wish to break transaction.
+          if (Array.isArray(ids)) {
+            await db.insert(`
+              INSERT INTO accessUserGroupings (userId, label, id)
+              VALUES ${db.in(ibinds, ids.map(id => [userId, idx.label, id]))}
+              ON DUPLICATE KEY UPDATE userId = userId
+            `, ibinds)
+            const dbinds: any[] = [userId, idx.label]
+            await db.delete(`
+              DELETE FROM accessUserGroupings
+              WHERE userId = ? AND label = ? AND id NOT IN (${db.in(dbinds, ids)})
+            `, dbinds)
+          }
         } else {
           await db.delete('DELETE FROM accessUserGroupings WHERE userId = ? AND label = ?', [userId, idx.label])
         }
@@ -274,13 +280,14 @@ export namespace AccessDatabase {
     `, binds)
   }
 
-  export async function getAccessUserGroupingsIdsByLabel (label: string) {
+  export async function getAccessUserGroupingsIdsByLabel (label: string): Promise<string[]> {
     const binds: any[] = []
-    return await db.getall<{ id: string }>(`
+    const rows = await db.getall<{ id: string }>(`
       SELECT DISTINCT id
       FROM accessUserGroupings
       WHERE label IN (${db.in(binds, [label])})
     `, binds)
+    return rows.map(i => i.id)
   }
 
   export async function getAllGroups () {

@@ -98,7 +98,8 @@ async function main () {
           label: 'lastLogin',
           displayLabel: 'Last Login',
           useInFilters: false,
-          useInList: true
+          useInList: true,
+          save: (data: DateTime) => [data.toString()]
         }]
       },
       groups: async (groupnames: string[]) => {

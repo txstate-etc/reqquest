@@ -1,8 +1,8 @@
 import { ManyJoinedLoader, OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { appConfig, AuthService, Pagination, PaginationInfoWithTotalItems } from '../internal.js'
-import { AccessDatabase as database } from './access.database.js'
+import { AccessDatabase, AccessDatabase as database } from './access.database.js'
 import { type AccessUserFilter, AccessUser } from './access.model.js'
-import { intersect } from 'txstate-utils'
+import { Cache, intersect } from 'txstate-utils'
 
 const accessUsersByIdLoader = new PrimaryKeyLoader({
   fetch: async (internalIds: number[]) => await database.getAccessUsers({ internalIds }),
@@ -25,6 +25,18 @@ const groupsByUserInternalIdLoader = new ManyJoinedLoader({
   fetch: async (userInternalIds: number[]) => await database.getGroupsByUserIds(userInternalIds)
 })
 
+const allGroupingsCache = new Cache(async () => {
+  const indexes = appConfig.userLookups.indexes
+  if (!indexes || !indexes.length) return []
+  const ids = await Promise.all(indexes.map(i => AccessDatabase.getAccessUserGroupingsIdsByLabel(i.label)))
+  const groupings = []
+  for (const i in indexes) {
+    const index = indexes[i]
+    groupings.push({ label: index.label, ids: ids[i], useInFilters: index.useInFilters, useInList: index.useInList })
+  }
+  return groupings
+}, { freshseconds: 30, staleseconds: 600 }) // 30 seconds, 5 minutes
+
 export class AccessUserService extends AuthService<AccessUser> {
   async find (pageInfo: PaginationInfoWithTotalItems, filter?: AccessUserFilter, paged?: Pagination) {
     if (filter?.self && this.user) {
@@ -38,7 +50,7 @@ export class AccessUserService extends AuthService<AccessUser> {
     const users = await database.getAccessUsers(filter)
     this.loaders.prime(accessUsersByIdLoader, users)
     const total = users.length
-    // pageInfo.groupings = GroupingsCached.get()
+    pageInfo.groupings = await allGroupingsCache.get()
     if (paged?.page || paged?.perPage) {
       // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
       pageInfo.perPage = paged?.perPage || 100 // 0 should also be overridden, so || is better than nullish coalescing ??
