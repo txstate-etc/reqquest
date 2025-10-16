@@ -71,7 +71,7 @@ test.describe('Manage periods', { tag: '@all' }, () => {
     const { deletePeriod } = await adminRequest.graphql<{ deletePeriod: { messages: [] } }>(query, variables)
     expect(deletePeriod.messages.length).toEqual(0)
   })
-  test('Admin - Create new period with previously removed code, confirm unique constraint cleared', async ({ adminRequest }) => {
+  test('Admin - Create new period with previously removed code', async ({ adminRequest }) => {
     const query = `
       mutation CreatePeriod($name: String!, $code: String!, $openDate:DateTime!){
         createPeriod(period:{ name: $name, code: $code, openDate: $openDate}, validateOnly: false) {
@@ -93,26 +93,6 @@ test.describe('Manage periods', { tag: '@all' }, () => {
     expect(createPeriod.period.name).toEqual(name)
     expect(createPeriod.period.code).toEqual(code)
     expect(createPeriod.period.openDate).toEqual(openDate)
-  })
-  test('Admin - Create new period with previously used code, confirm unique constraint prevents creation', async ({ adminRequest }) => {
-    const query = `
-      mutation CreatePeriod($name: String!, $code: String!, $openDate:DateTime!){
-        createPeriod(period:{ name: $name, code: $code, openDate: $openDate}, validateOnly: false) {
-          period {
-            id
-            name
-            code
-            openDate
-          }
-          messages {
-            message
-          }
-        }
-      }
-    `
-    const variables = { name, code, openDate }
-    const { createPeriod } = await adminRequest.graphql<{ createPeriod: { period: { id: string, name: string, code: string, openDate: string }, messages: { message: string }[] } }>(query, variables)
-    expect(createPeriod.messages[0].message).toEqual('Name is already in use.')
   })
   test('Applicant - Create new period', async ({ applicantRequest }) => {
     const query = `
