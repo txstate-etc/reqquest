@@ -192,7 +192,11 @@
                 </Form>
               {:else}
                 {#if prompt.answered}
-                  <svelte:component this={def.displayComponent} data={appRequest.data[prompt.key] ?? {}}/>
+                  <svelte:component this={def.displayComponent}  
+                    data={appRequest.data[prompt.key] ?? {}} 
+                    appRequestId={appRequest.id}
+                    configData={prompt.relatedConfigurationData[prompt.key] ?? {}}
+                    relatedConfigData={prompt.relatedConfigurationData ?? {}}/>
                 {:else}
                   Not fully answered yet.
                 {/if}

@@ -12,7 +12,7 @@
   let objURL: string | null = null
   let displayIdFileErr: string | null
   let modalOpen = false
-  $: requiredResidentState = `${relatedConfigData.state_residence_req.requiredResidentState}`
+  $: residentOfState = (relatedConfigData?.state_residence_req) ? `${relatedConfigData.state_residence_req.residentOfState}` : 'NO state_residence_req related'
   async function displayIdFile(): Promise<boolean> {
     if (objURL) { // id file already downloaded
       displayIdFileErr = null
@@ -37,17 +37,14 @@
     return true
   }
 </script>
-{#each Object.entries($$props) as [key, value]}
-    <p>{key}: {JSON.stringify(value)}</p>
-{/each}
 {#if data.residentOfRequiredState}
-   <p>Resident of {requiredResidentState} </p><!-- Config data does not seem to be available for display prompt {resultText}. -->
+   <p>Resident of {residentOfState} </p><!-- Config data does not seem to be available for display prompt {resultText}. -->
    <br>
    <p>
       <b>
         {data.firstName} {data.lastName} <br/>
         {data.streetAddress} <br/>
-        {data.city}, {requiredResidentState} {data.zipCode}
+        {data.city}, {residentOfState} {data.zipCode}
       </b>
    </p>  
    <br/> 
@@ -55,7 +52,7 @@
       <Button on:click={async () => modalOpen = await displayIdFile()}>Display Id file</Button>      
    </p>
 {:else}
-  <p>Not a resident of {requiredResidentState}.</p>
+  <p>Not a resident of {residentOfState}.</p>
 {/if}
 
 <Modal

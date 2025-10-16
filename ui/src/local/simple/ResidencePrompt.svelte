@@ -5,9 +5,6 @@
   export let data: Partial<StateResidencePromptData>
   $: legendText = `Are you a resident of ${relatedConfigData.state_residence_req.residentOfState}?`  
 </script>
-{#each Object.entries($$props) as [key, value]}
-    <p>{key}: {JSON.stringify(value)}</p>
-{/each}
 <FieldRadio boolean path="residentOfRequiredState" legendText="{legendText}" items={[{ label: 'Yes', value: true }, { label: 'No', value: false }]} />
 {#if !!data.residentOfRequiredState}
   <FieldTextInput path="firstName" labelText="* Firstname" />

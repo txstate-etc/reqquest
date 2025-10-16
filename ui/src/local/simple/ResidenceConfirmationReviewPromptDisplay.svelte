@@ -2,7 +2,7 @@
   import type { StateResidencePromptReviewData } from './types.js'
   export let data: StateResidencePromptReviewData
   export let relatedConfigData
-  $: stateText = (relatedConfigData.state_residence_req?.residentOfState) ? relatedConfigData.state_residence_req.residentOfState : 'Who knows(shrug) Need applicant req config data'
+  $: stateText = (relatedConfigData?.state_residence_req?.residentOfState) ? relatedConfigData.state_residence_req.residentOfState : '...Who knows(shrug) Need applicant req config data'
 </script>
 
 Applicant is {!data.residentOfRequiredState ? ' NOT ' : ''} a resident of {`${stateText}`}.<br>
