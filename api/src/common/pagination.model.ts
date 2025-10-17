@@ -16,15 +16,24 @@ export class PaginationWithCursor extends Pagination {
 }
 
 @ObjectType()
+export class CategoryTag {
+  @Field({ description: 'This is the string representation of a label id and is what is stored and searched for in the database.' })
+  index!: string
+
+  @Field({ nullable: true, description: 'This is user friendly version of the index displayed in the UI Filter. This value should be unique enough to be distinguishable between other tags.' })
+  tag?: string
+}
+
+@ObjectType()
 export class Category {
   @Field({ description: 'Label is the name of the category. Categories are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles' })
   label!: string
 
   @Field({ description: 'Displayed Label for category. i.e. Institutional Roles' })
-  displayLabel?: string
+  heading?: string
 
-  @Field(type => [String], { description: 'IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"]' })
-  ids!: string[]
+  @Field(type => [CategoryTag], { description: 'IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"]' })
+  tags!: CategoryTag[]
 
   @Field({ nullable: true, description: 'Set this to true should be displayed as a column in the User list view.' })
   useInList?: boolean

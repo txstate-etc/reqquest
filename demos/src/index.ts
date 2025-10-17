@@ -7,6 +7,7 @@ import { simpleTestMigrations } from './simple/testdata.js'
 import { DateTime } from 'luxon'
 import { foster_a_pet_program as multi_foster_a_pet_program, adopt_a_dog_program as multi_adopt_a_dog_program, adopt_a_cat_program as multi_adopt_a_cat_program } from './multi/definitions/programs.js'
 import { multiTestMigrations } from './multi/testdata.js'
+import { StringifyOptions } from 'node:querystring'
 
 async function main () {
   const server = new RQServer({
@@ -43,23 +44,29 @@ async function main () {
               groups: userTypes[userTypePrefixes.find(p => login.startsWith(p))!].groups,
               otherInfo: {
                 email: `${login}@txstate.edu`,
-                institutionalRoles: pseudoInstitutionalRoles(login),
-                lastLogin: DateTime.fromJSDate(new Date())
+                labels: {
+                  institutionalRoles: pseudoInstitutionalRoles(login),
+                  lastLogin: DateTime.fromJSDate(new Date())
+                }
               }
             })
           )
         },
         indexes: [{
           label: 'institutionalRoles',
-          displayLabel: 'Institutional Roles',
+          heading: 'Institutional Roles',
           useInFilters: true,
-          useInList: true
+          useInList: true,
+          dataToIndexes: (data: string[]) => data,
+          indexesToTags: (indexes: string[]) => indexes.map(idx => ({ index: idx, tag: idx }))
+
         }, {
           label: 'lastLogin',
-          displayLabel: 'Last Login',
+          heading: 'Last Login',
           useInFilters: false,
           useInList: true,
-          save: (data: DateTime) => [data.toString()]
+          dataToIndexes: (data: DateTime) => [data.toString()],
+          indexesToTags: (indexes: string[]) => indexes.map(idx => ({ index: idx, tag: idx }))
         }]
       },
       groups: async (groupnames: string[]) => {

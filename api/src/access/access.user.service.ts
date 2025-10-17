@@ -1,5 +1,5 @@
 import { ManyJoinedLoader, OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { appConfig, AuthService, Pagination, PaginationInfoWithTotalItems } from '../internal.js'
+import { appConfig, AuthService, Category, Pagination, PaginationInfoWithTotalItems } from '../internal.js'
 import { AccessDatabase, AccessDatabase as database } from './access.database.js'
 import { type AccessUserFilter, AccessUser } from './access.model.js'
 import { Cache, intersect } from 'txstate-utils'
@@ -28,11 +28,16 @@ const groupsByUserInternalIdLoader = new ManyJoinedLoader({
 const allCategoryCache = new Cache(async () => {
   const indexes = appConfig.userLookups.indexes
   if (!indexes || !indexes.length) return []
-  const ids = await Promise.all(indexes.map(i => AccessDatabase.getaccessUserCategoryIdsByLabel(i.label)))
-  const categories = []
+  const tagss = await Promise.all(indexes.map(i => AccessDatabase.getaccessUserCategoryIdsByLabel(i.label)))
+  const categories: Category[] = []
   for (const i in indexes) {
     const index = indexes[i]
-    categories.push({ label: index.label, displayLabel: index.displayLabel, ids: ids[i], useInFilters: index.useInFilters, useInList: index.useInList })
+    categories.push({
+      label: index.label,
+      heading: index.heading,
+      tags: index.indexesToTags(tagss[i]),
+      useInFilters: index.useInFilters,
+      useInList: index.useInList })
   }
   return categories
 }, { freshseconds: 30, staleseconds: 600 }) // 30 seconds, 5 minutes

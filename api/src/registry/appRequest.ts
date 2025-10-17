@@ -1,5 +1,5 @@
 import { FastifyRequest } from 'fastify'
-import { AccessRoleGroup, AccessUser, AccessUserCategoryInput, AccessUserIdentifierInput, ApplicationPhase, AppRequest, AppRequestStatus, RQContext, RQContextClass } from '../internal.js'
+import { AccessUser, AccessUserCategoryInput, AccessUserIdentifierInput, ApplicationPhase, AppRequest, AppRequestStatus, CategoryTag, RQContext, RQContextClass } from '../internal.js'
 import { DateTime } from 'luxon'
 
 export interface AppRequestData {
@@ -49,32 +49,39 @@ export interface SearchUsersFilter {
  */
 export interface UserIndexDefinition<DataType = any> {
   /**
-   * A unique, case-insensitive, stable key for the index. This will be used to namespace
-   * category values for a label.
+   * A unique key used to namespace categories.
    */
   label: string
   /**
-   * Used to display the category label name and does not need to be Unique, nor is required
-   * as the label value may be used to display when this field is left absent.
+   * Used to display the category name for the UI column headers.
+   * If not available then the label value will be used for the header.
    */
-  displayLabel?: string
+  heading?: string
   /**
    * Set this to true should be displayed as a column in the User list view.
+   * default is false.
    */
   useInList?: boolean
   /**
    * Set this to true should be available as a filter in the User list view.
    * The two or three of the first available filters will be used as quick filters,
    * the rest will be in the filter UI popout. Note that if Filter will only be available
-   * should there be more then one value to filter on.
+   * should there be more then one value to filter on. default is false.
    */
   useInFilters?: boolean
   /**
    * Convert all existing distinct DataType/ids associate with the label
-   * into an array of strings to be saved and indexed into the database.
-   * If already an array of strings then may be optional.
+   * into an array of strings to be used as index values saved in the
+   * database. If already an array of unique strings then may be optional.
+   * Date may be converted to Epoc for sorting, or spacing may be converted
+   * to dashes.
    */
-  save?: (data: DataType) => string[]
+  dataToIndexes: (data: DataType) => string[]
+  /**
+   * Convert indexes associated with the category label into an array of
+   * tags to be displayed by the UI. Date may come out as '10/17/2024'
+   */
+  indexesToTags: (indexes: string[]) => CategoryTag[]
 }
 
 export interface AppDefinition {
