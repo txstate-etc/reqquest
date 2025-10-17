@@ -1,4 +1,4 @@
-import { AccessUser, RQServer, SearchUsersFilter } from '@reqquest/api'
+import { RQServer } from '@reqquest/api'
 import { analyticsPlugin, unifiedAuthenticate } from 'fastify-txstate'
 import { have_yard_prompt, adopt_a_dog_program, have_big_yard_req, have_adequate_personal_space_req, adopt_a_cat_program, cat_tower_req, not_allergic_to_tuna_req, have_a_cat_tower_prompt, not_allergic_to_tuna_prompt, applicant_seems_nice_req, applicant_seems_nice_prompt, must_exercise_your_dog_req, must_exercise_your_dog_prompt, which_state_req, which_state_prompt, other_cats_applicant_req, other_cats_prompt, other_cats_vaccines_prompt, other_cats_reviewer_req, vaccine_review_prompt } from './default/index.js'
 import { adopt_a_pet_program, state_residence_confirmation_prompt, state_residence_confirmation_req, state_residence_prompt, state_residence_req } from './simple/index.js'
@@ -48,46 +48,6 @@ async function main () {
               }
             })
           )
-        },
-        searchUsers: async (query: SearchUsersFilter) => {
-          const pseudoInstitutionalRoles = (login: string) => {
-            if (login.startsWith('su')) return ['Staff']
-            if (login.startsWith('admin')) return ['Staff', 'Faculty']
-            if (login.startsWith('review')) return ['Faculty']
-            return ['Student']
-          }
-          // Last login is now saved in the database and should be updated upon login
-          // const pseudoLastLogin = (roles: string[]) => {
-          //   const seconds = new Date().getTime() / 1000
-          //   if (roles.includes('Staff')) return DateTime.fromSeconds(seconds - 60)
-          //   if (roles.includes('Faculty')) return DateTime.fromSeconds(seconds - 60 * 60)
-          //   return DateTime.fromSeconds(seconds - 60 * 60 * 24)
-          // }
-          const rolesMatch = (filterRoles: string[], userRoles: string[]): boolean => {
-            for (const fr of filterRoles) {
-              if (userRoles.includes(fr)) return true
-            }
-            return false
-          }
-          const institutionalRolesFilter = query.groups ?? []
-          const users: AccessUser[] = []
-          // if query users exists then add external information and filter
-          if (Array.isArray(query.users) && query.users.length > 0) {
-            for (const user of query.users) {
-              const institutionalRoles = pseudoInstitutionalRoles(user.login)
-              // const lastLogin = pseudoLastLogin(institutionalRoles)
-              if (institutionalRolesFilter.length === 0 || rolesMatch(institutionalRolesFilter, institutionalRoles)) {
-                user.otherInfo = user.otherInfo ?? {}
-                user.otherInfo.institutionalRoles = institutionalRoles
-                // user.otherInfo.lastLogin = lastLogin
-                users.push(user)
-              }
-            }
-          } else {
-            // TODO: pull all data from external data storage.
-          }
-          return users
-          // return [{ groups: ['applicants'], otherInfo: { email: 'applicant@txstate.edu' }, login: 'applicant', fullname: 'Applicant Fullname' }]
         },
         indexes: [{
           label: 'institutionalRoles',

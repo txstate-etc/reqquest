@@ -104,18 +104,9 @@ export interface AppDefinition {
      */
     byLogins: (logins: string[], applicableGroups: string[]) => Promise<ReqquestUser[]>
     /**
-     * Provide a function that will return a list of users, given a search query users,
-     * identifiers, groups, or other indexed category information.
-     *
-     * The function should return the search results of user objects, where the user object contains the login,
-     * fullname, and (application) groups, or other catetories (such as Institution Roles) the user belongs to.
-     * The list of users objects may be retrieved locally or from an outside database or system such as LDAP.
-     * Upon login the data will be retrieved per user and updated and saved within the database.
-     *
-     */
-    searchUsers?: (query: SearchUsersFilter) => Promise<AccessUser[]>
-    /**
      * List of categories to index. List is ordered by how they are displayed in the user listing columns.
+     * All category information must be provided when calling byLogins as that method is used by auth
+     * to save the remote data within the otherInfo field.
      */
     indexes?: UserIndexDefinition[]
   }
