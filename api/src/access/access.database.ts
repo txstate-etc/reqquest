@@ -160,7 +160,7 @@ export namespace AccessDatabase {
     for (const idx of appConfig.userLookups.indexes ?? []) {
       if (info.labels[idx.label]) {
         const indexes = idx.dataToIndexes(info.labels[idx.label])
-        info.tags[idx.label] = idx.indexesToTags ? idx.indexesToTags(indexes).map(it => it.tag) : indexes
+        info.tags[idx.label] = idx.indexesToTags ? idx.indexesToTags(indexes).map(it => it.tag ?? it.index) : indexes
       }
     }
     return info
