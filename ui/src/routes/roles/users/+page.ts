@@ -53,15 +53,21 @@ export const load: PageLoad = async ({ url, depends }) => {
       // institutionalRoles: u.otherInfo?.institutionalRoles ?? [],
       // lastLogin: u.otherInfo?.lastLogin ? DateTime.fromISO(u.otherInfo?.lastLogin).toFormat('MM/dd/yyyy') : 'unknown'
     }
-    if (u.otherInfo) {
+    if (u.otherInfo?.tags) {
       for (const group of pageInfo?.categories ?? []) {
         const label = group.label
-        if (group.useInList) user[label] = Array.isArray(u.otherInfo[label]) ? u.otherInfo[label].join(', ') : u.otherInfo[label].toString()
+        if (group.useInList) user[label] = Array.isArray(u.otherInfo.tags[label]) ? u.otherInfo.tags[label].join(', ') : undefined
       }
     }
     return user
   })
 
+  interface Filter {
+    id: string
+    label: string
+    items: ComboMenuItem[]
+  }
+  const filters: Filter[] = []
   const columns: ColumnDefinition<User>[] = [
     { id: 'contact', label: 'Name', get: 'contact' },
     { id: 'id', label: 'IDs', get: 'ids' },
@@ -71,16 +77,10 @@ export const load: PageLoad = async ({ url, depends }) => {
     // { id: 'institutionalRoles', label: 'Institutional Roles', render: user => user['institutionalRoles'] ? user['institutionalRoles'].join(', ') : '' },
     // { id: 'lastLogin', label: 'Last Login', get: 'lastLogin' }
   ]
-  interface Filter {
-    id: string
-    label: string
-    items: ComboMenuItem[]
-  }
-  const filters: Filter[] = []
   for (const group of pageInfo?.categories ?? []) {
     const label = group.label
-    if (group.useInList) columns.push({ id: label, label: group.displayLabel ? group.displayLabel : label, get: label })
-    if (group.useInFilters) filters.push({ id: group.label, label: group.displayLabel, items: group.ids.map(id => ({ value: id })) })
+    if (group.useInList) columns.push({ id: label, label: group.heading ?? label, get: label })
+    if (group.useInFilters) filters.push({ id: group.label, label: group.heading ?? label, items: group.tags.map(tag => ({ value: tag.index, label: tag.tag ?? tag.index })) })
   }
 
   depends('api:getAccessUsers')

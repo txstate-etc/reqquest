@@ -3,12 +3,11 @@
   import type { PageData } from './$types'
   import { Pagination } from '@txstate-mws/carbon-svelte'
   import { DateTime } from 'luxon';
-  import type { Groupings } from '$lib';
 
   export let data: PageData
   $: ({ columns, rows, filters, page, totalItems, availableApplicationRoles } = data)
 
-  function handlePagination(event: CustomEvent<{ page: number, pageSize: number, totalItems: number, groupings: Groupings[]}>) {
+  function handlePagination(event: CustomEvent<{ page: number, pageSize: number, totalItems: number}>) {
     // event: {"isTrusted": false}
     console.debug(`handlePagination event: ${JSON.stringify(event)}`)
   }

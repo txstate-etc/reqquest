@@ -350,16 +350,24 @@ export type ApplicationStatus = 'ACCEPTED' | 'ELIGIBLE' | 'INELIGIBLE' | 'PENDIN
 
 export interface Category {
     /** Displayed Label for category. i.e. Institutional Roles */
-    displayLabel: Scalars['String']
-    /** IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"] */
-    ids: Scalars['String'][]
+    heading: (Scalars['String'] | null)
     /** Label is the name of the category. Categories are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles */
     label: Scalars['String']
+    /** IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"] */
+    tags: CategoryTag[]
     /** Set this to true should be available as a filter in the User list view. */
     useInFilters: (Scalars['Boolean'] | null)
     /** Set this to true should be displayed as a column in the User list view. */
     useInList: (Scalars['Boolean'] | null)
     __typename: 'Category'
+}
+
+export interface CategoryTag {
+    /** This is the string representation of a label id and is what is stored and searched for in the database. */
+    index: Scalars['String']
+    /** This is user friendly version of the index displayed in the UI Filter. This value should be unique enough to be distinguishable between other tags. */
+    tag: (Scalars['String'] | null)
+    __typename: 'CategoryTag'
 }
 
 export interface Configuration {
@@ -1103,15 +1111,24 @@ export interface ApplicationRequirementGenqlSelection{
 
 export interface CategoryGenqlSelection{
     /** Displayed Label for category. i.e. Institutional Roles */
-    displayLabel?: boolean | number
-    /** IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"] */
-    ids?: boolean | number
+    heading?: boolean | number
     /** Label is the name of the category. Categories are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles */
     label?: boolean | number
+    /** IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"] */
+    tags?: CategoryTagGenqlSelection
     /** Set this to true should be available as a filter in the User list view. */
     useInFilters?: boolean | number
     /** Set this to true should be displayed as a column in the User list view. */
     useInList?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface CategoryTagGenqlSelection{
+    /** This is the string representation of a label id and is what is stored and searched for in the database. */
+    index?: boolean | number
+    /** This is user friendly version of the index displayed in the UI Filter. This value should be unique enough to be distinguishable between other tags. */
+    tag?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -1673,6 +1690,14 @@ export interface ValidatedResponseGenqlSelection{
     export const isCategory = (obj?: { __typename?: any } | null): obj is Category => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isCategory"')
       return Category_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const CategoryTag_possibleTypes: string[] = ['CategoryTag']
+    export const isCategoryTag = (obj?: { __typename?: any } | null): obj is CategoryTag => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCategoryTag"')
+      return CategoryTag_possibleTypes.includes(obj.__typename)
     }
     
 

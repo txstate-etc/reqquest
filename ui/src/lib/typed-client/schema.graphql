@@ -807,17 +807,17 @@ enum ApplicationStatus {
 
 type Category {
   """Displayed Label for category. i.e. Institutional Roles"""
-  displayLabel: String!
-
-  """
-  IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"]
-  """
-  ids: [String!]!
+  heading: String
 
   """
   Label is the name of the category. Categories are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles
   """
   label: String!
+
+  """
+  IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"]
+  """
+  tags: [CategoryTag!]!
 
   """
   Set this to true should be available as a filter in the User list view.
@@ -828,6 +828,18 @@ type Category {
   Set this to true should be displayed as a column in the User list view.
   """
   useInList: Boolean
+}
+
+type CategoryTag {
+  """
+  This is the string representation of a label id and is what is stored and searched for in the database.
+  """
+  index: String!
+
+  """
+  This is user friendly version of the index displayed in the UI Filter. This value should be unique enough to be distinguishable between other tags.
+  """
+  tag: String
 }
 
 type Configuration {

@@ -154,13 +154,13 @@ export namespace AccessDatabase {
     return rows.map(row => new AccessUser(row))
   }
 
-  function updateOtherInfoCatetories (info: any | undefined): any {
+  function updateOtherInfoTags (info: any | undefined): any {
     if (info?.labels == null) return info
     info.tags ??= {}
     for (const idx of appConfig.userLookups.indexes ?? []) {
       if (info.labels[idx.label]) {
         const indexes = idx.dataToIndexes(info.labels[idx.label])
-        info.tags[idx.label] = idx.indexesToTags ? idx.indexesToTags(indexes) : indexes
+        info.tags[idx.label] = idx.indexesToTags ? idx.indexesToTags(indexes).map(it => it.tag) : indexes
       }
     }
     return info
@@ -171,7 +171,7 @@ export namespace AccessDatabase {
       INSERT INTO accessUsers (login, fullname, otherInfo)
       VALUES (?, ?, ?)
       ON DUPLICATE KEY UPDATE fullname = VALUES(fullname), otherInfo = VALUES(otherInfo)
-    `, [user.login, user.fullname, JSON.stringify(updateOtherInfoCatetories(user.otherInfo))])
+    `, [user.login, user.fullname, JSON.stringify(updateOtherInfoTags(user.otherInfo))])
     await db.transaction(async db => {
       const userId = await db.getval('SELECT id FROM accessUsers WHERE login = ? FOR UPDATE', [user.login])
 
@@ -213,9 +213,9 @@ export namespace AccessDatabase {
       }
 
       for (const idx of (appConfig.userLookups.indexes ?? [])) {
-        if (user.otherInfo && user.otherInfo[idx.label] != null) {
+        if (user.otherInfo?.labels && user.otherInfo.labels[idx.label] != null) {
           const ibinds: any[] = []
-          const ids = idx.dataToIndexes ? idx.dataToIndexes(user.otherInfo[idx.label]) : user.otherInfo[idx.label]
+          const ids = idx.dataToIndexes(user.otherInfo.labels[idx.label])
           // NOTE: DataType may not be an array, so save method should exist to convert into string[]
           // But if save method is not implemented for incompatible DataType skipe saving as
           // we do not wish to break transaction.

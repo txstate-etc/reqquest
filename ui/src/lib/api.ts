@@ -62,9 +62,12 @@ class API extends APIBase {
           hasNextPage: true,
           perPage: true,
           categories: {
-            ids: true,
+            tags: {
+              index: true,
+              tag: true
+            },
             label: true,
-            displayLabel: true,
+            heading: true,
             useInFilters: true,
             useInList: true
           }

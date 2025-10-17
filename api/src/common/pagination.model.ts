@@ -29,7 +29,7 @@ export class Category {
   @Field({ description: 'Label is the name of the category. Categories are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles' })
   label!: string
 
-  @Field({ description: 'Displayed Label for category. i.e. Institutional Roles' })
+  @Field({ nullable: true, description: 'Displayed Label for category. i.e. Institutional Roles' })
   heading?: string
 
   @Field(type => [CategoryTag], { description: 'IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"]' })
