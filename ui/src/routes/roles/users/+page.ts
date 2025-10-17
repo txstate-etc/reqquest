@@ -1,10 +1,13 @@
 import { api } from '$lib'
-import { extractMergedFilters, extractPaginationParams, type ColumnDefinition } from '@txstate-mws/carbon-svelte'
+import { extractMergedFilters, extractPaginationParams, type ColumnDefinition, type ComboMenuItem } from '@txstate-mws/carbon-svelte'
 import type { PageLoad } from './$types'
 import type { AccessUserFilter, Pagination } from '$lib'
+import { omit } from 'txstate-utils'
 
 export const load: PageLoad = async ({ url, depends }) => {
-  const { search, applicationRoles } = extractMergedFilters(url)
+  const query = extractMergedFilters(url)
+  const { search, applicationRoles } = query
+  const groupingsQuery = omit(query, 'search', 'applicationRoles')
   const { page, pagesize } = extractPaginationParams(url)
   const pageFilter: Pagination = { page, perPage: pagesize }
   // Get access data
@@ -15,11 +18,13 @@ export const load: PageLoad = async ({ url, depends }) => {
     accessUsersFilter.roles = applicationRoles
   }
   // Dynamically add groupings
-  // const groupings = new Map<string, string[]>()
-  // if (Array.isArray(institutionalRoles) && institutionalRoles.length > 0) {
-  //   for (const id of institutionalRoles) groupings.push({ label: 'institutionalRole', id })
-  // }
-  // if (groupings.size > 0) accessUsersFilter.otherGroupingsByLabel = Array.from(groupings).map(g => ({ label: g[0], ids: g[1] }))
+  const groupings = Object.keys(groupingsQuery)
+  for (const grouping of groupings) {
+    if (groupingsQuery[grouping] != null) {
+      accessUsersFilter.otherGroupingsByLabel ??= []
+      accessUsersFilter.otherGroupingsByLabel.push({ label: grouping, ids: groupingsQuery[grouping] })
+    }
+  }
   const { users, pageInfo } = await api.getAccessUsers(accessUsersFilter, pageFilter)
 
   interface User {
@@ -66,12 +71,18 @@ export const load: PageLoad = async ({ url, depends }) => {
     // { id: 'institutionalRoles', label: 'Institutional Roles', render: user => user['institutionalRoles'] ? user['institutionalRoles'].join(', ') : '' },
     // { id: 'lastLogin', label: 'Last Login', get: 'lastLogin' }
   ]
+  interface Filter {
+    id: string
+    label: string
+    items: ComboMenuItem[]
+  }
+  const filters: Filter[] = []
   for (const group of pageInfo?.groupings ?? []) {
     const label = group.label
     if (group.useInList) columns.push({ id: label, label: group.displayLabel ? group.displayLabel : label, get: label })
-    // if (group.useInFilters)
+    if (group.useInFilters) filters.push({ id: group.label, label: group.displayLabel, items: group.ids.map(id => ({ value: id })) })
   }
 
   depends('api:getAccessUsers')
-  return { columns, rows, page: pageInfo?.currentPage, totalItems: pageInfo?.totalItems }
+  return { columns, rows, filters, page: pageInfo?.currentPage, totalItems: pageInfo?.totalItems }
 }

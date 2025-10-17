@@ -6,7 +6,7 @@
   import type { Groupings } from '$lib';
 
   export let data: PageData
-  $: ({ columns, rows, page, totalItems, availableApplicationRoles } = data)
+  $: ({ columns, rows, filters, page, totalItems, availableApplicationRoles } = data)
 
   function handlePagination(event: CustomEvent<{ page: number, pageSize: number, totalItems: number, groupings: Groupings[]}>) {
     // event: {"isTrusted": false}
@@ -30,7 +30,9 @@
   on:mount={e => { usersSearchFormData = e.detail }}>
   <svelte:fragment slot="quickfilters">
     <FieldMultiselect path="applicationRoles" label="Application Roles" items={availableApplicationRoles} />
-    <!-- <FieldMultiselect path="institutionalRoles" label="Institutional Roles" items={availableInstitutionalRoles} /> -->
+    {#each filters ?? [] as filter, index (filter.id)}
+    <FieldMultiselect path={filter.id} label={filter.label} items={filter.items} />
+    {/each}
   </svelte:fragment>
 </FilterUI>
 <ColumnList

@@ -131,7 +131,7 @@ export namespace AccessDatabase {
             LEFT JOIN (
               SELECT DISTINCT userId, GROUP_CONCAT(accessUserGroupings.id SEPARATOR " ") AS ids
               FROM accessUserGroupings
-              WHERE accessUserGroupings.label = ${oGroup.label} AND accessUserGroupings.id IN (${db.in(joinbinds, oGroup.ids)})
+              WHERE accessUserGroupings.label = '${oGroup.label}' AND accessUserGroupings.id IN (${db.in(joinbinds, oGroup.ids)})
               GROUP BY userId
             ) AS ${joinName} ON accessUsers.id = ${joinName}.userId
           `)
