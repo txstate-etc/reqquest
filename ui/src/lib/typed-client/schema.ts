@@ -407,7 +407,7 @@ export interface Mutation {
     acceptOffer: ValidatedAppRequestResponse
     /** Add a note to the app request. */
     addNote: ValidatedAppRequestResponse
-    /** Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to READY_FOR_OFFER. If all applications are READY_FOR_OFFER, automatically triggers the app request makeOffer mutation. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation. */
+    /** Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation. */
     advanceWorkflow: ValidatedAppRequestResponse
     /** Cancel or withdraw the app request, depending on its current phase. This is only available if the app request is in a cancellable state. */
     cancelAppRequest: ValidatedAppRequestResponse
@@ -622,7 +622,7 @@ export interface RequirementPrompt {
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
     preloadData: (Scalars['JsonData'] | null)
     /** All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it. */
-    relatedConfigurationData: Scalars['JsonData']
+    relatedConfigData: Scalars['JsonData']
     /** The requirement that this prompt is associated with. */
     requirement: ApplicationRequirement
     /** A human readable title for the prompt. This is what will be shown to users. */
@@ -1177,7 +1177,7 @@ export interface MutationGenqlSelection{
     addNote?: (ValidatedAppRequestResponseGenqlSelection & { __args: {content: Scalars['String'], 
     /** If true, the note will be marked as internal and only visible to reviewers. */
     internal: Scalars['Boolean']} })
-    /** Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to READY_FOR_OFFER. If all applications are READY_FOR_OFFER, automatically triggers the app request makeOffer mutation. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation. */
+    /** Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation. */
     advanceWorkflow?: (ValidatedAppRequestResponseGenqlSelection & { __args: {applicationId: Scalars['ID']} })
     /** Cancel or withdraw the app request, depending on its current phase. This is only available if the app request is in a cancellable state. */
     cancelAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID'], 
@@ -1441,7 +1441,7 @@ export interface RequirementPromptGenqlSelection{
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
     /** All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it. */
-    relatedConfigurationData?: boolean | number
+    relatedConfigData?: boolean | number
     /** The requirement that this prompt is associated with. */
     requirement?: ApplicationRequirementGenqlSelection
     /** A human readable title for the prompt. This is what will be shown to users. */

@@ -1,26 +1,25 @@
 <script lang="ts">
-  import { ActionSet, Panel, TagSet } from "@txstate-mws/carbon-svelte"
-  import { Tab, TabContent, Tabs, Tag } from "carbon-components-svelte"
-  import { uiRegistry } from "../../local"
-  import { invalidate } from "$app/navigation"
-  import { api } from "$lib/api"
+  import { ActionSet, Panel, TagSet } from '@txstate-mws/carbon-svelte'
+  import { Tab, TabContent, Tabs, Tag } from 'carbon-components-svelte'
+  import { uiRegistry } from '../../local'
+  import { invalidate } from '$app/navigation'
+  import { api } from '$lib/api'
   import { page } from '$app/stores'
   import SettingsEdit from 'carbon-icons-svelte/lib/SettingsEdit.svelte'
   import View from 'carbon-icons-svelte/lib/View.svelte'
-
 
   export let program: any
   export let sharedProgramRequirements: any
   export let openModal: any
   export let onClick: any
-  
+
   const disablePeriodProgram = (requirementKey: string) => async () => {
-    const res = await api.disablePeriodProgramRequirements($page.params.id!, requirementKey, true)
+    const res = await api.disablePeriodProgramRequirements($page.params.id, requirementKey, true)
     await invalidate('api:getPeriodConfigurations')
   }
 
   const enablePeriodProgram = (requirementKey: string) => async () => {
-    const res = await api.disablePeriodProgramRequirements($page.params.id!, requirementKey, false)
+    const res = await api.disablePeriodProgramRequirements($page.params.id, requirementKey, false)
     await invalidate('api:getPeriodConfigurations')
   }
 
@@ -36,13 +35,13 @@
         <TabContent>
           {#each enabledRequirements as requirement (requirement.key)}
             {@const reqDef = uiRegistry.getRequirement(requirement.key)}
-            <Panel title={requirement.title} expandable noPrimaryAction actions={[{ label: 'Configure requirement', onClick: onClick('requirement', requirement), disabled: reqDef.configureComponent == null || !requirement.configuration.actions.update }, { label: 'Disable Requirement', onClick: disablePeriodProgram(requirement.key) }]}>
+            <Panel title={requirement.title} expandable noPrimaryAction actions={[{ label: 'Configure requirement', onClick: onClick('requirement', requirement), disabled: reqDef?.configureComponent == null || !requirement.configuration.actions.update }, { label: 'Disable Requirement', onClick: disablePeriodProgram(requirement.key) }]}>
               <div style="display: content" slot="headerLeft">
                 <TagSet tags={[{ label: 'Requirement', type: 'yellow' }]} />
               </div>
               <!-- <Button on:click={onClick('requirement', requirement)} type="primary" size="small" icon={SettingsEdit} iconDescription="Edit Configuration" disabled={reqDef.configureComponent == null || !requirement.configuration.actions.update} />  -->
             <div style="display: content" slot="headerRight">
-              {@const tags = sharedProgramRequirements[requirement.key]?.length > 1  ? [{ label: 'Shared', onClick: openModal(requirement.key) }] : []}
+              {@const tags = sharedProgramRequirements[requirement.key]?.length > 1 ? [{ label: 'Shared', onClick: openModal(requirement.key) }] : []}
               <TagSet tags={tags} />
             </div>
 
@@ -56,7 +55,7 @@
                   <ActionSet
                     actions={[
                       { label: 'View', icon: View },
-                      { label: 'settings', icon: SettingsEdit, disabled: promptDef.configureComponent == null || !prompt.configuration.actions.update, onClick: onClick('prompt', prompt) }
+                      { label: 'settings', icon: SettingsEdit, disabled: promptDef?.configureComponent == null || !prompt.configuration.actions.update, onClick: onClick('prompt', prompt) }
                     ]}
                   />
                 </li>

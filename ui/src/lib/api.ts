@@ -149,41 +149,6 @@ class API extends APIBase {
     return undefined
   }
 
-  async getPreviousPrompt (appRequestId: string, currentPromptKey: string) {
-    const response = await this.client.query({
-      __name: 'GetPreviousPrompt',
-      appRequests: {
-        __args: { filter: { ids: [appRequestId] } },
-        applications: {
-          requirements: {
-            prompts: {
-              id: true,
-              key: true,
-              answered: true,
-              visibility: true
-            }
-          }
-        }
-      }
-    })
-    const allPrompts: { id: string, key: string, answered: boolean, visibility: string }[] = []
-    for (const applications of response.appRequests[0]?.applications ?? []) {
-      for (const requirement of applications.requirements) {
-        for (const prompt of requirement.prompts) {
-          if (prompt.visibility === enumPromptVisibility.AVAILABLE) {
-            allPrompts.push(prompt)
-          }
-        }
-      }
-    }
-
-    const currentIndex = allPrompts.findIndex(p => p.key === currentPromptKey)
-    if (currentIndex > 0) {
-      return allPrompts[currentIndex - 1]
-    }
-    return undefined
-  }
-
   async getApplyNavigation (appRequestId: string) {
     const response = await this.client.query({
       __name: 'GetApplyNavigation',
@@ -261,7 +226,7 @@ class API extends APIBase {
               answered: true,
               visibility: true,
               fetchedData: true,
-              relatedConfigurationData: true
+              relatedConfigData: true
             }
           }
         }
@@ -322,7 +287,7 @@ class API extends APIBase {
           requirements: {
             prompts: {
               key: true,
-              relatedConfigurationData: true
+              relatedConfigData: true
             }
           }
         }
@@ -364,7 +329,7 @@ class API extends APIBase {
               answered: true,
               visibility: true,
               moot: true,
-              relatedConfigurationData: true
+              relatedConfigData: true
             }
           }
         }
@@ -614,7 +579,8 @@ class API extends APIBase {
               navTitle: true,
               answered: true,
               visibility: true,
-              relatedConfigurationData: true,
+              relatedConfigData: true,
+              moot: true,
               fetchedData: true,
               actions: {
                 update: true
@@ -668,7 +634,7 @@ class API extends APIBase {
           __args: { promptId },
           data: true,
           preloadData: true,
-          relatedConfigurationData: true,
+          relatedConfigData: true,
           fetchedData: true
         }
       }

@@ -2,7 +2,7 @@
   import { Button } from 'carbon-components-svelte'
   import Touch_1 from 'carbon-icons-svelte/lib/Touch_1.svelte'
   import { invalidate } from '$app/navigation'
-  import { api } from '$lib'
+  import { api, RenderDisplayComponent } from '$lib'
   import { enumAppRequestStatus } from '$lib/typed-client'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../../local'
@@ -17,7 +17,7 @@
   $: prompts = prequalPrompts.concat(appRequestForNavigation.applications.flatMap(a => a.requirements.flatMap(r => r.prompts)))
   $: relatedConfigDataByPromptKey = appRequestData.applications.flatMap(a => a.requirements.flatMap(r => r.prompts)).reduce<Record<string, any>>((acc, curr) => ({
     ...acc,
-    [curr.key]: curr.relatedConfigurationData
+    [curr.key]: curr.relatedConfigData
   }), {})
 
   async function onSubmit () {
@@ -29,15 +29,10 @@
 <dl>
   {#each prompts as prompt (prompt.id)}
     {@const def = uiRegistry.getPrompt(prompt.key)}
-    {@const promptData = appRequestData.data[prompt.key]}
     <dt><div>{prompt.title}</div></dt>
     <dd>
       <div>
-        {#if prompt.answered}
-          <svelte:component this={def.displayComponent} data={promptData} appRequestId={appRequestForNavigation.id} appRequestData={appRequestData} configData={relatedConfigDataByPromptKey[prompt.key][prompt.key]} relatedConfigData={relatedConfigDataByPromptKey[prompt.key]} />
-        {:else}
-          Incomplete
-        {/if}
+        <RenderDisplayComponent {def} appRequestId={appRequestForNavigation.id} appData={appRequestData.data} prompt={prompt} relatedConfigData={relatedConfigDataByPromptKey[prompt.key]} />
       </div>
     </dd>
   {/each}

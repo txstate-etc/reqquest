@@ -4,6 +4,7 @@
   import type { Scalars } from '$lib/typed-client/schema'
   import { Panel, TagSet } from '@txstate-mws/carbon-svelte'
   import type { AnsweredPrompt, PromptSection, AppRequestForDetails } from './types'
+  import RenderDisplayComponent from './RenderDisplayComponent.svelte'
 
   export let appRequest: AppRequestForDetails | undefined = undefined
   export let appData: Scalars['JsonData'] = {}
@@ -63,7 +64,7 @@
         <!-- Application Status List -->
         {#if appRequest.applications.length > 0}
           <div class="status-list border rounded">
-            {#each appRequest.applications as application}
+            {#each appRequest.applications as application (application.title)}
               {@const appStatusTag = getApplicationStatusInfo(application.status)}
               <dl class="status-list-item flex items-center justify-between px-4 py-3 border-b ">
                 <dt class="status-list-label font-medium">{application.title}</dt>
@@ -83,21 +84,15 @@
         <p>Loading prompt data...</p>
       </Panel>
     {:else if sections.length > 0}
-      {#each sections as section}
+      {#each sections as section (section.title)}
         <Panel title="{section.title}" expandable expanded>
           {#if section.prompts.length}
-            {#each section.prompts as prompt}
+            {#each section.prompts as prompt (prompt.id)}
               {@const def = uiRegistry.getPrompt(prompt.key)}
               <dl class="prompt-list mb-4 last:mb-0 p-3 border-b-2 border-solid">
                 <dt class="prompt-term font-semibold mb-2">{prompt.title}</dt>
                 <dd class="prompt-answer">
-                  {#if appData[prompt.key] && def.displayComponent}
-                    <svelte:component this={def.displayComponent} appRequestId={appRequest.id} data={appData[prompt.key]} appRequestData={appData} configData={prompt.relatedConfigurationData[prompt.key]} relatedConfigData={prompt.relatedConfigurationData} />
-                  {:else if appData[prompt.key]}
-                    <em>Answered (display component not found)</em>
-                  {:else}
-                    <em>Answered (no data available)</em>
-                  {/if}
+                  <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appData} prompt={prompt} relatedConfigData={prompt.relatedConfigData} />
                 </dd>
               </dl>
             {/each}

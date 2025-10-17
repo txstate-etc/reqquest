@@ -942,7 +942,7 @@ type Mutation {
   ): ValidatedAppRequestResponse!
 
   """
-  Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to READY_FOR_OFFER. If all applications are READY_FOR_OFFER, automatically triggers the app request makeOffer mutation. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation.
+  Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation.
   """
   advanceWorkflow(applicationId: ID!): ValidatedAppRequestResponse!
 
@@ -1399,7 +1399,7 @@ type RequirementPrompt {
   """
   All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it.
   """
-  relatedConfigurationData: JsonData!
+  relatedConfigData: JsonData!
 
   """The requirement that this prompt is associated with."""
   requirement: ApplicationRequirement!

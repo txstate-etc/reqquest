@@ -11,6 +11,7 @@
   import { Button } from 'carbon-components-svelte'
   import { getContext } from 'svelte'
   import { afterNavigate, beforeNavigate, goto, invalidate } from '$app/navigation'
+  import { resolve } from '$app/paths'
   import { page } from '$app/stores'
   import { api, ButtonLoadingIcon } from '$lib'
   import { uiRegistry } from '../../../../../local/index.js'
@@ -32,7 +33,7 @@
   async function handleBack () {
     const previousHref = getNextHref().prevHref
     if (previousHref) {
-      await goto(previousHref)
+      await goto(resolve(previousHref, {}))
     }
   }
 
@@ -53,7 +54,7 @@
   async function onSaved () {
     await invalidate('request:apply')
     if (continueAfterSave && prompt.answered) {
-      await goto(getNextHref().nextHref)
+      await goto(resolve(getNextHref().nextHref, {}))
     } else await store?.setData(appRequestData[prompt.key] as object)
   }
 
@@ -76,7 +77,7 @@
     <p class="text-center"> {prompt.description}</p>
 </div>
   <Form bind:store submitText="Save & Continue" submit={onSubmit} validate={onValidate} preload={appRequestData[prompt.key]} on:saved={onSaved} let:data>
-    <svelte:component this={def.formComponent} {data} appRequestId={appRequestForNavigation.id} {appRequestData} fetched={prompt.fetchedData} configData={prompt.relatedConfigurationData[prompt.key]} relatedConfigData={prompt.relatedConfigurationData} />
+    <svelte:component this={def!.formComponent} {data} appRequestId={appRequestForNavigation.id} {appRequestData} fetched={prompt.fetchedData} configData={prompt.relatedConfigData[prompt.key]} relatedConfigData={prompt.relatedConfigData} />
     <svelte:fragment slot="submit" let:submitting>
       <div class='form-submit flex gap-12 justify-center mt-16'>
         {#if hasPreviousPrompt}

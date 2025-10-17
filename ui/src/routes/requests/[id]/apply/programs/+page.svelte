@@ -44,7 +44,7 @@
       <div class="program column">Program</div>
       <div class="status column">Eligibility</div>
     </header>
-    {#each appRequestForNavigation.applications as application}
+    {#each appRequestForNavigation.applications as application (application.id)}
       {@const programStatus = programButtonStatus[application.id]}
       {@const programFirstPrompt = programFirstPromptKey[application.id]}
       <div class="program column">{application.title}</div>

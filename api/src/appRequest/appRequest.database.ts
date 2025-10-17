@@ -563,7 +563,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
                 ? ApplicationPhase.READY_FOR_WORKFLOW
                 : ApplicationPhase.WORKFLOW_BLOCKING
 
-      if (application.phase === ApplicationPhase.READY_FOR_WORKFLOW && (!workflowStages.length || workflowStages[workflowStages.length - 1].key === application.workflowStageKey)) {
+      if (application.phase === ApplicationPhase.READY_FOR_WORKFLOW && applications.length === 1 && (!workflowStages.length || workflowStages[workflowStages.length - 1].key === application.workflowStageKey)) {
         application.phase = ApplicationPhase.REVIEW_COMPLETE
       }
       if (requirementsResolution === 'fail') {

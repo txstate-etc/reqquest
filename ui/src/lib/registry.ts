@@ -216,15 +216,15 @@ export class UIRegistry {
     return this.plural[key]
   }
 
-  getPrompt (key: string) {
+  getPrompt (key: string): PromptDefinition | undefined {
     return this.promptMap[key]
   }
 
-  getRequirement (key: string) {
+  getRequirement (key: string): RequirementDefinition | undefined {
     return this.requirementMap[key]
   }
 
-  getProgram (key: string) {
+  getProgram (key: string): ProgramDefinition | undefined {
     return this.programMap[key]
   }
 }

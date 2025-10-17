@@ -1565,7 +1565,7 @@ export default {
                     ]
                 }
             ],
-            "relatedConfigurationData": [
+            "relatedConfigData": [
                 48
             ],
             "requirement": [

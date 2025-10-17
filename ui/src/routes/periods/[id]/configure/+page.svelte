@@ -1,22 +1,22 @@
 <script lang="ts">
-  import { Panel, PanelFormDialog, Card, ColumnList, ActionSet, TagSet } from '@txstate-mws/carbon-svelte'
-  import { Accordion, AccordionItem, Button, InlineNotification, NotificationActionButton, Tab, TabContent, Tabs, Tag } from 'carbon-components-svelte'
-
+  import { PanelFormDialog } from '@txstate-mws/carbon-svelte'
+  import { InlineNotification, Modal, NotificationActionButton, Tab, TabContent, Tabs } from 'carbon-components-svelte'
+  import { keyby } from 'txstate-utils'
   import { invalidate } from '$app/navigation'
   import { page } from '$app/stores'
-  import { api, type Period } from '$lib'
+  import { api } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../local'
-  import { Modal } from 'carbon-components-svelte'
-    import PeriodPanel from '$lib/components/PeriodPanel.svelte'
+  import PeriodPanel from '$lib/components/PeriodPanel.svelte'
 
   export let data: PageData
   $: ({ programs, period } = data)
 
-  $: sharedProgramRequirements = programs.reduce((acc, curr) => {
+  $: programsByKey = keyby(programs, 'key')
+  $: sharedProgramRequirements = programs.reduce<Record<string, string[] | undefined>>((acc, curr) => {
     curr.requirements.forEach(r => {
-      if (!acc[r.key]) acc[r.key] = [curr.key]
-      else acc[r.key].push(curr.key)
+      acc[r.key] ??= []
+      acc[r.key]!.push(curr.key)
     })
     return acc
   }, {})
@@ -46,7 +46,7 @@
   }
 
   async function onSubmit (data: any) {
-    const { success, messages } = await api.updateConfiguration($page.params.id!, editingConfigurationDef!.key, data, false)
+    const { success, messages } = await api.updateConfiguration($page.params.id, editingConfigurationDef!.key, data, false)
     return {
       success,
       messages,
@@ -55,7 +55,7 @@
   }
 
   async function onValidate (data: any) {
-    const { messages } = await api.updateConfiguration($page.params.id!, editingConfigurationDef!.key, data, true)
+    const { messages } = await api.updateConfiguration($page.params.id, editingConfigurationDef!.key, data, true)
     return messages
   }
 
@@ -63,8 +63,6 @@
     await invalidate('api:getPeriodConfigurations')
     closeConfigurationDialog()
   }
-  
-
 
   const openModal = (key: string) => () => {
     sharedModal = { open: true, requirementKey: key }
@@ -78,15 +76,15 @@
     await invalidate('api:getPeriodConfigurations')
   }
 
-  $:enabledPrograms = programs?.filter(p => p.enabled)
-  $:disabledPrograms = programs?.filter(p => !p.enabled)
+  $:enabledPrograms = programs.filter(p => p.enabled)
+  $:disabledPrograms = programs.filter(p => !p.enabled)
 
 </script>
 
-<!-- Configuring Pe{program.title}riod: {period.name}{#if period.code} ({period.code}){/if} -->
+<!-- Configuring Period: {period.name}{#if period.code} ({period.code}){/if} -->
 
 {#if !period.reviewed}
-  <InlineNotification kind='warning' lowContrast title='Confirm Fall 2026 period configurations:' subtitle={`Please confirm when ${period.name} configuration updatess are complete`} >
+  <InlineNotification kind='warning' lowContrast title='Confirm Fall 2026 period configurations:' subtitle={`Please confirm when ${period.name} configuration updates are complete`} >
     <svelte:fragment slot="actions">
       <NotificationActionButton on:click={confirmReview}>Confirm Review</NotificationActionButton>
     </svelte:fragment>
@@ -114,12 +112,12 @@
   {#if editingConfigurationType === 'prompt'}
     {@const def = uiRegistry.getPrompt(editingConfigurationDef.key)}
     <PanelFormDialog open submit={onSubmit} validate={onValidate} title="Edit Configuration" on:cancel={closeConfigurationDialog} on:saved={onSaved} preload={editingConfigurationDef.configuration.data} let:data>
-      <svelte:component this={def.configureComponent} {data} />
+      <svelte:component this={def!.configureComponent} {data} />
     </PanelFormDialog>
   {:else}
     {@const def = uiRegistry.getRequirement(editingConfigurationDef.key)}
     <PanelFormDialog open submit={onSubmit} validate={onValidate} title="Edit Configuration" on:cancel={closeConfigurationDialog} on:saved={onSaved} preload={editingConfigurationDef.configuration.data} let:data>
-      <svelte:component this={def.configureComponent} {data} />
+      <svelte:component this={def!.configureComponent} {data} />
     </PanelFormDialog>
   {/if}
 {/if}
@@ -128,27 +126,10 @@
   passiveModal
   bind:open={sharedModal.open}
   modalHeading="Shared Requirements"
-  > 
-    {@const sharedPrograms = sharedProgramRequirements[sharedModal.requirementKey!]?.map(key => {
-      return programs.find(p => p.key === key)
-    })}
-    {#each sharedPrograms as p}
+  >
+    {@const sharedPrograms = sharedProgramRequirements[sharedModal.requirementKey!]?.map(key => programsByKey[key]) ?? []}
+    {#each sharedPrograms as p (p.key)}
       <p>{p.title}</p>
       <hr/>
     {/each}
 </Modal>
-
-<style>
-  ul {
-    list-style: inside;
-  }
-  ul ul {
-    padding-left: 1.5rem;
-  }
-  li {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.3rem 0;
-  }
-</style>

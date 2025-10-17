@@ -7,7 +7,7 @@
   import WarningAltFilled from 'carbon-icons-svelte/lib/WarningAltFilled.svelte'
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import { invalidate } from '$app/navigation'
-  import { api, enumPromptVisibility, enumRequirementStatus, enumRequirementType } from '$lib'
+  import { api, enumPromptVisibility, enumRequirementStatus, enumRequirementType, RenderDisplayComponent } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../../local'
   import ApproveLayout from '../ApproveLayout.svelte'
@@ -59,7 +59,7 @@
           promptIndicator[prompt.key] = { indicator: PromptIndicators.DISQUALIFYING, reason: req.statusReason ?? undefined }
         } else if (req.status === enumRequirementStatus.WARNING && (promptIndicator[prompt.key]?.indicator ?? 0) < PromptIndicators.WARNING) {
           promptIndicator[prompt.key] = { indicator: PromptIndicators.WARNING, reason: req.statusReason ?? undefined }
-        } else if (uiRegistry.getPrompt(prompt.key).automation && (promptIndicator[prompt.key]?.indicator ?? 0) < PromptIndicators.AUTOMATION) {
+        } else if (uiRegistry.getPrompt(prompt.key)?.automation && (promptIndicator[prompt.key]?.indicator ?? 0) < PromptIndicators.AUTOMATION) {
           promptIndicator[prompt.key] = { indicator: PromptIndicators.AUTOMATION, reason: 'This answer will be filled in by an automation.' }
         }
       }
@@ -158,11 +158,11 @@
         {#each section.requirements as requirement (requirement.id)}
           {#each requirement.prompts as prompt (prompt.id)}
             {@const def = uiRegistry.getPrompt(prompt.key)}
-            {@const isReviewerQuestion = requirement.type === enumRequirementType.APPROVAL && !def.automation}
-            {@const isAutomation = !!def.automation}
-            {@const editMode = isReviewerQuestion && prompt.actions.update && def.formMode !== 'full'}
-            {@const small = editMode && def.formMode !== 'full' ? def.formMode !== 'large' : def.displayMode !== 'large'}
-            {@const large = editMode && def.formMode !== 'full' ? def.formMode === 'large' : def.displayMode === 'large'}
+            {@const isReviewerQuestion = requirement.type === enumRequirementType.APPROVAL && !def?.automation}
+            {@const isAutomation = !!def?.automation}
+            {@const editMode = def != null && isReviewerQuestion && prompt.actions.update && def.formMode !== 'full'}
+            {@const small = editMode && def.formMode !== 'full' ? def.formMode !== 'large' : def!.displayMode !== 'large'}
+            {@const large = editMode && def.formMode !== 'full' ? def.formMode === 'large' : def!.displayMode === 'large'}
             {@const dtid = `dt-title-${prompt.id}`}
             <dt class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation}>
               {#if promptIndicator[prompt.key]?.indicator}
@@ -188,18 +188,10 @@
             <dd class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
               {#if editMode}
                 <Form preload={appRequest.data[prompt.key]} submit={onPromptSubmit(prompt.id)} validate={onPromptValidate(prompt.id)} autoSave on:autosaved={onPromptSaved} let:data>
-                  <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} fetched={prompt.fetchedData} configData={prompt.relatedConfigurationData} />
+                  <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} fetched={prompt.fetchedData} configData={prompt.relatedConfigData} />
                 </Form>
               {:else}
-                {#if prompt.answered}
-                  <svelte:component this={def.displayComponent}  
-                    data={appRequest.data[prompt.key] ?? {}} 
-                    appRequestId={appRequest.id}
-                    configData={prompt.relatedConfigurationData[prompt.key] ?? {}}
-                    relatedConfigData={prompt.relatedConfigurationData ?? {}}/>
-                {:else}
-                  Not fully answered yet.
-                {/if}
+                <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} relatedConfigData={prompt.relatedConfigData} showMoot />
                 {#if prompt.actions.update}
                   <Button kind="ghost" size="field" icon={Edit} iconDescription="Edit Prompt" class="prompt-edit" on:click={editPrompt(prompt)} />
                 {/if}
@@ -225,7 +217,7 @@
     let:data
   >
     {@const def = uiRegistry.getPrompt(promptBeingEdited.key)}
-    <svelte:component this={def.formComponent} appRequestId={appRequest.id} {data} appRequestData={promptBeingEdited.data} fetched={promptBeingEdited.fetchedData} configData={promptBeingEdited.relatedConfigurationData[promptBeingEdited.key]} relatedConfigData={promptBeingEdited.relatedConfigurationData} />
+    <svelte:component this={def!.formComponent} appRequestId={appRequest.id} {data} appRequestData={promptBeingEdited.data} fetched={promptBeingEdited.fetchedData} configData={promptBeingEdited.relatedConfigData[promptBeingEdited.key]} relatedConfigData={promptBeingEdited.relatedConfigData} />
   </PanelFormDialog>
 {/if}
 

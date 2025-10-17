@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ErrorPage, ProgressNav, type RootStepItem, type StepItem } from '@txstate-mws/carbon-svelte'
   import { setContext } from 'svelte'
-  import { base } from '$app/paths'
+  import { resolve } from '$app/paths'
   import { page } from '$app/stores'
   import type { LayoutData } from './$types'
 
@@ -16,17 +16,17 @@
     let lastprompt: string | undefined
     for (const prompt of prequalPrompts) {
       if (foundCurrent) {
-        nextHref = `${base}/requests/${appRequestForNavigation.id}/apply/${prompt.key}`
+        nextHref = resolve(`/requests/${appRequestForNavigation.id}/apply/${prompt.key}`, {})
         foundCurrent = false
       } else if ($page.params.promptKey === prompt.key) {
         foundCurrent = true
-        if (lastprompt) prevHref = `${base}/requests/${appRequestForNavigation.id}/apply/${lastprompt}`
+        if (lastprompt) prevHref = resolve(`/requests/${appRequestForNavigation.id}/apply/${lastprompt}`, {})
       }
       lastprompt = prompt.key
       navItems.push({
         id: `prompt${prompt.id}`,
         label: prompt.navTitle,
-        href: `${base}/requests/${appRequestForNavigation.id}/apply/${prompt.key}`,
+        href: resolve(`/requests/${appRequestForNavigation.id}/apply/${prompt.key}`, {}),
         type: $page.params.promptKey === prompt.key
           ? 'current'
           : prompt.answered ? 'complete' : 'available',
@@ -34,18 +34,18 @@
       })
     }
     if (prequalPrompts.every(p => p.answered)) {
-      if (foundCurrent) nextHref = `${base}/requests/${appRequestForNavigation.id}/apply/programs`
+      if (foundCurrent) nextHref = resolve(`/requests/${appRequestForNavigation.id}/apply/programs`, {})
       foundCurrent = false
       if ($page.route.id === '/requests/[id]/apply/programs') {
         foundCurrent = true
         if (lastprompt) {
-          prevHref = `${base}/requests/${appRequestForNavigation.id}/apply/${lastprompt}`
+          prevHref = resolve(`/requests/${appRequestForNavigation.id}/apply/${lastprompt}`, {})
         }
       }
       const programReview: RootStepItem = {
         id: 'programs',
         label: 'Program Review',
-        href: `${base}/requests/${appRequestForNavigation.id}/apply/programs`,
+        href: resolve(`/requests/${appRequestForNavigation.id}/apply/programs`, {}),
         type: $page.route.id === '/requests/[id]/apply/programs' ? 'current' : 'available',
         substeps: []
       }
@@ -57,20 +57,20 @@
         for (const requirement of application.requirements) {
           for (const prompt of requirement.prompts) {
             if (foundCurrent) {
-              nextHref = `${base}/requests/${appRequestForNavigation.id}/apply/${prompt.key}`
+              nextHref = resolve(`/requests/${appRequestForNavigation.id}/apply/${prompt.key}`, {})
               foundCurrent = false
             }
             if ($page.params.promptKey === prompt.key) {
               pastProgramReview = true
               foundCurrent = true
-              if (lastprompt) prevHref = `${base}/requests/${appRequestForNavigation.id}/apply/${lastprompt}`
-              else prevHref = `${base}/requests/${appRequestForNavigation.id}/apply/programs`
+              if (lastprompt) prevHref = resolve(`/requests/${appRequestForNavigation.id}/apply/${lastprompt}`, {})
+              else prevHref = resolve(`/requests/${appRequestForNavigation.id}/apply/programs`, {})
             }
             lastprompt = prompt.key
             substeps.push({
               id: `prompt${prompt.id}`,
               label: prompt.navTitle,
-              href: `${base}/requests/${appRequestForNavigation.id}/apply/${prompt.key}`,
+              href: resolve(`/requests/${appRequestForNavigation.id}/apply/${prompt.key}`, {}),
               type: $page.params.promptKey === prompt.key
                 ? 'current'
                 : prompt.answered ? 'complete' : 'available'
@@ -93,19 +93,19 @@
       }
       for (const prompt of postqualPrompts) {
         if (foundCurrent) {
-          nextHref = `${base}/requests/${appRequestForNavigation.id}/apply/${prompt.key}`
+          nextHref = resolve(`/requests/${appRequestForNavigation.id}/apply/${prompt.key}`, {})
           foundCurrent = false
         }
         if ($page.params.promptKey === prompt.key) {
           pastProgramReview = true
           foundCurrent = true
-          if (lastprompt) prevHref = `${base}/requests/${appRequestForNavigation.id}/apply/${lastprompt}`
-          else prevHref = `${base}/requests/${appRequestForNavigation.id}/apply/programs`
+          if (lastprompt) prevHref = resolve(`/requests/${appRequestForNavigation.id}/apply/${lastprompt}`, {})
+          else prevHref = resolve(`/requests/${appRequestForNavigation.id}/apply/programs`, {})
         }
         navItems.push({
           id: `prompt${prompt.id}`,
           label: prompt.navTitle,
-          href: `${base}/requests/${appRequestForNavigation.id}/apply/${prompt.key}`,
+          href: resolve(`/requests/${appRequestForNavigation.id}/apply/${prompt.key}`, {}),
           type: $page.params.promptKey === prompt.key
             ? 'current'
             : prompt.answered ? 'complete' : 'available',
@@ -116,13 +116,13 @@
       navItems.push({
         id: 'review',
         label: 'Review Submission',
-        href: `${base}/requests/${appRequestForNavigation.id}/apply/review`,
+        href: resolve(`/requests/${appRequestForNavigation.id}/apply/review`, {}),
         type: $page.route.id === '/requests/[id]/apply/review' ? 'current' : 'available',
         substeps: []
       })
       if (pastProgramReview) programReview.type = 'complete'
     }
-    nextHref ??= `${base}/requests/${appRequestForNavigation.id}/apply/review`
+    nextHref ??= resolve(`/requests/${appRequestForNavigation.id}/apply/review`, {})
     return { navItems, nextHref, prevHref }
   }
   $: ({ navItems, nextHref, prevHref } = getNavItems(appRequestForNavigation, prequalPrompts, $page))

@@ -3,7 +3,7 @@
   import View from 'carbon-icons-svelte/lib/View.svelte'
   import { htmlEncode, isBlank, isNotBlank, keyby, sortby } from 'txstate-utils'
   import { goto } from '$app/navigation'
-  import { base } from '$app/paths'
+  import { resolve } from '$app/paths'
   import { api } from '$lib'
   import { uiRegistry } from '../../local/index.js'
   import type { PageData } from './$types.js'
@@ -21,14 +21,16 @@
 
   let unlistableIndexItems: Record<string, { value: string, label: string }[] | undefined> = {}
   function searchIndexItems (category: string) {
-    return async e => {
-      const search = (e.target as HTMLInputElement).value
-      if (isBlank(search)) {
-        unlistableIndexItems[category] = undefined
-      } else {
-        unlistableIndexItems[category] = await api.searchIndexItems(category, search)
-      }
-      unlistableIndexItems = unlistableIndexItems // trigger reactivity
+    return (e: Event) => {
+      (async () => {
+        const search = (e.target as HTMLInputElement).value
+        if (isBlank(search)) {
+          unlistableIndexItems[category] = undefined
+        } else {
+          unlistableIndexItems[category] = await api.searchIndexItems(category, search)
+        }
+        unlistableIndexItems = unlistableIndexItems // trigger reactivity
+      })().catch(console.error)
     }
   }
 
@@ -44,7 +46,7 @@
 
   async function onCreateSaved () {
     closeCreateDialog()
-    await goto(`${base}/requests/${lastInsertedId}/approve`)
+    await goto(resolve(`/requests/${lastInsertedId}/approve`, {}))
   }
 
   async function validateAppRequest (data: { periodId: string, login: string }) {
@@ -71,7 +73,7 @@
           placeholder={filterIdx.categoryLabel}
           items={filterIdx.listable ? filterIdx.values : unlistableIndexItems[filterIdx.category] ?? []}
           filterable={!filterIdx.listable}
-          on:input={!filterIdx.listable ? searchIndexItems(filterIdx.category) : undefined}
+          on:input={!filterIdx.listable ? searchIndexItems(filterIdx.category) : () => {}}
         />
       {/if}
     {/each}
@@ -143,7 +145,7 @@
         placeholder={filterIdx.categoryLabel}
         items={filterIdx.listable ? filterIdx.values : unlistableIndexItems[filterIdx.category] ?? []}
         filterable={!filterIdx.listable}
-        on:input={!filterIdx.listable ? searchIndexItems(filterIdx.category) : undefined}
+        on:input={!filterIdx.listable ? searchIndexItems(filterIdx.category) : () => {}}
       />
     {/if}
   {/each}

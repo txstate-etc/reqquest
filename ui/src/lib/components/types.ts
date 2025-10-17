@@ -12,7 +12,7 @@ export interface AnsweredPrompt {
   navTitle: string
   answered: boolean
   visibility: string
-  relatedConfigurationData: Record<string, any>
+  relatedConfigData: Record<string, any>
 }
 
 export interface PromptSection {
