@@ -45,8 +45,8 @@ export const load: PageLoad = async ({ url, depends }) => {
   const rows = users.map(u => {
     const user: User = {
       id: u.login,
-      ids: [u.login, u.otherInfo?.otherId].filter(id => id != null).join('<br>'),
-      contact: u.otherInfo?.email ? u.fullname + '<br>' + u.otherInfo.email : u.fullname,
+      ids: [u.login, u.otherInfo?.otherId].filter(id => id != null).join('\n'),
+      contact: u.otherInfo?.email ? u.fullname + '\n' + u.otherInfo.email : u.fullname,
       applicationRoles: u.roles.map(r => r.name).join(', '),
       groups: u.groups.join(', ')
       // otherInfo: u.otherInfo
