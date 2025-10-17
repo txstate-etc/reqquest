@@ -61,7 +61,7 @@ class API extends APIBase {
           totalItems: true,
           hasNextPage: true,
           perPage: true,
-          groupings: {
+          categories: {
             ids: true,
             label: true,
             displayLabel: true,

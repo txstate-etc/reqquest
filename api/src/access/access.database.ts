@@ -121,17 +121,17 @@ export namespace AccessDatabase {
 
     // Filtering by user appRequest defined indexes.
     // look at appRequestProcessFilter in appRequest.database.ts for an example of updates.
-    if (filter?.otherGroupingsByLabel && Array.isArray(filter.otherGroupingsByLabel)) {
+    if (filter?.otherCategoriesByLabel && Array.isArray(filter.otherCategoriesByLabel)) {
       // Verify matches one of the UserIndexDefinition.labels
       const labels = appConfig.userLookups.indexes?.map(i => i.label) ?? []
-      for (const oGroup of filter.otherGroupingsByLabel) {
-        const joinName = `accessUserGroupings${oGroup.label}`
+      for (const oGroup of filter.otherCategoriesByLabel) {
+        const joinName = `accessUserCategories${oGroup.label}`
         if (labels.includes(oGroup.label) && oGroup.ids.length && !joins.has(joinName)) {
           joins.set(joinName, `
             LEFT JOIN (
-              SELECT DISTINCT userId, GROUP_CONCAT(accessUserGroupings.id SEPARATOR " ") AS ids
-              FROM accessUserGroupings
-              WHERE accessUserGroupings.label = '${oGroup.label}' AND accessUserGroupings.id IN (${db.in(joinbinds, oGroup.ids)})
+              SELECT DISTINCT userId, GROUP_CONCAT(accessUserCategories.id SEPARATOR " ") AS ids
+              FROM accessUserCategories
+              WHERE accessUserCategories.label = '${oGroup.label}' AND accessUserCategories.id IN (${db.in(joinbinds, oGroup.ids)})
               GROUP BY userId
             ) AS ${joinName} ON accessUsers.id = ${joinName}.userId
           `)
@@ -209,18 +209,18 @@ export namespace AccessDatabase {
           // we do not wish to break transaction.
           if (Array.isArray(ids)) {
             await db.insert(`
-              INSERT INTO accessUserGroupings (userId, label, id)
+              INSERT INTO accessUserCategories (userId, label, id)
               VALUES ${db.in(ibinds, ids.map(id => [userId, idx.label, id]))}
               ON DUPLICATE KEY UPDATE userId = userId
             `, ibinds)
             const dbinds: any[] = [userId, idx.label]
             await db.delete(`
-              DELETE FROM accessUserGroupings
+              DELETE FROM accessUserCategories
               WHERE userId = ? AND label = ? AND id NOT IN (${db.in(dbinds, ids)})
             `, dbinds)
           }
         } else {
-          await db.delete('DELETE FROM accessUserGroupings WHERE userId = ? AND label = ?', [userId, idx.label])
+          await db.delete('DELETE FROM accessUserCategories WHERE userId = ? AND label = ?', [userId, idx.label])
         }
       }
     })
@@ -280,11 +280,11 @@ export namespace AccessDatabase {
     `, binds)
   }
 
-  export async function getAccessUserGroupingsIdsByLabel (label: string): Promise<string[]> {
+  export async function getaccessUserCategoryIdsByLabel (label: string): Promise<string[]> {
     const binds: any[] = []
     const rows = await db.getall<{ id: string }>(`
       SELECT DISTINCT id
-      FROM accessUserGroupings
+      FROM accessUserCategories
       WHERE label IN (${db.in(binds, [label])})
     `, binds)
     return rows.map(i => i.id)

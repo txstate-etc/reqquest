@@ -225,13 +225,21 @@ type AccessUser {
   stillValid: Boolean!
 }
 
+"""
+A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutionalRole", ids: ["Staff", "Student"] }, { label: "last-login", ids: ["2025-09-01T10:20:04"] }]
+"""
+input AccessUserCategoryInput {
+  ids: [ID!]!
+  label: String!
+}
+
 input AccessUserFilter {
   logins: [ID!]
 
   """
-  One to Many groupings Filter, like a institutional role people may belong to.
+  One to Many categories Filter, like a institutional role people may belong to.
   """
-  otherGroupingsByLabel: [AccessUserGroupingInput!]
+  otherCategoriesByLabel: [AccessUserCategoryInput!]
 
   """Filter by identifiers aside from username, like an Employee ID."""
   otherIdentifiers: [String!]
@@ -243,14 +251,6 @@ input AccessUserFilter {
 
   """If true, only return the user that is currently logged in."""
   self: Boolean
-}
-
-"""
-A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutionalRole", ids: ["Staff", "Student"] }, { label: "last-login", ids: ["2025-09-01T10:20:04"] }]
-"""
-input AccessUserGroupingInput {
-  ids: [ID!]!
-  label: String!
 }
 
 """
@@ -805,6 +805,31 @@ enum ApplicationStatus {
   REJECTED
 }
 
+type Category {
+  """Displayed Label for category. i.e. Institutional Roles"""
+  displayLabel: String!
+
+  """
+  IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"]
+  """
+  ids: [String!]!
+
+  """
+  Label is the name of the category. Categories are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles
+  """
+  label: String!
+
+  """
+  Set this to true should be available as a filter in the User list view.
+  """
+  useInFilters: Boolean
+
+  """
+  Set this to true should be displayed as a column in the User list view.
+  """
+  useInList: Boolean
+}
+
 type Configuration {
   actions: ConfigurationAccess!
   data: JsonData!
@@ -836,31 +861,6 @@ input ConfigurationFilters {
 Date and Time in ISO 8601 string format. JSON parser should convert to javascript Date type.
 """
 scalar DateTime
-
-type Groupings {
-  """Displayed Label for grouping. i.e. Institutional Roles"""
-  displayLabel: String!
-
-  """
-  IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"]
-  """
-  ids: [String!]!
-
-  """
-  Label is the name of the grouping. Groupings are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles
-  """
-  label: String!
-
-  """
-  Set this to true should be available as a filter in the User list view.
-  """
-  useInFilters: Boolean
-
-  """
-  Set this to true should be displayed as a column in the User list view.
-  """
-  useInList: Boolean
-}
 
 """
 This represents an index as registered by one of the project's prompt definitions.
@@ -1046,14 +1046,14 @@ input Pagination {
 
 type PaginationInfoWithTotalItems {
   """
+  List of indexed category data related to items within a page. Often used for filtering items.
+  """
+  categories: [Category!]
+
+  """
   The current page number, starting at 1. This is always provided - if pagination was not requested, will return 1.
   """
   currentPage: Float!
-
-  """
-  List of indexed grouping data related to items within a page. Often used for filtering items.
-  """
-  groupings: [Groupings!]
 
   """
   Indicates whether requesting the next page would provide more results. Especially useful for models that cannot provide total item count for practical reasons. Note that over time, more results can appear and make this answer wrong, so in some circumstances it makes sense to request another page anyway.

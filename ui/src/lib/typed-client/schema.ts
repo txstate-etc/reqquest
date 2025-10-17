@@ -348,6 +348,20 @@ export interface ApplicationRequirement {
  */
 export type ApplicationStatus = 'ACCEPTED' | 'ELIGIBLE' | 'INELIGIBLE' | 'PENDING' | 'REJECTED'
 
+export interface Category {
+    /** Displayed Label for category. i.e. Institutional Roles */
+    displayLabel: Scalars['String']
+    /** IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"] */
+    ids: Scalars['String'][]
+    /** Label is the name of the category. Categories are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles */
+    label: Scalars['String']
+    /** Set this to true should be available as a filter in the User list view. */
+    useInFilters: (Scalars['Boolean'] | null)
+    /** Set this to true should be displayed as a column in the User list view. */
+    useInList: (Scalars['Boolean'] | null)
+    __typename: 'Category'
+}
+
 export interface Configuration {
     actions: ConfigurationAccess
     data: Scalars['JsonData']
@@ -360,20 +374,6 @@ export interface ConfigurationAccess {
     update: Scalars['Boolean']
     view: Scalars['Boolean']
     __typename: 'ConfigurationAccess'
-}
-
-export interface Groupings {
-    /** Displayed Label for grouping. i.e. Institutional Roles */
-    displayLabel: Scalars['String']
-    /** IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"] */
-    ids: Scalars['String'][]
-    /** Label is the name of the grouping. Groupings are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles */
-    label: Scalars['String']
-    /** Set this to true should be available as a filter in the User list view. */
-    useInFilters: (Scalars['Boolean'] | null)
-    /** Set this to true should be displayed as a column in the User list view. */
-    useInList: (Scalars['Boolean'] | null)
-    __typename: 'Groupings'
 }
 
 
@@ -452,10 +452,10 @@ export interface MutationMessage {
 export type MutationMessageType = 'error' | 'success' | 'warning'
 
 export interface PaginationInfoWithTotalItems {
+    /** List of indexed category data related to items within a page. Often used for filtering items. */
+    categories: (Category[] | null)
     /** The current page number, starting at 1. This is always provided - if pagination was not requested, will return 1. */
     currentPage: Scalars['Float']
-    /** List of indexed grouping data related to items within a page. Often used for filtering items. */
-    groupings: (Groupings[] | null)
     /** Indicates whether requesting the next page would provide more results. Especially useful for models that cannot provide total item count for practical reasons. Note that over time, more results can appear and make this answer wrong, so in some circumstances it makes sense to request another page anyway. */
     hasNextPage: Scalars['Boolean']
     /** The number of items per page. Null if pagination was not requested/forced because results per page is unlimited. */
@@ -869,19 +869,19 @@ export interface AccessUserGenqlSelection{
     __scalar?: boolean | number
 }
 
+
+/** A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutionalRole", ids: ["Staff", "Student"] }, { label: "last-login", ids: ["2025-09-01T10:20:04"] }] */
+export interface AccessUserCategoryInput {ids: Scalars['ID'][],label: Scalars['String']}
+
 export interface AccessUserFilter {logins?: (Scalars['ID'][] | null),
-/** One to Many groupings Filter, like a institutional role people may belong to. */
-otherGroupingsByLabel?: (AccessUserGroupingInput[] | null),
+/** One to Many categories Filter, like a institutional role people may belong to. */
+otherCategoriesByLabel?: (AccessUserCategoryInput[] | null),
 /** Filter by identifiers aside from username, like an Employee ID. */
 otherIdentifiers?: (Scalars['String'][] | null),otherIdentifiersByLabel?: (AccessUserIdentifierInput[] | null),
 /** Filter users by associated Application Roles */
 roles?: (Scalars['String'][] | null),search?: (Scalars['String'] | null),
 /** If true, only return the user that is currently logged in. */
 self?: (Scalars['Boolean'] | null)}
-
-
-/** A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutionalRole", ids: ["Staff", "Student"] }, { label: "last-login", ids: ["2025-09-01T10:20:04"] }] */
-export interface AccessUserGroupingInput {ids: Scalars['ID'][],label: Scalars['String']}
 
 
 /** A label and ID pair for an external user unique ID. For example, { label: "Student ID", id: "123456" } */
@@ -1101,6 +1101,21 @@ export interface ApplicationRequirementGenqlSelection{
     __scalar?: boolean | number
 }
 
+export interface CategoryGenqlSelection{
+    /** Displayed Label for category. i.e. Institutional Roles */
+    displayLabel?: boolean | number
+    /** IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"] */
+    ids?: boolean | number
+    /** Label is the name of the category. Categories are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles */
+    label?: boolean | number
+    /** Set this to true should be available as a filter in the User list view. */
+    useInFilters?: boolean | number
+    /** Set this to true should be displayed as a column in the User list view. */
+    useInList?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
 export interface ConfigurationGenqlSelection{
     actions?: ConfigurationAccessGenqlSelection
     data?: boolean | number
@@ -1126,21 +1141,6 @@ keys?: (Scalars['String'][] | null),
 periodCodes?: (Scalars['String'][] | null),
 /** Return configurations for these period IDs. */
 periodIds?: (Scalars['ID'][] | null)}
-
-export interface GroupingsGenqlSelection{
-    /** Displayed Label for grouping. i.e. Institutional Roles */
-    displayLabel?: boolean | number
-    /** IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"] */
-    ids?: boolean | number
-    /** Label is the name of the grouping. Groupings are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles */
-    label?: boolean | number
-    /** Set this to true should be available as a filter in the User list view. */
-    useInFilters?: boolean | number
-    /** Set this to true should be displayed as a column in the User list view. */
-    useInList?: boolean | number
-    __typename?: boolean | number
-    __scalar?: boolean | number
-}
 
 
 /** This represents an index as registered by one of the project's prompt definitions. */
@@ -1230,10 +1230,10 @@ export interface Pagination {
 page?: (Scalars['Int'] | null),perPage?: (Scalars['Int'] | null)}
 
 export interface PaginationInfoWithTotalItemsGenqlSelection{
+    /** List of indexed category data related to items within a page. Often used for filtering items. */
+    categories?: CategoryGenqlSelection
     /** The current page number, starting at 1. This is always provided - if pagination was not requested, will return 1. */
     currentPage?: boolean | number
-    /** List of indexed grouping data related to items within a page. Often used for filtering items. */
-    groupings?: GroupingsGenqlSelection
     /** Indicates whether requesting the next page would provide more results. Especially useful for models that cannot provide total item count for practical reasons. Note that over time, more results can appear and make this answer wrong, so in some circumstances it makes sense to request another page anyway. */
     hasNextPage?: boolean | number
     /** The number of items per page. Null if pagination was not requested/forced because results per page is unlimited. */
@@ -1669,6 +1669,14 @@ export interface ValidatedResponseGenqlSelection{
     
 
 
+    const Category_possibleTypes: string[] = ['Category']
+    export const isCategory = (obj?: { __typename?: any } | null): obj is Category => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isCategory"')
+      return Category_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const Configuration_possibleTypes: string[] = ['Configuration']
     export const isConfiguration = (obj?: { __typename?: any } | null): obj is Configuration => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isConfiguration"')
@@ -1681,14 +1689,6 @@ export interface ValidatedResponseGenqlSelection{
     export const isConfigurationAccess = (obj?: { __typename?: any } | null): obj is ConfigurationAccess => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isConfigurationAccess"')
       return ConfigurationAccess_possibleTypes.includes(obj.__typename)
-    }
-    
-
-
-    const Groupings_possibleTypes: string[] = ['Groupings']
-    export const isGroupings = (obj?: { __typename?: any } | null): obj is Groupings => {
-      if (!obj?.__typename) throw new Error('__typename is missing in "isGroupings"')
-      return Groupings_possibleTypes.includes(obj.__typename)
     }
     
 

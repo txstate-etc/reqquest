@@ -16,11 +16,11 @@ export class PaginationWithCursor extends Pagination {
 }
 
 @ObjectType()
-export class Groupings {
-  @Field({ description: 'Label is the name of the grouping. Groupings are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles' })
+export class Category {
+  @Field({ description: 'Label is the name of the category. Categories are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles' })
   label!: string
 
-  @Field({ description: 'Displayed Label for grouping. i.e. Institutional Roles' })
+  @Field({ description: 'Displayed Label for category. i.e. Institutional Roles' })
   displayLabel?: string
 
   @Field(type => [String], { description: 'IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"]' })
@@ -41,8 +41,8 @@ export class PaginationInfoShared {
   @Field({ description: 'Indicates whether requesting the next page would provide more results. Especially useful for models that cannot provide total item count for practical reasons. Note that over time, more results can appear and make this answer wrong, so in some circumstances it makes sense to request another page anyway.' })
   hasNextPage!: boolean
 
-  @Field(type => [Groupings], { nullable: true, description: 'List of indexed grouping data related to items within a page. Often used for filtering items.' })
-  groupings?: Groupings[]
+  @Field(type => [Category], { nullable: true, description: 'List of indexed category data related to items within a page. Often used for filtering items.' })
+  categories?: Category[]
 }
 
 @ObjectType()

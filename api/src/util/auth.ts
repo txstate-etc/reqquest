@@ -86,7 +86,7 @@ async function lookupUser (login: string): Promise<ReqquestUser | undefined> {
   try {
     const groups = await allGroupCache.get()
     const user = (await appConfig.userLookups.byLogins([login], Array.from(new Set(groups.map(g => g.groupName)))))[0]
-    // Save user's remote information (e.g. grouping indexes) upon user lookups and logins
+    // Save user's remote information (e.g. category indexes) upon user lookups and logins
     await AccessDatabase.upsertAccessUser(user)
     return user
   } catch (e: any) {

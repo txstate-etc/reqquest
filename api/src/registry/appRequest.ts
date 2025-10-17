@@ -1,5 +1,5 @@
 import { FastifyRequest } from 'fastify'
-import { AccessRoleGroup, AccessUser, AccessUserGroupingInput, AccessUserIdentifierInput, ApplicationPhase, AppRequest, AppRequestStatus, RQContext, RQContextClass } from '../internal.js'
+import { AccessRoleGroup, AccessUser, AccessUserCategoryInput, AccessUserIdentifierInput, ApplicationPhase, AppRequest, AppRequestStatus, RQContext, RQContextClass } from '../internal.js'
 import { DateTime } from 'luxon'
 
 export interface AppRequestData {
@@ -31,7 +31,7 @@ export interface SearchUsersFilter {
   users?: AccessUser[]
   identifiers?: AccessUserIdentifierInput[]
   groups?: string[]
-  groupings?: AccessUserGroupingInput[]
+  categories?: AccessUserCategoryInput[]
 }
 
 /**
@@ -50,11 +50,11 @@ export interface SearchUsersFilter {
 export interface UserIndexDefinition<DataType = any> {
   /**
    * A unique, case-insensitive, stable key for the index. This will be used to namespace
-   * grouping values for a label.
+   * category values for a label.
    */
   label: string
   /**
-   * Used to display the grouping label name and does not need to be Unique, nor is required
+   * Used to display the category label name and does not need to be Unique, nor is required
    * as the label value may be used to display when this field is left absent.
    */
   displayLabel?: string
@@ -98,24 +98,24 @@ export interface AppDefinition {
      * The applicableGroups parameter is a list of groups that reqquest is interested in. If you prefer, you can
      * limit your query to only return those groups, but returning extra groups is also acceptable.
      *
-     * groupings data will included within the otherData field and utilized by the login to filter through
+     * Category data will included within the otherInfo field and utilized by the login to filter through
      * the retrieved UserIndexDefinition(s) and update the local database with the remote data that was
      * retrieved.
      */
     byLogins: (logins: string[], applicableGroups: string[]) => Promise<ReqquestUser[]>
     /**
      * Provide a function that will return a list of users, given a search query users,
-     * identifiers, groups, or other indexed grouping information.
+     * identifiers, groups, or other indexed category information.
      *
      * The function should return the search results of user objects, where the user object contains the login,
-     * fullname, and (application) groups, or other groupings (such as Institution Roles) the user belongs to.
+     * fullname, and (application) groups, or other catetories (such as Institution Roles) the user belongs to.
      * The list of users objects may be retrieved locally or from an outside database or system such as LDAP.
      * Upon login the data will be retrieved per user and updated and saved within the database.
      *
      */
     searchUsers?: (query: SearchUsersFilter) => Promise<AccessUser[]>
     /**
-     * List of grouping categories to index, ordered by how they are displayed in the user listing columns.
+     * List of categories to index. List is ordered by how they are displayed in the user listing columns.
      */
     indexes?: UserIndexDefinition[]
   }

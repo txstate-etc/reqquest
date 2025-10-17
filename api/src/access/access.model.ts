@@ -41,7 +41,7 @@ export class AccessUserIdentifierInput {
 }
 
 @InputType({ description: 'A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutionalRole", ids: ["Staff", "Student"] }, { label: "last-login", ids: ["2025-09-01T10:20:04"] }]' })
-export class AccessUserGroupingInput {
+export class AccessUserCategoryInput {
   @Field(type => [ID])
   ids!: string[]
 
@@ -85,9 +85,9 @@ export class AccessUserFilter {
   @Field(() => [String], { nullable: true, description: 'Filter users by associated Application Roles' })
   roles?: string[]
 
-  // Filtering by user groupings similar to input type like AppRequestIndexFilter
-  @Field(() => [AccessUserGroupingInput], { nullable: true, description: 'One to Many groupings Filter, like a institutional role people may belong to.' })
-  otherGroupingsByLabel?: AccessUserGroupingInput[]
+  // Filtering by user category similar to input type like AppRequestIndexFilter
+  @Field(() => [AccessUserCategoryInput], { nullable: true, description: 'One to Many categories Filter, like a institutional role people may belong to.' })
+  otherCategoriesByLabel?: AccessUserCategoryInput[]
 
   @Field({ nullable: true })
   search?: string

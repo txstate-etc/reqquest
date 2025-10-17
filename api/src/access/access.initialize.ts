@@ -88,10 +88,10 @@ export const accessMigrations: DatabaseMigration[] = [{
      * may be field collisions within the otherInfo property. To avoid this will namespace fields
      * within otherInfo property. otherInfo substructures looks like:
      *   - identifiers sub-property for accessUserIdentifiers labels
-     *   - groupings sub-property for accessUserGroupings labels
+     *   - categories sub-property for accessUserCategories labels
      *   - meta sub-property for non-indexed associated data
      */
-    await db.execute(`CREATE TABLE IF NOT EXISTS accessUserGroupings (
+    await db.execute(`CREATE TABLE IF NOT EXISTS accessUserCategories (
       userId INT UNSIGNED NOT NULL,
       label VARCHAR(128) NOT NULL, -- ex: institutional-role
       id VARCHAR(128) NOT NULL, -- ex: Staff

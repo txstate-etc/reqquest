@@ -21,8 +21,8 @@ export const load: PageLoad = async ({ url, depends }) => {
   const groupings = Object.keys(groupingsQuery)
   for (const grouping of groupings) {
     if (groupingsQuery[grouping] != null) {
-      accessUsersFilter.otherGroupingsByLabel ??= []
-      accessUsersFilter.otherGroupingsByLabel.push({ label: grouping, ids: groupingsQuery[grouping] })
+      accessUsersFilter.otherCategoriesByLabel ??= []
+      accessUsersFilter.otherCategoriesByLabel.push({ label: grouping, ids: groupingsQuery[grouping] })
     }
   }
   const { users, pageInfo } = await api.getAccessUsers(accessUsersFilter, pageFilter)
@@ -54,7 +54,7 @@ export const load: PageLoad = async ({ url, depends }) => {
       // lastLogin: u.otherInfo?.lastLogin ? DateTime.fromISO(u.otherInfo?.lastLogin).toFormat('MM/dd/yyyy') : 'unknown'
     }
     if (u.otherInfo) {
-      for (const group of pageInfo?.groupings ?? []) {
+      for (const group of pageInfo?.categories ?? []) {
         const label = group.label
         if (group.useInList) user[label] = Array.isArray(u.otherInfo[label]) ? u.otherInfo[label].join(', ') : u.otherInfo[label].toString()
       }
@@ -77,7 +77,7 @@ export const load: PageLoad = async ({ url, depends }) => {
     items: ComboMenuItem[]
   }
   const filters: Filter[] = []
-  for (const group of pageInfo?.groupings ?? []) {
+  for (const group of pageInfo?.categories ?? []) {
     const label = group.label
     if (group.useInList) columns.push({ id: label, label: group.displayLabel ? group.displayLabel : label, get: label })
     if (group.useInFilters) filters.push({ id: group.label, label: group.displayLabel, items: group.ids.map(id => ({ value: id })) })

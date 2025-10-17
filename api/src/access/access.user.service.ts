@@ -25,16 +25,16 @@ const groupsByUserInternalIdLoader = new ManyJoinedLoader({
   fetch: async (userInternalIds: number[]) => await database.getGroupsByUserIds(userInternalIds)
 })
 
-const allGroupingsCache = new Cache(async () => {
+const allCategoryCache = new Cache(async () => {
   const indexes = appConfig.userLookups.indexes
   if (!indexes || !indexes.length) return []
-  const ids = await Promise.all(indexes.map(i => AccessDatabase.getAccessUserGroupingsIdsByLabel(i.label)))
-  const groupings = []
+  const ids = await Promise.all(indexes.map(i => AccessDatabase.getaccessUserCategoryIdsByLabel(i.label)))
+  const categories = []
   for (const i in indexes) {
     const index = indexes[i]
-    groupings.push({ label: index.label, displayLabel: index.displayLabel, ids: ids[i], useInFilters: index.useInFilters, useInList: index.useInList })
+    categories.push({ label: index.label, displayLabel: index.displayLabel, ids: ids[i], useInFilters: index.useInFilters, useInList: index.useInList })
   }
-  return groupings
+  return categories
 }, { freshseconds: 30, staleseconds: 600 }) // 30 seconds, 5 minutes
 
 export class AccessUserService extends AuthService<AccessUser> {
@@ -50,7 +50,7 @@ export class AccessUserService extends AuthService<AccessUser> {
     const users = await database.getAccessUsers(filter)
     this.loaders.prime(accessUsersByIdLoader, users)
     const total = users.length
-    pageInfo.groupings = await allGroupingsCache.get()
+    pageInfo.categories = await allCategoryCache.get()
     if (paged?.page || paged?.perPage) {
       // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
       pageInfo.perPage = paged?.perPage || 100 // 0 should also be overridden, so || is better than nullish coalescing ??

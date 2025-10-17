@@ -5,8 +5,8 @@ export default {
         33,
         35,
         36,
-        40,
         41,
+        42,
         43,
         46,
         47,
@@ -214,10 +214,10 @@ export default {
         },
         "AccessRoleGroup": {
             "dateAdded": [
-                40
+                41
             ],
             "dateCreated": [
-                40
+                41
             ],
             "groupName": [
                 73
@@ -342,12 +342,23 @@ export default {
                 73
             ]
         },
+        "AccessUserCategoryInput": {
+            "ids": [
+                43
+            ],
+            "label": [
+                73
+            ],
+            "__typename": [
+                73
+            ]
+        },
         "AccessUserFilter": {
             "logins": [
                 43
             ],
-            "otherGroupingsByLabel": [
-                19
+            "otherCategoriesByLabel": [
+                18
             ],
             "otherIdentifiers": [
                 73
@@ -363,17 +374,6 @@ export default {
             ],
             "self": [
                 36
-            ],
-            "__typename": [
-                73
-            ]
-        },
-        "AccessUserGroupingInput": {
-            "ids": [
-                43
-            ],
-            "label": [
-                73
             ],
             "__typename": [
                 73
@@ -420,10 +420,10 @@ export default {
                 31
             ],
             "closedAt": [
-                40
+                41
             ],
             "createdAt": [
-                40
+                41
             ],
             "data": [
                 48,
@@ -466,7 +466,7 @@ export default {
                 73
             ],
             "updatedAt": [
-                40
+                41
             ],
             "__typename": [
                 73
@@ -506,7 +506,7 @@ export default {
                 22
             ],
             "createdAt": [
-                40
+                41
             ],
             "data": [
                 48
@@ -535,10 +535,10 @@ export default {
                 43
             ],
             "happenedAfter": [
-                40
+                41
             ],
             "happenedBefore": [
-                40
+                41
             ],
             "impersonated": [
                 36
@@ -561,16 +561,16 @@ export default {
                 36
             ],
             "closedAfter": [
-                40
+                41
             ],
             "closedBefore": [
-                40
+                41
             ],
             "createdAfter": [
-                40
+                41
             ],
             "createdBefore": [
-                40
+                41
             ],
             "ids": [
                 43
@@ -594,16 +594,16 @@ export default {
                 30
             ],
             "submittedAfter": [
-                40
+                41
             ],
             "submittedBefore": [
-                40
+                41
             ],
             "updatedAfter": [
-                40
+                41
             ],
             "updatedBefore": [
-                40
+                41
             ],
             "__typename": [
                 73
@@ -611,10 +611,10 @@ export default {
         },
         "AppRequestIndexCategory": {
             "appRequestListPriority": [
-                41
+                42
             ],
             "applicantDashboardPriority": [
-                41
+                42
             ],
             "category": [
                 73
@@ -623,13 +623,13 @@ export default {
                 73
             ],
             "listFiltersPriority": [
-                41
+                42
             ],
             "listable": [
                 36
             ],
             "reviewerDashboardPriority": [
-                41
+                42
             ],
             "values": [
                 45
@@ -744,9 +744,29 @@ export default {
         },
         "ApplicationStatus": {},
         "Boolean": {},
+        "Category": {
+            "displayLabel": [
+                73
+            ],
+            "ids": [
+                73
+            ],
+            "label": [
+                73
+            ],
+            "useInFilters": [
+                36
+            ],
+            "useInList": [
+                36
+            ],
+            "__typename": [
+                73
+            ]
+        },
         "Configuration": {
             "actions": [
-                38
+                39
             ],
             "data": [
                 48
@@ -788,33 +808,13 @@ export default {
         },
         "DateTime": {},
         "Float": {},
-        "Groupings": {
-            "displayLabel": [
-                73
-            ],
-            "ids": [
-                73
-            ],
-            "label": [
-                73
-            ],
-            "useInFilters": [
-                36
-            ],
-            "useInList": [
-                36
-            ],
-            "__typename": [
-                73
-            ]
-        },
         "ID": {},
         "IndexCategory": {
             "appRequestListPriority": [
-                41
+                42
             ],
             "applicantDashboardPriority": [
-                41
+                42
             ],
             "category": [
                 73
@@ -823,13 +823,13 @@ export default {
                 73
             ],
             "listFiltersPriority": [
-                41
+                42
             ],
             "listable": [
                 36
             ],
             "reviewerDashboardPriority": [
-                41
+                42
             ],
             "values": [
                 45,
@@ -1170,20 +1170,20 @@ export default {
             ]
         },
         "PaginationInfoWithTotalItems": {
-            "currentPage": [
-                41
+            "categories": [
+                37
             ],
-            "groupings": [
+            "currentPage": [
                 42
             ],
             "hasNextPage": [
                 36
             ],
             "perPage": [
-                41
+                42
             ],
             "totalItems": [
-                41
+                42
             ],
             "__typename": [
                 73
@@ -1202,19 +1202,19 @@ export default {
                 56
             ],
             "archiveDate": [
-                40
+                41
             ],
             "closeDate": [
-                40
+                41
             ],
             "code": [
                 73
             ],
             "configurations": [
-                37,
+                38,
                 {
                     "filter": [
-                        39
+                        40
                     ]
                 }
             ],
@@ -1225,7 +1225,7 @@ export default {
                 73
             ],
             "openDate": [
-                40
+                41
             ],
             "programs": [
                 58
@@ -1259,16 +1259,16 @@ export default {
         },
         "PeriodFilters": {
             "archiveAfter": [
-                40
+                41
             ],
             "archiveBefore": [
-                40
+                41
             ],
             "closesAfter": [
-                40
+                41
             ],
             "closesBefore": [
-                40
+                41
             ],
             "codes": [
                 73
@@ -1283,10 +1283,10 @@ export default {
                 36
             ],
             "opensAfter": [
-                40
+                41
             ],
             "opensBefore": [
-                40
+                41
             ],
             "__typename": [
                 73
@@ -1328,7 +1328,7 @@ export default {
         },
         "PeriodProgramRequirement": {
             "configuration": [
-                37
+                38
             ],
             "description": [
                 73
@@ -1357,7 +1357,7 @@ export default {
         },
         "PeriodPrompt": {
             "configuration": [
-                37
+                38
             ],
             "description": [
                 73
@@ -1380,10 +1380,10 @@ export default {
         },
         "PeriodUpdate": {
             "archiveDate": [
-                40
+                41
             ],
             "closeDate": [
-                40
+                41
             ],
             "code": [
                 73
@@ -1392,7 +1392,7 @@ export default {
                 73
             ],
             "openDate": [
-                40
+                41
             ],
             "reviewed": [
                 36
@@ -1446,7 +1446,7 @@ export default {
                 17,
                 {
                     "filter": [
-                        18
+                        19
                     ],
                     "paged": [
                         52
@@ -1619,7 +1619,7 @@ export default {
         },
         "ValidatedConfigurationResponse": {
             "configuration": [
-                37
+                38
             ],
             "messages": [
                 50
