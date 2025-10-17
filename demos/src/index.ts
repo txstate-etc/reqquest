@@ -32,10 +32,10 @@ async function main () {
       userLookups: {
         byLogins: async (logins: string[], applicableGroups: string[]) => {
           const pseudoInstitutionalRoles = (login: string) => {
-            if (login.startsWith('su')) return ['Staff']
-            if (login.startsWith('admin')) return ['Staff', 'Faculty']
-            if (login.startsWith('review')) return ['Faculty']
-            return ['Student']
+            if (login.startsWith('su')) return ['STAFF']
+            if (login.startsWith('admin')) return ['STAFF', 'FACULTY']
+            if (login.startsWith('review')) return ['FACULTY']
+            return ['STUDENT']
           }
           return logins.filter(login => userTypePrefixes.some(p => login.startsWith(p))).map(
             login => ({
@@ -57,16 +57,18 @@ async function main () {
           heading: 'Institutional Roles',
           useInFilters: true,
           useInList: true,
-          dataToIndexes: (data: string[]) => data,
-          indexesToTags: (indexes: string[]) => indexes.map(idx => ({ index: idx, tag: idx }))
-
+          // Example of reformatting so tag may be used both for index and display.
+          dataToIndexes: (data: string[]) => data.map(role => role.charAt(0).toLocaleUpperCase() + role.slice(1).toLocaleLowerCase()),
+          indexesToTags: (indexes: string[]) => indexes.map(idx => ({ index: idx }))
         }, {
           label: 'lastLogin',
           heading: 'Last Login',
           useInFilters: false,
           useInList: true,
-          dataToIndexes: (data: DateTime) => [data.toString()],
-          indexesToTags: (indexes: string[]) => indexes.map(idx => ({ index: idx, tag: idx }))
+          // Example of turning date data into epoch index for sortable timestamp.
+          dataToIndexes: (data: DateTime) => [data.toSeconds().toString()],
+          // Example of turning in epoch index into simple display format.
+          indexesToTags: (indexes: string[]) => indexes.map(idx => ({ index: idx, tag: DateTime.fromSeconds(parseInt(idx)).toFormat('MM/dd/yyyy') }))
         }]
       },
       groups: async (groupnames: string[]) => {
