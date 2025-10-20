@@ -124,8 +124,10 @@ export namespace AccessDatabase {
     if (filter?.otherCategoriesByLabel && Array.isArray(filter.otherCategoriesByLabel)) {
       // Verify matches one of the UserIndexDefinition.labels
       const labels = appConfig.userLookups.indexes?.map(i => i.label) ?? []
+      let count = 0
       for (const oGroup of filter.otherCategoriesByLabel) {
-        const joinName = `accessUserCategories${oGroup.label}`
+        count += 1
+        const joinName = `accessUserCategories${count}`
         if (labels.includes(oGroup.label) && oGroup.ids.length && !joins.has(joinName)) {
           joins.set(joinName, `
             LEFT JOIN (
