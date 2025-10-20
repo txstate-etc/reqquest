@@ -9,23 +9,22 @@ export const state_residence_req: RequirementDefinition<StateResidenceConfigRequ
   title: 'Provide state residency information',
   navTitle: 'State Residency',
   description: 'Provide identifying information for applicants state of residence',
-  promptKeys: ['state_residence_prompt', 'state_residence_confirmation_prompt'],
+  promptKeys: ['state_residence_prompt'],
   resolve: (data, config) => {
     const stateResidencePromptData = data.state_residence_prompt as StateResidencePromptData
-    //if (stateResidencePromptData?.residentOfRequiredState == null) return { status: RequirementStatus.PENDING }
-    //if (stateResidencePromptData?.residentOfRequiredState === true) return { status: RequirementStatus.MET }
-    // query usps with input address to get details .. or is this done at the prompt level
-    return { status: RequirementStatus.DISQUALIFYING, reason: `You must reside in ${config.residentOfState} to qualify.` }
+    if (stateResidencePromptData?.state == null) return { status: RequirementStatus.PENDING }
+    if (!config.residentOfState.find(state => stateResidencePromptData!.state === state)) return { status: RequirementStatus.DISQUALIFYING, reason: `You must reside in one of the following states to qualify: ${config.residentOfState.join(', ')}.` }
+    return { status: RequirementStatus.PENDING }
   },
   configuration: {
     validate: config => {
       const messages: MutationMessage[] = []
       if (config.residentOfState == null) {
-        messages.push({ type: MutationMessageType.error, message: 'Please specify the state to which an applicant must reside.', arg: 'residentOfState' })
+        messages.push({ type: MutationMessageType.error, message: 'Please specify the state(s) to which an applicant must reside to qualify for any programs.', arg: 'residentOfState' })
       }
       return messages
     },
-    default: { residentOfState: 'Texas' }
+    default: { residentOfState: ['Texas', 'Oklahoma', 'Louisiana'] }
   }  
 }
 

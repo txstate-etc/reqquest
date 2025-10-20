@@ -31,6 +31,12 @@ import ResidenceConfig from './simple/ResidenceConfig.svelte'
 import ResidenceConfirmationReviewPrompt from './simple/ResidenceConfirmationReviewPrompt.svelte'
 import ResidenceConfirmationReviewPromptDisplay from './simple/ResidenceConfirmationReviewPromptDisplay.svelte'
 
+/** Compled */
+import ComplexResidencePrompt from './complex/ResidencePrompt.svelte'
+import ComplexResidencePromptDisplay from './complex/ResidencePromptDisplay.svelte'
+import ComplexResidenceConfig from './complex/ResidenceConfig.svelte'
+
+
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts} =  configureDemoInstanceParams()
 
 export const uiRegistry = new UIRegistry({
@@ -132,7 +138,27 @@ function configureDemoInstanceParams() {
     }
   }
   else if (PUBLIC_DEMO_INSTANCE === 'complex') {
-    
+    return {
+      appName: 'Pet lover',
+      applicantDashboardIntroHeader: 'Keep your love of pets alive!',
+      applicantDashboardIntroDetail: 'Submitting an application is the first step in making the life of a pet better! Based on your responses you will receive a list of "eligible benefits."',
+      applicantDashboardRecentDays: 30,
+      programs: [{ key: 'adopt_a_dog_program', icon: DogWalker },
+        { key: 'adopt_a_cat_program', icon: PedestrianFamily },
+        { key: 'foster_a_pet_program', icon: Gamification },
+        { key: 'senior_pet_program', icon: DogWalker }
+      ],
+      requirements: [
+        { key: 'state_residence_req', configureComponent: ComplexResidenceConfig }
+      ],
+      prompts: [
+        {
+          key: 'state_residence_prompt',
+          formComponent: ComplexResidencePrompt,
+          displayComponent: ComplexResidencePromptDisplay
+        }
+      ]
+    }
   }
   return {
     appName: 'Adopt a Critter',

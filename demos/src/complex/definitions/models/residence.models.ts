@@ -11,7 +11,6 @@ export const stateList: { value: string, label: string }[] = [
   { value: 'CO', label: 'Colorado' },
   { value: 'CT', label: 'Connecticut' },
   { value: 'DE', label: 'Delaware' },
-  { value: 'DC', label: 'District of Columbia' },
   { value: 'FL', label: 'Florida' },
   { value: 'GA', label: 'Georgia' },
   { value: 'HI', label: 'Hawaii' },
@@ -21,6 +20,7 @@ export const stateList: { value: string, label: string }[] = [
   { value: 'IA', label: 'Iowa' },
   { value: 'KS', label: 'Kansas' },
   { value: 'KY', label: 'Kentucky' },
+  { value: 'LA', label: 'Louisiana'},
   { value: 'MD', label: 'Maryland' },
   { value: 'ME', label: 'Maine' },
   { value: 'MA', label: 'Massachusetts' },
@@ -62,7 +62,7 @@ export const stateNames = stateList.map(s1 => s1.label)
 export const StateResidenceConfigRequirementSchema = {
   type: 'object',
   properties: {
-    residentOfState: { type: 'string', enum: stateNames }
+    residentOfState: { type: 'array', items: { enum: stateNames } }
   },
   required: ['residentOfState'],
   additionalProperties: false

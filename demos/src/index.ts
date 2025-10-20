@@ -7,7 +7,13 @@ import { simpleTestMigrations } from './simple/testdata.js'
 import { DateTime } from 'luxon'
 import { foster_a_pet_program as multi_foster_a_pet_program, adopt_a_dog_program as multi_adopt_a_dog_program, adopt_a_cat_program as multi_adopt_a_cat_program } from './multi/definitions/programs.js'
 import { multiTestMigrations } from './multi/testdata.js'
+import { complexTestMigrations } from './complex/testdata.js'
 import { StringifyOptions } from 'node:querystring'
+import { adopt_a_dog_program as complex_adopt_a_dog_program,
+         adopt_a_cat_program as complex_adopt_a_cat_program,
+         foster_a_pet_program, senior_pet_program,
+         state_residence_req as complex_state_residence_req,
+         state_residence_prompt as complex_state_residence_prompt } from './complex/index.js'
 
 async function main () {
   const server = new RQServer({
@@ -98,7 +104,7 @@ function configureDemoInstanceParams () {
     migrations: simpleTestMigrations,
     multipleRequestsPerPeriod: false
   }
-  else if (process.env.DEMO_INSTANCE === 'multi') return { // TODO - Currently set to mimic default demo but allowing multi requests, once multi spec is done update
+  else if (process.env.DEMO_INSTANCE === 'multi') return {
     programGroups: [],
     programs: [adopt_a_dog_program, adopt_a_cat_program],
     requirements: [have_big_yard_req, have_adequate_personal_space_req, cat_tower_req, not_allergic_to_tuna_req, applicant_seems_nice_req, must_exercise_your_dog_req, which_state_req, other_cats_applicant_req, other_cats_reviewer_req],
@@ -106,12 +112,12 @@ function configureDemoInstanceParams () {
     migrations: multiTestMigrations,
     multipleRequestsPerPeriod: true
   }
-  else if (process.env.DEMO_INSTANCE === 'complex') return { // TODO
+  else if (process.env.DEMO_INSTANCE === 'complex') return { 
     programGroups: [],
-    programs: [],
-    requirements: [],
-    prompts: [],
-    migrations: simpleTestMigrations, // TODO
+    programs: [complex_adopt_a_dog_program, complex_adopt_a_cat_program, foster_a_pet_program, senior_pet_program],
+    requirements: [complex_state_residence_req],
+    prompts: [complex_state_residence_prompt],
+    migrations: complexTestMigrations,
     multipleRequestsPerPeriod: false
   }
   return {

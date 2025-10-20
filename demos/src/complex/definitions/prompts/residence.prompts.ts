@@ -13,8 +13,8 @@ export const state_residence_prompt: PromptDefinition = {
     const messages: MutationMessage[] = []
     const doc = data['residentIdDoc']
     if (doc) {
-      if (doc.size > 10 * 1024 * 1024) messages.push({ type: MutationMessageType.error, message: 'This document is too large, please upload a file less than 10MB.', arg: 'residentIdDoc' })
-      if (doc.mime !== 'image/jpeg') messages.push({ type: MutationMessageType.error, message: 'File must be of type .jpeg or .jpg', arg: 'residentIdDoc' })     
+      if (doc.size > 15 * 1024 * 1024) messages.push({ type: MutationMessageType.error, message: 'This document is too large, please upload a file less than 10MB.', arg: 'residentIdDoc' })
+      if (doc.mime !== 'image/jpeg' && doc.mime !== 'image/gif' && doc.mime !== 'image/png' && doc.mime !== 'application/pdf') messages.push({ type: MutationMessageType.error, message: 'File must be of type JPEG, GIF, PNG or PDF', arg: 'residentIdDoc' })     
     }    
     return messages
   },
@@ -32,26 +32,21 @@ export const state_residence_prompt: PromptDefinition = {
     
  // },
   validate: (data, config, allConfig) => {
-    const messages: MutationMessage[] = []
-    if (data.residentOfRequiredState == null) {
-      messages.push({ type: MutationMessageType.error, message: 'Please confirm whether you are a resident of the state.', arg: 'residentOfRequiredState' })
-    } else if (!data.residentOfRequiredState) {
-      messages.push({ type: MutationMessageType.warning, message: `Only ${allConfig.state_residence_req.residentOfState} residents qualify.`, arg: 'residentOfRequiredState' })
-    } else { 
-      if (!data.firstName) messages.push({ type: MutationMessageType.error, message: 'First name required', arg: 'firstName' })
-      if (!data.lastName) messages.push({ type: MutationMessageType.error, message: 'Last name required', arg: 'lastName' })
-      if (!data.streetAddress) messages.push({ type: MutationMessageType.error, message: 'Street address required', arg: 'streetAddress' })
-      if (!data.city) messages.push({ type: MutationMessageType.error, message: 'City required', arg: 'city' })
-      if (!data.state) messages.push({ type: MutationMessageType.error, message: 'State required', arg: 'state' })
-      if (data.phoneNumber && !RegExp(/^[0-9]{10,12}$/).test(data.phoneNumber)) messages.push({ type: MutationMessageType.error, message: 'Invalid phone number', arg: 'phoneNumber' }) 
-      if (data.emailAddress && !RegExp(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g).test(data.emailAddress)) messages.push({ type: MutationMessageType.error, message: 'Invalid email address', arg: 'emailAddress' })
-      if (!data.zipCode) {
-        messages.push({ type: MutationMessageType.error, message: 'Zipcode required', arg: 'zipCode' })
-      } else {  
-        if (!RegExp(/^[0-9]{5}$/).test(data.zipCode)) messages.push({ type: MutationMessageType.error, message: 'Invalid zipcode', arg: 'zipCode' })
-      } 
-      if (!data.residentIdDoc) messages.push({ type: MutationMessageType.error, message: 'Identifying documentation required', arg: 'residentIdDoc' })
-    }    
+    const messages: MutationMessage[] = []     
+    if (!data.firstName) messages.push({ type: MutationMessageType.error, message: 'First name required', arg: 'firstName' })
+    if (!data.lastName) messages.push({ type: MutationMessageType.error, message: 'Last name required', arg: 'lastName' })
+    if (!data.streetAddress) messages.push({ type: MutationMessageType.error, message: 'Street address required', arg: 'streetAddress' })
+    if (!data.city) messages.push({ type: MutationMessageType.error, message: 'City required', arg: 'city' })
+    if (!data.state) messages.push({ type: MutationMessageType.error, message: 'State required', arg: 'state' })
+    if (data.phoneNumber && !RegExp(/^[0-9]{10,12}$/).test(data.phoneNumber)) messages.push({ type: MutationMessageType.error, message: 'Invalid phone number', arg: 'phoneNumber' }) 
+    if (data.emailAddress && !RegExp(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g).test(data.emailAddress)) messages.push({ type: MutationMessageType.error, message: 'Invalid email address', arg: 'emailAddress' })
+    if (!data.zipCode) {
+      messages.push({ type: MutationMessageType.error, message: 'Zipcode required', arg: 'zipCode' })
+    } else {  
+      if (!RegExp(/^[0-9]{5}$/).test(data.zipCode)) messages.push({ type: MutationMessageType.error, message: 'Invalid zipcode', arg: 'zipCode' })
+    } 
+    if (!data.residentIdDoc) messages.push({ type: MutationMessageType.error, message: 'Identifying documentation required', arg: 'residentIdDoc' })
+  
     return messages
   }
 }

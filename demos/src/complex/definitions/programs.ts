@@ -21,6 +21,13 @@ export const foster_a_pet_program: ProgramDefinition = {
   title: 'Foster a Pet',
   requirementKeys: [
     'state_residence_req'    
-  ],
-  workflowStages: []
+  ]
+}
+
+export const senior_pet_program: ProgramDefinition = {
+  key: 'senior_pet_program',
+  title: 'Adopt a senior pet',
+  requirementKeys: [
+    'state_residence_req'    
+  ]
 }
