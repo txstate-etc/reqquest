@@ -138,13 +138,6 @@ export namespace AccessDatabase {
 
   export async function getAccessUsers (filter?: AccessUserFilter): Promise<AccessUser[]> {
     const { where, params, joins } = accessUserProcessFilter(filter)
-    console.debug(`where: ${JSON.stringify(where)},
-    params: ${JSON.stringify(params)},
-    joins: ${JSON.stringify(Array.from(joins))},
-    query: SELECT DISTINCT accessUsers.* FROM accessUsers
-  ${Array.from(joins.values()).join('\n')}
-  ${where.length > 0 ? `WHERE (${where.join(') AND (')})` : ''}
-  ORDER BY accessUsers.login asc`)
     const rows = await db.getall<AccessUserRow>(`
       SELECT DISTINCT * FROM accessUsers
       ${Array.from(joins.values()).join('\n')}
