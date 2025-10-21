@@ -3,11 +3,11 @@ import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-
 import { StateResidenceConfigRequirementData } from '../models/index.js'
 import { StateResidencePromptData } from '../models/index.js'
 
-export const state_residence_req: RequirementDefinition<StateResidenceConfigRequirementData> = {
+export const state_residence_prequal_req: RequirementDefinition<StateResidenceConfigRequirementData> = {
   type: RequirementType.PREQUAL,
-  key: 'state_residence_req',
-  title: 'Provide state residency information',
-  navTitle: 'State Residency',
+  key: 'state_residence_prequal_req',
+  title: 'Provide residency information',
+  navTitle: 'Residency',
   description: 'Provide identifying information for applicants state of residence',
   promptKeys: ['state_residence_prompt'],
   resolve: (data, config) => {
@@ -26,6 +26,18 @@ export const state_residence_req: RequirementDefinition<StateResidenceConfigRequ
     },
     default: { residentOfState: ['Texas', 'Oklahoma', 'Louisiana'] }
   }  
+}
+
+export const homeowner_prequal_req: RequirementDefinition = {
+  type: RequirementType.PREQUAL,
+  key: 'homeowner_prequal_req',
+  title: 'Verify homeowner info',
+  navTitle: 'Homeowner',
+  description: 'Verify applicant is homeowner',
+  promptKeys: ['homeowner_prompt'],
+  resolve: (data, config) => {  
+    return { status: RequirementStatus.PENDING }
+  }
 }
 
 

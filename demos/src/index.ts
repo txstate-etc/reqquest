@@ -1,19 +1,28 @@
 import { RQServer } from '@reqquest/api'
 import { analyticsPlugin, unifiedAuthenticate } from 'fastify-txstate'
 import { have_yard_prompt, adopt_a_dog_program, have_big_yard_req, have_adequate_personal_space_req, adopt_a_cat_program, cat_tower_req, not_allergic_to_tuna_req, have_a_cat_tower_prompt, not_allergic_to_tuna_prompt, applicant_seems_nice_req, applicant_seems_nice_prompt, must_exercise_your_dog_req, must_exercise_your_dog_prompt, which_state_req, which_state_prompt, other_cats_applicant_req, other_cats_prompt, other_cats_vaccines_prompt, other_cats_reviewer_req, vaccine_review_prompt } from './default/index.js'
-import { adopt_a_pet_program, state_residence_confirmation_prompt, state_residence_confirmation_req, state_residence_prompt, state_residence_req } from './simple/index.js'
-import { defaultTestMigrations } from './default/testdata.js'
-import { simpleTestMigrations } from './simple/testdata.js'
 import { DateTime } from 'luxon'
-import { foster_a_pet_program as multi_foster_a_pet_program, adopt_a_dog_program as multi_adopt_a_dog_program, adopt_a_cat_program as multi_adopt_a_cat_program } from './multi/definitions/programs.js'
-import { multiTestMigrations } from './multi/testdata.js'
-import { complexTestMigrations } from './complex/testdata.js'
 import { StringifyOptions } from 'node:querystring'
-import { adopt_a_dog_program as complex_adopt_a_dog_program,
-         adopt_a_cat_program as complex_adopt_a_cat_program,
-         foster_a_pet_program, senior_pet_program,
-         state_residence_req as complex_state_residence_req,
-         state_residence_prompt as complex_state_residence_prompt } from './complex/index.js'
+
+import { defaultTestMigrations } from './default/testdata.js'
+import * as defaultPrograms from './default/definitions/programs.js'
+import * as defaultRequirements from './default/definitions/requirements/index.js'
+import * as defaultPrompts from './default/definitions/prompts/index.js'
+
+import { simpleTestMigrations } from './simple/testdata.js'
+import * as simplePrograms from './simple/definitions/programs.js'
+import * as simpleRequirements from './simple/definitions/requirements/index.js'
+import * as simplePrompts from './simple/definitions/prompts/index.js'
+
+import { multiTestMigrations } from './multi/testdata.js'
+import * as multiPrograms from './default/definitions/programs.js'
+import * as multiRequirements from './default/definitions/requirements/index.js'
+import * as multiPrompts from './default/definitions/prompts/index.js'
+
+import { complexTestMigrations } from './complex/testdata.js'
+import * as complexPrograms from './complex/definitions/programs.js'
+import * as complexRequirements from './complex/definitions/requirements/index.js'
+import * as complexPrompts from './complex/definitions/prompts/index.js'
 
 async function main () {
   const server = new RQServer({
@@ -98,33 +107,33 @@ main().catch(e => { console.error(e) })
 function configureDemoInstanceParams () {
   if (process.env.DEMO_INSTANCE === 'simple') return {
     programGroups: [],
-    programs: [adopt_a_pet_program],
-    requirements: [state_residence_req, state_residence_confirmation_req],
-    prompts: [state_residence_prompt, state_residence_confirmation_prompt],
+    programs: Object.values(simplePrograms),
+    requirements: Object.values(simpleRequirements),
+    prompts: Object.values(simplePrompts),
     migrations: simpleTestMigrations,
     multipleRequestsPerPeriod: false
   }
   else if (process.env.DEMO_INSTANCE === 'multi') return {
     programGroups: [],
-    programs: [adopt_a_dog_program, adopt_a_cat_program],
-    requirements: [have_big_yard_req, have_adequate_personal_space_req, cat_tower_req, not_allergic_to_tuna_req, applicant_seems_nice_req, must_exercise_your_dog_req, which_state_req, other_cats_applicant_req, other_cats_reviewer_req],
-    prompts: [have_yard_prompt, have_a_cat_tower_prompt, not_allergic_to_tuna_prompt, applicant_seems_nice_prompt, must_exercise_your_dog_prompt, which_state_prompt, other_cats_prompt, other_cats_vaccines_prompt, vaccine_review_prompt],
+    programs: Object.values(multiPrograms),
+    requirements: Object.values(multiRequirements),
+    prompts: Object.values(multiPrompts),
     migrations: multiTestMigrations,
     multipleRequestsPerPeriod: true
   }
   else if (process.env.DEMO_INSTANCE === 'complex') return { 
     programGroups: [],
-    programs: [complex_adopt_a_dog_program, complex_adopt_a_cat_program, foster_a_pet_program, senior_pet_program],
-    requirements: [complex_state_residence_req],
-    prompts: [complex_state_residence_prompt],
+    programs: Object.values(complexPrograms), 
+    requirements: Object.values(complexRequirements),
+    prompts: Object.values(complexPrompts),
     migrations: complexTestMigrations,
     multipleRequestsPerPeriod: false
   }
   return {
     programGroups: [],
-    programs: [adopt_a_dog_program, adopt_a_cat_program],
-    requirements: [have_big_yard_req, have_adequate_personal_space_req, cat_tower_req, not_allergic_to_tuna_req, applicant_seems_nice_req, must_exercise_your_dog_req, which_state_req, other_cats_applicant_req, other_cats_reviewer_req],
-    prompts: [have_yard_prompt, have_a_cat_tower_prompt, not_allergic_to_tuna_prompt, applicant_seems_nice_prompt, must_exercise_your_dog_prompt, which_state_prompt, other_cats_prompt, other_cats_vaccines_prompt, vaccine_review_prompt],
+    programs: Object.values(defaultPrograms),
+    requirements: Object.values(defaultRequirements),
+    prompts: Object.values(defaultPrompts),
     migrations: defaultTestMigrations,
     multipleRequestsPerPeriod: false
   }

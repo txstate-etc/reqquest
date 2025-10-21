@@ -101,19 +101,5 @@ export const StateResidencePromptSchema = {
 } as const satisfies SchemaObject
 export type StateResidencePromptData = FromSchema<typeof StateResidencePromptSchema>
 
-export const StateResidenceAutoUpdatePromptSchema = {
-  type: 'object',
-  properties: { 
-    firstName: { type: 'string' },
-    lastName: { type: 'string' },
-    streetAddress: { type: 'string' },
-    emailAddress: { type: 'string' },
-    phoneNumber: { type: 'string' },
-    city: { type: 'string' },
-    state: { type: 'string', enum: stateNames},
-    zipCode: { type: 'string' }
-  },
-  additionalProperties: false
-} as const satisfies SchemaObject
-export type StateResidenceAutoUpdatePromptData = FromSchema<typeof StateResidenceAutoUpdatePromptSchema>
+
 

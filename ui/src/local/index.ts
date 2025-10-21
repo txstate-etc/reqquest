@@ -31,7 +31,7 @@ import ResidenceConfig from './simple/ResidenceConfig.svelte'
 import ResidenceConfirmationReviewPrompt from './simple/ResidenceConfirmationReviewPrompt.svelte'
 import ResidenceConfirmationReviewPromptDisplay from './simple/ResidenceConfirmationReviewPromptDisplay.svelte'
 
-/** Compled */
+/** Complex */
 import ComplexResidencePrompt from './complex/ResidencePrompt.svelte'
 import ComplexResidencePromptDisplay from './complex/ResidencePromptDisplay.svelte'
 import ComplexResidenceConfig from './complex/ResidenceConfig.svelte'
