@@ -124,20 +124,11 @@ export namespace AccessDatabase {
     if (filter?.otherCategoriesByLabel && Array.isArray(filter.otherCategoriesByLabel)) {
       // Verify matches one of the UserIndexDefinition.labels
       const labels = appConfig.userLookups.indexes?.map(i => i.label) ?? []
-      let count = 0
       for (const oGroup of filter.otherCategoriesByLabel) {
-        count += 1
-        const joinName = `accessUserCategories${count}`
-        if (labels.includes(oGroup.label) && oGroup.ids.length && !joins.has(joinName)) {
-          joins.set(joinName, `
-            LEFT JOIN (
-              SELECT DISTINCT userId, GROUP_CONCAT(accessUserCategories.id SEPARATOR " ") AS ids
-              FROM accessUserCategories
-              WHERE accessUserCategories.label = '${oGroup.label}' AND accessUserCategories.id IN (${db.in(joinbinds, oGroup.ids)})
-              GROUP BY userId
-            ) AS ${joinName} ON accessUsers.id = ${joinName}.userId
-          `)
-          where.push(`${joinName}.ids IS NOT NULL`)
+        if (labels.includes(oGroup.label) && oGroup.ids.length) {
+          joins.set('accessUserCategories', 'INNER JOIN accessUserCategories ON accessUsers.id = accessUserCategories.userId')
+          joinbinds.push(oGroup.label)
+          where.push(`accessUserCategories.label = ? AND accessUserCategories.id IN (${db.in(joinbinds, oGroup.ids)})`)
         }
       }
     }
@@ -147,11 +138,18 @@ export namespace AccessDatabase {
 
   export async function getAccessUsers (filter?: AccessUserFilter): Promise<AccessUser[]> {
     const { where, params, joins } = accessUserProcessFilter(filter)
+    console.debug(`where: ${JSON.stringify(where)},
+    params: ${JSON.stringify(params)},
+    joins: ${JSON.stringify(Array.from(joins))},
+    query: SELECT DISTINCT accessUsers.* FROM accessUsers
+  ${Array.from(joins.values()).join('\n')}
+  ${where.length > 0 ? `WHERE (${where.join(') AND (')})` : ''}
+  ORDER BY accessUsers.login asc`)
     const rows = await db.getall<AccessUserRow>(`
-      select * FROM accessUsers
+      SELECT DISTINCT * FROM accessUsers
       ${Array.from(joins.values()).join('\n')}
       ${where.length > 0 ? `WHERE (${where.join(') AND (')})` : ''}
-      order by accessUsers.login asc
+      ORDER BY accessUsers.login ASC
     `, params)
     return rows.map(row => new AccessUser(row))
   }
