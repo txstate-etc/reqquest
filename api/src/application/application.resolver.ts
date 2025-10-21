@@ -23,6 +23,11 @@ export class ApplicationResolver {
   async advanceWorkflow (@Ctx() ctx: RQContext, @Arg('applicationId', type => ID) applicationId: string) {
     return await ctx.svc(ApplicationService).advanceWorkflow(applicationId)
   }
+
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Moves the application back to the previous workflow stage. If on the first blocking workflow stage, moves back to APPROVAL. If on the first non-blocking workflow, throws an error.' })
+  async reverseWorkflow (@Ctx() ctx: RQContext, @Arg('applicationId', type => ID) applicationId: string) {
+    return await ctx.svc(ApplicationService).reverseWorkflow(applicationId)
+  }
 }
 
 @Resolver(of => ApplicationActions)
@@ -32,7 +37,13 @@ export class ApplicationActionsResolver {
     return ctx.svc(ApplicationService).mayViewAsReviewer(application)
   }
 
+  @FieldResolver(returns => Boolean)
   advanceWorkflow (@Ctx() ctx: RQContext, @Root() application: Application) {
     return ctx.svc(ApplicationService).mayAdvanceWorkflow(application)
+  }
+
+  @FieldResolver(returns => Boolean)
+  async reverseWorkflow (@Ctx() ctx: RQContext, @Root() application: Application) {
+    return await ctx.svc(ApplicationService).mayReverseWorkflow(application)
   }
 }

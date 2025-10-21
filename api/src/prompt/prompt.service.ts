@@ -9,7 +9,8 @@ import {
   getAppRequests, getAppRequestData, appRequestTransaction,
   recordAppRequestActivity, appConfig, AppRequestData, AppRequestStatus, ApplicationPhase,
   ApplicationService, setRequirementPromptsInvalid, AppRequestServiceInternal,
-  AppRequestPhase
+  AppRequestPhase,
+  RequirementType
 } from '../internal.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
@@ -48,6 +49,17 @@ const periodPromptByPeroidIdLoader = new OneToManyLoader({
   extractKey: row => row.periodId,
   idLoader: periodPromptByPeriodIdAndPromptKeyLoader
 })
+
+const preSubmitTypes = new Set<RequirementType>([
+  RequirementType.PREQUAL,
+  RequirementType.QUALIFICATION,
+  RequirementType.POSTQUAL
+])
+
+const reviewTypes = new Set<RequirementType>([
+  RequirementType.APPROVAL,
+  RequirementType.PREAPPROVAL
+])
 
 export class PromptService extends AuthService<Prompt> {
   async find () {
@@ -130,19 +142,36 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
 
   mayUpdate (prompt: RequirementPrompt): boolean {
     if (prompt.appRequestDbStatus !== AppRequestStatusDB.OPEN) return false
+    const reqDef = requirementRegistry.get(prompt.requirementKey)
     if (this.isOwn(prompt)) {
-      if (
-        [AppRequestPhase.STARTED, AppRequestPhase.ACCEPTANCE].includes(prompt.appRequestDbPhase)
-        && promptRegistry.isUserPrompt(prompt.key)
-      ) {
-        return true
-      }
+      if (prompt.appRequestDbPhase === AppRequestPhase.STARTED && preSubmitTypes.has(reqDef.type)) return true
+      if (prompt.appRequestDbPhase === AppRequestPhase.ACCEPTANCE && reqDef.type === RequirementType.ACCEPTANCE) return true
       if (!this.hasControl('AppRequest', 'review_own', prompt.appRequestTags)) return false
     }
+    const hasUpdate = this.hasControl('PromptAnswer', 'update', { ...prompt.authorizationKeys, ...prompt.appRequestTags })
+    const hasUpdateAnytime = this.hasControl('PromptAnswer', 'update_anytime', { ...prompt.authorizationKeys, ...prompt.appRequestTags })
     if (prompt.appRequestDbPhase === AppRequestPhase.SUBMITTED) {
-      return this.hasControl('PromptAnswer', 'update', { ...prompt.authorizationKeys, ...prompt.appRequestTags })
+      if (reqDef.type === RequirementType.WORKFLOW) {
+        if (prompt.workflowStage === prompt.applicationWorkflowStage) {
+          return hasUpdate || hasUpdateAnytime
+        }
+      } else if (preSubmitTypes.has(reqDef.type) || reviewTypes.has(reqDef.type)) {
+        if (prompt.applicationPhase !== ApplicationPhase.REVIEW_COMPLETE) return hasUpdate || hasUpdateAnytime
+      }
+    } else if (prompt.appRequestDbPhase === AppRequestPhase.ACCEPTANCE) {
+      if (reqDef.type === RequirementType.ACCEPTANCE) {
+        return hasUpdate || hasUpdateAnytime
+      }
+    } else if (prompt.appRequestDbPhase === AppRequestPhase.STARTED) {
+      if (preSubmitTypes.has(reqDef.type)) {
+        return hasUpdateAnytime
+      }
+    } else if (prompt.appRequestDbPhase === AppRequestPhase.WORKFLOW_NONBLOCKING) {
+      if (prompt.workflowStage === prompt.applicationWorkflowStage) {
+        return hasUpdate || hasUpdateAnytime
+      }
     }
-    return this.hasControl('PromptAnswer', 'update_anytime', { ...prompt.authorizationKeys, ...prompt.appRequestTags })
+    return false
   }
 
   async update (prompt: RequirementPrompt, data: any, validateOnly = false, dataVersion?: number) {

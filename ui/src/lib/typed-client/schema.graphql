@@ -295,6 +295,7 @@ type AppRequest {
   Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date.
   """
   closedAt: DateTime
+  complete: Boolean!
   createdAt: DateTime!
 
   """
@@ -341,6 +342,11 @@ type AppRequest {
 
 type AppRequestActions {
   """
+  User may finalize the acceptance or denial of the offer. Sends the app request to non-blocking workflow (or completion).
+  """
+  accept: Boolean!
+
+  """
   User may cancel this app request as the owner. Separate from closing as a reviewer/admin.
   """
   cancel: Boolean!
@@ -350,7 +356,9 @@ type AppRequestActions {
   """
   close: Boolean!
 
-  """User may make an offer on this app request."""
+  """
+  User may make an offer on this app request. Sends the app request to the acceptance phase.
+  """
   offer: Boolean!
 
   """
@@ -360,6 +368,21 @@ type AppRequestActions {
 
   """User may return this app request to the applicant phase."""
   return: Boolean!
+
+  """
+  User may return the app request to the acceptance phase from non-blocking workflow or completion.
+  """
+  returnToOffer: Boolean!
+
+  """
+  User may return the app request to the review phase from non-blocking workflow or completion. This does not cover reclaiming an offer - see reverseOffer for that. It also does not cover returning from completion to acceptance - see returnToOffer for that.
+  """
+  returnToReview: Boolean!
+
+  """
+  User may withdraw the offer and return the app request to the review phase for changes.
+  """
+  reverseOffer: Boolean!
 
   """Whether the user can view this app request as a reviewer."""
   review: Boolean!
@@ -654,6 +677,8 @@ type Application {
 }
 
 type ApplicationActions {
+  advanceWorkflow: Boolean!
+  reverseWorkflow: Boolean!
   viewAsReviewer: Boolean!
 }
 
@@ -994,6 +1019,26 @@ type Mutation {
   Return the app request to the applicant phase. This is only available if the app request is in a state that allows returning.
   """
   returnAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
+
+  """
+  Return the app request to the acceptance phase from non-blocking workflow or completion.
+  """
+  returnToOffer(appRequestId: ID!): ValidatedAppRequestResponse!
+
+  """
+  Return the app request to the review phase from non-blocking workflow or completion. This does not cover reclaiming an offer - see reverseOffer for that. It also does not cover returning from review to acceptance - see returnToReview for that.
+  """
+  returnToReview(appRequestId: ID!): ValidatedAppRequestResponse!
+
+  """
+  Withdraw the offer and return the app request to the review phase for changes.
+  """
+  reverseOffer(appRequestId: ID!): ValidatedAppRequestResponse!
+
+  """
+  Moves the application back to the previous workflow stage. If on the first blocking workflow stage, moves back to APPROVAL. If on the first non-blocking workflow, throws an error.
+  """
+  reverseWorkflow(applicationId: ID!): ValidatedAppRequestResponse!
   roleAddGrant(grant: AccessRoleGrantCreate!, roleId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!
   roleCreate(role: AccessRoleInput!, validateOnly: Boolean): AccessRoleValidatedResponse!
   roleDelete(roleId: ID!): ValidatedResponse!

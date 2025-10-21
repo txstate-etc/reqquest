@@ -126,6 +126,27 @@ export class AppRequestResolver {
     return await ctx.svc(AppRequestService).acceptOffer(appRequest)
   }
 
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Return the app request to the review phase from non-blocking workflow or completion. This does not cover reclaiming an offer - see reverseOffer for that. It also does not cover returning from review to acceptance - see returnToReview for that.' })
+  async returnToReview (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
+    const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
+    if (!appRequest) throw new Error('App request not found.')
+    return await ctx.svc(AppRequestService).returnToReview(appRequest)
+  }
+
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Return the app request to the acceptance phase from non-blocking workflow or completion.' })
+  async returnToOffer (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
+    const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
+    if (!appRequest) throw new Error('App request not found.')
+    return await ctx.svc(AppRequestService).returnToOffer(appRequest)
+  }
+
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Withdraw the offer and return the app request to the review phase for changes.' })
+  async reverseOffer (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
+    const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
+    if (!appRequest) throw new Error('App request not found.')
+    return await ctx.svc(AppRequestService).reverseOffer(appRequest)
+  }
+
   @Mutation(returns => ValidatedAppRequestResponse, { description: 'Close the app request. Generally this is always available and will freeze the request/applications in their current phase/status.' })
   async closeAppRequest (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
     const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
@@ -187,9 +208,29 @@ export class AppRequestAccessResolver {
     return ctx.svc(AppRequestService).mayReturn(appRequest)
   }
 
-  @FieldResolver(returns => Boolean, { description: 'User may make an offer on this app request.' })
+  @FieldResolver(returns => Boolean, { description: 'User may make an offer on this app request. Sends the app request to the acceptance phase.' })
   offer (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
     return ctx.svc(AppRequestService).mayOffer(appRequest)
+  }
+
+  @FieldResolver(returns => Boolean, { description: 'User may finalize the acceptance or denial of the offer. Sends the app request to non-blocking workflow (or completion).' })
+  accept (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    return ctx.svc(AppRequestService).mayAccept(appRequest)
+  }
+
+  @FieldResolver(returns => Boolean, { description: 'User may withdraw the offer and return the app request to the review phase for changes.' })
+  reverseOffer (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    return ctx.svc(AppRequestService).mayReverseOffer(appRequest)
+  }
+
+  @FieldResolver(returns => Boolean, { description: 'User may return the app request to the acceptance phase from non-blocking workflow or completion.' })
+  returnToOffer (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    return ctx.svc(AppRequestService).mayReturnToOffer(appRequest)
+  }
+
+  @FieldResolver(returns => Boolean, { description: 'User may return the app request to the review phase from non-blocking workflow or completion. This does not cover reclaiming an offer - see reverseOffer for that. It also does not cover returning from completion to acceptance - see returnToOffer for that.' })
+  returnToReview (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    return ctx.svc(AppRequestService).mayReturnToReview(appRequest)
   }
 }
 

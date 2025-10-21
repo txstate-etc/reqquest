@@ -1,6 +1,5 @@
-import { DateTime } from 'luxon'
 import type { TagItem } from '@txstate-mws/carbon-svelte'
-import type { AppRequestStatus } from './typed-client/schema.js'
+import { enumAppRequestStatus, type AppRequestStatus } from './typed-client/schema.js'
 import { longNumericTime } from './util.js'
 
 interface AppStatusConfig {
@@ -251,6 +250,11 @@ export function getApplicationStatusInfo (status: string): ApplicationStatusTagI
   }
   return statusMap[status] ?? { label: status, description: 'Unknown status.', color: 'gray' }
 }
+
+export const applicantStatuses = new Set<AppRequestStatus>([
+  enumAppRequestStatus.STARTED,
+  enumAppRequestStatus.READY_TO_SUBMIT
+])
 
 // ========================================
 // === Periods ===

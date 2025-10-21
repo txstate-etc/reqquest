@@ -51,6 +51,7 @@ export class AppRequest {
     this.dbStatus = row.status
     this.status = row.computedStatus
     this.phase = row.phase
+    this.complete = row.phase === AppRequestPhase.COMPLETE
     this.createdAt = DateTime.fromJSDate(row.createdAt)
     this.updatedAt = DateTime.fromJSDate(row.updatedAt)
     this.closedAt = row.closedAt ? DateTime.fromJSDate(row.closedAt) : undefined
@@ -65,6 +66,9 @@ export class AppRequest {
 
   @Field(type => ID)
   id: string
+
+  @Field()
+  complete: boolean
 
   @Field(type => AppRequestStatus)
   status: AppRequestStatus

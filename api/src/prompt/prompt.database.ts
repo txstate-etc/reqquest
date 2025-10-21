@@ -1,6 +1,6 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { ApplicationRequirement, AppRequestPhase, AppRequestStatusDB, InvalidatedResponse, PeriodConfigurationRow, PeriodPrompt, PeriodPromptFilters, promptRegistry, PromptVisibility, RequirementPrompt, RequirementPromptFilter } from '../internal.js'
+import { ApplicationPhase, ApplicationRequirement, AppRequestPhase, AppRequestStatusDB, InvalidatedResponse, PeriodConfigurationRow, PeriodPrompt, PeriodPromptFilters, promptRegistry, PromptVisibility, RequirementPrompt, RequirementPromptFilter } from '../internal.js'
 
 export interface PromptRow {
   id: number
@@ -19,6 +19,9 @@ export interface PromptRow {
   invalidated: 0 | 1
   invalidatedReason: string | null
   visibility: PromptVisibility
+  workflowStage?: string
+  applicationWorkflowStage?: string
+  applicationPhase: ApplicationPhase
 }
 
 function processFilters (filter: RequirementPromptFilter) {
@@ -49,7 +52,8 @@ function processFilters (filter: RequirementPromptFilter) {
 export async function getRequirementPrompts (filter: RequirementPromptFilter, tdb: Queryable = db) {
   const { where, binds } = processFilters(filter)
   const rows = await tdb.getall<PromptRow>(`
-    SELECT p.*, ar.userId, ar.periodId, r.requirementKey, a.programKey, ar.status AS appRequestDbStatus, ar.phase AS appRequestDbPhase
+    SELECT p.*, ar.userId, ar.periodId, r.requirementKey, a.programKey, ar.status AS appRequestDbStatus, ar.phase AS appRequestDbPhase,
+      r.workflowStage, a.workflowStage AS applicationWorkflowStage, a.computedPhase AS applicationPhase
     FROM requirement_prompts p
     INNER JOIN application_requirements r ON r.id=p.requirementId
     INNER JOIN applications a ON a.id=r.applicationId

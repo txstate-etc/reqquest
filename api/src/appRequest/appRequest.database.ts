@@ -305,6 +305,16 @@ export async function appRequestMakeOffer (appRequestId: number) {
   await evaluateAppRequest(appRequestId)
 }
 
+export async function appRequestReturnToOffer (appRequestId: number) {
+  await db.execute('UPDATE app_requests SET phase = ? WHERE id = ?', [AppRequestPhase.SUBMITTED, appRequestId])
+  await evaluateAppRequest(appRequestId)
+}
+
+export async function appRequestReturnToReview (appRequestId: number) {
+  await db.execute('UPDATE app_requests SET phase = ? WHERE id = ?', [AppRequestPhase.SUBMITTED, appRequestId])
+  await evaluateAppRequest(appRequestId)
+}
+
 /**
  * This method will fill in any missing application, requirement, or prompt records for the appRequest.
  * It will be called upon creation of an appRequest and each time it is evaluated, in case the system has
@@ -555,12 +565,16 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
                 : ApplicationPhase.QUALIFICATION
             : phase === 'review'
               ? requirementsResolution !== 'pending'
-                ? ApplicationPhase.READY_FOR_WORKFLOW
+                ? application.phase === ApplicationPhase.REVIEW_COMPLETE
+                  ? ApplicationPhase.REVIEW_COMPLETE
+                  : ApplicationPhase.READY_FOR_WORKFLOW
                 : nonPassingRequirement?.type === RequirementType.PREAPPROVAL
                   ? ApplicationPhase.PREAPPROVAL
                   : ApplicationPhase.APPROVAL
               : requirementsResolution === 'pass' // phase === 'blocking'
-                ? ApplicationPhase.READY_FOR_WORKFLOW
+                ? application.phase = ApplicationPhase.REVIEW_COMPLETE
+                  ? ApplicationPhase.REVIEW_COMPLETE
+                  : ApplicationPhase.READY_FOR_WORKFLOW
                 : ApplicationPhase.WORKFLOW_BLOCKING
 
       if (application.phase === ApplicationPhase.READY_FOR_WORKFLOW && applications.length === 1 && (!workflowStages.length || workflowStages[workflowStages.length - 1].key === application.workflowStageKey)) {
@@ -580,6 +594,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       else if (applications.some(a => a.ineligiblePhase === IneligiblePhases.APPROVAL || a.ineligiblePhase === IneligiblePhases.WORKFLOW)) appRequest.status = AppRequestStatus.NOT_APPROVED
       else appRequest.status = AppRequestStatus.DISQUALIFIED
     } else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_SUBMIT) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.READY_TO_SUBMIT
+    else if (applications.some(a => a.phase === ApplicationPhase.READY_FOR_WORKFLOW)) appRequest.status = AppRequestStatus.APPROVAL
     else if (applications.some(a => a.phase === ApplicationPhase.REVIEW_COMPLETE) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
     else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_ACCEPT) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.READY_TO_ACCEPT
     else if (applications.some(a => a.phase === ApplicationPhase.ACCEPTANCE)) appRequest.status = AppRequestStatus.ACCEPTANCE

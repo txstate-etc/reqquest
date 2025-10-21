@@ -1,13 +1,14 @@
 <script lang="ts">
   import { Card, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
+  import { toasts } from '@txstate-mws/svelte-components'
   import { Form } from '@txstate-mws/svelte-forms'
   import { Button, Tooltip } from 'carbon-components-svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
   import WarningAltFilled from 'carbon-icons-svelte/lib/WarningAltFilled.svelte'
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
-  import { invalidate } from '$app/navigation'
-  import { api, enumPromptVisibility, enumRequirementStatus, enumRequirementType, RenderDisplayComponent } from '$lib'
+  import { invalidate, invalidateAll } from '$app/navigation'
+  import { api, enumPromptVisibility, enumRequirementStatus, enumRequirementType, RenderDisplayComponent, IntroPanel, enumAppRequestStatus } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../../local'
   import ApproveLayout from '../ApproveLayout.svelte'
@@ -141,6 +142,40 @@
     await invalidate('request:approve')
     closePromptDialog()
   }
+
+  async function advanceWorkflow () {
+    const response = await api.advanceWorkflow(application.id)
+    if (!response.success) {
+      toasts.add({
+        type: 'error',
+        title: 'Could not advance application',
+        message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
+      })
+    } else {
+      toasts.add({
+        type: 'success',
+        message: 'Application advanced.'
+      })
+    }
+    await invalidateAll()
+  }
+
+  async function reverseWorkflow () {
+    const response = await api.reverseWorkflow(application.id)
+    if (!response.success) {
+      toasts.add({
+        type: 'error',
+        title: 'Could not reverse application workflow',
+        message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
+      })
+    } else {
+      toasts.add({
+        type: 'success',
+        message: 'Application workflow reversed.'
+      })
+    }
+    await invalidateAll()
+  }
 </script>
 
 <ApproveLayout {basicRequestData}>
@@ -202,6 +237,8 @@
       </dl>
     </Panel>
   {/each}
+  {#if application.actions.advanceWorkflow}<Button on:click={advanceWorkflow}>Advance Application</Button>{/if}
+  {#if application.actions.reverseWorkflow}<Button on:click={reverseWorkflow}>Previous Workflow Stage</Button>{/if}
 </ApproveLayout>
 
 {#if showPromptDialog && promptBeingEdited}

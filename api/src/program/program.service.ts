@@ -49,7 +49,7 @@ export class ProgramService extends AuthService<Program> {
     return await this.loaders.get(periodProgramByPeriodAndKey).load({ periodId, key })
   }
 
-  async findWorkflowStageByPeriodIdAndProgramKey (periodId: string, programKey: string) {
+  async findWorkflowStagesByPeriodIdAndProgramKey (periodId: string, programKey: string) {
     return await this.loaders.get(workflowStageByPeriodIdAndProgramKeyLoader).load({ periodId, programKey })
   }
 

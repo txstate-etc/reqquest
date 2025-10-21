@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto, invalidate } from '$app/navigation'
-  import { base } from '$app/paths'
+  import { resolve } from '$app/paths'
   import { api } from '$lib'
   import { ApplicationDetailsView, AppRequestCard, IntroPanel } from '$lib/components'
   import type { AppRequestForDetails, AppRequestForExportResponse, DashboardAppRequest } from '$lib/components/types'
@@ -177,7 +177,7 @@
   }
 
   async function exportApplication (requestId: string) {
-    await goto(`${base}/requests/${requestId}/export`)
+    await goto(resolve(`/requests/${requestId}/export`, {}))
   }
 
   // ==========================================
@@ -237,7 +237,7 @@
 
     switch (actionType) {
     case 'navigate':
-      await goto(`${base}/requests/${id}/apply`)
+      await goto(resolve(`/requests/${id}/apply`, {}))
       break
     case 'export':
       await exportApplication(id)
@@ -264,7 +264,7 @@
 
   async function onSaved () {
     toasts.add('Application created successfully', 'success', 5000)
-    await goto(`${base}/requests/${lastInsertedId}/apply`)
+    await goto(resolve(`/requests/${lastInsertedId}/apply`, {}))
   }
 
   async function submitAppRequest (data: { periodId: string }) {
@@ -402,7 +402,7 @@
       {/if}
     {:else}
       <CardGrid cardSize="500px">
-        {#each appRequests as request}
+        {#each appRequests as request (request.id)}
           <AppRequestCard
             {request}
             actions={buildCardActions(request)}

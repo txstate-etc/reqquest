@@ -1,5 +1,5 @@
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { advanceWorkflow, Application, ApplicationPhase, AppRequest, AppRequestService, appRequestTransaction, AuthService, evaluateAppRequest, getApplications, PeriodWorkflowStage, ValidatedAppRequestResponse, WorkflowStage } from '../internal.js'
+import { advanceWorkflow, Application, ApplicationPhase, AppRequest, AppRequestService, appRequestTransaction, AuthService, evaluateAppRequest, getApplications, PeriodWorkflowStage, ProgramService, reverseWorkflow, ValidatedAppRequestResponse, WorkflowStage } from '../internal.js'
 import { BaseService } from '@txstate-mws/graphql-server'
 import db from 'mysql2-async/db'
 
@@ -60,21 +60,58 @@ export class ApplicationService extends AuthService<Application> {
     // any reviewer can advance the workflow if the requirements have been met, we already
     // control who can answer the prompts so I don't think it's necessary to lock down
     // the advancement
-    if (application.phase === ApplicationPhase.READY_FOR_WORKFLOW) return false
+    if (application.closed) return false
+    if (application.phase !== ApplicationPhase.READY_FOR_WORKFLOW) return false
     if (this.isOwn(application) && !this.hasControl('AppRequest', 'review_own')) return false
     return this.hasControl('AppRequest', 'review', application.appRequestTags)
   }
 
+  async mayReverseWorkflow (application: Application) {
+    if (application.closed) return false
+    if (![ApplicationPhase.WORKFLOW_BLOCKING, ApplicationPhase.REVIEW_COMPLETE, ApplicationPhase.COMPLETE, ApplicationPhase.WORKFLOW_NONBLOCKING].includes(application.phase)) return false
+    if (this.isOwn(application) && !this.hasControl('AppRequest', 'review_own')) return false
+    if (!this.hasControl('AppRequest', 'review', application.appRequestTags)) return false
+
+    const stages = await this.svc(ProgramService).findWorkflowStagesByPeriodIdAndProgramKey(application.periodId, application.programKey)
+    if (application.phase === ApplicationPhase.WORKFLOW_NONBLOCKING && stages[0]?.key === application.workflowStageKey) {
+      // can't reverse from the first non-blocking stage
+      return false
+    }
+
+    return true
+  }
+
   async advanceWorkflow (applicationId: string) {
-    const application = await getApplications({ ids: [applicationId] }, db)
-    if (!application.length) throw new Error(`Application not found: ${applicationId}`)
-    await appRequestTransaction(application[0].appRequestInternalId, async db => {
-      await advanceWorkflow(application[0].id, db)
-      await evaluateAppRequest(application[0].appRequestInternalId, db)
+    const [application] = await getApplications({ ids: [applicationId] }, db)
+    if (!application) throw new Error(`Application not found: ${applicationId}`)
+    if (!this.mayAdvanceWorkflow(application)) throw new Error('You may not advance this application to the next stage.')
+    await appRequestTransaction(application.appRequestInternalId, async db => {
+      await advanceWorkflow(application.id, db)
+      await evaluateAppRequest(application.appRequestInternalId, db)
     })
     this.loaders.clear()
     const resp = new ValidatedAppRequestResponse({ success: true, messages: [] })
-    resp.appRequest = await this.svc(AppRequestService).findByInternalId(application[0].appRequestInternalId)
+    resp.appRequest = await this.svc(AppRequestService).findByInternalId(application.appRequestInternalId)
+    return resp
+  }
+
+  /**
+   * Move the application back to a previous workflow stage or back into review
+   *
+   * @param applicationId The application to move back
+   * @param stage The stage to move back to, if not provided the application will be moved back into review
+   */
+  async reverseWorkflow (applicationId: string, stage?: number) {
+    const [application] = await getApplications({ ids: [applicationId] }, db)
+    if (!application) throw new Error(`Application not found: ${applicationId}`)
+    if (!await this.mayReverseWorkflow(application)) throw new Error('You may not reverse this application to a previous stage.')
+    await appRequestTransaction(application.appRequestInternalId, async db => {
+      await reverseWorkflow(application.id, db)
+      await evaluateAppRequest(application.appRequestInternalId, db)
+    })
+    this.loaders.clear()
+    const resp = new ValidatedAppRequestResponse({ success: true, messages: [] })
+    resp.appRequest = await this.svc(AppRequestService).findByInternalId(application.appRequestInternalId)
     return resp
   }
 }

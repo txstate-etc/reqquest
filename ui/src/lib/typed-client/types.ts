@@ -422,6 +422,9 @@ export default {
             "closedAt": [
                 42
             ],
+            "complete": [
+                36
+            ],
             "createdAt": [
                 42
             ],
@@ -473,6 +476,9 @@ export default {
             ]
         },
         "AppRequestActions": {
+            "accept": [
+                36
+            ],
             "cancel": [
                 36
             ],
@@ -486,6 +492,15 @@ export default {
                 36
             ],
             "return": [
+                36
+            ],
+            "returnToOffer": [
+                36
+            ],
+            "returnToReview": [
+                36
+            ],
+            "reverseOffer": [
                 36
             ],
             "review": [
@@ -690,6 +705,12 @@ export default {
             ]
         },
         "ApplicationActions": {
+            "advanceWorkflow": [
+                36
+            ],
+            "reverseWorkflow": [
+                36
+            ],
             "viewAsReviewer": [
                 36
             ],
@@ -987,6 +1008,42 @@ export default {
                 {
                     "appRequestId": [
                         44,
+                        "ID!"
+                    ]
+                }
+            ],
+            "returnToOffer": [
+                74,
+                {
+                    "appRequestId": [
+                        43,
+                        "ID!"
+                    ]
+                }
+            ],
+            "returnToReview": [
+                74,
+                {
+                    "appRequestId": [
+                        43,
+                        "ID!"
+                    ]
+                }
+            ],
+            "reverseOffer": [
+                74,
+                {
+                    "appRequestId": [
+                        43,
+                        "ID!"
+                    ]
+                }
+            ],
+            "reverseWorkflow": [
+                74,
+                {
+                    "applicationId": [
+                        43,
                         "ID!"
                     ]
                 }

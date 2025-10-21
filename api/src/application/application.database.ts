@@ -1,5 +1,5 @@
 import db from 'mysql2-async/db'
-import { Application, ApplicationFilter, ApplicationPhase, ApplicationStatus, IneligiblePhases, PeriodWorkflowRow, programRegistry } from '../internal.js'
+import { Application, ApplicationFilter, ApplicationPhase, ApplicationStatus, AppRequestPhase, AppRequestStatusDB, evaluateAppRequest, IneligiblePhases, PeriodWorkflowRow, programRegistry } from '../internal.js'
 import { Queryable } from 'mysql2-async'
 import { findIndex } from 'txstate-utils'
 
@@ -14,6 +14,7 @@ export interface ApplicationRow {
   computedPhase: ApplicationPhase
   computedIneligiblePhase?: IneligiblePhases
   workflowStage: string
+  appRequestStatus: AppRequestStatusDB
 }
 
 function processFilters (filter: ApplicationFilter) {
@@ -31,7 +32,8 @@ function processFilters (filter: ApplicationFilter) {
 export async function getApplications (filter: ApplicationFilter, tdb: Queryable = db) {
   const { where, binds } = processFilters(filter)
   const rows = await tdb.getall<ApplicationRow>(`
-    SELECT a.id, a.appRequestId, ar.periodId, a.programKey, ar.userId, a.computedStatus, a.computedStatusReason
+    SELECT a.id, a.appRequestId, ar.periodId, a.programKey, ar.userId, a.computedStatus, a.computedStatusReason, a.computedPhase,
+      a.computedIneligiblePhase, a.workflowStage, ar.status AS appRequestStatus
     FROM applications a
     INNER JOIN app_requests ar ON ar.id = a.appRequestId
     WHERE (${where.join(') AND (')})
@@ -107,4 +109,33 @@ export async function advanceWorkflow (applicationId: string, tdb: Queryable = d
   }
 
   await tdb.update('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [toPhase, toStage, applicationId])
+}
+
+export async function reverseWorkflow (applicationId: string, tdb: Queryable = db) {
+  const application = await tdb.getrow<ApplicationRow>('SELECT * FROM applications WHERE id = ?', [applicationId])
+  if (!application) throw new Error(`Application not found: ${applicationId}`)
+
+  const stages = await tdb.getall<PeriodWorkflowRow>(`
+    SELECT w.* FROM period_workflow_stages w
+    WHERE w.programKey=? AND w.periodId=?
+    ORDER BY w.evaluationOrder
+  `, [application.programKey, application.periodId])
+  const blocking = stages.filter(stage => !!stage.blocking)
+  const nonblocking = stages.filter(stage => !stage.blocking)
+
+  const fromStage = stages.find(stage => stage.stageKey === application.workflowStage)
+  if (!fromStage) return
+  const activeStages = fromStage.blocking ? blocking : nonblocking
+  const currIdx = findIndex(activeStages, stage => stage.stageKey === fromStage.stageKey)
+  let toStage: PeriodWorkflowRow | undefined = activeStages[(currIdx ?? 0) - 1]
+  let toPhase: ApplicationPhase | undefined
+  if (fromStage.blocking) {
+    toPhase = toStage ? ApplicationPhase.WORKFLOW_BLOCKING : ApplicationPhase.APPROVAL
+  } else if (toStage != null) {
+    toPhase = ApplicationPhase.WORKFLOW_NONBLOCKING
+  } else {
+    throw new Error('Cannot reverse workflow any further.')
+  }
+
+  await tdb.update('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [toPhase, toStage?.stageKey, applicationId])
 }

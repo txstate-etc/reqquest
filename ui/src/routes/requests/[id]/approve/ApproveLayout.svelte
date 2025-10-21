@@ -10,12 +10,12 @@
 <div class="review-container">
   <div class="review-sidebar flow">
     <Card
-      title="{basicRequestData.applicant.fullname} ({basicRequestData.period.name})"
+      title={basicRequestData.applicant.fullname}
     >
       <dl class="identifier">
         <dt>{uiRegistry.getWord('login')}</dt>
         <dd>{basicRequestData.applicant.login}</dd>
-        {#each basicRequestData.applicant.otherIdentifiers as identifier}
+        {#each basicRequestData.applicant.otherIdentifiers as identifier (identifier.id)}
           <dt>{identifier.label}:</dt>
           <dd>{identifier.id}</dd>
         {/each}

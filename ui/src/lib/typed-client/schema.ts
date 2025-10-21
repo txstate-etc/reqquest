@@ -184,6 +184,7 @@ export interface AppRequest {
     applications: Application[]
     /** Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date. */
     closedAt: (Scalars['DateTime'] | null)
+    complete: Scalars['Boolean']
     createdAt: Scalars['DateTime']
     /** All data that has been gathered from the user for this request. It is a Record whose properties are the prompt keys and values are the data gathered by the corresponding prompt dialog. */
     data: Scalars['JsonData']
@@ -204,16 +205,24 @@ export interface AppRequest {
 }
 
 export interface AppRequestActions {
+    /** User may finalize the acceptance or denial of the offer. Sends the app request to non-blocking workflow (or completion). */
+    accept: Scalars['Boolean']
     /** User may cancel this app request as the owner. Separate from closing as a reviewer/admin. */
     cancel: Scalars['Boolean']
     /** User may close this app request as a reviewer/admin. Separate from cancelling as the app request owner. */
     close: Scalars['Boolean']
-    /** User may make an offer on this app request. */
+    /** User may make an offer on this app request. Sends the app request to the acceptance phase. */
     offer: Scalars['Boolean']
     /** User may reopen this app request, whether as the owner or as a reviewer/admin. */
     reopen: Scalars['Boolean']
     /** User may return this app request to the applicant phase. */
     return: Scalars['Boolean']
+    /** User may return the app request to the acceptance phase from non-blocking workflow or completion. */
+    returnToOffer: Scalars['Boolean']
+    /** User may return the app request to the review phase from non-blocking workflow or completion. This does not cover reclaiming an offer - see reverseOffer for that. It also does not cover returning from completion to acceptance - see returnToOffer for that. */
+    returnToReview: Scalars['Boolean']
+    /** User may withdraw the offer and return the app request to the review phase for changes. */
+    reverseOffer: Scalars['Boolean']
     /** Whether the user can view this app request as a reviewer. */
     review: Scalars['Boolean']
     /** User may submit this app request either as or on behalf of the owner. */
@@ -295,6 +304,8 @@ export interface Application {
 }
 
 export interface ApplicationActions {
+    advanceWorkflow: Scalars['Boolean']
+    reverseWorkflow: Scalars['Boolean']
     viewAsReviewer: Scalars['Boolean']
     __typename: 'ApplicationActions'
 }
@@ -431,6 +442,14 @@ export interface Mutation {
     reopenAppRequest: ValidatedAppRequestResponse
     /** Return the app request to the applicant phase. This is only available if the app request is in a state that allows returning. */
     returnAppRequest: ValidatedAppRequestResponse
+    /** Return the app request to the acceptance phase from non-blocking workflow or completion. */
+    returnToOffer: ValidatedAppRequestResponse
+    /** Return the app request to the review phase from non-blocking workflow or completion. This does not cover reclaiming an offer - see reverseOffer for that. It also does not cover returning from review to acceptance - see returnToReview for that. */
+    returnToReview: ValidatedAppRequestResponse
+    /** Withdraw the offer and return the app request to the review phase for changes. */
+    reverseOffer: ValidatedAppRequestResponse
+    /** Moves the application back to the previous workflow stage. If on the first blocking workflow stage, moves back to APPROVAL. If on the first non-blocking workflow, throws an error. */
+    reverseWorkflow: ValidatedAppRequestResponse
     roleAddGrant: AccessRoleValidatedResponse
     roleCreate: AccessRoleValidatedResponse
     roleDelete: ValidatedResponse
@@ -919,6 +938,7 @@ export interface AppRequestGenqlSelection{
     applications?: ApplicationGenqlSelection
     /** Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date. */
     closedAt?: boolean | number
+    complete?: boolean | number
     createdAt?: boolean | number
     /** All data that has been gathered from the user for this request. It is a Record whose properties are the prompt keys and values are the data gathered by the corresponding prompt dialog. */
     data?: { __args: {
@@ -944,16 +964,24 @@ export interface AppRequestGenqlSelection{
 }
 
 export interface AppRequestActionsGenqlSelection{
+    /** User may finalize the acceptance or denial of the offer. Sends the app request to non-blocking workflow (or completion). */
+    accept?: boolean | number
     /** User may cancel this app request as the owner. Separate from closing as a reviewer/admin. */
     cancel?: boolean | number
     /** User may close this app request as a reviewer/admin. Separate from cancelling as the app request owner. */
     close?: boolean | number
-    /** User may make an offer on this app request. */
+    /** User may make an offer on this app request. Sends the app request to the acceptance phase. */
     offer?: boolean | number
     /** User may reopen this app request, whether as the owner or as a reviewer/admin. */
     reopen?: boolean | number
     /** User may return this app request to the applicant phase. */
     return?: boolean | number
+    /** User may return the app request to the acceptance phase from non-blocking workflow or completion. */
+    returnToOffer?: boolean | number
+    /** User may return the app request to the review phase from non-blocking workflow or completion. This does not cover reclaiming an offer - see reverseOffer for that. It also does not cover returning from completion to acceptance - see returnToOffer for that. */
+    returnToReview?: boolean | number
+    /** User may withdraw the offer and return the app request to the review phase for changes. */
+    reverseOffer?: boolean | number
     /** Whether the user can view this app request as a reviewer. */
     review?: boolean | number
     /** User may submit this app request either as or on behalf of the owner. */
@@ -1074,6 +1102,8 @@ export interface ApplicationGenqlSelection{
 }
 
 export interface ApplicationActionsGenqlSelection{
+    advanceWorkflow?: boolean | number
+    reverseWorkflow?: boolean | number
     viewAsReviewer?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
@@ -1212,6 +1242,14 @@ export interface MutationGenqlSelection{
     reopenAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Return the app request to the applicant phase. This is only available if the app request is in a state that allows returning. */
     returnAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
+    /** Return the app request to the acceptance phase from non-blocking workflow or completion. */
+    returnToOffer?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
+    /** Return the app request to the review phase from non-blocking workflow or completion. This does not cover reclaiming an offer - see reverseOffer for that. It also does not cover returning from review to acceptance - see returnToReview for that. */
+    returnToReview?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
+    /** Withdraw the offer and return the app request to the review phase for changes. */
+    reverseOffer?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
+    /** Moves the application back to the previous workflow stage. If on the first blocking workflow stage, moves back to APPROVAL. If on the first non-blocking workflow, throws an error. */
+    reverseWorkflow?: (ValidatedAppRequestResponseGenqlSelection & { __args: {applicationId: Scalars['ID']} })
     roleAddGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grant: AccessRoleGrantCreate, roleId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     roleCreate?: (AccessRoleValidatedResponseGenqlSelection & { __args: {role: AccessRoleInput, validateOnly?: (Scalars['Boolean'] | null)} })
     roleDelete?: (ValidatedResponseGenqlSelection & { __args: {roleId: Scalars['ID']} })

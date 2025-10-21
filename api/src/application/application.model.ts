@@ -1,5 +1,5 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
-import { ApplicationRow, ProgramDefinition, programRegistry } from '../internal.js'
+import { ApplicationRow, AppRequestStatusDB, ProgramDefinition, programRegistry } from '../internal.js'
 
 export enum ApplicationStatus {
   PENDING = 'PENDING',
@@ -102,6 +102,7 @@ export class Application {
     this.title = this.program.title
     this.navTitle = this.program.title ?? this.program.title
     this.authorizationKeys = { program: [this.program.key] }
+    this.closed = row.appRequestStatus !== AppRequestStatusDB.OPEN
   }
 
   @Field(() => ID)
@@ -137,6 +138,7 @@ export class Application {
   program: ProgramDefinition
   authorizationKeys: Record<string, string[]>
   workflowStageKey?: string
+  closed: boolean
 }
 
 @ObjectType()

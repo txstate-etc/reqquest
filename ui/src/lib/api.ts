@@ -450,6 +450,70 @@ class API extends APIBase {
     return this.mutationForDialog(response.returnAppRequest)
   }
 
+  async advanceWorkflow (applicationId: string) {
+    const response = await this.client.mutation({
+      __name: 'AdvanceWorkflow',
+      advanceWorkflow: {
+        __args: { applicationId },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.advanceWorkflow)
+  }
+
+  async reverseWorkflow (applicationId: string) {
+    const response = await this.client.mutation({
+      __name: 'ReverseWorkflow',
+      reverseWorkflow: {
+        __args: { applicationId },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.reverseWorkflow)
+  }
+
+  async makeOffer (appRequestId: string) {
+    const response = await this.client.mutation({
+      __name: 'MakeOffer',
+      offerAppRequest: {
+        __args: { appRequestId },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.offerAppRequest)
+  }
+
+  async closeAppRequest (appRequestId: string) {
+    const response = await this.client.mutation({
+      __name: 'CloseAppRequest',
+      closeAppRequest: {
+        __args: { appRequestId },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.closeAppRequest)
+  }
+
   async getAppRequests (filter?: Omit<AppRequestFilter, 'indexes'> & { indexes?: Record<string, string[]> }, dest = enumAppRequestIndexDestination.APP_REQUEST_LIST) {
     const processedFilter = {
       ...filter,
@@ -525,6 +589,9 @@ class API extends APIBase {
       __name: 'GetBasicRequestData',
       appRequests: {
         __args: { filter: { ids: [appRequestId] } },
+        complete: true,
+        status: true,
+        closedAt: true,
         applicant: {
           login: true,
           fullname: true,
@@ -536,12 +603,21 @@ class API extends APIBase {
         },
         period: {
           id: true,
-          name: true
+          name: true,
+          code: true,
+          openDate: true,
+          closeDate: true,
+          archiveDate: true
         },
         applications: {
           id: true,
           navTitle: true,
           programKey: true
+        },
+        actions: {
+          offer: true,
+          close: true,
+          reopen: true
         }
       }
     })
@@ -564,6 +640,10 @@ class API extends APIBase {
           title: true,
           navTitle: true,
           programKey: true,
+          actions: {
+            advanceWorkflow: true,
+            reverseWorkflow: true
+          },
           requirements: {
             id: true,
             type: true,
@@ -590,6 +670,18 @@ class API extends APIBase {
               }
             }
           }
+        },
+        actions: {
+          return: true,
+          reopen: true,
+          close: true,
+          review: true,
+          offer: true,
+          returnToOffer: true,
+          accept: true,
+          cancel: true,
+          returnToReview: true,
+          reverseOffer: true
         }
       }
     })
