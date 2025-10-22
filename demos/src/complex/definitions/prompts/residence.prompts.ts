@@ -17,11 +17,9 @@ export const state_residence_prompt: PromptDefinition = {
       if (doc.size > allowedMbSize * 1024 * 1024) messages.push({ type: MutationMessageType.error, message: `This document is too large, please upload a file less than ${allowedMbSize}MB.`, arg: 'residentIdDoc' })
       if (doc.mime !== 'image/jpeg' && doc.mime !== 'image/gif' && doc.mime !== 'image/png' && doc.mime !== 'application/pdf') messages.push({ type: MutationMessageType.error, message: 'File must be of type JPEG, GIF, PNG or PDF', arg: 'residentIdDoc' })     
     }    
-  console.log(`*** Prevalidate messages: ${JSON.stringify(messages)}`)
     return messages
   },
   preProcessData: async (data, ctx) => {
-    console.log('*** preProcess data running')
     if (data.residentIdDoc) {
       for await (const file of ctx.files()){ 
         const { checksum, size } = await fileHandler.put(file.stream) 

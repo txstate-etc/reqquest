@@ -10,21 +10,14 @@ export const previous_petowner_prompt: PromptDefinition = {
   schema: PreviousPetOwnerPromptSchema,
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = []  
-    /*   
-    if (!data.firstName) messages.push({ type: MutationMessageType.error, message: 'First name required', arg: 'firstName' })
-    if (!data.lastName) messages.push({ type: MutationMessageType.error, message: 'Last name required', arg: 'lastName' })
-    if (!data.streetAddress) messages.push({ type: MutationMessageType.error, message: 'Street address required', arg: 'streetAddress' })
-    if (!data.city) messages.push({ type: MutationMessageType.error, message: 'City required', arg: 'city' })
-    if (!data.state) messages.push({ type: MutationMessageType.error, message: 'State required', arg: 'state' })
-    if (data.phoneNumber && !RegExp(/^[0-9]{10,12}$/).test(data.phoneNumber)) messages.push({ type: MutationMessageType.error, message: 'Invalid phone number', arg: 'phoneNumber' }) 
-    if (data.emailAddress && !RegExp(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g).test(data.emailAddress)) messages.push({ type: MutationMessageType.error, message: 'Invalid email address', arg: 'emailAddress' })
-    if (!data.zipCode) {
-      messages.push({ type: MutationMessageType.error, message: 'Zipcode required', arg: 'zipCode' })
-    } else {  
-      if (!RegExp(/^[0-9]{5}$/).test(data.zipCode)) messages.push({ type: MutationMessageType.error, message: 'Invalid zipcode', arg: 'zipCode' })
+    if (!data.previousPetOwnnership?.owned) messages.push({ type: MutationMessageType.error, message: 'Previous pet ownership input required', arg: 'previousPetOwnership.owned' })
+    if (data.previousPetOwnnership.owned) {
+      if (!data.previousPetOwnnership.count) messages.push({ type: MutationMessageType.error, message: 'Number of previous pets required', arg: 'previousPetOwnnership.count' })
+      if (data.previousPetOwnnership.count > 0) {
+        if (!data.currentPetOwnership.count) messages.push({ type: MutationMessageType.error, message: 'Number of current pets required', arg: 'currentPetOwnnership.count' })
+        if (!data.currentPetOwnership.details) messages.push({ type: MutationMessageType.error, message: 'Details of current pets required', arg: 'currentPetOwnnership.details' })
+      }
     } 
-    if (!data.residentIdDoc) messages.push({ type: MutationMessageType.error, message: 'Identifying documentation required', arg: 'residentIdDoc' })
-    */
     return messages
   }
 }
