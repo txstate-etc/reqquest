@@ -1,6 +1,6 @@
 import type { SchemaObject } from '@txstate-mws/fastify-shared'
 import type { FromSchema } from 'json-schema-to-ts'
-import { stateNames } from './residence.models'
+import { stateNames } from './residence.models.js'
 
 export const HomeownerPromptSchema = {
   type: 'object',

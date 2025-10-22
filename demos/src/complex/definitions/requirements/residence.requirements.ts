@@ -28,17 +28,5 @@ export const state_residence_prequal_req: RequirementDefinition<StateResidenceCo
   }  
 }
 
-export const homeowner_prequal_req: RequirementDefinition = {
-  type: RequirementType.PREQUAL,
-  key: 'homeowner_prequal_req',
-  title: 'Verify homeowner info',
-  navTitle: 'Homeowner',
-  description: 'Verify applicant is homeowner',
-  promptKeys: ['homeowner_prompt'],
-  resolve: (data, config) => {  
-    return { status: RequirementStatus.PENDING }
-  }
-}
-
 
 

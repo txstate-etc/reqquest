@@ -1,7 +1,7 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType, UploadFiles } from '@txstate-mws/graphql-server'
 import { fileHandler } from 'fastify-txstate'
-import { StateResidencePromptSchema, StateResidenceAutoUpdatePromptSchema } from '../models/index.js'
+import { StateResidencePromptSchema } from '../models/index.js'
 
 
 export const state_residence_prompt: PromptDefinition = {
@@ -13,12 +13,15 @@ export const state_residence_prompt: PromptDefinition = {
     const messages: MutationMessage[] = []
     const doc = data['residentIdDoc']
     if (doc) {
-      if (doc.size > 15 * 1024 * 1024) messages.push({ type: MutationMessageType.error, message: 'This document is too large, please upload a file less than 10MB.', arg: 'residentIdDoc' })
+      const allowedMbSize = 1
+      if (doc.size > allowedMbSize * 1024 * 1024) messages.push({ type: MutationMessageType.error, message: `This document is too large, please upload a file less than ${allowedMbSize}MB.`, arg: 'residentIdDoc' })
       if (doc.mime !== 'image/jpeg' && doc.mime !== 'image/gif' && doc.mime !== 'image/png' && doc.mime !== 'application/pdf') messages.push({ type: MutationMessageType.error, message: 'File must be of type JPEG, GIF, PNG or PDF', arg: 'residentIdDoc' })     
     }    
+  console.log(`*** Prevalidate messages: ${JSON.stringify(messages)}`)
     return messages
   },
   preProcessData: async (data, ctx) => {
+    console.log('*** preProcess data running')
     if (data.residentIdDoc) {
       for await (const file of ctx.files()){ 
         const { checksum, size } = await fileHandler.put(file.stream) 
@@ -28,9 +31,6 @@ export const state_residence_prompt: PromptDefinition = {
     }     
     return data
   },
- // invalidUponChange: (data, relatedConfig) => {
-    
- // },
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = []     
     if (!data.firstName) messages.push({ type: MutationMessageType.error, message: 'First name required', arg: 'firstName' })
@@ -51,21 +51,3 @@ export const state_residence_prompt: PromptDefinition = {
   }
 }
 
-/** TODO CHALLENGE:   Post completion of user input residence details we need to be able to
- * submit that address to USPS and get confirmation if it's valid, invalid, or can be updated with a more accurate USPS address
- * To be able to provide info on screen to end users we must use a prompt as requirements have no direct UI, and we provide third party
- * data via fetch.  We can 'fetch' usps data and stream to the prompt UI for user consumption, questions:
- * 1. How do I update other prompt data from this prompt?  Reviewers are able to 'edit' in review screen, but how does applicant
- * update another prompt data from this prompt?
- * 2. How do I guarantee order of these prompts, or more accurately hide this prompt in nav until previous?
- * 3. If I can't update previous prompt data, am I routinely checking both data elements for existence for requirement resolve (eg. If no usps then user input)
-*/
-export const state_residence_autoupdate_prompt: PromptDefinition = {
-  key: 'state_residence_autoupdate_prompt',
-  title: 'State residency update',
-  description: 'Applicant will confirm whether the auto updated address should be accepted.',
-  schema: StateResidenceAutoUpdatePromptSchema,
-  fetch: (data, config, relatedConfig) => {
-    
-  }
-}
