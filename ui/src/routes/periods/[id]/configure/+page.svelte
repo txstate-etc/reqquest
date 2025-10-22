@@ -30,15 +30,18 @@
   let editingConfiguration = false
   let editingConfigurationType: 'prompt' | 'requirement' | undefined = undefined
   let editingConfigurationDef: Requirement | Prompt | undefined
+  let editingConfigurationFetched: any
 
   function closeConfigurationDialog () {
     editingConfiguration = false
     editingConfigurationType = undefined
     editingConfigurationDef = undefined
+    editingConfigurationFetched = undefined
   }
 
   function onClick (type: 'prompt' | 'requirement', def: Requirement | Prompt) {
-    return () => {
+    return async () => {
+      editingConfigurationFetched = await api.getConfigurationFetched(period.id, def.key)
       editingConfiguration = true
       editingConfigurationType = type
       editingConfigurationDef = def
@@ -111,12 +114,12 @@
 {#if editingConfiguration && editingConfigurationDef != null}
   {#if editingConfigurationType === 'prompt'}
     {@const def = uiRegistry.getPrompt(editingConfigurationDef.key)}
-    <PanelFormDialog open submit={onSubmit} validate={onValidate} title="Edit Configuration" on:cancel={closeConfigurationDialog} on:saved={onSaved} preload={editingConfigurationDef.configuration.data} let:data>
+    <PanelFormDialog open submit={onSubmit} validate={onValidate} title="Edit Configuration" on:cancel={closeConfigurationDialog} on:saved={onSaved} preload={editingConfigurationDef.configuration.data} fetched={editingConfigurationFetched} let:data>
       <svelte:component this={def!.configureComponent} {data} />
     </PanelFormDialog>
   {:else}
     {@const def = uiRegistry.getRequirement(editingConfigurationDef.key)}
-    <PanelFormDialog open submit={onSubmit} validate={onValidate} title="Edit Configuration" on:cancel={closeConfigurationDialog} on:saved={onSaved} preload={editingConfigurationDef.configuration.data} let:data>
+    <PanelFormDialog open submit={onSubmit} validate={onValidate} title="Edit Configuration" on:cancel={closeConfigurationDialog} on:saved={onSaved} preload={editingConfigurationDef.configuration.data} fetched={editingConfigurationFetched} let:data>
       <svelte:component this={def!.configureComponent} {data} />
     </PanelFormDialog>
   {/if}

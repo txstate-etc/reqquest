@@ -83,6 +83,11 @@ export class ConfigurationResolver {
     return await ctx.svc(ConfigurationService).getData(configuration.periodId, configuration.key)
   }
 
+  @FieldResolver(type => JsonData, { nullable: true })
+  async fetchedData (@Ctx() ctx: RQContext, @Root() configuration: Configuration) {
+    return await ctx.svc(ConfigurationService).getFetchedData(configuration.periodId, configuration.key)
+  }
+
   @FieldResolver(type => ConfigurationActions)
   actions (@Root() configuration: Configuration) {
     return configuration

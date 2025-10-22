@@ -147,6 +147,11 @@ export interface ConfigurationDefinition<ConfigurationInputType = any, Configura
    */
   migrations?: AppRequestMigration<ConfigurationDataType & { savedAtVersion: string }>[]
   /**
+   * A function that can be used to fetch data from external sources while updating the configuration
+   * for a prompt or requirement.
+   */
+  fetch?: (periodId: string) => Promise<any> | any
+  /**
    * The default configuration data for this prompt. This will be used to initialize the
    * configuration data for the prompt when it is added to a period that does not already
    * have a configuration for it.

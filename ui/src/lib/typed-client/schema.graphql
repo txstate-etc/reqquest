@@ -870,6 +870,7 @@ type CategoryTag {
 type Configuration {
   actions: ConfigurationAccess!
   data: JsonData!
+  fetchedData: JsonData
 
   """The key being configured. Could be a requirement or prompt key."""
   key: String!

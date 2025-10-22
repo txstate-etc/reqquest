@@ -384,6 +384,7 @@ export interface CategoryTag {
 export interface Configuration {
     actions: ConfigurationAccess
     data: Scalars['JsonData']
+    fetchedData: (Scalars['JsonData'] | null)
     /** The key being configured. Could be a requirement or prompt key. */
     key: Scalars['String']
     __typename: 'Configuration'
@@ -1166,6 +1167,7 @@ export interface CategoryTagGenqlSelection{
 export interface ConfigurationGenqlSelection{
     actions?: ConfigurationAccessGenqlSelection
     data?: boolean | number
+    fetchedData?: boolean | number
     /** The key being configured. Could be a requirement or prompt key. */
     key?: boolean | number
     __typename?: boolean | number

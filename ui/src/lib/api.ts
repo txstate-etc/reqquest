@@ -877,6 +877,20 @@ class API extends APIBase {
     return { programs: period.programs, period }
   }
 
+  async getConfigurationFetched (periodId: string, definitionKey: string) {
+    const response = await this.client.query({
+      __name: 'GetConfigurationFetched',
+      periods: {
+        __args: { filter: { ids: [periodId] } },
+        configurations: {
+          __args: { filter: { keys: [definitionKey] } },
+          fetchedData: true
+        }
+      }
+    })
+    return response.periods[0].configurations[0] ?? {}
+  }
+
   async getRoleList () {
     const response = await this.client.query({
       __name: 'GetRoleList',

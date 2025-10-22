@@ -803,6 +803,9 @@ export default {
             "data": [
                 49
             ],
+            "fetchedData": [
+                49
+            ],
             "key": [
                 74
             ],
@@ -1013,37 +1016,37 @@ export default {
                 }
             ],
             "returnToOffer": [
-                74,
+                75,
                 {
                     "appRequestId": [
-                        43,
+                        44,
                         "ID!"
                     ]
                 }
             ],
             "returnToReview": [
-                74,
+                75,
                 {
                     "appRequestId": [
-                        43,
+                        44,
                         "ID!"
                     ]
                 }
             ],
             "reverseOffer": [
-                74,
+                75,
                 {
                     "appRequestId": [
-                        43,
+                        44,
                         "ID!"
                     ]
                 }
             ],
             "reverseWorkflow": [
-                74,
+                75,
                 {
                     "applicationId": [
-                        43,
+                        44,
                         "ID!"
                     ]
                 }

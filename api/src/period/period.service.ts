@@ -198,6 +198,12 @@ export class ConfigurationService extends AuthService<Configuration> {
     return allConfig
   }
 
+  async getFetchedData (periodId: string, definitionKey: string) {
+    const definition = promptRegistry.get(definitionKey) ?? requirementRegistry.get(definitionKey)
+    if (!definition) throw new Error('Configuration definition not found')
+    return await definition.configuration?.fetch?.(periodId)
+  }
+
   mayView (cfg: Configuration) {
     return this.hasControl(cfg.type, 'view', cfg.configuredObject.authorizationKeys)
   }
