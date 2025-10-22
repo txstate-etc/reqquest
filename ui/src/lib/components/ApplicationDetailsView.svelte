@@ -20,25 +20,30 @@
     const sections: PromptSection[] = []
 
     // General Questions === PREQUAL prompts
-    if (prequalPrompts && prequalPrompts.length > 0) {
-      const answeredPrequal = prequalPrompts.filter(p => p.answered)
-      if (answeredPrequal.length > 0) {
+    if (prequalPrompts?.length) {
+      sections.push({
+        title: 'General Questions',
+        prompts: prequalPrompts
+      })
+    }
+
+    // Application-Specific Questions
+    for (const application of appRequest.applications) {
+      const prompts = application.requirements.flatMap(r => r.prompts)
+      if (prompts.length) {
         sections.push({
-          title: 'General Questions',
-          prompts: answeredPrequal
+          title: application.title,
+          prompts
         })
       }
     }
 
     // Additional Questions === POSTQUAL prompts
-    if (postqualPrompts && postqualPrompts.length > 0) {
-      const answeredPostqual = postqualPrompts.filter(p => p.answered)
-      if (answeredPostqual.length > 0) {
-        sections.push({
-          title: 'Additional Questions',
-          prompts: answeredPostqual
-        })
-      }
+    if (postqualPrompts?.length) {
+      sections.push({
+        title: 'Additional Questions',
+        prompts: postqualPrompts
+      })
     }
 
     return sections
@@ -91,7 +96,7 @@
               {@const def = uiRegistry.getPrompt(prompt.key)}
               <dl class="prompt-list mb-4 last:mb-0 p-3 border-b-2 border-solid">
                 <dt class="prompt-term font-semibold mb-2">{prompt.title}</dt>
-                <dd class="prompt-answer">
+                <dd class="prompt-answer" class:large={def?.displayMode === 'large'}>
                   <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appData} prompt={prompt} relatedConfigData={prompt.relatedConfigData} />
                 </dd>
               </dl>
@@ -123,14 +128,18 @@
   }
   dl:not(:has(dl)) {
     display:grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 1fr 1fr;
     row-gap:0.5rem;
   }
 
   .prompt-answer :global(dl) {
     display:grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 1fr 1fr;
     row-gap:0.5rem;
+  }
+
+  .prompt-answer.large {
+    grid-template-columns: 1fr;
   }
 
   .status-list {
