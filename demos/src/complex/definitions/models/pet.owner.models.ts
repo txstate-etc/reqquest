@@ -1,7 +1,7 @@
 import type { SchemaObject } from '@txstate-mws/fastify-shared'
 import type { FromSchema } from 'json-schema-to-ts'
 
-const previousPets = {
+export const PreviousPetsSchema = {
 	type: 'object',
 			properties: { 
 				owned: { type: 'boolean' },
@@ -10,7 +10,7 @@ const previousPets = {
 	additionalProperties: false
 } as const satisfies SchemaObject
 
-const currentPets = {
+export const CurrentPetsSchema = {
 	type: 'object',
 			properties: { 
 				owned: { type: 'boolean' },
@@ -23,8 +23,8 @@ const currentPets = {
 export const PreviousPetOwnerPromptSchema = {
   type: 'object',
   properties: { 
-    previousPetOwnnership: previousPets,
-    currentPetOwnership: currentPets
+    previousPetOwnnership: PreviousPetsSchema,
+    currentPetOwnership: CurrentPetsSchema
   },
   additionalProperties: false
 } as const satisfies SchemaObject

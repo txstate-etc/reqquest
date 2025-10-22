@@ -32,9 +32,11 @@ import ResidenceConfirmationReviewPrompt from './simple/ResidenceConfirmationRev
 import ResidenceConfirmationReviewPromptDisplay from './simple/ResidenceConfirmationReviewPromptDisplay.svelte'
 
 /** Complex */
-import ComplexResidencePrompt from './complex/ResidencePrompt.svelte'
-import ComplexResidencePromptDisplay from './complex/ResidencePromptDisplay.svelte'
-import ComplexResidenceConfig from './complex/ResidenceConfig.svelte'
+import ComplexResidencePrompt from './complex/residence/ResidencePrompt.svelte'
+import ComplexResidencePromptDisplay from './complex/residence/ResidencePromptDisplay.svelte'
+import ComplexResidenceConfig from './complex/residence/ResidenceConfig.svelte'
+import ComplexPreviousPetOwnerPrompt from './complex/previousPetOwner/PreviousPetOwnerPrompt.svelte'
+import ComplexPreviousPetOnwerDisplayPrompt from './complex/previousPetOwner/PreviousPetOnwerDisplayPrompt.svelte'
 
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts} =  configureDemoInstanceParams()
@@ -149,14 +151,12 @@ function configureDemoInstanceParams() {
         { key: 'senior_pet_program', icon: DogWalker }
       ],
       requirements: [
-        { key: 'state_residence_req', configureComponent: ComplexResidenceConfig }
+        { key: 'state_residence_prequal_req', configureComponent: ComplexResidenceConfig },
+        { key: 'previous_petowner_prequal_req' }
       ],
       prompts: [
-        {
-          key: 'state_residence_prompt',
-          formComponent: ComplexResidencePrompt,
-          displayComponent: ComplexResidencePromptDisplay
-        }
+        { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidencePromptDisplay },
+        { key: 'previous_petowner_prompt', formComponent: ComplexPreviousPetOwnerPrompt, displayComponent: ComplexPreviousPetOnwerDisplayPrompt }
       ]
     }
   }
