@@ -225,7 +225,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    *
    * Provide this function and any errors you return will prevent the prompt data from being saved. It
    * runs before the `preProcessData` function so it should expect the pre-processed data structure.
-   * `preProcessData` will not be run at all if this returns any errors.
+   * `preProcessData` and `validate` will not be run at all if this returns any errors.
    */
   preValidate?: (data: Partial<InputDataType>, config: ConfigurationDataType, relatedConfig: Record<string, any>) => MutationMessage[]
   /**
