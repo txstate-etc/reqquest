@@ -128,11 +128,25 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     return data[requirementPrompt.definition.key]
   }
 
+  async getConfigData (requirementPrompt: RequirementPrompt) {
+    const relatedConfig = await this.getRelatedConfigData(requirementPrompt)
+    return relatedConfig[requirementPrompt.key]
+  }
+
+  async getRelatedConfigData (requirementPrompt: RequirementPrompt) {
+    const relatedConfig = await this.svc(ConfigurationService).getRelatedData(requirementPrompt.periodId, requirementPrompt.key)
+    return this.mayViewUnredacted(requirementPrompt) ? relatedConfig : promptRegistry.get(requirementPrompt.key)?.exposeConfigToApplicant?.(relatedConfig) ?? {}
+  }
+
   isOwn (prompt: RequirementPrompt): boolean {
     return prompt.userInternalId === this.user?.internalId
   }
 
   mayView (prompt: RequirementPrompt): boolean {
+    return this.mayViewUnredacted(prompt) || (this.isOwn(prompt) && prompt.definition.exposeToApplicant != null)
+  }
+
+  mayViewUnredacted (prompt: RequirementPrompt): boolean {
     if (this.isOwn(prompt)) {
       if (promptRegistry.isUserPrompt(prompt.key)) return true
       if (!this.hasControl('AppRequest', 'review_own', prompt.appRequestTags)) return false

@@ -196,14 +196,12 @@ class API extends APIBase {
     const visibilitiesToShow = new Set<PromptVisibility>([enumPromptVisibility.AVAILABLE, enumPromptVisibility.REQUEST_DUPE])
     for (const application of appRequest.applications) {
       const applicantRequirements: ResponseRequirement[] = []
-      let ineligible = false
       for (const requirement of application.requirements) {
         if (requirement.type === enumRequirementType.PREQUAL) prequalPrompts.push(...requirement.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE))
-        else if (!ineligible && requirement.type === enumRequirementType.POSTQUAL) postqualPrompts.push(...requirement.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE))
-        else if (!ineligible && requirement.type === enumRequirementType.QUALIFICATION) applicantRequirements.push(requirement)
-        ineligible ||= requirement.status === 'DISQUALIFYING'
+        else if (requirement.type === enumRequirementType.POSTQUAL) postqualPrompts.push(...requirement.prompts.filter(p => !p.moot && p.visibility === enumPromptVisibility.AVAILABLE))
+        else if (requirement.type === enumRequirementType.QUALIFICATION) applicantRequirements.push(requirement)
       }
-      applications.push({ ...application, requirements: applicantRequirements.map(r => ({ ...r, prompts: r.prompts.filter(p => visibilitiesToShow.has(p.visibility)) })) })
+      applications.push({ ...application, requirements: applicantRequirements.map(r => ({ ...r, prompts: r.prompts.filter(p => !p.moot && visibilitiesToShow.has(p.visibility)) })) })
     }
     return { prequalPrompts, postqualPrompts, appRequest: { ...appRequest, applications } }
   }
@@ -349,15 +347,13 @@ class API extends APIBase {
     const applications: ResponseApplication[] = []
     const visibilitiesToShow = new Set<PromptVisibility>([enumPromptVisibility.AVAILABLE])
     for (const application of appRequest.applications) {
-      const applicantRequirements: ResponseRequirement[] = []
-      let ineligible = false
+      const applicationSpecificRequirements: ResponseRequirement[] = []
       for (const requirement of application.requirements) {
         if (requirement.type === enumRequirementType.PREQUAL) prequalPrompts.push(...requirement.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE))
-        else if (!ineligible && requirement.type === enumRequirementType.POSTQUAL) postqualPrompts.push(...requirement.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE))
-        else if (!ineligible && requirement.type === enumRequirementType.QUALIFICATION) applicantRequirements.push(requirement)
-        ineligible ||= requirement.status === 'DISQUALIFYING'
+        else if (requirement.type === enumRequirementType.POSTQUAL) postqualPrompts.push(...requirement.prompts.filter(p => p.moot || p.visibility === enumPromptVisibility.AVAILABLE))
+        else applicationSpecificRequirements.push(requirement)
       }
-      applications.push({ ...application, requirements: applicantRequirements.map(r => ({ ...r, prompts: r.prompts.filter(p => visibilitiesToShow.has(p.visibility)) })) })
+      applications.push({ ...application, requirements: applicationSpecificRequirements.map(r => ({ ...r, prompts: r.prompts.filter(p => !p.moot && visibilitiesToShow.has(p.visibility)) })) })
     }
     return { prequalPrompts, postqualPrompts, appRequest: { ...appRequest, applications } }
   }

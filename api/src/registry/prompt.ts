@@ -243,11 +243,46 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * affect the prompt UI. The data from this function will be provided to the svelte
    * component for this prompt as a prop named `fetchedData`.
    *
-   * NOTE: this function will only be called when displaying the prompt to the user. If
-   * any of this data is required for decision-making, you should store it alongside the
-   * data collected from the user during the prompt, e.g. use FieldHidden.
+   * NOTE: this function will only be called when displaying the editing-mode version of
+   * the prompt to the user. If any of this data is required for display or decision-making,
+   * you should store it alongside the data collected from the user during the prompt, e.g.
+   * use FieldHidden.
    */
   fetch?: (appRequest: AppRequest, config: ConfigurationDataType, relatedConfig: Record<string, any>) => Promise<FetchType> | FetchType
+  /**
+   * By default, we do not expose prompt data to the applicant unless it is part of an
+   * applicant-facing requirement. But this means that we cannot show the applicant any
+   * detailed review results like actual dollar amounts approved. We will want to show them
+   * such things during the acceptance phase or while viewing the status of their application.
+   *
+   * To support this, you should provide this function on any reviewer-only prompts that have
+   * result data the applicant should see. It takes the full prompt data and should return an
+   * authorized subset of that data that is safe to show the applicant.
+   *
+   * Your display component should be prepared to display with the partial data returned by this
+   * function. There will also be an `isApplicantView` prop set to true to help you adjust your display.
+   *
+   * NOTE: providing this function means that this prompt will be viewable by applicants, including
+   * title, navTitle, description, and answered status. Configuration and related configuration data
+   * will NOT be exposed unless you also provide `exposeConfigToApplicant`. Your display component
+   * should be prepared to handle that.
+   */
+  exposeToApplicant?: (data: DataType) => Partial<DataType>
+  /**
+   * When you provide an `exposeToApplicant` function, you may also provide this function to additionally
+   * expose parts of the configuration data to the applicant. This is useful if you want to show that
+   * the applicant received, for example, $5 of the maximum $10 that can be awarded (the $10 max is in the
+   * configuration).
+   *
+   * This function takes the full __related__ configuration data and should return the same shape, redacted
+   * as you see fit. For example, input will probably look like
+   * `{ my_prompt_key: { maxAwardAmount: 10 }, my_requirement_key: { someSetting: true } }`
+   * and you might return
+   * `{ my_prompt_key: { maxAwardAmount: 10 } }`
+   *
+   * By default, no configuration data is exposed to the applicant.
+   */
+  exposeConfigToApplicant?: (relatedConfig: Record<string, any>) => Record<string, any>
   /**
    * A list of keys of other prompts that the person answering this prompt depends
    * upon in order to answer this prompt. When the answer to any of these prompts

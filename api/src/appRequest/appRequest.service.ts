@@ -12,7 +12,8 @@ import {
   ApplicationService, RequirementPromptService,
   AppRequestPhase,
   appRequestReturnToOffer,
-  appRequestReturnToReview
+  appRequestReturnToReview,
+  promptRegistry
 } from '../internal.js'
 
 const appReqByIdLoader = new PrimaryKeyLoader({
@@ -114,13 +115,16 @@ export class AppRequestService extends AuthService<AppRequest> {
   async getData (appRequestInternalId: number) {
     const appRequest = await this.findByInternalId(appRequestInternalId)
     if (!appRequest) return {} as AppRequestData
+    const reqPromptSvc = this.svc(RequirementPromptService)
     const [data, prompts] = await Promise.all([
       this.raw.getData(appRequestInternalId),
       // this will filter out unauthorized prompts so we can clean up the data object
-      this.svc(RequirementPromptService).findByAppRequest(appRequest)
+      reqPromptSvc.findByAppRequest(appRequest)
     ])
     const cleanData: AppRequestData = { savedAtVersion: data.savedAtVersion }
-    for (const key of prompts.map(p => p.key)) cleanData[key] = data[key]
+    for (const p of prompts) {
+      cleanData[p.key] = reqPromptSvc.mayViewUnredacted(p) ? data[p.key] : promptRegistry.get(p.key)?.exposeToApplicant?.(data[p.key])
+    }
     return cleanData
   }
 

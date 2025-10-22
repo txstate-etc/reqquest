@@ -36,12 +36,12 @@ export class RequirementPromptResolver {
 
   @FieldResolver(type => JsonData, { nullable: true, description: 'The configuration data for this prompt in the app request\'s period.' })
   async configurationData (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt) {
-    await ctx.svc(ConfigurationService).getData(requirementPrompt.periodId, requirementPrompt.key)
+    await ctx.svc(RequirementPromptService).getConfigData(requirementPrompt)
   }
 
   @FieldResolver(type => JsonData, { description: 'All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it.' })
   async relatedConfigData (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt) {
-    return await ctx.svc(ConfigurationService).getRelatedData(requirementPrompt.periodId, requirementPrompt.key)
+    return await ctx.svc(RequirementPromptService).getRelatedConfigData(requirementPrompt)
   }
 
   @FieldResolver(type => ApplicationRequirement, { description: 'The requirement that this prompt is associated with.' })
