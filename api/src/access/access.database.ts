@@ -4,7 +4,9 @@ import {
   AccessUserIdentifier, AccessRoleInput, AccessRoleGrantCreate, AccessGrantTag,
   AccessRoleGroup,
   appConfig,
-  CategoryTag
+  CategoryTag,
+  PaginationInfoWithTotalItems,
+  Pagination
 } from '../internal.js'
 
 const AccessUserLabelApplicationRole = 'applicationRole'
@@ -136,14 +138,23 @@ export namespace AccessDatabase {
     return { where, params: [...joinbinds, ...params], joins }
   }
 
-  export async function getAccessUsers (filter?: AccessUserFilter): Promise<AccessUser[]> {
+  export async function getAccessUsers (filter?: AccessUserFilter, pageInfo?: PaginationInfoWithTotalItems, paged?: Pagination): Promise<AccessUser[]> {
     const { where, params, joins } = accessUserProcessFilter(filter)
-    const rows = await db.getall<AccessUserRow>(`
-      SELECT DISTINCT accessUsers.* FROM accessUsers
-      ${Array.from(joins.values()).join('\n')}
-      ${where.length > 0 ? `WHERE (${where.join(') AND (')})` : ''}
-      ORDER BY accessUsers.login ASC
-    `, params)
+    const queryBase = `${Array.from(joins.values()).join(' ')} ${where.length > 0 ? `WHERE (${where.join(') AND (')})` : ''}`
+    if (pageInfo) {
+      pageInfo.totalItems = await db.getval(`SELECT COUNT(DISTINCT accessUsers.login) FROM accessUsers ${queryBase}`, params)
+      if (paged?.page || paged?.perPage) {
+        pageInfo.currentPage = paged.page ?? 1
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+        pageInfo.perPage = paged?.perPage || 100 // 0 should also be overridden, so || is better than nullish coalescing ??
+        pageInfo.hasNextPage = (pageInfo.totalItems ?? 0) > pageInfo.currentPage * pageInfo.perPage
+      } else {
+        pageInfo.currentPage = 1
+        pageInfo.perPage = undefined
+        pageInfo.hasNextPage = false
+      }
+    }
+    const rows = await db.getall<AccessUserRow>(`SELECT DISTINCT accessUsers.* FROM accessUsers ${queryBase} ORDER BY accessUsers.login ASC ${pageInfo?.perPage ? `LIMIT ${pageInfo.perPage} OFFSET ${(pageInfo.currentPage - 1) * pageInfo.perPage}` : ''}`, params)
     return rows.map(row => new AccessUser(row))
   }
 

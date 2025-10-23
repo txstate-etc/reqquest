@@ -49,28 +49,11 @@ export class AccessUserService extends AuthService<AccessUser> {
       filter.internalIds = intersect({ skipEmpty: true }, filter.internalIds, [this.user.internalId])
     }
     // PAGING
-    // TODO: Push counting and paging/limit to database
-    let start = 0
-    let end = undefined
-    const users = await database.getAccessUsers(filter)
+    // INFO: if pageInfo is provided to getAccessUsers, it will get mutated with totals.
+    const users = await database.getAccessUsers(filter, pageInfo, paged)
     this.loaders.prime(accessUsersByIdLoader, users)
-    const total = users.length
     pageInfo.categories = await allCategoryCache.get()
-    if (paged?.page || paged?.perPage) {
-      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-      pageInfo.perPage = paged?.perPage || 100 // 0 should also be overridden, so || is better than nullish coalescing ??
-      pageInfo.totalItems = total
-      pageInfo.hasNextPage = total > pageInfo.currentPage * pageInfo.perPage
-      start = ((paged.page ?? 1) - 1) * pageInfo.perPage
-      end = start + pageInfo.perPage
-      return users.slice(start, end)
-    } else {
-      pageInfo.totalItems = total
-      pageInfo.currentPage = 1
-      pageInfo.perPage = undefined
-      pageInfo.hasNextPage = false
-      return users
-    }
+    return users
   }
 
   async findByInternalId (internalUserId: number) {
