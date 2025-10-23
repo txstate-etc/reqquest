@@ -360,10 +360,10 @@ export interface ApplicationRequirement {
 export type ApplicationStatus = 'ACCEPTED' | 'ELIGIBLE' | 'INELIGIBLE' | 'PENDING' | 'REJECTED'
 
 export interface Category {
-    /** Displayed Label for category. i.e. Institutional Roles */
-    heading: (Scalars['String'] | null)
-    /** Label is the name of the category. Categories are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles */
-    label: Scalars['String']
+    /** This is indexed name of the category. Categories are indexed to allow for quick filtering of a list of items. e.g. institutionalRoles */
+    category: Scalars['String']
+    /** Displayed Label of the category. e.g. Institutional Roles */
+    label: (Scalars['String'] | null)
     /** IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"] */
     tags: CategoryTag[]
     /** Set this to true should be available as a filter in the User list view. */
@@ -374,10 +374,10 @@ export interface Category {
 }
 
 export interface CategoryTag {
-    /** This is the string representation of a label id and is what is stored and searched for in the database. */
-    index: Scalars['String']
-    /** This is user friendly version of the index displayed in the UI Filter. This value should be unique enough to be distinguishable between other tags. */
-    tag: (Scalars['String'] | null)
+    /** Displayed Label of the tag in the UI Filter. This value should be unique enough to be distinguishable between other tags within a category type. */
+    label: (Scalars['String'] | null)
+    /** This is the indexed name of the tagged instance within a category type and is what is stored/searched for in the database. */
+    tag: Scalars['String']
     __typename: 'CategoryTag'
 }
 
@@ -898,8 +898,8 @@ export interface AccessUserGenqlSelection{
 }
 
 
-/** A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutionalRole", ids: ["Staff", "Student"] }, { label: "last-login", ids: ["2025-09-01T10:20:04"] }] */
-export interface AccessUserCategoryInput {ids: Scalars['ID'][],label: Scalars['String']}
+/** A category and tag pair for an internal and external user related attributes. For example, [{ category: "institutionalRole", tags: ["STAFF", "STUDENT"] }, { category: "lastLogin", tags: ["2025-09-01T10:20:04"] }] */
+export interface AccessUserCategoryInput {category: Scalars['ID'],tags: Scalars['ID'][]}
 
 export interface AccessUserFilter {logins?: (Scalars['ID'][] | null),
 /** One to Many categories Filter, like a institutional role people may belong to. */
@@ -1141,9 +1141,9 @@ export interface ApplicationRequirementGenqlSelection{
 }
 
 export interface CategoryGenqlSelection{
-    /** Displayed Label for category. i.e. Institutional Roles */
-    heading?: boolean | number
-    /** Label is the name of the category. Categories are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles */
+    /** This is indexed name of the category. Categories are indexed to allow for quick filtering of a list of items. e.g. institutionalRoles */
+    category?: boolean | number
+    /** Displayed Label of the category. e.g. Institutional Roles */
     label?: boolean | number
     /** IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"] */
     tags?: CategoryTagGenqlSelection
@@ -1156,9 +1156,9 @@ export interface CategoryGenqlSelection{
 }
 
 export interface CategoryTagGenqlSelection{
-    /** This is the string representation of a label id and is what is stored and searched for in the database. */
-    index?: boolean | number
-    /** This is user friendly version of the index displayed in the UI Filter. This value should be unique enough to be distinguishable between other tags. */
+    /** Displayed Label of the tag in the UI Filter. This value should be unique enough to be distinguishable between other tags within a category type. */
+    label?: boolean | number
+    /** This is the indexed name of the tagged instance within a category type and is what is stored/searched for in the database. */
     tag?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number

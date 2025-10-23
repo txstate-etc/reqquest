@@ -40,13 +40,13 @@ export class AccessUserIdentifierInput {
   label!: string
 }
 
-@InputType({ description: 'A label and ID pair for an internal and external user related attributes. For example, [{ label: "institutionalRole", ids: ["Staff", "Student"] }, { label: "last-login", ids: ["2025-09-01T10:20:04"] }]' })
+@InputType({ description: 'A category and tag pair for an internal and external user related attributes. For example, [{ category: "institutionalRole", tags: ["STAFF", "STUDENT"] }, { category: "lastLogin", tags: ["2025-09-01T10:20:04"] }]' })
 export class AccessUserCategoryInput {
-  @Field(type => [ID])
-  ids!: string[]
+  @Field(() => ID)
+  category!: string
 
-  @Field()
-  label!: string
+  @Field(type => [ID])
+  tags!: string[]
 }
 
 @ObjectType({ description: 'A label and ID pair for an external user unique ID. For example, { label: "Student ID", id: "123456" }' })

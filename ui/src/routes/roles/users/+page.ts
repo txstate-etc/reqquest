@@ -22,7 +22,7 @@ export const load: PageLoad = async ({ url, depends }) => {
   for (const grouping of groupings) {
     if (groupingsQuery[grouping] != null) {
       accessUsersFilter.otherCategoriesByLabel ??= []
-      accessUsersFilter.otherCategoriesByLabel.push({ label: grouping, ids: groupingsQuery[grouping] })
+      accessUsersFilter.otherCategoriesByLabel.push({ category: grouping, tags: groupingsQuery[grouping] })
     }
   }
   const { users, pageInfo } = await api.getAccessUsers(accessUsersFilter, pageFilter)
@@ -53,10 +53,10 @@ export const load: PageLoad = async ({ url, depends }) => {
       // institutionalRoles: u.otherInfo?.institutionalRoles ?? [],
       // lastLogin: u.otherInfo?.lastLogin ? DateTime.fromISO(u.otherInfo?.lastLogin).toFormat('MM/dd/yyyy') : 'unknown'
     }
-    if (u.otherInfo?.tags) {
+    if (u.otherInfo?.categories) {
       for (const group of pageInfo?.categories ?? []) {
-        const label = group.label
-        if (group.useInList) user[label] = Array.isArray(u.otherInfo.tags[label]) ? u.otherInfo.tags[label].join(', ') : undefined
+        const category = group.category
+        if (group.useInList) user[category] = Array.isArray(u.otherInfo.categories[category]) ? u.otherInfo.categories[category].map(tl => tl.label ?? tl.tag).join(', ') : undefined
       }
     }
     return user
@@ -78,9 +78,9 @@ export const load: PageLoad = async ({ url, depends }) => {
     // { id: 'lastLogin', label: 'Last Login', get: 'lastLogin' }
   ]
   for (const group of pageInfo?.categories ?? []) {
-    const label = group.label
-    if (group.useInList) columns.push({ id: label, label: group.heading ?? label, get: label })
-    if (group.useInFilters) filters.push({ id: group.label, label: group.heading ?? label, items: group.tags.map(tag => ({ value: tag.index, label: tag.tag ?? tag.index })) })
+    const category = group.category
+    if (group.useInList) columns.push({ id: category, label: group.label ?? category, get: category })
+    if (group.useInFilters) filters.push({ id: category, label: group.label ?? category, items: group.tags.map(tl => ({ value: tl.tag, label: tl.label ?? tl.tag })) })
   }
 
   depends('api:getAccessUsers')

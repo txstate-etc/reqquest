@@ -59,7 +59,7 @@ async function main () {
               groups: userTypes[userTypePrefixes.find(p => login.startsWith(p))!].groups,
               otherInfo: {
                 email: `${login}@txstate.edu`,
-                labels: {
+                indexes: {
                   institutionalRoles: pseudoInstitutionalRoles(login),
                   lastLogin: DateTime.fromJSDate(new Date())
                 }
@@ -68,22 +68,20 @@ async function main () {
           )
         },
         indexes: [{
-          label: 'institutionalRoles',
-          heading: 'Institutional Roles',
+          category: 'institutionalRoles',
+          label: 'Institutional Roles',
           useInFilters: true,
           useInList: true,
           // Example of reformatting so tag may be used both for index and display.
-          dataToIndexes: (data: string[]) => data.map(role => role.charAt(0).toLocaleUpperCase() + role.slice(1).toLocaleLowerCase()),
-          indexesToTags: (indexes: string[]) => indexes.map(idx => ({ index: idx }))
+          dataToCategoryTags: (data: string[]) => data.map(role => ({ tag: role.charAt(0).toLocaleUpperCase() + role.slice(1).toLocaleLowerCase() }))
         }, {
-          label: 'lastLogin',
-          heading: 'Last Login',
+          category: 'lastLogin',
+          label: 'Last Login',
           useInFilters: false,
           useInList: true,
-          // Example of turning date data into epoch index for sortable timestamp.
-          dataToIndexes: (data: DateTime) => [data.toSeconds().toString()],
-          // Example of turning in epoch index into simple display format.
-          indexesToTags: (indexes: string[]) => indexes.map(idx => ({ index: idx, tag: DateTime.fromSeconds(parseInt(idx)).toFormat('MM/dd/yyyy') }))
+          // Example of tag turning date data into epoch index for sortable timestamp.
+          // and label simplifying date for display format.
+          dataToCategoryTags: (data: DateTime) => [{ tag: data.toSeconds().toString(), label: data.toFormat('MM/dd/yyyy') }]
         }]
       },
       groups: async (groupnames: string[]) => {
@@ -121,9 +119,9 @@ function configureDemoInstanceParams () {
     migrations: multiTestMigrations,
     multipleRequestsPerPeriod: true
   }
-  else if (process.env.DEMO_INSTANCE === 'complex') return { 
+  else if (process.env.DEMO_INSTANCE === 'complex') return {
     programGroups: [],
-    programs: Object.values(complexPrograms), 
+    programs: Object.values(complexPrograms),
     requirements: Object.values(complexRequirements),
     prompts: Object.values(complexPrompts),
     migrations: complexTestMigrations,

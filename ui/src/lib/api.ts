@@ -63,11 +63,11 @@ class API extends APIBase {
           perPage: true,
           categories: {
             tags: {
-              index: true,
-              tag: true
+              tag: true,
+              label: true
             },
+            category: true,
             label: true,
-            heading: true,
             useInFilters: true,
             useInList: true
           }

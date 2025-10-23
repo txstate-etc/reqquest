@@ -343,11 +343,11 @@ export default {
             ]
         },
         "AccessUserCategoryInput": {
-            "ids": [
+            "category": [
                 44
             ],
-            "label": [
-                74
+            "tags": [
+                44
             ],
             "__typename": [
                 74
@@ -766,7 +766,7 @@ export default {
         "ApplicationStatus": {},
         "Boolean": {},
         "Category": {
-            "heading": [
+            "category": [
                 74
             ],
             "label": [
@@ -786,7 +786,7 @@ export default {
             ]
         },
         "CategoryTag": {
-            "index": [
+            "label": [
                 74
             ],
             "tag": [

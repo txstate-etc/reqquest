@@ -17,20 +17,20 @@ export class PaginationWithCursor extends Pagination {
 
 @ObjectType()
 export class CategoryTag {
-  @Field({ description: 'This is the string representation of a label id and is what is stored and searched for in the database.' })
-  index!: string
+  @Field({ description: 'This is the indexed name of the tagged instance within a category type and is what is stored/searched for in the database.' })
+  tag!: string
 
-  @Field({ nullable: true, description: 'This is user friendly version of the index displayed in the UI Filter. This value should be unique enough to be distinguishable between other tags.' })
-  tag?: string
+  @Field({ nullable: true, description: 'Displayed Label of the tag in the UI Filter. This value should be unique enough to be distinguishable between other tags within a category type.' })
+  label?: string
 }
 
 @ObjectType()
 export class Category {
-  @Field({ description: 'Label is the name of the category. Categories are indexed to allow for quick filtering of a list of items. i.e. institutionalRoles' })
-  label!: string
+  @Field({ description: 'This is indexed name of the category. Categories are indexed to allow for quick filtering of a list of items. e.g. institutionalRoles' })
+  category!: string
 
-  @Field({ nullable: true, description: 'Displayed Label for category. i.e. Institutional Roles' })
-  heading?: string
+  @Field({ nullable: true, description: 'Displayed Label of the category. e.g. Institutional Roles' })
+  label?: string
 
   @Field(type => [CategoryTag], { description: 'IDs are the unique values that may be used to group an items. Multiple IDs may be assigned to an item. i.e. ["Staff", "Faculty", "Student"]' })
   tags!: CategoryTag[]

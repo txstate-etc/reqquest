@@ -88,15 +88,16 @@ export const accessMigrations: DatabaseMigration[] = [{
      * may be field collisions within the otherInfo property. To avoid this will namespace fields
      * within otherInfo property. otherInfo substructures looks like:
      *   - identifiers sub-property for accessUserIdentifiers labels
-     *   - categories sub-property for accessUserCategories labels
+     *   - categories sub-property for accessUserCategories tag/labels
      *   - meta sub-property for non-indexed associated data
      */
     await db.execute(`CREATE TABLE IF NOT EXISTS accessUserCategories (
       userId INT UNSIGNED NOT NULL,
-      label VARCHAR(128) NOT NULL, -- ex: institutional-role
-      id VARCHAR(128) NOT NULL, -- ex: Staff
-      PRIMARY KEY (userId, label, id), -- Used for adding/removing user associated values
-      INDEX (id, label, userId), -- Dual use for generating distinct labels and user filter searches
+      category VARCHAR(128) NOT NULL, -- institutionalRole was: label
+      tag VARCHAR(128) NOT NULL, -- ex: STAFF was: id:Staff
+      label VARCHAR(128), -- ex: Staff. Note this is not normalized and may be NULL
+      PRIMARY KEY (userId, category, tag), -- Used for adding/removing user associated values
+      INDEX (category, tag, userId), -- Dual use for generating distinct category/tag with Label lists and user filter searches
       FOREIGN KEY (userId) REFERENCES accessUsers(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
   }

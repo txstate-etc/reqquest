@@ -28,14 +28,14 @@ const groupsByUserInternalIdLoader = new ManyJoinedLoader({
 const allCategoryCache = new Cache(async () => {
   const indexes = appConfig.userLookups.indexes
   if (!indexes || !indexes.length) return []
-  const tagss = await Promise.all(indexes.map(i => AccessDatabase.getaccessUserCategoryIdsByLabel(i.label)))
+  const tagss = await Promise.all(indexes.map(i => AccessDatabase.getAccessUserCategory(i.category)))
   const categories: Category[] = []
   for (const i in indexes) {
     const index = indexes[i]
     categories.push({
+      category: index.category,
       label: index.label,
-      heading: index.heading,
-      tags: index.indexesToTags(tagss[i]),
+      tags: tagss[i],
       useInFilters: index.useInFilters,
       useInList: index.useInList })
   }

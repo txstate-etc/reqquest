@@ -51,12 +51,12 @@ export interface UserIndexDefinition<DataType = any> {
   /**
    * A unique key used to namespace categories.
    */
-  label: string
+  category: string
   /**
    * Used to display the category name for the UI column headers.
-   * If not available then the label value will be used for the header.
+   * If not available then the category value will be used for the header.
    */
-  heading?: string
+  label?: string
   /**
    * Set this to true should be displayed as a column in the User list view.
    * default is false.
@@ -70,18 +70,15 @@ export interface UserIndexDefinition<DataType = any> {
    */
   useInFilters?: boolean
   /**
-   * Convert all existing distinct DataType/ids associate with the label
-   * into an array of strings to be used as index values saved in the
-   * database. If already an array of unique strings then may be optional.
-   * Date may be converted to Epoc for sorting, or spacing may be converted
-   * to dashes.
+   * Convert all existing distinct DataTypes associate with the category
+   * into an array of tags with associated labels. The tags will be used
+   * as indexes and labels will be used for UI display of a tag.
+   * The tag/label values will be saved in the database together.
+   * Example of tag changes may be Dates converted to Epoc for sorting,
+   * or spacing may be removed or turned into dashes. Example label
+   * formatting may include first letter case changes and adding spacing.
    */
-  dataToIndexes: (data: DataType) => string[]
-  /**
-   * Convert indexes associated with the category label into an array of
-   * tags to be displayed by the UI. Date may come out as '10/17/2024'
-   */
-  indexesToTags: (indexes: string[]) => CategoryTag[]
+  dataToCategoryTags: (data: DataType) => CategoryTag[]
 }
 
 export interface AppDefinition {
