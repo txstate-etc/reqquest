@@ -14,7 +14,7 @@ export const state_residence_prequal_req: RequirementDefinition<StateResidenceCo
     const stateResidencePromptData = data.state_residence_prompt as StateResidencePromptData
     if (stateResidencePromptData?.state == null) return { status: RequirementStatus.PENDING }
     if (!config.residentOfState.find(state => stateResidencePromptData!.state === state)) return { status: RequirementStatus.DISQUALIFYING, reason: `You must reside in one of the following states to qualify: ${config.residentOfState.join(', ')}.` }
-    return { status: RequirementStatus.PENDING }
+    return { status: RequirementStatus.MET }
   },
   configuration: {
     validate: config => {

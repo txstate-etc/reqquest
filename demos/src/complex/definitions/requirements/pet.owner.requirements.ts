@@ -11,8 +11,9 @@ export const petowner_prequal_req: RequirementDefinition<StateResidenceConfigReq
   description: 'Provide previous and current pet owner information',
   promptKeys: ['petowner_prompt'],
   resolve: (data, config) => {
-    //const previousPetOwnerPromptData = data.state_residence_prompt as PreviousPetOwnerPromptData
-    //if (previousPetOwnerPromptData?.previousPetOwnnership == null) return { status: RequirementStatus.PENDING }
-    return { status: RequirementStatus.PENDING }
+    const petOwnerPromptData = data.petowner_prompt as PetOwnerPromptData
+    if (petOwnerPromptData?.previousPetOwner == null) return { status: RequirementStatus.PENDING }
+    if (petOwnerPromptData.previousPetOwner === false) return { status: RequirementStatus.DISQUALIFYING, reason: 'Must have previously owned a pet to be eligible for this program' }
+    return { status: RequirementStatus.MET }
   }
 }
