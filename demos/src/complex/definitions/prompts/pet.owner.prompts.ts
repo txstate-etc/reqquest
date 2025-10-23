@@ -1,23 +1,24 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { PreviousPetOwnerPromptSchema } from '../models/index.js'
+import { PetOwnerPromptSchema } from '../models/index.js'
 
 
-export const previous_petowner_prompt: PromptDefinition = {
-  key: 'previous_petowner_prompt',
-  title: 'Previous pet owner',
-  description: 'Applicant will identify previous pet owner information.',
-  schema: PreviousPetOwnerPromptSchema,
+export const petowner_prompt: PromptDefinition = {
+  key: 'petowner_prompt',
+  title: 'Pet owner',
+  description: 'Applicant will identify previous and current pet owner information.',
+  schema: PetOwnerPromptSchema,
   validate: (data, config, allConfig) => {
-    const messages: MutationMessage[] = []  
-    if (!data.previousPetOwnnership?.owned) messages.push({ type: MutationMessageType.error, message: 'Previous pet ownership input required', arg: 'previousPetOwnership.owned' })
-    if (data.previousPetOwnnership?.owned) {
-      if (!data.previousPetOwnnership?.count) messages.push({ type: MutationMessageType.error, message: 'Number of previous pets required', arg: 'previousPetOwnnership.count' })
-      if (data.previousPetOwnnership?.count > 0) {
-        if (!data.currentPetOwnership?.count) messages.push({ type: MutationMessageType.error, message: 'Number of current pets required', arg: 'currentPetOwnnership.count' })
-        if (!data.currentPetOwnership?.details) messages.push({ type: MutationMessageType.error, message: 'Details of current pets required', arg: 'currentPetOwnnership.details' })
+    const messages: MutationMessage[] = [] 
+    if (!data || data.previousPetOwner == null) messages.push({ type: MutationMessageType.error, message: 'Previous pet ownership input required', arg: 'previousPetOwner' })
+    if (data.previousPetOwner) {
+      if (data.previousPetCount == null || data.previousPetCount < 1) messages.push({ type: MutationMessageType.error, message: 'Number of previous pets required', arg: 'previousPetCount' })
+      if (data.currentPetOwner == null ) messages.push({ type: MutationMessageType.error, message: 'Current pet ownership input required', arg: 'currentPetOwner' })
+      if (data.currentPetOwner) {
+        if (data.currentPetCount == null || data.currentPetCount < 1) messages.push({ type: MutationMessageType.error, message: 'Number of current pets required', arg: 'currentPetCount' })
+        if (data.currentPetDetails == null) messages.push({ type: MutationMessageType.error, message: 'Details of current pets required', arg: 'currentPetDetails' })
       }
-    } 
+    }  
     return messages
   }
 }

@@ -5,7 +5,7 @@ export const adopt_a_dog_program: ProgramDefinition = {
   title: 'Adopt a Dog',
   requirementKeys: [
     'state_residence_prequal_req',
-    'previous_petowner_prequal_req' 
+    'petowner_prequal_req' 
   ]
 }
 
@@ -14,7 +14,7 @@ export const adopt_a_cat_program: ProgramDefinition = {
   title: 'Adopt a Cat',
   requirementKeys: [    
     'state_residence_prequal_req',
-    'previous_petowner_prequal_req' 
+    'petowner_prequal_req' 
   ]
 }
 
@@ -23,7 +23,7 @@ export const foster_a_pet_program: ProgramDefinition = {
   title: 'Foster a Pet',
   requirementKeys: [
     'state_residence_prequal_req',
-    'previous_petowner_prequal_req' 
+    'petowner_prequal_req' 
   ]
 }
 
@@ -32,6 +32,6 @@ export const senior_pet_program: ProgramDefinition = {
   title: 'Adopt a senior pet',
   requirementKeys: [
     'state_residence_prequal_req',
-    'previous_petowner_prequal_req'   
+    'petowner_prequal_req'   
   ]
 }

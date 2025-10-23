@@ -20,12 +20,17 @@ export const CurrentPetsSchema = {
 	additionalProperties: false
 } as const satisfies SchemaObject
 
-export const PreviousPetOwnerPromptSchema = {
+export const PetOwnerPromptSchema = {
   type: 'object',
   properties: { 
-    previousPetOwnnership: PreviousPetsSchema,
-    currentPetOwnership: CurrentPetsSchema
+    // previousPetOwnnership: PreviousPetsSchema,
+    // currentPetOwnership: CurrentPetsSchema
+    previousPetOwner: { type: 'boolean'},
+    currentPetOwner: { type: 'boolean'},
+    previousPetCount: { type: 'number'},
+    currentPetCount: { type: 'number'},
+    currentPetDetails: { type: 'string' }
   },
   additionalProperties: false
 } as const satisfies SchemaObject
-export type PreviousPetOwnerPromptData = FromSchema<typeof PreviousPetOwnerPromptSchema>
+export type PetOwnerPromptData = FromSchema<typeof PetOwnerPromptSchema>
