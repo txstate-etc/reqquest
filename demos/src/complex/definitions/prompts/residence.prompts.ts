@@ -13,7 +13,7 @@ export const state_residence_prompt: PromptDefinition = {
     const messages: MutationMessage[] = []
     const doc = data['residentIdDoc']
     if (doc) {
-      const allowedMbSize = 1
+      const allowedMbSize = 10
       if (doc.size > allowedMbSize * 1024 * 1024) messages.push({ type: MutationMessageType.error, message: `This document is too large, please upload a file less than ${allowedMbSize}MB.`, arg: 'residentIdDoc' })
       if (doc.mime !== 'image/jpeg' && doc.mime !== 'image/gif' && doc.mime !== 'image/png' && doc.mime !== 'application/pdf') messages.push({ type: MutationMessageType.error, message: 'File must be of type JPEG, GIF, PNG or PDF', arg: 'residentIdDoc' })     
     }    

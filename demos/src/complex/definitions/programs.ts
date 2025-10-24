@@ -6,7 +6,8 @@ export const adopt_a_dog_program: ProgramDefinition = {
   requirementKeys: [
     'state_residence_prequal_req',
     'petowner_prequal_req',
-    'previous_dogowner_qual_req' 
+    'previous_dogowner_qual_req',
+    'current_dogowner_qual_req'
   ]
 }
 

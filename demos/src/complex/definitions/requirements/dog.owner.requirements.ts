@@ -1,5 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
-import { PreviousDogOwnerPromptData } from '../models/index.js'
+import { PreviousDogOwnerPromptData, CurrentDogOwnerPromptData } from '../models/index.js'
+import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
 
 export const previous_dogowner_qual_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
@@ -14,4 +15,32 @@ export const previous_dogowner_qual_req: RequirementDefinition = {
     if (dogOwnerPromptData.owned === false) return { status: RequirementStatus.WARNING, reason: 'Previous dog ownership is usually required.  Exceptions on a case by case basis.' }
     return { status: RequirementStatus.MET }
   }
+}
+
+export const current_dogowner_qual_req: RequirementDefinition = {
+  type: RequirementType.QUALIFICATION,
+  key: 'current_dogowner_qual_req',
+  title: 'Provide current dog owner info',
+  navTitle: 'Current dog owner info',
+  description: 'Provide current dog owner information',
+  promptKeys: ['current_dogowner_prompt'],
+  resolve: (data, config) => {
+    const dogOwnerPromptData = data.current_dogowner_prompt as CurrentDogOwnerPromptData
+    if (dogOwnerPromptData?.owned == null) return { status: RequirementStatus.PENDING }
+    if (dogOwnerPromptData.owned) {
+      if (dogOwnerPromptData.count == null) return { status: RequirementStatus.PENDING }
+      if (dogOwnerPromptData.count >= config.maxCount ) return { status: RequirementStatus.WARNING, reason: "Too many dogs currently, waivers available case-by-case" }
+    }
+    return { status: RequirementStatus.MET }
+  },
+  configuration: {
+    validate: config => {
+      const messages: MutationMessage[] = []
+      if (config.maxCount == null) {
+        messages.push({ type: MutationMessageType.error, message: 'Please specify the maximum number of dogs permitted in the home.', arg: 'maxCount' })
+      }
+      return messages
+    },
+    default: { maxCount: 5 }
+  } 
 }

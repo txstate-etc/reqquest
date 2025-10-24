@@ -10,3 +10,23 @@ export const PreviousDogOwnerPromptSchema = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type PreviousDogOwnerPromptData = FromSchema<typeof PreviousDogOwnerPromptSchema>
+
+export const CurrentDogOwnerRequirementConfigSchema = {
+  type: 'object',
+  properties: { 
+    maxCount: { type: 'number' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type CurrentDogOwnerRequirementConfigData = FromSchema<typeof CurrentDogOwnerRequirementConfigSchema>
+
+export const CurrentDogOwnerPromptSchema = {
+  type: 'object',
+  properties: { 
+    owned: { type: 'boolean' },
+    count: { type: 'number'},
+    details: { type: 'string' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type CurrentDogOwnerPromptData = FromSchema<typeof CurrentDogOwnerPromptSchema>
