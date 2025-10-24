@@ -1,9 +1,8 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { StateResidenceConfigRequirementData } from '../models/index.js'
 import { PetOwnerPromptData } from '../models/index.js'
 
-export const petowner_prequal_req: RequirementDefinition<StateResidenceConfigRequirementData> = {
+export const petowner_prequal_req: RequirementDefinition = {
   type: RequirementType.PREQUAL,
   key: 'petowner_prequal_req',
   title: 'Provide pet owner info',

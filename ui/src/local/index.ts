@@ -37,6 +37,8 @@ import ComplexResidenceDisplayPrompt from './complex/residence/ResidenceDisplayP
 import ComplexResidenceConfig from './complex/residence/ResidenceConfig.svelte'
 import ComplexPetOwnerPrompt from './complex/petOwner/PetOwnerPrompt.svelte'
 import ComplexPetOwnerDisplayPrompt from './complex/petOwner/PetOwnerDisplayPrompt.svelte'
+import ComplexDogOwnerPrompt from './complex/dogOwner/DogOwnerPrompt.svelte'
+import ComplexDogOwnerDisplayPrompt from './complex/dogOwner/DogOwnerDisplayPrompt.svelte'
 
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts} =  configureDemoInstanceParams()
@@ -152,11 +154,13 @@ function configureDemoInstanceParams() {
       ],
       requirements: [
         { key: 'state_residence_prequal_req', configureComponent: ComplexResidenceConfig },
-        { key: 'petowner_prequal_req' }
+        { key: 'petowner_prequal_req' },
+        { key: 'dogwowner_qual_req'}
       ],
       prompts: [
         { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
-        { key: 'petowner_prompt', formComponent: ComplexPetOwnerPrompt, displayComponent: ComplexPetOwnerDisplayPrompt }
+        { key: 'petowner_prompt', formComponent: ComplexPetOwnerPrompt, displayComponent: ComplexPetOwnerDisplayPrompt },
+        { key: 'dogowner_prompt', formComponent: ComplexDogOwnerPrompt, displayComponent: ComplexDogOwnerDisplayPrompt }
       ]
     }
   }
