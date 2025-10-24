@@ -4,12 +4,12 @@
 </script>
 <p>Previous pet owner: { !!data.previousPetOwner ? 'Yes': 'No' }</p><br/>
 {#if (!!data.previousPetOwner) }
-  Previous pet owner: <b>Yes</b>
-  Previous pets owned: { data.previousPetCount }
+  Previous pet owner: <b>Yes</b><br/>
+  Previous pets owned: { data.previousPetCount }<br/>
   {#if (!!data.currentPetOwner) }
-    Current pet owner: <b>Yes</b>
-    Current pets owned: { data.currentPetCount }
-    Current pet details: { data.currentPetDetails }
+    Current pet owner: <b>Yes</b><br/>
+    Current pets owned: { data.currentPetCount }<br/>
+    Current pet details: { data.currentPetDetails }<br/>
   {/if}
 {/if}
 

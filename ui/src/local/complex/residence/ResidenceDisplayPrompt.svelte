@@ -3,6 +3,7 @@
   import { PUBLIC_API_BASE } from '$env/static/public';
   import { Button, Modal, ToastNotification } from 'carbon-components-svelte'
   import type { StateResidencePromptData } from './types.js'
+    import Page from '../../../routes/periods/+page.svelte';
   export let data: Partial<StateResidencePromptData>
   export let relatedConfigData
   export let appRequestId
@@ -36,8 +37,9 @@
     return true
   }
 </script>
-{#if (relatedConfigData.state_residence_req.residentOfState.find(state => data.state === state))}
-   <p>Resident of {data.state} </p><!-- Config data does not seem to be available for display prompt {resultText}. -->
+
+{#if (relatedConfigData.state_residence_prequal_req.residentOfState.find(state => data.state === state))}
+   <p>Resident of {data.state} </p>
    <br>
    <p>
       <b>
@@ -53,6 +55,7 @@
 {:else}
   <p>Not a resident of {relatedConfigData.state_residence_req.residentOfState.join(', ')}.</p>
 {/if}
+
 
 <Modal
   bind:open={modalOpen}

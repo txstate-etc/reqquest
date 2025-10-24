@@ -33,7 +33,7 @@ import ResidenceConfirmationReviewPromptDisplay from './simple/ResidenceConfirma
 
 /** Complex */
 import ComplexResidencePrompt from './complex/residence/ResidencePrompt.svelte'
-import ComplexResidencePromptDisplay from './complex/residence/ResidencePromptDisplay.svelte'
+import ComplexResidenceDisplayPrompt from './complex/residence/ResidenceDisplayPrompt.svelte'
 import ComplexResidenceConfig from './complex/residence/ResidenceConfig.svelte'
 import ComplexPetOwnerPrompt from './complex/petOwner/PetOwnerPrompt.svelte'
 import ComplexPetOwnerDisplayPrompt from './complex/petOwner/PetOwnerDisplayPrompt.svelte'
@@ -155,7 +155,7 @@ function configureDemoInstanceParams() {
         { key: 'petowner_prequal_req' }
       ],
       prompts: [
-        { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidencePromptDisplay },
+        { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
         { key: 'petowner_prompt', formComponent: ComplexPetOwnerPrompt, displayComponent: ComplexPetOwnerDisplayPrompt }
       ]
     }
