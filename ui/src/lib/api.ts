@@ -177,6 +177,8 @@ class API extends APIBase {
               title: true,
               navTitle: true,
               answered: true,
+              invalidated: true,
+              invalidatedReason: true,
               visibility: true,
               moot: true
             }
@@ -330,6 +332,8 @@ class API extends APIBase {
               answered: true,
               visibility: true,
               moot: true,
+              invalidated: true,
+              invalidatedReason: true,
               relatedConfigData: true
             }
           }
@@ -660,6 +664,8 @@ class API extends APIBase {
               visibility: true,
               relatedConfigData: true,
               moot: true,
+              invalidated: true,
+              invalidatedReason: true,
               fetchedData: true,
               actions: {
                 update: true
