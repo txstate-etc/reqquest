@@ -30,11 +30,17 @@ export const current_dogowner_qual_req: RequirementDefinition = {
   description: 'Provide current dog owner information',
   promptKeys: ['current_dogowner_prompt'],
   resolve: (data, config) => {
+    console.log(`*** Data is ${JSON.stringify(data)}`)
     const dogOwnerPromptData = data.current_dogowner_prompt as CurrentDogOwnerPromptData
-    console.log(`***** current_dogowner_qual_req resolv:  owned equals: ${dogOwnerPromptData?.owned}`)
+    console.log(`*** DogOwnerData is ${JSON.stringify(dogOwnerPromptData)}`)
+    //console.log(`***** current_dogowner_qual_req resolv:  owned equals: ${dogOwnerPromptData?.owned}`)
     /** NOTE FOR CHANGE: dogOwnerPromptData?.owned == null is triggered evenis owned set to false explicitly  */
-    if (dogOwnerPromptData?.owned == null) return { status: RequirementStatus.PENDING }
+    if (dogOwnerPromptData?.owned == null) {
+      console.log(`***In null`)
+      return { status: RequirementStatus.PENDING }
+    }
     if (dogOwnerPromptData.owned === false) {
+      console.log(`***In false`)
       return { status: RequirementStatus.MET }
     } else {
       if (dogOwnerPromptData.count == null) return { status: RequirementStatus.PENDING }
