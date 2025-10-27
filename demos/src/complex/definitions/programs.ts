@@ -8,7 +8,8 @@ export const adopt_a_dog_program: ProgramDefinition = {
     'petowner_prequal_req',
     'previous_dogowner_qual_req',
     'current_dogowner_qual_req',
-    'yard_qual_req'
+    'yard_qual_req',
+    'owner_dog_allergy_qual_req'
   ]
 }
 

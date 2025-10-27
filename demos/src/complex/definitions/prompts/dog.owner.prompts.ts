@@ -1,6 +1,6 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { PreviousDogOwnerPromptSchema, CurrentDogOwnerPromptSchema } from '../models/index.js'
+import { PreviousDogOwnerPromptSchema, CurrentDogOwnerPromptSchema, OwnerDogAllergyPromptSchema } from '../models/index.js'
 
 
 export const previous_dogowner_prompt: PromptDefinition = {
@@ -30,6 +30,21 @@ export const current_dogowner_prompt: PromptDefinition = {
     if (!data || data.owned == null) messages.push({ type: MutationMessageType.error, message: 'Current dog ownership input required', arg: 'owned' })
     if (data.owned) {
       if (data.count == null) messages.push({ type: MutationMessageType.error, message: 'Please provide current dog count', arg: 'count' })
+      if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
+    }   
+    return messages
+  }
+}
+
+export const owner_dog_allergy_prompt: PromptDefinition = {
+   key: 'owner_dog_allergy_prompt',
+  title: 'Owner dog allergies',
+  description: 'Applicant will identify any current dog allergies',
+  schema: OwnerDogAllergyPromptSchema,
+  validate: (data, config, allConfig) => {
+    const messages: MutationMessage[] = [] 
+    if (!data || data.allergic == null) messages.push({ type: MutationMessageType.error, message: 'Owner allergy information required', arg: 'allergic' })
+    if (data.allergic) {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
     }
     return messages

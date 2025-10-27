@@ -45,6 +45,8 @@ import ComplexCurrentDogConfig from './complex/dogOwner/CurrentDogConfig.svelte'
 import ComplexYardConfig from './complex/yard/YardConfig.svelte'
 import ComplexYardPrompt from './complex/yard/YardPrompt.svelte'
 import ComplexYardDisplayPrompt from './complex/yard/YardDisplayPrompt.svelte'
+import ComplexOwnerDogAllergyPrompt from './complex/dogOwner/OwnerDogAllergyPrompt.svelte'
+import ComplexOwnerDogAllergyDisplayPrompt from './complex/dogOwner/OwnerDogAllergyDisplayPrompt.svelte'
 
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts} =  configureDemoInstanceParams()
@@ -163,14 +165,16 @@ function configureDemoInstanceParams() {
         { key: 'petowner_prequal_req' },
         { key: 'previous_dogwowner_qual_req'},
         { key: 'current_dogowner_qual_req', configureComponent: ComplexCurrentDogConfig },
-        { key: 'yard_qual_req', configureComponent: ComplexYardConfig }
+        { key: 'yard_qual_req', configureComponent: ComplexYardConfig },
+        { key: 'owner_dog_allergy_qual_req'}
       ],
       prompts: [
         { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
         { key: 'petowner_prompt', formComponent: ComplexPetOwnerPrompt, displayComponent: ComplexPetOwnerDisplayPrompt },
         { key: 'previous_dogowner_prompt', formComponent: ComplexPreviousDogOwnerPrompt, displayComponent: ComplexPreviousDogOwnerDisplayPrompt },
         { key: 'current_dogowner_prompt', formComponent: ComplexCurrentDogOwnerPrompt, displayComponent: ComplexCurrentDogOwnerDisplayPrompt },
-        { key: 'yard_prompt', formComponent: ComplexYardPrompt, displayComponent: ComplexYardDisplayPrompt}
+        { key: 'yard_prompt', formComponent: ComplexYardPrompt, displayComponent: ComplexYardDisplayPrompt},
+        { key: 'owner_dog_allergy_prompt', formComponent: ComplexOwnerDogAllergyPrompt, displayComponent: ComplexOwnerDogAllergyDisplayPrompt}
       ]
     }
   }

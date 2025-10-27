@@ -1,5 +1,5 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
-import { PreviousDogOwnerPromptData, CurrentDogOwnerPromptData } from '../models/index.js'
+import { PreviousDogOwnerPromptData, CurrentDogOwnerPromptData, OwnerDogAllergyPromptData } from '../models/index.js'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
 
 export const previous_dogowner_qual_req: RequirementDefinition = {
@@ -52,4 +52,24 @@ export const current_dogowner_qual_req: RequirementDefinition = {
     },
     default: { maxCount: 5 }
   } 
+}
+
+export const owner_dog_allergy_qual_req: RequirementDefinition = {
+  type: RequirementType.QUALIFICATION,
+  key: 'owner_dog_allergy_qual_req',
+  title: 'Provide dog allergy info ',
+  navTitle: 'Owner dog allergies',
+  description: 'Provide owner dog allergy information',
+  promptKeys: ['owner_dog_allergy_prompt'],
+  resolve: (data, config) => {
+    const dogOwnerPromptData = data.owner_dog_allergy_prompt as OwnerDogAllergyPromptData
+    if (dogOwnerPromptData?.allergic != null) {
+      if (dogOwnerPromptData.allergic === true) {
+        return { status: RequirementStatus.WARNING, reason: 'We reserve the right to deny applications with known allergies (based on years of consistently high return rates).' }
+      } else { 
+        return { status: RequirementStatus.MET }
+      }
+    }
+    return { status: RequirementStatus.PENDING }
+  }
 }
