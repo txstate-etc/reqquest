@@ -11,9 +11,14 @@ export const previous_dogowner_qual_req: RequirementDefinition = {
   promptKeys: ['previous_dogowner_prompt'],
   resolve: (data, config) => {
     const dogOwnerPromptData = data.previous_dogowner_prompt as PreviousDogOwnerPromptData
-    if (dogOwnerPromptData?.owned == null) return { status: RequirementStatus.PENDING }
-    if (dogOwnerPromptData.owned === false) return { status: RequirementStatus.WARNING, reason: 'Previous dog ownership is usually required.  Exceptions on a case by case basis.' }
-    return { status: RequirementStatus.MET }
+    if (dogOwnerPromptData?.owned != null) {
+      if (dogOwnerPromptData.owned === false) {
+        return { status: RequirementStatus.WARNING, reason: 'Previous dog ownership is usually required.  Exceptions on a case by case basis.' }
+      } else { 
+        return { status: RequirementStatus.MET }
+      }
+    }
+    return { status: RequirementStatus.PENDING }
   }
 }
 
@@ -26,8 +31,12 @@ export const current_dogowner_qual_req: RequirementDefinition = {
   promptKeys: ['current_dogowner_prompt'],
   resolve: (data, config) => {
     const dogOwnerPromptData = data.current_dogowner_prompt as CurrentDogOwnerPromptData
+    console.log(`***** current_dogowner_qual_req resolv:  owned equals: ${dogOwnerPromptData?.owned}`)
+    /** NOTE FOR CHANGE: dogOwnerPromptData?.owned == null is triggered evenis owned set to false explicitly  */
     if (dogOwnerPromptData?.owned == null) return { status: RequirementStatus.PENDING }
-    if (dogOwnerPromptData.owned) {
+    if (dogOwnerPromptData.owned === false) {
+      return { status: RequirementStatus.MET }
+    } else {
       if (dogOwnerPromptData.count == null) return { status: RequirementStatus.PENDING }
       if (dogOwnerPromptData.count >= config.maxCount ) return { status: RequirementStatus.WARNING, reason: "Too many dogs currently, waivers available case-by-case" }
     }
