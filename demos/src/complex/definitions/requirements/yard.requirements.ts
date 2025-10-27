@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { YardConfigRequirementData } from '../models/index.js'
+import { CurrentDogOwnerPromptData, YardConfigRequirementData } from '../models/index.js'
 import { YardPromptData } from '../models/index.js'
 
 export const yard_qual_req: RequirementDefinition<YardConfigRequirementData> = {
@@ -9,22 +9,25 @@ export const yard_qual_req: RequirementDefinition<YardConfigRequirementData> = {
   title: 'Provide yard information',
   navTitle: 'Yard',
   description: 'Provide information for applicants yard',
-  promptKeys: ['yard_prompt'],
+  promptKeys: ['current_dogowner_prompt', 'yard_prompt'],
   resolve: (data, config) => {
     const YardPromptData = data.yard_prompt as YardPromptData
-    //if (stateResidencePromptData?.state == null) return { status: RequirementStatus.PENDING }
-    //if (!config.residentOfState.find(state => stateResidencePromptData!.state === state)) return { status: RequirementStatus.DISQUALIFYING, reason: `You must reside in one of the following states to qualify: ${config.residentOfState.join(', ')}.` }
+    const CurrentDogOwnerPromptData = data.current_dogowner_prompt as CurrentDogOwnerPromptData
+    if (YardPromptData?.sqftYardSize == null) return { status: RequirementStatus.PENDING }
+    if (CurrentDogOwnerPromptData?.count == null) return { status: RequirementStatus.PENDING }
+    const minFutureDogCount = CurrentDogOwnerPromptData.count + 1
+    if ((config!.minSqftPerDog! * minFutureDogCount) >  YardPromptData?.sqftYardSize) return { status: RequirementStatus.WARNING, reason: 'Outdoor space is not sufficient for adopting an additional dog. Waivers available case-by-case.' }
     return { status: RequirementStatus.MET }
   },
   configuration: {
     validate: config => {
       const messages: MutationMessage[] = []
       if (config.residentOfState == null) {
-        messages.push({ type: MutationMessageType.error, message: 'Please specify the state(s) to which an applicant must reside to qualify for any programs.', arg: 'residentOfState' })
+        messages.push({ type: MutationMessageType.error, message: 'Please specify the minimum square foot of yard required for each dog', arg: 'minSqftPerDog' })
       }
       return messages
     },
-    default: { residentOfState: ['Texas', 'Oklahoma', 'Louisiana'] }
+    default: { minSqftPerDog: 500 }
   }  
 }
 
