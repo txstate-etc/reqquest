@@ -106,6 +106,7 @@
   title="Periods"
   columns={[
     { id: 'period', label: 'Period', get: 'name' },
+    { id: 'code', label: 'Code', tags: (row) => row.code ? [{ label: row.code, type: 'green' }] : [] },
     { id: 'phase', label: 'Phase', tags: displayPhase },
     { id: 'openDate', label: 'Start Date', render: renderDate('openDate') },
     { id: 'closeDate', label: 'Close Date', render: renderDate('closeDate') },
@@ -117,6 +118,7 @@
     { label: 'Edit', icon: Edit, onClick: () => { creatingPeriod = false; editingPeriod = p } },
     { label: 'Delete', icon: TrashCan, disabled: !p.actions.delete, onClick: () => openPeriodDeleteDialog(p) }
   ]}
+  actionsMaxButtons={1}
 />
 </Panel>
 
