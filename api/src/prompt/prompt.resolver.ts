@@ -1,5 +1,5 @@
 import { Arg, Ctx, FieldResolver, Query, Resolver, Root } from 'type-graphql'
-import { ApplicationRequirementService, AppRequestService, JsonData, Prompt, promptRegistry, RequirementPrompt, RequirementPromptService, RQContext, ConfigurationService, Configuration, PeriodPrompt, PeriodPromptActions, RequirementPromptActions, PeriodPromptService, ApplicationRequirement } from '../internal.js'
+import { ApplicationRequirementService, AppRequestService, JsonData, Prompt, promptRegistry, RequirementPrompt, RequirementPromptService, RQContext, ConfigurationService, Configuration, PeriodPrompt, PeriodPromptActions, RequirementPromptActions, PeriodPromptService, ApplicationRequirement, periodConfigCache } from '../internal.js'
 
 @Resolver(of => Prompt)
 export class PromptResolver {
@@ -21,11 +21,14 @@ export class RequirementPromptResolver {
   @FieldResolver(type => JsonData, { nullable: true, description: 'Any data that the API needs to provide to the UI to display the prompt properly. For instance, if the prompt text is in the database and able to be modified by admins, the UI can\'t hardcode the prompt text and needs it from the API. Could also be used to pull reference information from an external system, e.g. a student\'s course schedule, for display in the prompt dialog.' })
   async fetchedData (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt, @Arg('schemaVersion', { nullable: true, description: 'Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh.' }) savedAtVersion?: string) {
     if (savedAtVersion && savedAtVersion < promptRegistry.latestMigration()) throw new Error('Client is out of date. Please refresh.')
-    const appRequest = await ctx.svc(AppRequestService).findByInternalId(requirementPrompt.appRequestInternalId)
+    const [appRequest, allPeriodConfig, appRequestData] = await Promise.all([
+      ctx.svc(AppRequestService).findByInternalId(requirementPrompt.appRequestInternalId),
+      periodConfigCache.get(requirementPrompt.periodId),
+      ctx.svc(AppRequestService).getData(requirementPrompt.appRequestInternalId)
+    ])
     if (!appRequest) throw new Error('AppRequest not found')
-    const relatedConfig = await ctx.svc(ConfigurationService).getRelatedData(appRequest.periodId, requirementPrompt.key)
-    const config = relatedConfig[requirementPrompt.key] ?? {}
-    return await requirementPrompt.definition.fetch?.(appRequest, config, relatedConfig)
+    const config = allPeriodConfig[requirementPrompt.key] ?? {}
+    return await requirementPrompt.definition.fetch?.(appRequest, config, appRequestData, allPeriodConfig, ctx)
   }
 
   @FieldResolver(type => JsonData, { nullable: true, description: 'Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user.' })

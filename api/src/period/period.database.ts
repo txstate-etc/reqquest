@@ -1,7 +1,7 @@
 import db from 'mysql2-async/db'
 import type { Queryable } from 'mysql2-async'
 import { Configuration, ConfigurationFilters, ensureAppRequestRecords, getAppRequests, Period, PeriodFilters, PeriodUpdate, programRegistry, promptRegistry, requirementRegistry, RequirementType } from '../internal.js'
-import { keyby, stringify } from 'txstate-utils'
+import { Cache, keyby, stringify } from 'txstate-utils'
 
 export interface PeriodRow {
   id: number
@@ -424,3 +424,14 @@ export async function ensureConfigurationRecords (periodIds?: number[], tdb?: Qu
   if (tdb) return await action(tdb)
   else return await db.transaction(action)
 }
+
+export const periodConfigCache = new Cache(async (periodId: string) => {
+  const configs = await getConfigurations({ periodIds: [periodId] })
+  const configData = await getConfigurationData(configs.map(c => ({ periodId, definitionKey: c.key })))
+  const configDataByKey = keyby(configData, c => c.definitionKey)
+  const result: Record<string, any> = {}
+  for (const config of configs) {
+    result[config.key] = configDataByKey[config.key]?.data ?? {}
+  }
+  return result
+}, { freshseconds: 30 * 1000 }) // cache for 30 seconds

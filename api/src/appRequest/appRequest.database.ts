@@ -424,7 +424,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
     const configLookup: Record<string, any> = configurations.map(c => ({ ...c, data: JSON.parse(c.data ?? '{}') })).reduce((acc, c) => ({ ...acc, [c.definitionKey]: c.data }), {})
 
     for (const prompt of prompts) {
-      const validationMessages = prompt.definition.validate?.(data[prompt.key] ?? {}, configLookup[prompt.key] ?? {}, configLookup) ?? []
+      const validationMessages = prompt.definition.validate?.(data[prompt.key] ?? {}, configLookup[prompt.key] ?? {}, data, configLookup, db) ?? []
       prompt.answered = !validationMessages.some(m => m.type === 'error') && !prompt.invalidated
     }
 

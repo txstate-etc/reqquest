@@ -6,6 +6,7 @@ import addErrors from 'ajv-errors'
 import db from 'mysql2-async/db'
 import { Cache, isNotBlank, isNotEmpty, sortby } from 'txstate-utils'
 import { AppRequest, getIndexesInUse, programRegistry, requirementRegistry, RQContext, TagDefinition, type AppRequestData } from '../internal.js'
+import type { Queryable } from 'mysql2-async'
 
 export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVersion'>> {
   /**
@@ -216,7 +217,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * on post-processed data. Be aware of the potential transformations when you set the `arg` for each
    * MutationMessage you return.
    */
-  validate?: (data: Partial<DataType>, config: ConfigurationDataType, relatedConfig: Record<string, any>) => MutationMessage[]
+  validate?: (data: Partial<DataType>, config: ConfigurationDataType, appRequestData: Record<string, any>, relatedConfig: Record<string, any>, db: Queryable) => MutationMessage[]
   /**
    * In some cases you may want to provide MutationMessages that actually prevent saving, for instance
    * when a prompt has file uploads, and you want to create a file type or file size restriction. In this
@@ -227,7 +228,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * runs before the `preProcessData` function so it should expect the pre-processed data structure.
    * `preProcessData` and `validate` will not be run at all if this returns any errors.
    */
-  preValidate?: (data: Partial<InputDataType>, config: ConfigurationDataType, relatedConfig: Record<string, any>) => MutationMessage[]
+  preValidate?: (data: Partial<InputDataType>, config: ConfigurationDataType, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, db: Queryable) => MutationMessage[]
   /**
    * A function that can be used to preload data for the prompt. This is useful for
    * prompts that depend on data from the database or other sources. Data provided by
@@ -237,7 +238,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    *
    * This function will not run if the user has already partially answered the prompt.
    */
-  preload?: (appRequest: AppRequest, config: ConfigurationDataType, relatedConfig: Record<string, any>) => Promise<DataType> | DataType
+  preload?: (appRequest: AppRequest, config: ConfigurationDataType, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, ctx: RQContext) => Promise<DataType> | DataType
   /**
    * A function that can be used to fetch data from external sources that will
    * affect the prompt UI. The data from this function will be provided to the svelte
@@ -248,7 +249,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * you should store it alongside the data collected from the user during the prompt, e.g.
    * use FieldHidden.
    */
-  fetch?: (appRequest: AppRequest, config: ConfigurationDataType, relatedConfig: Record<string, any>) => Promise<FetchType> | FetchType
+  fetch?: (appRequest: AppRequest, config: ConfigurationDataType, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, ctx: RQContext) => Promise<FetchType> | FetchType
   /**
    * By default, we do not expose prompt data to the applicant unless it is part of an
    * applicant-facing requirement. But this means that we cannot show the applicant any
@@ -269,20 +270,43 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    */
   exposeToApplicant?: (data: DataType) => Partial<DataType>
   /**
-   * When you provide an `exposeToApplicant` function, you may also provide this function to additionally
-   * expose parts of the configuration data to the applicant. This is useful if you want to show that
-   * the applicant received, for example, $5 of the maximum $10 that can be awarded (the $10 max is in the
-   * configuration).
+   * If displaying your prompt requires more than its own configuration data to be available to the
+   * viewer, you must provide this function to gather the data. For example, if your prompt shows
+   * something like "Your income is $X of the maximum $Y allowed", where the $Y comes from the requirement
+   * configuration, you would need to provide this function to gather that requirement configuration data,
+   * since by default only the prompt's own configuration data is available.
    *
-   * This function takes the full __related__ configuration data and should return the same shape, redacted
-   * as you see fit. For example, input will probably look like
-   * `{ my_prompt_key: { maxAwardAmount: 10 }, my_requirement_key: { someSetting: true } }`
-   * and you might return
-   * `{ my_prompt_key: { maxAwardAmount: 10 } }`
+   * Similarly, if there is configuration in another requirement or prompt that is only logically related
+   * to the current prompt, you can use this function to gather that data as well.
    *
-   * By default, no configuration data is exposed to the applicant.
+   * When you write this function, you will be provided all of the configuration data for the period in
+   * question, in a record keyed by requirement / prompt key. You should probably return a record of similar
+   * shape to maintain clarity, but only your own prompt display component will see the data you return. So
+   * you can format it however you like.
+   *
+   * This function runs any time your prompt is displayed normally, and is provided to the display
+   * component. Contrast that with `fetch`, which only runs when the prompt is being edited.
+   *
+   * Be aware that the data returned by this function will be available to users even if the prompt's
+   * display component hides it or transforms it, but only users who have view access to the prompt. In
+   * some cases, you may have written an exposeToApplicant function that redacts some of the prompt's
+   * data - in that case, this function will NOT be run, and gatherConfigForApplicant will be used instead.
+   * This way you can hide some of the configuration data from applicants on prompts that are originally
+   * intended for reviewers, but have some applicant-facing display.
    */
-  exposeConfigToApplicant?: (relatedConfig: Record<string, any>) => Record<string, any>
+  gatherConfig?: (allPeriodConfig: Record<string, any>) => Record<string, any>
+  /**
+   * When you provide an `exposeToApplicant` function, this function will be run in place of gatherConfig.
+   * This way you can hide some of the configuration data from applicants on prompts that are originally
+   * intended for reviewers, but have some applicant-facing display.
+   *
+   * By default, no configuration data is exposed to the applicant, even if gatherConfig is provided.
+   *
+   * If this is provided and gatherConfig is not, this function will be used to gather configuration
+   * in both cases. So if you provided exposeToApplicant but want to expose the same configuration to
+   * the applicant as to reviewers, you can just provide this function.
+   */
+  gatherConfigForApplicant?: (allPeriodConfig: Record<string, any>) => Record<string, any>
   /**
    * A list of keys of other prompts that the person answering this prompt depends
    * upon in order to answer this prompt. When the answer to any of these prompts
@@ -350,7 +374,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * evaluation routine, so it has to operate on post-processed data. Be aware of the potential
    * transformations when you set the `arg` for each MutationMessage returned by `validate`.
    */
-  preProcessData?: (data: InputDataType, ctx: RQContext, appRequest: AppRequest, relatedConfig: Record<string, any>) => Promise<DataType> | DataType
+  preProcessData?: (data: InputDataType, ctx: RQContext, appRequest: AppRequest, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, db: Queryable) => Promise<DataType> | DataType
   /**
    * Sometimes, you will want to allow application administrators to control various aspects of
    * how the prompt will be displayed or evaluated. For example, you might want administrators to
@@ -370,7 +394,7 @@ export interface InvalidatedResponse {
   reason?: string
 }
 
-export type InvalidatorFunction = (data: any, relatedConfig: Record<string, any>) => InvalidatedResponse[]
+export type InvalidatorFunction = (data: any, config: any, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) => InvalidatedResponse[]
 
 const labelLookupCache = new Cache(async (tag: { category: string, value: string }) => {
   return await (promptRegistry as any).indexLookups[tag.category]?.(tag.value) ?? tag.value
@@ -528,10 +552,10 @@ class PromptRegistry {
     return valid
   }
 
-  getInvalidatedPrompts (key: string, data: any, relatedConfig: Record<string, any>) {
+  getInvalidatedPrompts (key: string, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) {
     const prompt = this.prompts[key]
     if (!prompt) throw new Error(`Prompt ${key} not found.`)
-    return this.promptInvalidators[key](data, relatedConfig) ?? []
+    return this.promptInvalidators[key](appRequestData[key], allPeriodConfig[key], appRequestData, allPeriodConfig) ?? []
   }
 
   migrations () {

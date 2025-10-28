@@ -10,7 +10,7 @@
   export let showMoot = false
 </script>
 
-<svelte:boundary onerror={(e) => console.log(e)}>
+<svelte:boundary onerror={e => console.error(e)}>
   {#if showMoot && prompt.moot}
     <em>Already disqualified.</em>
   {:else if !prompt.answered}

@@ -4,13 +4,12 @@ import { equal } from 'txstate-utils'
 import {
   AppRequestService, ApplicationRequirement, AuthService, Prompt, RequirementPrompt,
   promptRegistry, getRequirementPrompts, ValidatedAppRequestResponse,
-  getPeriodPrompts, ConfigurationService, PeriodPrompt, requirementRegistry,
+  getPeriodPrompts, PeriodPrompt, requirementRegistry,
   AppRequestStatusDB, AppRequest, setRequirementPromptValid, updateAppRequestData,
   getAppRequests, getAppRequestData, appRequestTransaction,
   recordAppRequestActivity, appConfig, AppRequestData, AppRequestStatus, ApplicationPhase,
   ApplicationService, setRequirementPromptsInvalid, AppRequestServiceInternal,
-  AppRequestPhase,
-  RequirementType
+  AppRequestPhase, RequirementType, periodConfigCache
 } from '../internal.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
@@ -122,20 +121,21 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
       this.svc(AppRequestServiceInternal).findByInternalId(requirementPrompt.appRequestInternalId),
       this.svc(AppRequestServiceInternal).getData(requirementPrompt.appRequestInternalId)
     ])
-    const relatedConfig = await this.svc(ConfigurationService).getRelatedData(appRequest!.periodId, requirementPrompt.key)
-    const config = relatedConfig[requirementPrompt.key] ?? {}
-    if (data[requirementPrompt.definition.key] == null) return await requirementPrompt.definition.preload?.(appRequest!, config, relatedConfig)
-    return data[requirementPrompt.definition.key]
+    const allPeriodConfig = await periodConfigCache.get(appRequest!.periodId)
+    const config = allPeriodConfig[requirementPrompt.key] ?? {}
+    if (data[requirementPrompt.key] == null) return await requirementPrompt.definition.preload?.(appRequest!, config, data, allPeriodConfig, this.ctx)
+    return data[requirementPrompt.key]
   }
 
   async getConfigData (requirementPrompt: RequirementPrompt) {
-    const relatedConfig = await this.getRelatedConfigData(requirementPrompt)
-    return relatedConfig[requirementPrompt.key]
+    const allPeriodConfig = await periodConfigCache.get(requirementPrompt.periodId)
+    return allPeriodConfig[requirementPrompt.key]
   }
 
   async getRelatedConfigData (requirementPrompt: RequirementPrompt) {
-    const relatedConfig = await this.svc(ConfigurationService).getRelatedData(requirementPrompt.periodId, requirementPrompt.key)
-    return this.mayViewUnredacted(requirementPrompt) ? relatedConfig : promptRegistry.get(requirementPrompt.key)?.exposeConfigToApplicant?.(relatedConfig) ?? {}
+    const allPeriodConfig = await periodConfigCache.get(requirementPrompt.periodId)
+    const gatherConfig = promptRegistry.get(requirementPrompt.key)?.gatherConfig ?? promptRegistry.get(requirementPrompt.key)?.gatherConfigForApplicant
+    return this.mayViewUnredacted(requirementPrompt) ? gatherConfig?.(allPeriodConfig) : promptRegistry.get(requirementPrompt.key)?.gatherConfigForApplicant?.(allPeriodConfig) ?? {}
   }
 
   isOwn (prompt: RequirementPrompt): boolean {
@@ -192,7 +192,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     if (!this.mayUpdate(prompt)) throw new Error('You are not allowed to update this prompt.')
     if (!promptRegistry.validate(prompt.key, data)) throw new Error('Invalid prompt data.')
     const response = new ValidatedAppRequestResponse({ success: true })
-    const allConfigData = await this.svc(ConfigurationService).getRelatedData(prompt.periodId, prompt.key)
+    const allConfigData = await periodConfigCache.get(prompt.periodId)
     let updated = false
     let savedData: any
     let previousAppRequestStatus: AppRequestStatus | undefined
@@ -205,10 +205,10 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
       ])
       appRequestData = appRequestDataPair?.data ?? {}
       if (!appRequest) throw new Error('AppRequest not found')
-      for (const message of prompt.definition.preValidate?.(data, allConfigData[prompt.key] ?? {}, allConfigData) ?? []) response.addMessage(message.message, message.arg, message.type)
+      for (const message of prompt.definition.preValidate?.(data, allConfigData[prompt.key] ?? {}, data, allConfigData, db) ?? []) response.addMessage(message.message, message.arg, message.type)
       if (response.hasErrors()) return
-      const processedData = prompt.definition.preProcessData ? await prompt.definition.preProcessData(data, this.ctx, appRequest, allConfigData) : data
-      for (const message of prompt.definition.validate?.(processedData, allConfigData[prompt.key] ?? {}, allConfigData) ?? []) response.addMessage(message.message, message.arg, message.type)
+      const processedData = prompt.definition.preProcessData ? await prompt.definition.preProcessData(data, this.ctx, appRequest, data, allConfigData, db) : data
+      for (const message of prompt.definition.validate?.(processedData, allConfigData[prompt.key] ?? {}, data, allConfigData, db) ?? []) response.addMessage(message.message, message.arg, message.type)
       if (dataVersion != null && appRequest.dataVersion !== dataVersion) {
         throw new Error('Someone else is working on the same request and made changes since you loaded. Copy any unsaved work into another document and reload the page to see what has changed.')
       }
@@ -218,12 +218,12 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
         previousAppRequestStatus = appRequest.status
         savedData = appRequestData[prompt.key]
         appRequestData[prompt.key] = processedData
+        const promptsToInvalidate = promptRegistry.getInvalidatedPrompts(prompt.key, appRequestData, allConfigData)
+        await setRequirementPromptsInvalid(promptsToInvalidate, db)
+        await setRequirementPromptValid(prompt, db)
         previousAppPhases = (await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion, db))!
         recordAppRequestActivity(appRequest.internalId, this.user!.internalId, 'Prompt Updated', { data, description: prompt.title }, db)
       }
-      const promptsToInvalidate = promptRegistry.getInvalidatedPrompts(prompt.key, processedData, allConfigData)
-      await setRequirementPromptsInvalid(promptsToInvalidate, db)
-      await setRequirementPromptValid(prompt, db)
     })
     this.loaders.clear()
     const updatedAppRequest = (await this.svc(AppRequestService).findByInternalId(prompt.appRequestInternalId))!

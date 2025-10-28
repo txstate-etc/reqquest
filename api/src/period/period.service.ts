@@ -188,16 +188,6 @@ export class ConfigurationService extends AuthService<Configuration> {
     return await this.raw.getData(periodId, definitionKey)
   }
 
-  async getRelatedData (periodId: string, promptKey: string) {
-    const allConfig: Record<string, any> = {}
-    const relatedKeys = promptRegistry.authorizationKeys[promptKey] ?? []
-    await Promise.all(relatedKeys.map(async key => {
-      const config = await this.getData(periodId, key)
-      allConfig[key] = config
-    }))
-    return allConfig
-  }
-
   async getFetchedData (periodId: string, definitionKey: string) {
     const definition = promptRegistry.get(definitionKey) ?? requirementRegistry.get(definitionKey)
     if (!definition) throw new Error('Configuration definition not found')
