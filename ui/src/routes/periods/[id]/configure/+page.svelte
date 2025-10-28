@@ -115,12 +115,12 @@
   {#if editingConfigurationType === 'prompt'}
     {@const def = uiRegistry.getPrompt(editingConfigurationDef.key)}
     <PanelFormDialog open submit={onSubmit} validate={onValidate} title="Edit Configuration" on:cancel={closeConfigurationDialog} on:saved={onSaved} preload={editingConfigurationDef.configuration.data} fetched={editingConfigurationFetched} let:data>
-      <svelte:component this={def!.configureComponent} {data} />
+      <svelte:component this={def!.configureComponent} {data} fetched={editingConfigurationFetched} />
     </PanelFormDialog>
   {:else}
     {@const def = uiRegistry.getRequirement(editingConfigurationDef.key)}
     <PanelFormDialog open submit={onSubmit} validate={onValidate} title="Edit Configuration" on:cancel={closeConfigurationDialog} on:saved={onSaved} preload={editingConfigurationDef.configuration.data} fetched={editingConfigurationFetched} let:data>
-      <svelte:component this={def!.configureComponent} {data} />
+      <svelte:component this={def!.configureComponent} {data} fetched={editingConfigurationFetched} />
     </PanelFormDialog>
   {/if}
 {/if}
