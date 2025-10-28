@@ -40,3 +40,13 @@ export const OwnerDogAllergyPromptSchema = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type OwnerDogAllergyPromptData = FromSchema<typeof OwnerDogAllergyPromptSchema>
+
+export const DogMinExerciseRequirementConfigSchema = {
+  type: 'object',
+  properties: { 
+    minExerciseHoursWeekly: { type: 'number' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type DogMinExerciseRequirementConfigData = FromSchema<typeof DogMinExerciseRequirementConfigSchema>
+
