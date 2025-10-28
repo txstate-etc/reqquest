@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { StateResidenceConfigRequirementData } from '../models/index.js'
+import { stateList, StateResidenceConfigRequirementData } from '../models/index.js'
 import { StateResidencePromptData } from '../models/index.js'
 
 export const state_residence_prequal_req: RequirementDefinition<StateResidenceConfigRequirementData> = {
@@ -17,6 +17,10 @@ export const state_residence_prequal_req: RequirementDefinition<StateResidenceCo
     return { status: RequirementStatus.MET }
   },
   configuration: {
+    fetch: async (periodId) => {
+      console.log(`*** Fetch resident period id ${periodId}`)
+      return { states: stateList }
+    },
     validate: config => {
       const messages: MutationMessage[] = []
       if (config.residentOfState == null) {

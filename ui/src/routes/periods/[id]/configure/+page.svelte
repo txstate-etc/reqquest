@@ -8,6 +8,7 @@
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../local'
   import PeriodPanel from '$lib/components/PeriodPanel.svelte'
+    import Page from '../../+page.svelte';
 
   export let data: PageData
   $: ({ programs, period } = data)
@@ -119,8 +120,13 @@
     </PanelFormDialog>
   {:else}
     {@const def = uiRegistry.getRequirement(editingConfigurationDef.key)}
+    <p>{JSON.stringify(def!.configureComponent)}</p>
     <PanelFormDialog open submit={onSubmit} validate={onValidate} title="Edit Configuration" on:cancel={closeConfigurationDialog} on:saved={onSaved} preload={editingConfigurationDef.configuration.data} fetched={editingConfigurationFetched} let:data>
+<<<<<<< HEAD
       <svelte:component this={def!.configureComponent} {data} fetched={editingConfigurationFetched} />
+=======
+      <svelte:component this={def!.configureComponent} {data}/>
+>>>>>>> 0f45c5f (Req config fetched refactor)
     </PanelFormDialog>
   {/if}
 {/if}
