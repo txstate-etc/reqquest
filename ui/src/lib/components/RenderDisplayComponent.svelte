@@ -5,7 +5,7 @@
   export let def: PromptDefinition | undefined
   export let appRequestId: string
   export let appData: Record<string, any>
-  export let prompt: { key: string, answered: boolean, moot?: boolean, invalidated?: boolean, invalidatedReason?: string }
+  export let prompt: { key: string, answered: boolean, moot: boolean | null, invalidated: boolean | null, invalidatedReason: string | null }
   export let relatedConfigData: Record<string, any>
   export let showMoot = false
 </script>
@@ -21,7 +21,7 @@
   {:else}
     <svelte:component this={def.displayComponent} {appRequestId} data={appData[prompt.key]} appRequestData={appData} configData={relatedConfigData[prompt.key]} relatedConfigData={relatedConfigData} />
     {#if prompt.invalidated}
-      <InlineNotification kind="warning-alt" title="Invalid Answer" subtitle={prompt.invalidatedReason} class="mt-2" lowContrast hideCloseButton />
+      <InlineNotification kind="warning-alt" title="Invalid Answer" subtitle={prompt.invalidatedReason ?? undefined} class="mt-2" lowContrast hideCloseButton />
     {/if}
   {/if}
   {#snippet failed()}

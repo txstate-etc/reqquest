@@ -11,6 +11,9 @@ export interface AnsweredPrompt {
   title: string
   navTitle: string
   answered: boolean
+  invalidated: boolean | null
+  invalidatedReason: string | null
+  moot: boolean | null
   visibility: string
   relatedConfigData: Record<string, any>
 }
