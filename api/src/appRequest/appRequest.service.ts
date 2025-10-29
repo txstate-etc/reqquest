@@ -253,8 +253,8 @@ export class AppRequestService extends AuthService<AppRequest> {
     if (!this.isClosed(appRequest)) return false
     if (this.isInOpenPeriod(appRequest)) {
       if (this.isOwn(appRequest)) {
-        if (appRequest.dbStatus === AppRequestStatusDB.CANCELLED && !this.hasControl('AppRequestOwn', 'uncancel')) return true
-        if (appRequest.dbStatus === AppRequestStatusDB.WITHDRAWN && !this.hasControl('AppRequestOwnReview', 'unwithdraw', appRequest.tags)) return true
+        if (appRequest.dbStatus === AppRequestStatusDB.CANCELLED && this.hasControl('AppRequestOwn', 'uncancel')) return true
+        if (appRequest.dbStatus === AppRequestStatusDB.WITHDRAWN && this.hasControl('AppRequestOwnReview', 'unwithdraw', appRequest.tags)) return true
         if (!this.hasControl('AppRequest', 'review_own')) return false
       }
       if (appRequest.dbStatus === AppRequestStatusDB.CLOSED && this.hasControl('AppRequest', 'reopen', appRequest.tags)) return true
