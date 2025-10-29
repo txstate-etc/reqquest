@@ -11,7 +11,7 @@ export const yard_prompt: PromptDefinition = {
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = [] 
     if (!data) messages.push({ type: MutationMessageType.error, message: 'Square feet of current yard is required', arg: 'sqftYardSize' })
-    if (data.sqftYardSize == null || data.sqftYardSize < 0) messages.push({ type: MutationMessageType.error, message: 'Outdoor space is required', arg: 'sqftYardSize' })
+    if (data.sqftYardSize == null || data.sqftYardSize < 1) messages.push({ type: MutationMessageType.error, message: 'Outdoor space is required', arg: 'sqftYardSize' })
     return messages
   }
 }

@@ -29,7 +29,7 @@ export const current_dogowner_prompt: PromptDefinition = {
     const messages: MutationMessage[] = [] 
     if (!data || data.owned == null) messages.push({ type: MutationMessageType.error, message: 'Current dog ownership input required', arg: 'owned' })
     if (data.owned) {
-      if (data.count == null) messages.push({ type: MutationMessageType.error, message: 'Please provide current dog count', arg: 'count' })
+      if (data.count == null || data.count < 1) messages.push({ type: MutationMessageType.error, message: 'Please provide current dog count', arg: 'count' })
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
     }   
     return messages
