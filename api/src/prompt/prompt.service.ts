@@ -135,7 +135,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
   async getRelatedConfigData (requirementPrompt: RequirementPrompt) {
     const allPeriodConfig = await periodConfigCache.get(requirementPrompt.periodId)
     const gatherConfig = promptRegistry.get(requirementPrompt.key)?.gatherConfig ?? promptRegistry.get(requirementPrompt.key)?.gatherConfigForApplicant
-    return this.mayViewUnredacted(requirementPrompt) ? gatherConfig?.(allPeriodConfig) : promptRegistry.get(requirementPrompt.key)?.gatherConfigForApplicant?.(allPeriodConfig) ?? {}
+    return (this.mayViewUnredacted(requirementPrompt) ? gatherConfig?.(allPeriodConfig) : promptRegistry.get(requirementPrompt.key)?.gatherConfigForApplicant?.(allPeriodConfig)) ?? {}
   }
 
   isOwn (prompt: RequirementPrompt): boolean {
