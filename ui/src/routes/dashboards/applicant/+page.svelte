@@ -177,7 +177,7 @@
   }
 
   async function exportApplication (requestId: string) {
-    await goto(resolve(`/requests/${requestId}/export`, {}))
+    await goto(resolve(`/requests/${requestId}/export`), {})
   }
 
   // ==========================================
@@ -192,7 +192,7 @@
       // Fetch additional application details for the side panel
       const details = await api.getAppRequestForExport(appRequest.id)
 
-      selectedAppRequest = details.appRequest
+      selectedAppRequest = details.appRequest as AppRequestForDetails | undefined
 
       if (details.appRequest) {
         appData = details.appRequest.data
@@ -237,7 +237,7 @@
 
     switch (actionType) {
     case 'navigate':
-      await goto(resolve(`/requests/${id}/apply`, {}))
+      await goto(resolve(`/requests/${id}/apply`), {})
       break
     case 'export':
       await exportApplication(id)
@@ -264,7 +264,7 @@
 
   async function onSaved () {
     toasts.add('Application created successfully', 'success', 5000)
-    await goto(resolve(`/requests/${lastInsertedId}/apply`, {}))
+    await goto(resolve(`/requests/${lastInsertedId}/apply`), {})
   }
 
   async function submitAppRequest (data: { periodId: string }) {
@@ -417,7 +417,7 @@
   <PanelDialog
     size="large"
     open={sidePanelOpen}
-    title={selectedAppRequest?.period.name ?? 'Application Details'}
+    title={selectedAppRequest?.period?.name ?? 'Application Details'}
     cancelText="Close"
     submitText={selectedAppRequest?.status ? getSubmitButtonText(selectedAppRequest.status) : ''}
     on:cancel={closeSidePanel}
@@ -429,6 +429,7 @@
       {postqualPrompts}
       {loading}
       {uiRegistry}
+      title={selectedAppRequest?.period?.name ? `View your ${selectedAppRequest.period.name} application` : 'View your application'}
     />
   </PanelDialog>
 

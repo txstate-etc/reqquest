@@ -15,7 +15,9 @@ export interface AnsweredPrompt {
   invalidatedReason: string | null
   moot: boolean | null
   visibility: string
-  relatedConfigData: Record<string, any>
+  relatedConfigData?: Record<string, any>
+  requirementStatus?: string
+  requirementStatusReason?: string | null
 }
 
 export interface PromptSection {
@@ -27,11 +29,16 @@ export interface PromptSection {
 export interface AppRequestForDetails {
   id: string
   status: AppRequestStatus
-  period: { name: string }
+  period?: { name: string }
   applications: {
     title: string
     status: ApplicationStatus
+    statusReason?: string | null
     requirements: {
+      id: string
+      type: string
+      status: string
+      statusReason: string | null
       prompts: AnsweredPrompt[]
     }[]
   }[]

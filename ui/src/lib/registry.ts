@@ -144,6 +144,10 @@ export interface UIConfig {
    * Defaults to 30 if not specified.
    */
   applicantDashboardRecentDays?: number
+  /**
+   * URL to the support/help page. If provided, a support link will be shown on applicant review screen.
+   */
+  supportUrl?: string
   extraNavItems?: LayoutStructureNodeRoot<LayoutStructureNode>[]
   /**
    * These options give you the ability to customize the terminology used in the UI.
