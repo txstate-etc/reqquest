@@ -212,6 +212,13 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * we require that there are no validation errors present. None of the prompt's data will be
    * made available to the requirement `resolve` function until there are no errors.
    *
+   * It's really important to remember that the user may provide information that makes the applicant
+   * ineligible, but that is still valid information. It's tempting to return a validation error
+   * so that the user can see inline which answer causes the ineligibility, but if you do that,
+   * the requirement will never be able to see the data and will always return PENDING. The rule here
+   * is that validation errors are for mistakes, not for things that are unfavorable. For those,
+   * you can return warnings so that the user sees something inline without interrupting the flow.
+   *
    * This function runs after the `preProcessData` function has run. This is a little tricky but
    * the `validate` function has to run during the app request evaluation routine, so it must operate
    * on post-processed data. Be aware of the potential transformations when you set the `arg` for each
