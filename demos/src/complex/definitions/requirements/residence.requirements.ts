@@ -18,7 +18,6 @@ export const state_residence_prequal_req: RequirementDefinition<StateResidenceCo
   },
   configuration: {
     fetch: async (periodId) => {
-      console.log(`*** Fetch resident period id ${periodId}`)
       return { states: stateList }
     },
     validate: config => {

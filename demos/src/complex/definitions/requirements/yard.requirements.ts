@@ -21,7 +21,7 @@ export const yard_qual_req: RequirementDefinition<YardConfigRequirementData> = {
   configuration: {
     validate: config => {
       const messages: MutationMessage[] = []
-      if (config.residentOfState == null) {
+      if (config.minSqftPerDog == null) {
         messages.push({ type: MutationMessageType.error, message: 'Please specify the minimum square foot of yard required for each dog', arg: 'minSqftPerDog' })
       }
       return messages
