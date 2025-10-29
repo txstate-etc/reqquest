@@ -5,7 +5,7 @@ import addFormats from 'ajv-formats'
 import addErrors from 'ajv-errors'
 import db from 'mysql2-async/db'
 import { Cache, isNotBlank, isNotEmpty, sortby } from 'txstate-utils'
-import { AppRequest, getIndexesInUse, programRegistry, requirementRegistry, RQContext, TagDefinition, type AppRequestData } from '../internal.js'
+import { AppRequest, getIndexesInUse, Period, programRegistry, requirementRegistry, RQContext, TagDefinition, type AppRequestData } from '../internal.js'
 import type { Queryable } from 'mysql2-async'
 
 export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVersion'>> {
@@ -151,7 +151,7 @@ export interface ConfigurationDefinition<ConfigurationInputType = any, Configura
    * A function that can be used to fetch data from external sources while updating the configuration
    * for a prompt or requirement.
    */
-  fetch?: (periodId: string) => Promise<any> | any
+  fetch?: (period: Period) => Promise<any> | any
   /**
    * The default configuration data for this prompt. This will be used to initialize the
    * configuration data for the prompt when it is added to a period that does not already
@@ -249,7 +249,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
   /**
    * A function that can be used to fetch data from external sources that will
    * affect the prompt UI. The data from this function will be provided to the svelte
-   * component for this prompt as a prop named `fetchedData`.
+   * component for this prompt as a prop named `fetched`.
    *
    * NOTE: this function will only be called when displaying the editing-mode version of
    * the prompt to the user. If any of this data is required for display or decision-making,

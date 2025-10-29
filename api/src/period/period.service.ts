@@ -191,7 +191,14 @@ export class ConfigurationService extends AuthService<Configuration> {
   async getFetchedData (periodId: string, definitionKey: string) {
     const definition = promptRegistry.get(definitionKey) ?? requirementRegistry.get(definitionKey)
     if (!definition) throw new Error('Configuration definition not found')
-    return await definition.configuration?.fetch?.(periodId)
+    const [period, configuration] = await Promise.all([
+      this.svc(PeriodService).findById(periodId),
+      this.raw.findByPeriodIdAndKey(periodId, definitionKey)
+    ])
+    if (!period) throw new Error('Period not found')
+    if (!configuration) throw new Error('Configuration not found')
+    if (!this.mayUpdate(configuration)) return undefined
+    return await definition.configuration?.fetch?.(period)
   }
 
   mayView (cfg: Configuration) {

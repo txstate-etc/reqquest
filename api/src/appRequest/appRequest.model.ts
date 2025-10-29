@@ -57,6 +57,7 @@ export class AppRequest {
     this.closedAt = row.closedAt ? DateTime.fromJSDate(row.closedAt) : undefined
     this.userInternalId = row.userId
     this.periodId = String(row.periodId)
+    this.periodCode = row.periodCode ?? undefined
     this.periodClosesAt = row.periodClosesAt ? DateTime.fromJSDate(row.periodClosesAt) : undefined
     this.periodArchivesAt = row.periodArchivesAt ? DateTime.fromJSDate(row.periodArchivesAt) : undefined
     this.periodOpensAt = DateTime.fromJSDate(row.periodOpensAt)
@@ -93,6 +94,7 @@ export class AppRequest {
   internalId: number
   userInternalId: number
   periodId: string
+  periodCode?: string
   tags?: Record<string, string[]>
 }
 

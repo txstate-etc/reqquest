@@ -41,6 +41,7 @@ export enum AppRequestPhase {
 export interface AppRequestRow {
   id: number
   periodId: number
+  periodCode: string | null
   userId: number
   status: AppRequestStatusDB
   phase: AppRequestPhase
@@ -49,8 +50,8 @@ export interface AppRequestRow {
   updatedAt: Date
   closedAt: Date
   dataVersion: number
-  periodClosesAt?: Date
-  periodArchivesAt?: Date
+  periodClosesAt: Date | null
+  periodArchivesAt: Date | null
   periodOpensAt: Date
 }
 
@@ -169,7 +170,7 @@ export async function getAppRequests (filter?: AppRequestFilter, tdb: Queryable 
   const { joins, where, binds } = processFilters(filter)
   const rows = await tdb.getall<AppRequestRow>(`
     SELECT DISTINCT ar.id, ar.periodId, ar.userId, ar.status, ar.phase, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt, ar.dataVersion,
-      p.closeDate AS periodClosesAt, p.archiveDate AS periodArchivesAt, p.openDate AS periodOpensAt
+      p.code AS periodCode, p.closeDate AS periodClosesAt, p.archiveDate AS periodArchivesAt, p.openDate AS periodOpensAt
     FROM app_requests ar
     INNER JOIN periods p ON p.id = ar.periodId
     ${Array.from(joins.values()).join('\n')}

@@ -890,7 +890,7 @@ class API extends APIBase {
         }
       }
     })
-    return response.periods[0].configurations[0] ?? {}
+    return response.periods[0].configurations[0]?.fetchedData ?? {}
   }
 
   async getRoleList () {

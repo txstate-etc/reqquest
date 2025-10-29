@@ -18,9 +18,10 @@ export class RequirementPromptResolver {
     return appRequestData[requirementPrompt.definition.key]
   }
 
-  @FieldResolver(type => JsonData, { nullable: true, description: 'Any data that the API needs to provide to the UI to display the prompt properly. For instance, if the prompt text is in the database and able to be modified by admins, the UI can\'t hardcode the prompt text and needs it from the API. Could also be used to pull reference information from an external system, e.g. a student\'s course schedule, for display in the prompt dialog.' })
+  @FieldResolver(type => JsonData, { nullable: true, description: 'Any data that the API needs to provide to the UI to build the prompt form properly. For instance, it could pull reference information from an external system, e.g. a student\'s course schedule, for display in the prompt dialog. Null if the user is not currently allowed to update the prompt.' })
   async fetchedData (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt, @Arg('schemaVersion', { nullable: true, description: 'Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh.' }) savedAtVersion?: string) {
     if (savedAtVersion && savedAtVersion < promptRegistry.latestMigration()) throw new Error('Client is out of date. Please refresh.')
+    if (!ctx.svc(RequirementPromptService).mayUpdate(requirementPrompt)) return undefined
     const [appRequest, allPeriodConfig, appRequestData] = await Promise.all([
       ctx.svc(AppRequestService).findByInternalId(requirementPrompt.appRequestInternalId),
       periodConfigCache.get(requirementPrompt.periodId),
