@@ -12,4 +12,9 @@ export class PaginationResolver {
   async accessUsers (@Ctx() ctx: RQContext) {
     return await ctx.getPaginationInfo('accessUsers')
   }
+
+  @FieldResolver(returns => PaginationInfoWithTotalItems, { nullable: true })
+  async appRequests (@Ctx() ctx: RQContext) {
+    return await ctx.getPaginationInfo('appRequests')
+  }
 }

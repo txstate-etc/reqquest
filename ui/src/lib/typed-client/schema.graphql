@@ -1131,6 +1131,7 @@ type PaginationInfoWithTotalItems {
 
 type PaginationResponse {
   accessUsers: PaginationInfoWithTotalItems
+  appRequests: PaginationInfoWithTotalItems
 }
 
 type Period {
@@ -1363,7 +1364,7 @@ type Query {
     """
     for: AppRequestIndexDestination
   ): [IndexCategory!]!
-  appRequests(filter: AppRequestFilter): [AppRequest!]!
+  appRequests(filter: AppRequestFilter, paged: Pagination): [AppRequest!]!
 
   """
   This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant.
@@ -1409,7 +1410,7 @@ type RequirementPrompt {
   description: String
 
   """
-  Any data that the API needs to provide to the UI to display the prompt properly. For instance, if the prompt text is in the database and able to be modified by admins, the UI can't hardcode the prompt text and needs it from the API. Could also be used to pull reference information from an external system, e.g. a student's course schedule, for display in the prompt dialog.
+  Any data that the API needs to provide to the UI to build the prompt form properly. For instance, it could pull reference information from an external system, e.g. a student's course schedule, for display in the prompt dialog. Null if the user is not currently allowed to update the prompt.
   """
   fetchedData(
     """

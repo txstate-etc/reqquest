@@ -564,7 +564,26 @@ class API extends APIBase {
           value: true,
           label: true
         }
+      },
+      pageInfo: {
+        appRequests: {
+          currentPage: true,
+          totalItems: true,
+          hasNextPage: true,
+          perPage: true,
+          categories: {
+            tags: {
+              tag: true,
+              label: true
+            },
+            category: true,
+            label: true,
+            useInFilters: true,
+            useInList: true
+          }
+        }
       }
+
     })
     return response
   }

@@ -13,7 +13,9 @@ import {
   AppRequestPhase,
   appRequestReturnToOffer,
   appRequestReturnToReview,
-  promptRegistry
+  promptRegistry,
+  PaginationInfoWithTotalItems,
+  Pagination
 } from '../internal.js'
 
 const appReqByIdLoader = new PrimaryKeyLoader({
@@ -94,9 +96,27 @@ export class AppRequestService extends AuthService<AppRequest> {
     return filter
   }
 
-  async find (filter?: AppRequestFilter) {
+  async find (pageInfo: PaginationInfoWithTotalItems, filter?: AppRequestFilter, paged?: Pagination) {
     filter = this.preprocessFilter(filter)
-    return this.removeUnauthorized(await this.raw.find(filter))
+    const appRequests = this.removeUnauthorized(await this.raw.find(filter))
+    pageInfo.totalItems = appRequests.length
+    // NOTE The categories for appRequests requests page would be populated here
+    // pageInfo.categories = []
+    if (paged?.page || paged?.perPage) {
+      pageInfo.currentPage = paged.page ?? 1
+      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+      pageInfo.perPage = paged?.perPage || 100 // 0 should also be overridden, so || is better than nullish coalescing ??
+      pageInfo.hasNextPage = (pageInfo.totalItems ?? 0) > pageInfo.currentPage * pageInfo.perPage
+      // mysql: `OFFSET ${(pageInfo.currentPage - 1) * pageInfo.perPage} LIMIT ${pageInfo.perPage}`
+      const start = (pageInfo.currentPage - 1) * pageInfo.perPage
+      const end = start + pageInfo.perPage
+      return appRequests.slice(start, end)
+    } else {
+      pageInfo.currentPage = 1
+      pageInfo.perPage = undefined
+      pageInfo.hasNextPage = false
+      return appRequests
+    }
   }
 
   async findById (id: string) {

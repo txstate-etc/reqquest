@@ -495,6 +495,7 @@ export interface PaginationInfoWithTotalItems {
 
 export interface PaginationResponse {
     accessUsers: (PaginationInfoWithTotalItems | null)
+    appRequests: (PaginationInfoWithTotalItems | null)
     __typename: 'PaginationResponse'
 }
 
@@ -634,7 +635,7 @@ export interface RequirementPrompt {
     data: (Scalars['JsonData'] | null)
     /** A brief description of the prompt. This should be shown to administrators to help explain the full meaning of the prompt while assigning permissions or editing its configuration. */
     description: (Scalars['String'] | null)
-    /** Any data that the API needs to provide to the UI to display the prompt properly. For instance, if the prompt text is in the database and able to be modified by admins, the UI can't hardcode the prompt text and needs it from the API. Could also be used to pull reference information from an external system, e.g. a student's course schedule, for display in the prompt dialog. */
+    /** Any data that the API needs to provide to the UI to build the prompt form properly. For instance, it could pull reference information from an external system, e.g. a student's course schedule, for display in the prompt dialog. Null if the user is not currently allowed to update the prompt. */
     fetchedData: (Scalars['JsonData'] | null)
     id: Scalars['ID']
     /** When true, this prompt has been invalidated by the answer to another prompt. The `answered` field should remain false until the user specifically answers this prompt again, regardless of the output of the definition's `complete` method. */
@@ -1303,6 +1304,7 @@ export interface PaginationInfoWithTotalItemsGenqlSelection{
 
 export interface PaginationResponseGenqlSelection{
     accessUsers?: PaginationInfoWithTotalItemsGenqlSelection
+    appRequests?: PaginationInfoWithTotalItemsGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -1450,7 +1452,7 @@ export interface QueryGenqlSelection{
     appRequestIndexes?: (IndexCategoryGenqlSelection & { __args?: {categories?: (Scalars['String'][] | null), 
     /** Returns indexes that are flagged to appear in this destination. Also sorts for this destination. */
     for?: (AppRequestIndexDestination | null)} })
-    appRequests?: (AppRequestGenqlSelection & { __args?: {filter?: (AppRequestFilter | null)} })
+    appRequests?: (AppRequestGenqlSelection & { __args?: {filter?: (AppRequestFilter | null), paged?: (Pagination | null)} })
     /** This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant. */
     controlGroups?: AccessControlGroupGenqlSelection
     pageInfo?: PaginationResponseGenqlSelection
@@ -1478,7 +1480,7 @@ export interface RequirementPromptGenqlSelection{
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
     /** A brief description of the prompt. This should be shown to administrators to help explain the full meaning of the prompt while assigning permissions or editing its configuration. */
     description?: boolean | number
-    /** Any data that the API needs to provide to the UI to display the prompt properly. For instance, if the prompt text is in the database and able to be modified by admins, the UI can't hardcode the prompt text and needs it from the API. Could also be used to pull reference information from an external system, e.g. a student's course schedule, for display in the prompt dialog. */
+    /** Any data that the API needs to provide to the UI to build the prompt form properly. For instance, it could pull reference information from an external system, e.g. a student's course schedule, for display in the prompt dialog. Null if the user is not currently allowed to update the prompt. */
     fetchedData?: { __args: {
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
