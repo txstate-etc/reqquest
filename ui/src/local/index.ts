@@ -47,6 +47,9 @@ import ComplexYardPrompt from './complex/yard/YardPrompt.svelte'
 import ComplexYardDisplayPrompt from './complex/yard/YardDisplayPrompt.svelte'
 import ComplexOwnerDogAllergyPrompt from './complex/dogOwner/OwnerDogAllergyPrompt.svelte'
 import ComplexOwnerDogAllergyDisplayPrompt from './complex/dogOwner/OwnerDogAllergyDisplayPrompt.svelte'
+import ComplexDogExerciseConfig from './complex/dogOwner/DogExerciseConfig.svelte'
+import ComplexDogExercisePrompt from './complex/dogOwner/DogExercisePrompt.svelte'
+import ComplexDogExerciseDisplayPrompt from './complex/dogOwner/DogExerciseDisplayPrompt.svelte'
 
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts} =  configureDemoInstanceParams()
@@ -166,7 +169,8 @@ function configureDemoInstanceParams() {
         { key: 'previous_dogwowner_qual_req'},
         { key: 'current_dogowner_qual_req', configureComponent: ComplexCurrentDogConfig },
         { key: 'yard_qual_req', configureComponent: ComplexYardConfig },
-        { key: 'owner_dog_allergy_qual_req'}
+        { key: 'owner_dog_allergy_qual_req'},
+        { key: 'dog_exercise_qual_req', configureComponent: ComplexDogExerciseConfig }
       ],
       prompts: [
         { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
@@ -174,7 +178,8 @@ function configureDemoInstanceParams() {
         { key: 'previous_dogowner_prompt', formComponent: ComplexPreviousDogOwnerPrompt, displayComponent: ComplexPreviousDogOwnerDisplayPrompt },
         { key: 'current_dogowner_prompt', formComponent: ComplexCurrentDogOwnerPrompt, displayComponent: ComplexCurrentDogOwnerDisplayPrompt },
         { key: 'yard_prompt', formComponent: ComplexYardPrompt, displayComponent: ComplexYardDisplayPrompt},
-        { key: 'owner_dog_allergy_prompt', formComponent: ComplexOwnerDogAllergyPrompt, displayComponent: ComplexOwnerDogAllergyDisplayPrompt}
+        { key: 'owner_dog_allergy_prompt', formComponent: ComplexOwnerDogAllergyPrompt, displayComponent: ComplexOwnerDogAllergyDisplayPrompt},
+        { key: 'dog_exercise_prompt', formComponent: ComplexDogExercisePrompt, displayComponent: ComplexDogExerciseDisplayPrompt}
       ]
     }
   }

@@ -1,6 +1,6 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { PreviousDogOwnerPromptSchema, CurrentDogOwnerPromptSchema, OwnerDogAllergyPromptSchema } from '../models/index.js'
+import { PreviousDogOwnerPromptSchema, CurrentDogOwnerPromptSchema, OwnerDogAllergyPromptSchema, DogExercisePromptSchema } from '../models/index.js'
 
 
 export const previous_dogowner_prompt: PromptDefinition = {
@@ -47,6 +47,21 @@ export const owner_dog_allergy_prompt: PromptDefinition = {
     if (data.allergic) {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
     }
+    return messages
+  }
+}
+
+export const dog_min_exercise_prompt: PromptDefinition = {
+  key: 'dog_exercise_prompt',
+  title: 'Dog exercise',
+  description: 'Applicant will identify expected exercise hours for dog.',
+  schema: DogExercisePromptSchema,
+  validate: (data, config, allConfig) => {
+    const messages: MutationMessage[] = [] 
+    if (!data || data.agreeToExercise == null) messages.push({ type: MutationMessageType.error, message: 'Dog exericse consent requirement', arg: 'agreeToExercise' })
+    if (!data.agreeToExercise) {
+      if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
+    }  
     return messages
   }
 }

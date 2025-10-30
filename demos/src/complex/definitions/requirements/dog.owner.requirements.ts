@@ -1,5 +1,5 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
-import { PreviousDogOwnerPromptData, CurrentDogOwnerPromptData, OwnerDogAllergyPromptData } from '../models/index.js'
+import { PreviousDogOwnerPromptData, CurrentDogOwnerPromptData, OwnerDogAllergyPromptData, DogExercisePromptData, CurrentDogOwnerRequirementConfigSchema, DogMinExerciseRequirementConfigSchema } from '../models/index.js'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
 
 export const previous_dogowner_qual_req: RequirementDefinition = {
@@ -41,6 +41,7 @@ export const current_dogowner_qual_req: RequirementDefinition = {
     }    
   },
   configuration: {
+    schema: CurrentDogOwnerRequirementConfigSchema,
     validate: config => {
       const messages: MutationMessage[] = []
       if (config.maxCount == null) {
@@ -67,5 +68,34 @@ export const owner_dog_allergy_qual_req: RequirementDefinition = {
     } else { 
       return { status: RequirementStatus.MET }
     }    
+  }
+}
+
+export const dog_exercise_qual_req: RequirementDefinition = {
+  type: RequirementType.QUALIFICATION,
+  key: 'dog_exercise_qual_req',
+  title: 'Agree to exercise dog',
+  navTitle: 'Dog exercise',
+  description: 'Agree to weekly exercise of dog',
+  promptKeys: ['dog_exercise_prompt'],
+  resolve: (data, config) => {
+    const exerciseData = data.dog_exercise_prompt as DogExercisePromptData
+    if (exerciseData == null) return { status: RequirementStatus.PENDING }     
+    if (exerciseData.agreeToExercise) { 
+      return { status: RequirementStatus.MET }
+    } else {
+      return { status: RequirementStatus.WARNING, reason: 'Requires consent of regular exercise, exceptions made on case-by-base basis' }
+    }    
+  },
+  configuration: {
+    schema: DogMinExerciseRequirementConfigSchema,
+    validate: config => {
+      const messages: MutationMessage[] = []
+      if (config.minExerciseHoursWeekly == null) {
+        messages.push({ type: MutationMessageType.error, message: 'Please specify the required number of weekly exercise hours.', arg: 'minExerciseHoursWeekly' })
+      }
+      return messages
+    },
+    default: { minExerciseHoursWeekly: 7 }
   }
 }

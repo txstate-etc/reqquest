@@ -50,3 +50,13 @@ export const DogMinExerciseRequirementConfigSchema = {
 } as const satisfies SchemaObject
 export type DogMinExerciseRequirementConfigData = FromSchema<typeof DogMinExerciseRequirementConfigSchema>
 
+export const DogExercisePromptSchema = {
+  type: 'object',
+  properties: { 
+    agreeToExercise: { type: 'boolean'},
+    details: { type: 'string' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type DogExercisePromptData = FromSchema<typeof DogExercisePromptSchema>
+
