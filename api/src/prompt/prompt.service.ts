@@ -143,7 +143,11 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
   }
 
   mayView (prompt: RequirementPrompt): boolean {
-    return this.mayViewUnredacted(prompt) || (this.isOwn(prompt) && prompt.definition.exposeToApplicant != null)
+    return this.mayViewUnredacted(prompt) || (
+      this.isOwn(prompt)
+      && prompt.definition.exposeToApplicant != null
+      && prompt.appRequestDbPhase !== AppRequestPhase.SUBMITTED
+    )
   }
 
   mayViewUnredacted (prompt: RequirementPrompt): boolean {
