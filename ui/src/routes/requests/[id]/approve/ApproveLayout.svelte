@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Card } from '@txstate-mws/carbon-svelte'
-  import { base } from '$app/paths'
   import type { LayoutData } from '../$types.js'
   import { uiRegistry } from '../../../../local/index.js'
+  import { Button } from 'carbon-components-svelte'
 
   export let basicRequestData: LayoutData['basicRequestData']
 </script>
@@ -27,6 +27,11 @@
     <slot name="sidebar" />
     {#if uiRegistry.config.slots?.reviewerSidebar}
       <svelte:component this={uiRegistry.config.slots.reviewerSidebar} {basicRequestData} />
+    {/if}
+    {#if basicRequestData.actions.reverseOffer}
+      <Button kind="secondary" href={basicRequestData.actions.reverseWorkflow.href}>
+        {basicRequestData.actions.reverseWorkflow.label}
+      </Button>
     {/if}
   </div>
   <div class="review-content">
