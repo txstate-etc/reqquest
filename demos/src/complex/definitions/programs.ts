@@ -19,7 +19,8 @@ export const adopt_a_cat_program: ProgramDefinition = {
   title: 'Adopt a Cat',
   requirementKeys: [    
     'state_residence_prequal_req',
-    'petowner_prequal_req' 
+    'petowner_prequal_req',
+    'previous_catowner_qual_req' 
   ]
 }
 

@@ -1,4 +1,5 @@
 export * from './residence.prompts.js'
 export * from './pet.owner.prompts.js'
 export * from './dog.owner.prompts.js'
+export * from './cat.owner.prompts.js'
 export * from './yard.prompts.js'

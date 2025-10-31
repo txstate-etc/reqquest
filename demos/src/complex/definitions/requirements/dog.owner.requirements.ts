@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
-import { PreviousDogOwnerPromptData, CurrentDogOwnerPromptData, OwnerDogAllergyPromptData, DogExercisePromptData, CurrentDogOwnerRequirementConfigSchema, DogMinExerciseRequirementConfigSchema } from '../models/index.js'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
+import { PreviousDogOwnerPromptData, CurrentDogOwnerPromptData, OwnerDogAllergyPromptData, DogExercisePromptData, CurrentDogOwnerRequirementConfigSchema, DogMinExerciseRequirementConfigSchema } from '../models/index.js'
 
 export const previous_dogowner_qual_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
