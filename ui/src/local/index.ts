@@ -52,6 +52,9 @@ import ComplexDogExercisePrompt from './complex/dogOwner/DogExercisePrompt.svelt
 import ComplexDogExerciseDisplayPrompt from './complex/dogOwner/DogExerciseDisplayPrompt.svelte'
 import ComplexPreviousCatOwnerPrompt from './complex/catOwner/PreviousCatOwnerPrompt.svelte'
 import ComplexPreviousCatOwnerDisplayPrompt from './complex/catOwner/PreviousCatOwnerDisplayPrompt.svelte'
+import ComplexCurrentCatConfig from './complex/catOwner/CurrentCatConfig.svelte'
+import ComplexCurrentCatOwnerPrompt from './complex/catOwner/CurrentCatOwnerPrompt.svelte'
+import ComplexCurrentCatOwnerDisplayPrompt from './complex/catOwner/CurrentCatOwnerDisplayPrompt.svelte'
 
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts} =  configureDemoInstanceParams()
@@ -173,7 +176,8 @@ function configureDemoInstanceParams() {
         { key: 'yard_qual_req', configureComponent: ComplexYardConfig },
         { key: 'owner_dog_allergy_qual_req'},
         { key: 'dog_exercise_qual_req', configureComponent: ComplexDogExerciseConfig },
-        { key: 'previous_catowner_qual_req'}
+        { key: 'previous_catowner_qual_req'},
+        { key: 'current_catowner_qual_req', configureComponent: ComplexCurrentCatConfig },
       ],
       prompts: [
         { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
@@ -183,7 +187,8 @@ function configureDemoInstanceParams() {
         { key: 'yard_prompt', formComponent: ComplexYardPrompt, displayComponent: ComplexYardDisplayPrompt},
         { key: 'owner_dog_allergy_prompt', formComponent: ComplexOwnerDogAllergyPrompt, displayComponent: ComplexOwnerDogAllergyDisplayPrompt},
         { key: 'dog_exercise_prompt', formComponent: ComplexDogExercisePrompt, displayComponent: ComplexDogExerciseDisplayPrompt},
-        { key: 'previous_catowner_prompt', formComponent: ComplexPreviousCatOwnerPrompt, displayComponent: ComplexPreviousCatOwnerDisplayPrompt}
+        { key: 'previous_catowner_prompt', formComponent: ComplexPreviousCatOwnerPrompt, displayComponent: ComplexPreviousCatOwnerDisplayPrompt},
+        { key: 'current_catowner_prompt', formComponent: ComplexCurrentCatOwnerPrompt, displayComponent: ComplexCurrentCatOwnerDisplayPrompt }
       ]
     }
   }

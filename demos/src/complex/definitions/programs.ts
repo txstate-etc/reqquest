@@ -20,7 +20,8 @@ export const adopt_a_cat_program: ProgramDefinition = {
   requirementKeys: [    
     'state_residence_prequal_req',
     'petowner_prequal_req',
-    'previous_catowner_qual_req' 
+    'previous_catowner_qual_req',
+    'current_catowner_qual_req', 
   ]
 }
 
