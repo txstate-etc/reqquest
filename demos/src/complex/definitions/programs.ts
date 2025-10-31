@@ -22,6 +22,7 @@ export const adopt_a_cat_program: ProgramDefinition = {
     'petowner_prequal_req',
     'previous_catowner_qual_req',
     'current_catowner_qual_req', 
+    'living_space_qual_req',
   ]
 }
 

@@ -55,6 +55,9 @@ import ComplexPreviousCatOwnerDisplayPrompt from './complex/catOwner/PreviousCat
 import ComplexCurrentCatConfig from './complex/catOwner/CurrentCatConfig.svelte'
 import ComplexCurrentCatOwnerPrompt from './complex/catOwner/CurrentCatOwnerPrompt.svelte'
 import ComplexCurrentCatOwnerDisplayPrompt from './complex/catOwner/CurrentCatOwnerDisplayPrompt.svelte'
+import ComplexLivingSpaceConfig from './complex/livingSpace/LivingSpaceConfig.svelte'
+import ComplexLivingSpacePrompt from './complex/livingSpace/LivingSpacePrompt.svelte'
+import ComplexLivingSpaceDisplayPrompt from './complex/livingSpace/LivingSpaceDisplayPrompt.svelte'
 
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts} =  configureDemoInstanceParams()
@@ -178,6 +181,7 @@ function configureDemoInstanceParams() {
         { key: 'dog_exercise_qual_req', configureComponent: ComplexDogExerciseConfig },
         { key: 'previous_catowner_qual_req'},
         { key: 'current_catowner_qual_req', configureComponent: ComplexCurrentCatConfig },
+        { key: 'living_space_qual_req', configureComponent: ComplexLivingSpaceConfig },
       ],
       prompts: [
         { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
@@ -188,7 +192,8 @@ function configureDemoInstanceParams() {
         { key: 'owner_dog_allergy_prompt', formComponent: ComplexOwnerDogAllergyPrompt, displayComponent: ComplexOwnerDogAllergyDisplayPrompt},
         { key: 'dog_exercise_prompt', formComponent: ComplexDogExercisePrompt, displayComponent: ComplexDogExerciseDisplayPrompt},
         { key: 'previous_catowner_prompt', formComponent: ComplexPreviousCatOwnerPrompt, displayComponent: ComplexPreviousCatOwnerDisplayPrompt},
-        { key: 'current_catowner_prompt', formComponent: ComplexCurrentCatOwnerPrompt, displayComponent: ComplexCurrentCatOwnerDisplayPrompt }
+        { key: 'current_catowner_prompt', formComponent: ComplexCurrentCatOwnerPrompt, displayComponent: ComplexCurrentCatOwnerDisplayPrompt },
+        { key: 'living_space_prompt', formComponent: ComplexLivingSpacePrompt, displayComponent: ComplexLivingSpaceDisplayPrompt }
       ]
     }
   }
