@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { CurrentCatOwnerPromptData, CurrentCatOwnerRequirementConfigSchema, PreviousCatOwnerPromptData } from '../models/index.js'
+import { CurrentCatOwnerPromptData, CurrentCatOwnerRequirementConfigSchema, OwnerCatAllergyPromptData, PreviousCatOwnerPromptData } from '../models/index.js'
 
 export const previous_catowner_qual_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
@@ -52,4 +52,22 @@ export const current_catowner_qual_req: RequirementDefinition = {
     },
     default: { maxCount: 3 }
   } 
+}
+
+export const owner_cat_allergy_qual_req: RequirementDefinition = {
+  type: RequirementType.QUALIFICATION,
+  key: 'owner_cat_allergy_qual_req',
+  title: 'Provide cat allergy info ',
+  navTitle: 'Owner cat allergies',
+  description: 'Provide owner cat allergy information',
+  promptKeys: ['owner_cat_allergy_prompt'],
+  resolve: (data, config) => {
+    const catOwnerPromptData = data.owner_cat_allergy_prompt as OwnerCatAllergyPromptData
+    if (catOwnerPromptData == null) return { status: RequirementStatus.PENDING }
+    if (catOwnerPromptData.allergic) {
+      return { status: RequirementStatus.WARNING, reason: 'We reserve the right to deny applications with known allergies (based on years of consistently high return rates).' }
+    } else { 
+      return { status: RequirementStatus.MET }
+    }    
+  }
 }

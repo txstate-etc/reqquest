@@ -1,6 +1,6 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { CurrentCatOwnerPromptSchema, PreviousCatOwnerPromptSchema } from '../models/cat.owner.models.js'
+import { CurrentCatOwnerPromptSchema, OwnerCatAllergyPromptSchema, PreviousCatOwnerPromptSchema } from '../models/cat.owner.models.js'
 
 export const previous_catowner_prompt: PromptDefinition = {
   key: 'previous_catowner_prompt',
@@ -31,6 +31,21 @@ export const current_catowner_prompt: PromptDefinition = {
       if (data.count == null || data.count < 1) messages.push({ type: MutationMessageType.error, message: 'Please provide current cat count', arg: 'count' })
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
     }   
+    return messages
+  }
+}
+
+export const owner_cat_allergy_prompt: PromptDefinition = {
+   key: 'owner_cat_allergy_prompt',
+  title: 'Owner cat allergies',
+  description: 'Applicant will identify any current cat allergies',
+  schema: OwnerCatAllergyPromptSchema,
+  validate: (data, config, allConfig) => {
+    const messages: MutationMessage[] = [] 
+    if (!data || data.allergic == null) messages.push({ type: MutationMessageType.error, message: 'Owner allergy information required', arg: 'allergic' })
+    if (data.allergic) {
+      if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
+    }
     return messages
   }
 }

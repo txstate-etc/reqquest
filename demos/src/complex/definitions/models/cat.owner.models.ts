@@ -30,3 +30,13 @@ export const CurrentCatOwnerPromptSchema = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type CurrentCatOwnerPromptData = FromSchema<typeof CurrentCatOwnerPromptSchema>
+
+export const OwnerCatAllergyPromptSchema = {
+  type: 'object',
+  properties: { 
+    allergic: { type: 'boolean' },
+    details: { type: 'string' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type OwnerCatAllergyPromptData = FromSchema<typeof OwnerCatAllergyPromptSchema>

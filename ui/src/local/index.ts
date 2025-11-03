@@ -58,6 +58,8 @@ import ComplexCurrentCatOwnerDisplayPrompt from './complex/catOwner/CurrentCatOw
 import ComplexLivingSpaceConfig from './complex/livingSpace/LivingSpaceConfig.svelte'
 import ComplexLivingSpacePrompt from './complex/livingSpace/LivingSpacePrompt.svelte'
 import ComplexLivingSpaceDisplayPrompt from './complex/livingSpace/LivingSpaceDisplayPrompt.svelte'
+import ComplexOwnerCatAllergyPrompt from './complex/catOwner/OwnerCatAllergyPrompt.svelte'
+import ComplexOwnerCatAllergyDisplayPrompt from './complex/catOwner/OwnerCatAllergyDisplayPrompt.svelte'
 
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts} =  configureDemoInstanceParams()
@@ -182,6 +184,7 @@ function configureDemoInstanceParams() {
         { key: 'previous_catowner_qual_req'},
         { key: 'current_catowner_qual_req', configureComponent: ComplexCurrentCatConfig },
         { key: 'living_space_qual_req', configureComponent: ComplexLivingSpaceConfig },
+        { key: 'owner_cat_allergy_qual_req'},
       ],
       prompts: [
         { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
@@ -193,7 +196,8 @@ function configureDemoInstanceParams() {
         { key: 'dog_exercise_prompt', formComponent: ComplexDogExercisePrompt, displayComponent: ComplexDogExerciseDisplayPrompt},
         { key: 'previous_catowner_prompt', formComponent: ComplexPreviousCatOwnerPrompt, displayComponent: ComplexPreviousCatOwnerDisplayPrompt},
         { key: 'current_catowner_prompt', formComponent: ComplexCurrentCatOwnerPrompt, displayComponent: ComplexCurrentCatOwnerDisplayPrompt },
-        { key: 'living_space_prompt', formComponent: ComplexLivingSpacePrompt, displayComponent: ComplexLivingSpaceDisplayPrompt }
+        { key: 'living_space_prompt', formComponent: ComplexLivingSpacePrompt, displayComponent: ComplexLivingSpaceDisplayPrompt },
+        { key: 'owner_cat_allergy_prompt', formComponent: ComplexOwnerCatAllergyPrompt, displayComponent: ComplexOwnerCatAllergyDisplayPrompt}
       ]
     }
   }

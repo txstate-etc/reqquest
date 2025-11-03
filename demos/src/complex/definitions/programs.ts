@@ -23,6 +23,7 @@ export const adopt_a_cat_program: ProgramDefinition = {
     'previous_catowner_qual_req',
     'current_catowner_qual_req', 
     'living_space_qual_req',
+    'owner_cat_allergy_qual_req',
   ]
 }
 
