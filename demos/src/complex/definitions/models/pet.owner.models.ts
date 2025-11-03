@@ -13,3 +13,12 @@ export const PetOwnerPromptSchema = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type PetOwnerPromptData = FromSchema<typeof PetOwnerPromptSchema>
+
+export const PetOwnerOwnerRequirementConfigSchema = {
+  type: 'object',
+  properties: { 
+    maxCount: { type: 'number' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type PetOwnerOwnerRequirementConfigData = FromSchema<typeof PetOwnerOwnerRequirementConfigSchema>

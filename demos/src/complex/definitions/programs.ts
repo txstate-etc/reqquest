@@ -33,7 +33,11 @@ export const foster_a_pet_program: ProgramDefinition = {
   title: 'Foster a Pet',
   requirementKeys: [
     'state_residence_prequal_req',
-    'petowner_prequal_req' 
+    'petowner_prequal_req',
+    'previous_dogowner_qual_req',
+    'previous_catowner_qual_req',
+    'yard_qual_req',
+    'living_space_qual_req'
   ]
 }
 
