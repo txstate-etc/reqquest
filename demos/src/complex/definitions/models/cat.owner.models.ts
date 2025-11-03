@@ -40,3 +40,13 @@ export const OwnerCatAllergyPromptSchema = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type OwnerCatAllergyPromptData = FromSchema<typeof OwnerCatAllergyPromptSchema>
+
+export const OwnerCatMicrochipServicePrompt = {
+  type: 'object',
+  properties: { 
+    agreeToPay: { type: 'boolean' },
+    details: { type: 'string' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type OwnerCatMicrochipServiceData = FromSchema<typeof OwnerCatMicrochipServicePrompt>

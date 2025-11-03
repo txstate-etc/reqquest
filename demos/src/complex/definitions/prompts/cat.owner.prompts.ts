@@ -1,6 +1,6 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { CurrentCatOwnerPromptSchema, OwnerCatAllergyPromptSchema, PreviousCatOwnerPromptSchema } from '../models/cat.owner.models.js'
+import { CurrentCatOwnerPromptSchema, OwnerCatAllergyPromptSchema, OwnerCatMicrochipServicePrompt, PreviousCatOwnerPromptSchema } from '../models/cat.owner.models.js'
 
 export const previous_catowner_prompt: PromptDefinition = {
   key: 'previous_catowner_prompt',
@@ -43,6 +43,21 @@ export const owner_cat_allergy_prompt: PromptDefinition = {
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = [] 
     if (!data || data.allergic == null) messages.push({ type: MutationMessageType.error, message: 'Owner allergy information required', arg: 'allergic' })
+    if (data.allergic) {
+      if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
+    }
+    return messages
+  }
+}
+
+export const owner_cat_microchip_service_prompt: PromptDefinition = {
+  key: 'owner_cat_microchip_service_prompt',
+  title: 'Microchip service',
+  description: 'Applicant will pay for microchip service',
+  schema: OwnerCatMicrochipServicePrompt,
+  validate: (data, config, allConfig) => {
+    const messages: MutationMessage[] = [] 
+    if (!data || data.agreeToPay == null) messages.push({ type: MutationMessageType.error, message: 'Owner microship service information required', arg: 'agreeToPat' })
     if (data.allergic) {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
     }

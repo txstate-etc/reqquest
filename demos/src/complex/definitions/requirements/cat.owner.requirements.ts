@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { CurrentCatOwnerPromptData, CurrentCatOwnerRequirementConfigSchema, OwnerCatAllergyPromptData, PreviousCatOwnerPromptData } from '../models/index.js'
+import { CurrentCatOwnerPromptData, CurrentCatOwnerRequirementConfigSchema, OwnerCatAllergyPromptData, OwnerCatMicrochipServiceData, PreviousCatOwnerPromptData } from '../models/index.js'
 
 export const previous_catowner_qual_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
@@ -66,6 +66,24 @@ export const owner_cat_allergy_qual_req: RequirementDefinition = {
     if (catOwnerPromptData == null) return { status: RequirementStatus.PENDING }
     if (catOwnerPromptData.allergic) {
       return { status: RequirementStatus.WARNING, reason: 'We reserve the right to deny applications with known allergies (based on years of consistently high return rates).' }
+    } else { 
+      return { status: RequirementStatus.MET }
+    }    
+  }
+}
+
+export const owner_cat_microchip_service_qual_req: RequirementDefinition = {
+  type: RequirementType.QUALIFICATION,
+  key: 'owner_cat_microchip_service_qual_req',
+  title: 'Microchip service',
+  navTitle: 'Microchip service',
+  description: 'Applicant will pay for microchip service',
+  promptKeys: ['owner_cat_microchip_service_prompt'],
+  resolve: (data, config) => {
+    const catOwnerPromptData = data.owner_cat_microchip_service_prompt as OwnerCatMicrochipServiceData
+    if (catOwnerPromptData == null) return { status: RequirementStatus.PENDING }
+    if (!catOwnerPromptData.agreeToPay) {
+      return { status: RequirementStatus.WARNING, reason: 'We reserve the right to deny applications who do not agree to cover microchipping costs.' }
     } else { 
       return { status: RequirementStatus.MET }
     }    
