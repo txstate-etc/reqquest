@@ -4,8 +4,12 @@
 
   export let fetched: { stateList: { value: string, label: string }[] }
   export let data: Partial<StateData>
-  $: stateName = fetched.stateList.find(s => s.value === data.state)?.label
+  $: stateList = fetched.stateList
+  $: stateName = stateList.find(s => s.value === data.state)?.label
 </script>
 
-<FieldSelect path="state" labelText="State" required items={fetched.stateList} />
-<FieldHidden path="stateName" value={stateName} />
+<FieldSelect path="state" labelText="State" required items={stateList} />
+{#if (stateName != null)}
+  <FieldHidden path="stateName" conditional={stateName != null} value={stateName} />
+{/if}
+
