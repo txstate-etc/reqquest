@@ -1,5 +1,5 @@
-import { UIRegistry } from '$lib'
 import { PUBLIC_DEMO_INSTANCE } from '$env/static/public'
+import { UIRegistry } from '$lib'
 /** default */
 import DogWalker from 'carbon-icons-svelte/lib/DogWalker.svelte'
 import Gamification from 'carbon-icons-svelte/lib/Gamification.svelte'
@@ -66,8 +66,7 @@ import ComplexChildrenConfig from './complex/children/ChildrenConfig.svelte'
 import ComplexChildrenPrompt from './complex/children/ChildrenPrompt.svelte'
 import ComplexChildrenDisplayPrompt from './complex/children/ChildrenDisplayPrompt.svelte'
 
-
-const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts} =  configureDemoInstanceParams()
+const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts } = configureDemoInstanceParams()
 
 export const uiRegistry = new UIRegistry({
   appName,
@@ -79,8 +78,22 @@ export const uiRegistry = new UIRegistry({
   prompts
 })
 
-function configureDemoInstanceParams() {
-  if (PUBLIC_DEMO_INSTANCE === 'simple') {
+function configureDemoInstanceParams () {
+  /**
+   * So here's a fun hack. PUBLIC_DEMO_INSTANCE is one of our environment variables, but we
+   * have a bit of a custom system for injecting environment at startup time rather than build time.
+   *
+   * So at build time, PUBLIC_DEMO_INSTANCE is set to '$PUBLIC_DEMO_INSTANCE' (literally). At container
+   * startup, our apply-env.sh script replaces that with the actual value we want.
+   *
+   * The catch is, vite/rollup looks for dead code during build, and at build, it can clearly see that
+   * PUBLIC_DEMO_INSTANCE is a constant string '$PUBLIC_DEMO_INSTANCE', so any conditional branches
+   * depending on its value are optimized away. To avoid that, we do a little string manipulation
+   * here to prevent vite/rollup from being able to tell what the value is at build time.
+   */
+  let tmpDemoInstance = PUBLIC_DEMO_INSTANCE + ' '
+  tmpDemoInstance = tmpDemoInstance.trim()
+  if (tmpDemoInstance === 'simple') {
     return {
       appName: 'Adopt a Pet',
       applicantDashboardIntroHeader: 'Start your Pet Journey Here!',
@@ -95,19 +108,18 @@ function configureDemoInstanceParams() {
         { key: 'state_residence_confirmation_req' }
       ],
       prompts: [{
-          key: 'state_residence_prompt',
-          formComponent: ResidencePrompt,
-          displayComponent: ResidencePromptDisplay
-        },
-        {
-          key: 'state_residence_confirmation_prompt',
-          formComponent: ResidenceConfirmationReviewPrompt,
-          displayComponent: ResidenceConfirmationReviewPromptDisplay
-        }
+        key: 'state_residence_prompt',
+        formComponent: ResidencePrompt,
+        displayComponent: ResidencePromptDisplay
+      },
+      {
+        key: 'state_residence_confirmation_prompt',
+        formComponent: ResidenceConfirmationReviewPrompt,
+        displayComponent: ResidenceConfirmationReviewPromptDisplay
+      }
       ]
     }
-  }
-  else if (PUBLIC_DEMO_INSTANCE === 'multi') { //TODO - Update one spec for multi complete, currently mirror demo
+  } else if (tmpDemoInstance === 'multi') { // TODO - Update one spec for multi complete, currently mirror demo
     return {
       appName: 'Adopt a Critter',
       applicantDashboardIntroHeader: 'Start your Pet Journey Here!',
@@ -166,8 +178,7 @@ function configureDemoInstanceParams() {
         displayComponent: VaccineReviewPromptDisplay
       }]
     }
-  }
-  else if (PUBLIC_DEMO_INSTANCE === 'complex') {
+  } else if (tmpDemoInstance === 'complex') {
     return {
       appName: 'Pet lover',
       applicantDashboardIntroHeader: 'Keep your love of pets alive!',
@@ -180,32 +191,32 @@ function configureDemoInstanceParams() {
       requirements: [
         { key: 'state_residence_prequal_req', configureComponent: ComplexResidenceConfig },
         { key: 'petowner_prequal_req' },
-        { key: 'previous_dogwowner_qual_req'},
+        { key: 'previous_dogwowner_qual_req' },
         { key: 'current_dogowner_qual_req', configureComponent: ComplexCurrentDogConfig },
         { key: 'yard_qual_req', configureComponent: ComplexYardConfig },
-        { key: 'owner_dog_allergy_qual_req'},
+        { key: 'owner_dog_allergy_qual_req' },
         { key: 'dog_exercise_qual_req', configureComponent: ComplexDogExerciseConfig },
-        { key: 'previous_catowner_qual_req'},
+        { key: 'previous_catowner_qual_req' },
         { key: 'current_catowner_qual_req', configureComponent: ComplexCurrentCatConfig },
         { key: 'living_space_qual_req', configureComponent: ComplexLivingSpaceConfig },
-        { key: 'owner_cat_allergy_qual_req'},
-        { key: 'owner_cat_microchip_servive_qual_req'},
-        { key: 'children_qual_req', configureComponent: ComplexChildrenConfig}
+        { key: 'owner_cat_allergy_qual_req' },
+        { key: 'owner_cat_microchip_servive_qual_req' },
+        { key: 'children_qual_req', configureComponent: ComplexChildrenConfig }
       ],
       prompts: [
         { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
         { key: 'petowner_prompt', formComponent: ComplexPetOwnerPrompt, displayComponent: ComplexPetOwnerDisplayPrompt },
         { key: 'previous_dogowner_prompt', formComponent: ComplexPreviousDogOwnerPrompt, displayComponent: ComplexPreviousDogOwnerDisplayPrompt },
         { key: 'current_dogowner_prompt', formComponent: ComplexCurrentDogOwnerPrompt, displayComponent: ComplexCurrentDogOwnerDisplayPrompt },
-        { key: 'yard_prompt', formComponent: ComplexYardPrompt, displayComponent: ComplexYardDisplayPrompt},
-        { key: 'owner_dog_allergy_prompt', formComponent: ComplexOwnerDogAllergyPrompt, displayComponent: ComplexOwnerDogAllergyDisplayPrompt},
-        { key: 'dog_exercise_prompt', formComponent: ComplexDogExercisePrompt, displayComponent: ComplexDogExerciseDisplayPrompt},
-        { key: 'previous_catowner_prompt', formComponent: ComplexPreviousCatOwnerPrompt, displayComponent: ComplexPreviousCatOwnerDisplayPrompt},
+        { key: 'yard_prompt', formComponent: ComplexYardPrompt, displayComponent: ComplexYardDisplayPrompt },
+        { key: 'owner_dog_allergy_prompt', formComponent: ComplexOwnerDogAllergyPrompt, displayComponent: ComplexOwnerDogAllergyDisplayPrompt },
+        { key: 'dog_exercise_prompt', formComponent: ComplexDogExercisePrompt, displayComponent: ComplexDogExerciseDisplayPrompt },
+        { key: 'previous_catowner_prompt', formComponent: ComplexPreviousCatOwnerPrompt, displayComponent: ComplexPreviousCatOwnerDisplayPrompt },
         { key: 'current_catowner_prompt', formComponent: ComplexCurrentCatOwnerPrompt, displayComponent: ComplexCurrentCatOwnerDisplayPrompt },
         { key: 'living_space_prompt', formComponent: ComplexLivingSpacePrompt, displayComponent: ComplexLivingSpaceDisplayPrompt },
-        { key: 'owner_cat_allergy_prompt', formComponent: ComplexOwnerCatAllergyPrompt, displayComponent: ComplexOwnerCatAllergyDisplayPrompt},
-        { key: 'owner_cat_microchip_service_prompt', formComponent: ComplexOwnerCatMicrochipServicePrompt, displayComponent: ComplexOwnerCatMicrochipServiceDisplayPrompt},
-        { key: 'children_prompt', formComponent: ComplexChildrenPrompt, displayComponent: ComplexChildrenDisplayPrompt}
+        { key: 'owner_cat_allergy_prompt', formComponent: ComplexOwnerCatAllergyPrompt, displayComponent: ComplexOwnerCatAllergyDisplayPrompt },
+        { key: 'owner_cat_microchip_service_prompt', formComponent: ComplexOwnerCatMicrochipServicePrompt, displayComponent: ComplexOwnerCatMicrochipServiceDisplayPrompt },
+        { key: 'children_prompt', formComponent: ComplexChildrenPrompt, displayComponent: ComplexChildrenDisplayPrompt }
       ]
     }
   }

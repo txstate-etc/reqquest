@@ -1,6 +1,6 @@
 import { PUBLIC_API_BASE, PUBLIC_AUTH_REDIRECT } from '$env/static/public'
 import { APIBase } from '@txstate-mws/sveltekit-utils'
-import { datetimeSerialize, type Feedback } from '@txstate-mws/svelte-forms'
+import type { Feedback } from '@txstate-mws/svelte-forms'
 import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleGroup, type AccessRoleInput, type AccessUserFilter, type Application, type AppRequestActivityFilters, type AppRequestFilter, type Pagination, type PeriodUpdate, type PromptVisibility, type RequirementPrompt } from './typed-client/index.js'
 import { DateTime } from 'luxon'
 
@@ -636,7 +636,10 @@ class API extends APIBase {
         actions: {
           offer: true,
           close: true,
-          reopen: true
+          reopen: true,
+          returnToOffer: true,
+          returnToReview: true,
+          reverseOffer: true
         }
       }
     })
