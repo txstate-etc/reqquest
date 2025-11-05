@@ -5,5 +5,8 @@ export default defineConfig({
   plugins: [sveltekit()],
   build: {
     sourcemap: true
-  }
+  },
+	optimizeDeps: {
+		exclude: ['carbon-icons-svelte']
+	}
 })
