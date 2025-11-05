@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FieldRadio, FieldCheckbox, FieldSelect, FieldTextInput, FieldNumber } from '@txstate-mws/carbon-svelte'
+  import { FieldRadio, FieldTextInput, FieldNumber } from '@txstate-mws/carbon-svelte'
   export let data
   export let relatedConfigData
   $: underMinAge = relatedConfigData.underMinAge ?? 'Related config data is not working'
