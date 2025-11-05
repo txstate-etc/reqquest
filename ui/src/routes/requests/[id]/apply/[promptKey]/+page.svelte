@@ -73,7 +73,7 @@
 
 {#if !hideForm}
 <div class="prompt-intro flow max-w-screen-md mx-auto pt-10 px-6">
-    <h2 class="font-medium text-xl text-center">{prompt.title}</h2>
+    <h2 id="prompt-title" class="font-medium text-xl text-center">{prompt.title}</h2>
     <p class="text-center"> {prompt.description}</p>
 </div>
   <Form bind:store submitText="Save & Continue" submit={onSubmit} validate={onValidate} preload={appRequestData[prompt.key]} on:saved={onSaved} let:data>
