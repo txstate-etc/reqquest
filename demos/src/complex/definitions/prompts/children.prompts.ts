@@ -5,7 +5,7 @@ import { ChildrenPromptSchema } from '../models/index.js'
 export const children_prompt: PromptDefinition = {
   key: 'children_prompt',
   title: 'Young children',
-  description: 'Applicant will identify if young children live in the hom.',
+  description: 'Applicant will identify if young children live in the homw.',
   schema: ChildrenPromptSchema,
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = [] 

@@ -62,6 +62,9 @@ import ComplexOwnerCatAllergyPrompt from './complex/catOwner/OwnerCatAllergyProm
 import ComplexOwnerCatAllergyDisplayPrompt from './complex/catOwner/OwnerCatAllergyDisplayPrompt.svelte'
 import ComplexOwnerCatMicrochipServicePrompt from './complex/catOwner/OwnerCatMicrochipServicePrompt.svelte'
 import ComplexOwnerCatMicrochipServiceDisplayPrompt from './complex/catOwner/OwnerCatMicrochipServiceDisplayPrompt.svelte'
+import ComplexChildrenConfig from './complex/children/ChildrenConfig.svelte'
+import ComplexChildrenPrompt from './complex/children/ChildrenPrompt.svelte'
+import ComplexChildrenDisplayPrompt from './complex/children/ChildrenDisplayPrompt.svelte'
 
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts} =  configureDemoInstanceParams()
@@ -172,8 +175,7 @@ function configureDemoInstanceParams() {
       applicantDashboardRecentDays: 30,
       programs: [{ key: 'adopt_a_dog_program', icon: DogWalker },
         { key: 'adopt_a_cat_program', icon: PedestrianFamily },
-        { key: 'foster_a_pet_program', icon: Gamification },
-        { key: 'senior_pet_program', icon: DogWalker }
+        { key: 'foster_a_pet_program', icon: Gamification }
       ],
       requirements: [
         { key: 'state_residence_prequal_req', configureComponent: ComplexResidenceConfig },
@@ -187,7 +189,8 @@ function configureDemoInstanceParams() {
         { key: 'current_catowner_qual_req', configureComponent: ComplexCurrentCatConfig },
         { key: 'living_space_qual_req', configureComponent: ComplexLivingSpaceConfig },
         { key: 'owner_cat_allergy_qual_req'},
-        { key: 'owner_cat_microchip_servive_qual_req'}
+        { key: 'owner_cat_microchip_servive_qual_req'},
+        { key: 'children_qual_req', configureComponent: ComplexChildrenConfig}
       ],
       prompts: [
         { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
@@ -201,7 +204,8 @@ function configureDemoInstanceParams() {
         { key: 'current_catowner_prompt', formComponent: ComplexCurrentCatOwnerPrompt, displayComponent: ComplexCurrentCatOwnerDisplayPrompt },
         { key: 'living_space_prompt', formComponent: ComplexLivingSpacePrompt, displayComponent: ComplexLivingSpaceDisplayPrompt },
         { key: 'owner_cat_allergy_prompt', formComponent: ComplexOwnerCatAllergyPrompt, displayComponent: ComplexOwnerCatAllergyDisplayPrompt},
-        { key: 'owner_cat_microchip_service_prompt', formComponent: ComplexOwnerCatMicrochipServicePrompt, displayComponent: ComplexOwnerCatMicrochipServiceDisplayPrompt}
+        { key: 'owner_cat_microchip_service_prompt', formComponent: ComplexOwnerCatMicrochipServicePrompt, displayComponent: ComplexOwnerCatMicrochipServiceDisplayPrompt},
+        { key: 'children_prompt', formComponent: ComplexChildrenPrompt, displayComponent: ComplexChildrenDisplayPrompt}
       ]
     }
   }

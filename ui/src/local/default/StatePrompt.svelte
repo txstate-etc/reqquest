@@ -10,6 +10,6 @@
 
 <FieldSelect path="state" labelText="State" required items={stateList} />
 {#if (stateName != null)}
-  <FieldHidden path="stateName" conditional={stateName != null} value={stateName} />
+  <FieldHidden path="stateName" value={stateName} />
 {/if}
 

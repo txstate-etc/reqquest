@@ -37,15 +37,7 @@ export const foster_a_pet_program: ProgramDefinition = {
     'previous_dogowner_qual_req',
     'previous_catowner_qual_req',
     'yard_qual_req',
-    'living_space_qual_req'
-  ]
-}
-
-export const senior_pet_program: ProgramDefinition = {
-  key: 'senior_pet_program',
-  title: 'Adopt a senior pet',
-  requirementKeys: [
-    'state_residence_prequal_req',
-    'petowner_prequal_req'   
+    'living_space_qual_req',
+    'children_qual_req'
   ]
 }
