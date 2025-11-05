@@ -121,7 +121,7 @@
     </section>
 
     {#if basicRequestData.actions.offer}
-      <Button on:click={makeOffer}>Send to Applicant</Button>
+      <Button on:click={makeOffer}>Complete Review</Button>
     {:else if basicRequestData.actions.reopen}
       <Button on:click={reopenRequest}>Reopen Request</Button>
     {:else if basicRequestData.actions.close && basicRequestData.complete}
