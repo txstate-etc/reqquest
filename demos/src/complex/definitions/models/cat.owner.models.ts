@@ -50,3 +50,16 @@ export const OwnerCatMicrochipServicePrompt = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type OwnerCatMicrochipServiceData = FromSchema<typeof OwnerCatMicrochipServicePrompt>
+
+export const ReviewApplicantCatInfoPromptSchema = {
+  type: 'object',
+  properties: { 
+    previousCatAcceptable: { type: 'boolean' },
+    currentCatAcceptable: { type: 'boolean' },
+    livingSpaceAcceptable: { type: 'boolean' },
+    allergeyAcceptable: { type: 'boolean' },
+    microchipAgree: { type: 'boolean' },
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type ReviewApplicantCatInfoPromptData = FromSchema<typeof ReviewApplicantCatInfoPromptSchema>

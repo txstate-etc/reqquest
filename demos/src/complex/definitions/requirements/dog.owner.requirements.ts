@@ -105,7 +105,7 @@ export const review_applicant_dog_info_app_req: RequirementDefinition = {
   key: 'review_applicant_dog_info_app_req',
   title: 'Review applicant dog info',
   navTitle: 'Review applicant dog info',
-  description: 'AReviewer will evaluate appicant dog info for discrepancies.',
+  description: 'A Reviewer will evaluate appicant dog info for discrepancies.',
   promptKeys: ['review_applicant_dog_info_prompt'],
   resolve: (data, config) => {
     const revDogInfoData = data.review_applicant_dog_info_prompt as ReviewApplicantDogInfoPromptData
