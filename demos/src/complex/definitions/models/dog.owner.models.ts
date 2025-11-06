@@ -60,3 +60,16 @@ export const DogExercisePromptSchema = {
 } as const satisfies SchemaObject
 export type DogExercisePromptData = FromSchema<typeof DogExercisePromptSchema>
 
+export const ReviewApplicantDogInfoPromptSchema = {
+  type: 'object',
+  properties: { 
+    previousDogAcceptable: { type: 'boolean' },
+    currentDogAcceptable: { type: 'boolean' },
+    yardAcceptable: { type: 'boolean' },
+    allergeyAcceptable: { type: 'boolean' },
+    exerciseMinMet: { type: 'boolean' },
+    exerciseException: { type: 'boolean' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type ReviewApplicantDogInfoPromptData = FromSchema<typeof ReviewApplicantDogInfoPromptSchema>

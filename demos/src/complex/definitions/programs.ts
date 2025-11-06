@@ -10,7 +10,8 @@ export const adopt_a_dog_program: ProgramDefinition = {
     'current_dogowner_qual_req',
     'yard_qual_req',
     'owner_dog_allergy_qual_req',
-    'dog_exercise_qual_req'
+    'dog_exercise_qual_req',
+    'review_applicant_dog_info_app_req'
   ]
 }
 

@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { PreviousDogOwnerPromptData, CurrentDogOwnerPromptData, OwnerDogAllergyPromptData, DogExercisePromptData, CurrentDogOwnerRequirementConfigSchema, DogMinExerciseRequirementConfigSchema } from '../models/index.js'
+import { PreviousDogOwnerPromptData, CurrentDogOwnerPromptData, OwnerDogAllergyPromptData, DogExercisePromptData, CurrentDogOwnerRequirementConfigSchema, DogMinExerciseRequirementConfigSchema, ReviewApplicantDogInfoPromptData } from '../models/index.js'
 
 export const previous_dogowner_qual_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
@@ -97,5 +97,24 @@ export const dog_exercise_qual_req: RequirementDefinition = {
       return messages
     },
     default: { minExerciseHoursWeekly: 7 }
+  }
+}
+
+export const review_applicant_dog_info_app_req: RequirementDefinition = {
+  type: RequirementType.APPROVAL,
+  key: 'review_applicant_dog_info_app_req',
+  title: 'Review applicant dog info',
+  navTitle: 'Review applicant dog info',
+  description: 'AReviewer will evaluate appicant dog info for discrepancies.',
+  promptKeys: ['review_applicant_dog_info_prompt'],
+  resolve: (data, config) => {
+    const revDogInfoData = data.review_applicant_dog_info_prompt as ReviewApplicantDogInfoPromptData
+    if (revDogInfoData == null) return { status: RequirementStatus.PENDING }     
+    if (revDogInfoData.previousDogAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
+    if (revDogInfoData.currentDogAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
+    if (revDogInfoData.yardAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
+    if (revDogInfoData.allergeyAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
+    if (revDogInfoData.exerciseMinMet === false && revDogInfoData.exerciseException === false) return { status: RequirementStatus.DISQUALIFYING }
+    return { status: RequirementStatus.MET }  
   }
 }
