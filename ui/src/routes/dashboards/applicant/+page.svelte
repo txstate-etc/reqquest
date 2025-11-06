@@ -180,7 +180,7 @@
   }
 
   async function exportApplication (requestId: string) {
-    await goto(resolve(`/requests/${requestId}/export`), {})
+    await goto(resolve(`/requests/${requestId}/export`))
   }
 
   // ==========================================
@@ -240,7 +240,7 @@
 
     switch (actionType) {
     case 'navigate':
-      await goto(resolve(`/requests/${id}/apply`), {})
+      await goto(resolve(`/requests/${id}/apply`))
       break
     case 'export':
       await exportApplication(id)
@@ -267,7 +267,7 @@
 
   async function onSaved () {
     toasts.add('Application created successfully', 'success', 5000)
-    await goto(resolve(`/requests/${lastInsertedId}/apply`), {})
+    await goto(resolve(`/requests/${lastInsertedId}/apply`))
   }
 
   async function submitAppRequest (data: { periodId: string }) {

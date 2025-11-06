@@ -98,6 +98,7 @@ class API extends APIBase {
           status: true,
           statusReason: true,
           requirements: {
+            id: true,
             status: true,
             statusReason: true
           }

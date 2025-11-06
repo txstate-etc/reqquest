@@ -46,7 +46,7 @@
 
   async function onCreateSaved () {
     closeCreateDialog()
-    await goto(resolve(`/requests/${lastInsertedId}/approve`, {}))
+    await goto(resolve(`/requests/${lastInsertedId}/approve`))
   }
 
   async function validateAppRequest (data: { periodId: string, login: string }) {

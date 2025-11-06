@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation'
-  import { base } from '$app/paths'
+  import { resolve } from '$app/paths'
   import { getApplicationStatusInfo, getAppRequestStatusInfo, getNavigationButton } from '$lib/status-utils.js'
   import { longNumericTime } from '$lib/util.js'
   import type { ActionItem } from '@txstate-mws/carbon-svelte'
@@ -23,7 +23,7 @@
     if (onAcceptanceNavigate) {
       onAcceptanceNavigate(request.id)
     } else {
-      await goto(`${base}/requests/${request.id}/apply`)
+      await goto(resolve(`/requests/${request.id}/apply`))
     }
   }
 </script>
@@ -48,7 +48,7 @@
     <p class="m-0 mb-3 benefits-subtitle text-sm">Benefit results will be finalized once the application submission and review is completed.</p>
 
     {#if request.applications.length > 0}
-      {#each request.applications as application}
+      {#each request.applications as application (application.id)}
         {@const appStatusTag = getApplicationStatusInfo(application.status)}
         <div class="program-status py-2 px-4 mb-4">
           <div class="flex items-center">
@@ -84,7 +84,7 @@
                 <Accordion align="start">
                   <AccordionItem title="Multiple eligibility issues">
                     <ol class="list-decimal">
-                      {#each failedRequirements as requirement}
+                      {#each failedRequirements as requirement (requirement.id)}
                         <li class="failed-requirement">{requirement.statusReason}</li>
                       {/each}
                     </ol>

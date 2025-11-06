@@ -11,16 +11,16 @@
   import { Button } from 'carbon-components-svelte'
   import { getContext } from 'svelte'
   import { afterNavigate, beforeNavigate, goto, invalidate } from '$app/navigation'
-  import { resolve } from '$app/paths'
   import { page } from '$app/stores'
+  import type { ResolvedPathname } from '$app/types'
   import { api, ButtonLoadingIcon } from '$lib'
   import { uiRegistry } from '../../../../../local/index.js'
   import type { PageData } from './$types.js'
 
   export let data: PageData
   $: ({ prompt, appRequestData, dataVersion, appRequestForNavigation } = data)
-  $: def = uiRegistry.getPrompt($page.params.promptKey)
-  const getNextHref = getContext<() => { nextHref: string, prevHref: string | undefined }>('nextHref')
+  $: def = uiRegistry.getPrompt($page.params.promptKey!)
+  const getNextHref = getContext<() => { nextHref: ResolvedPathname, prevHref: ResolvedPathname | undefined }>('nextHref')
 
   let store: FormStore | undefined
   let continueAfterSave = false
@@ -33,7 +33,8 @@
   async function handleBack () {
     const previousHref = getNextHref().prevHref
     if (previousHref) {
-      await goto(resolve(previousHref, {}))
+      // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved
+      await goto(previousHref)
     }
   }
 
@@ -54,7 +55,8 @@
   async function onSaved () {
     await invalidate('request:apply')
     if (continueAfterSave && prompt.answered) {
-      await goto(resolve(getNextHref().nextHref, {}))
+      // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved
+      await goto(getNextHref().nextHref)
     } else await store?.setData(appRequestData[prompt.key] as object)
   }
 

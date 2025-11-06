@@ -12,11 +12,11 @@
   $: tabs = [
     ...(basicRequestData.applications.map(a => ({
       label: a.navTitle,
-      href: resolve(`/requests/${requestId}/approve/${a.programKey}`, {})
+      href: resolve(`/requests/${requestId}/approve/${a.programKey}`)
     }))),
     {
       label: 'Activity log',
-      href: resolve(`/requests/${requestId}/approve/activity`, {})
+      href: resolve(`/requests/${requestId}/approve/activity`)
     }
   ]
 
