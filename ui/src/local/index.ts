@@ -186,7 +186,8 @@ function configureDemoInstanceParams () {
       applicantDashboardRecentDays: 30,
       programs: [{ key: 'adopt_a_dog_program', icon: DogWalker },
         { key: 'adopt_a_cat_program', icon: PedestrianFamily },
-        { key: 'foster_a_pet_program', icon: Gamification }
+        /** TOOD: Blocked pending a fix to UI to support shared qual type req per program
+        */ { key: 'foster_a_pet_program', icon: Gamification }
       ],
       requirements: [
         { key: 'state_residence_prequal_req', configureComponent: ComplexResidenceConfig },

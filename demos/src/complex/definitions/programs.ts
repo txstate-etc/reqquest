@@ -28,7 +28,7 @@ export const adopt_a_cat_program: ProgramDefinition = {
   ]
 }
 
-
+/** TODO: Blocked pending a fix to UI that allows shared qual reqs per program
 export const foster_a_pet_program: ProgramDefinition = {
   key: 'foster_a_pet_program',
   title: 'Foster a Pet',
@@ -42,3 +42,4 @@ export const foster_a_pet_program: ProgramDefinition = {
     'children_qual_req'
   ]
 }
+  */
