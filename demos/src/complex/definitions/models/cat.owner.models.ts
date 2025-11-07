@@ -57,7 +57,7 @@ export const ReviewApplicantCatInfoPromptSchema = {
     previousCatAcceptable: { type: 'boolean' },
     currentCatAcceptable: { type: 'boolean' },
     livingSpaceAcceptable: { type: 'boolean' },
-    allergeyAcceptable: { type: 'boolean' },
+    allergyAcceptable: { type: 'boolean' },
     microchipAgree: { type: 'boolean' },
   },
   additionalProperties: false

@@ -66,7 +66,7 @@ export const ReviewApplicantDogInfoPromptSchema = {
     previousDogAcceptable: { type: 'boolean' },
     currentDogAcceptable: { type: 'boolean' },
     yardAcceptable: { type: 'boolean' },
-    allergeyAcceptable: { type: 'boolean' },
+    allergyAcceptable: { type: 'boolean' },
     exerciseMinMet: { type: 'boolean' },
     exerciseException: { type: 'boolean' }
   },

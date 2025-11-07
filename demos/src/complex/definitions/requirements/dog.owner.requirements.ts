@@ -113,7 +113,7 @@ export const review_applicant_dog_info_app_req: RequirementDefinition = {
     if (revDogInfoData.previousDogAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revDogInfoData.currentDogAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revDogInfoData.yardAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
-    if (revDogInfoData.allergeyAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
+    if (revDogInfoData.allergyAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revDogInfoData.exerciseMinMet === false && revDogInfoData.exerciseException === false) return { status: RequirementStatus.DISQUALIFYING }
     return { status: RequirementStatus.MET }  
   }

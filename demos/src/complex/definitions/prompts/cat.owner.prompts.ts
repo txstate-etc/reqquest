@@ -82,7 +82,7 @@ export const review_applicant_cat_info_prompt: PromptDefinition = {
       if (data.previousCatAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'previousCatAcceptable' })
       if (data.currentCatAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'currentCatAcceptable' })
       if (data.livingSpaceAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'livingSpaceAcceptable' })
-      if (data.allergeyAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'allergyAcceptable' })
+      if (data.allergyAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'allergyAcceptable' })
       if (data.microchipAgree == null) messages.push({ type: MutationMessageType.error, message: 'Agreement designation required', arg: 'microchipAgree' })
     }
     return messages

@@ -98,13 +98,13 @@ export const review_applicant_cat_info_app_req: RequirementDefinition = {
   description: 'A Reviewer will evaluate appicant cat info for discrepancies.',
   promptKeys: ['review_applicant_cat_info_prompt'],
   resolve: (data, config) => {
-    const revDogInfoData = data.review_applicantcat_info_prompt as ReviewApplicantCatInfoPromptData
-    if (revDogInfoData == null) return { status: RequirementStatus.PENDING }     
-    if (revDogInfoData.previousCatAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
-    if (revDogInfoData.currentCatAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
-    if (revDogInfoData.livingSpaceAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
-    if (revDogInfoData.allergeyAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
-    if (revDogInfoData.microchipAgree === false) return { status: RequirementStatus.DISQUALIFYING }
+    const revCatInfoData = data.review_applicant_cat_info_prompt as ReviewApplicantCatInfoPromptData
+    if (revCatInfoData == null) return { status: RequirementStatus.PENDING }     
+    if (revCatInfoData.previousCatAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
+    if (revCatInfoData.currentCatAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
+    if (revCatInfoData.livingSpaceAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
+    if (revCatInfoData.allergyAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
+    if (revCatInfoData.microchipAgree === false) return { status: RequirementStatus.DISQUALIFYING }
     return { status: RequirementStatus.MET }  
   }
 }

@@ -10,7 +10,7 @@
   ]
 } />
 
-<FieldRadio boolean path="currentCatAcceptable" labelText="Is the current cat history information acceptable?" items={
+<FieldRadio boolean path="currentCatAcceptable" labelText="Is the current cat information acceptable?" items={
   [
     { value: true, label: 'Yes' },
     { value: false, label: 'No' }    

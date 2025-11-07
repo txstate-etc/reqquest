@@ -84,7 +84,7 @@ export const review_applicant_dog_info_prompt: PromptDefinition = {
       if (data.previousDogAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'previousDogAcceptable' })
       if (data.currentDogAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'currentDogAcceptable' })
       if (data.yardAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'yardAcceptable' })
-      if (data.allergeyAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'allergyAcceptable' })
+      if (data.allergyAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'allergyAcceptable' })
       if (data.exerciseMinMet == null) {
         messages.push({ type: MutationMessageType.error, message: 'Exercise minimum met required', arg: 'exerciseMinMet' })
       } else {
