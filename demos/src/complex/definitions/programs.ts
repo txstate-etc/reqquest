@@ -25,7 +25,8 @@ export const adopt_a_cat_program: ProgramDefinition = {
     'current_catowner_qual_req', 
     'living_space_qual_req',
     'owner_cat_allergy_qual_req',
-    'owner_cat_microchip_service_qual_req'
+    'owner_cat_microchip_service_qual_req',
+    'review_applicant_cat_info_app_req'
   ]
 }
 

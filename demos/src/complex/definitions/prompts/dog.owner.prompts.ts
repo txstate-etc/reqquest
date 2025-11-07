@@ -1,4 +1,5 @@
 import { type PromptDefinition } from '@reqquest/api'
+import { InvalidatedResponse } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
 import { PreviousDogOwnerPromptSchema, CurrentDogOwnerPromptSchema, OwnerDogAllergyPromptSchema, DogExercisePromptSchema, ReviewApplicantDogInfoPromptSchema } from '../models/index.js'
 
@@ -17,7 +18,8 @@ export const previous_dogowner_prompt: PromptDefinition = {
       messages.push({ type: MutationMessageType.warning, message: 'Previous dog ownership is usually required.  Exceptions on a case by case basis.' })
     }  
     return messages
-  }
+  },
+  invalidUponChange: [{promptKey: 'review_applicant_dog_info_prompt'}]
 }
 
 export const current_dogowner_prompt: PromptDefinition = {
@@ -33,7 +35,8 @@ export const current_dogowner_prompt: PromptDefinition = {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
     }   
     return messages
-  }
+  },
+  invalidUponChange: [{promptKey: 'review_applicant_dog_info_prompt'}]
 }
 
 export const owner_dog_allergy_prompt: PromptDefinition = {
@@ -48,7 +51,8 @@ export const owner_dog_allergy_prompt: PromptDefinition = {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
     }
     return messages
-  }
+  },
+  invalidUponChange: [{promptKey: 'review_applicant_dog_info_prompt'}]
 }
 
 export const dog_min_exercise_prompt: PromptDefinition = {
@@ -63,7 +67,8 @@ export const dog_min_exercise_prompt: PromptDefinition = {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
     }  
     return messages
-  }
+  },
+  invalidUponChange: [{promptKey: 'review_applicant_dog_info_prompt'}]
 }
 
 export const review_applicant_dog_info_prompt: PromptDefinition = {
@@ -79,7 +84,7 @@ export const review_applicant_dog_info_prompt: PromptDefinition = {
       if (data.previousDogAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'previousDogAcceptable' })
       if (data.currentDogAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'currentDogAcceptable' })
       if (data.yardAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'yardAcceptable' })
-      if (data.allergeyAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'allergyDogAcceptable' })
+      if (data.allergeyAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'allergyAcceptable' })
       if (data.exerciseMinMet == null) {
         messages.push({ type: MutationMessageType.error, message: 'Exercise minimum met required', arg: 'exerciseMinMet' })
       } else {

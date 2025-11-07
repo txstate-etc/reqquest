@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { CurrentCatOwnerPromptData, CurrentCatOwnerRequirementConfigSchema, OwnerCatAllergyPromptData, OwnerCatMicrochipServiceData, PreviousCatOwnerPromptData } from '../models/index.js'
+import { CurrentCatOwnerPromptData, CurrentCatOwnerRequirementConfigSchema, OwnerCatAllergyPromptData, OwnerCatMicrochipServiceData, PreviousCatOwnerPromptData, ReviewApplicantCatInfoPromptData } from '../models/index.js'
 
 export const previous_catowner_qual_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
@@ -87,5 +87,24 @@ export const owner_cat_microchip_service_qual_req: RequirementDefinition = {
     } else { 
       return { status: RequirementStatus.MET }
     }    
+  }
+}
+
+export const review_applicant_cat_info_app_req: RequirementDefinition = {
+  type: RequirementType.APPROVAL,
+  key: 'review_applicant_cat_info_app_req',
+  title: 'Review applicant cat info',
+  navTitle: 'Review applicant cat info',
+  description: 'A Reviewer will evaluate appicant cat info for discrepancies.',
+  promptKeys: ['review_applicant_cat_info_prompt'],
+  resolve: (data, config) => {
+    const revDogInfoData = data.review_applicantcat_info_prompt as ReviewApplicantCatInfoPromptData
+    if (revDogInfoData == null) return { status: RequirementStatus.PENDING }     
+    if (revDogInfoData.previousCatAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
+    if (revDogInfoData.currentCatAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
+    if (revDogInfoData.livingSpaceAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
+    if (revDogInfoData.allergeyAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
+    if (revDogInfoData.microchipAgree === false) return { status: RequirementStatus.DISQUALIFYING }
+    return { status: RequirementStatus.MET }  
   }
 }

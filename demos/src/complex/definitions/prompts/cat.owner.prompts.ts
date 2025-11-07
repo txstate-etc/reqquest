@@ -1,6 +1,6 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { CurrentCatOwnerPromptSchema, OwnerCatAllergyPromptSchema, OwnerCatMicrochipServicePrompt, PreviousCatOwnerPromptSchema } from '../models/cat.owner.models.js'
+import { CurrentCatOwnerPromptSchema, OwnerCatAllergyPromptSchema, OwnerCatMicrochipServicePrompt, PreviousCatOwnerPromptSchema, ReviewApplicantCatInfoPromptSchema } from '../models/cat.owner.models.js'
 
 export const previous_catowner_prompt: PromptDefinition = {
   key: 'previous_catowner_prompt',
@@ -16,7 +16,8 @@ export const previous_catowner_prompt: PromptDefinition = {
       messages.push({ type: MutationMessageType.warning, message: 'Previous cat ownership is usually required.  Exceptions on a case by case basis.' })
     }  
     return messages
-  }
+  },
+  invalidUponChange: [{promptKey: 'review_applicant_cat_info_prompt'}]
 }
 
 export const current_catowner_prompt: PromptDefinition = {
@@ -32,7 +33,8 @@ export const current_catowner_prompt: PromptDefinition = {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
     }   
     return messages
-  }
+  },
+  invalidUponChange: [{promptKey: 'review_applicant_cat_info_prompt'}]
 }
 
 export const owner_cat_allergy_prompt: PromptDefinition = {
@@ -47,7 +49,8 @@ export const owner_cat_allergy_prompt: PromptDefinition = {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
     }
     return messages
-  }
+  },
+  invalidUponChange: [{promptKey: 'review_applicant_cat_info_prompt'}]
 }
 
 export const owner_cat_microchip_service_prompt: PromptDefinition = {
@@ -60,6 +63,27 @@ export const owner_cat_microchip_service_prompt: PromptDefinition = {
     if (!data || data.agreeToPay == null) messages.push({ type: MutationMessageType.error, message: 'Owner microship service information required', arg: 'agreeToPat' })
     if (data.allergic) {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
+    }
+    return messages
+  },
+  invalidUponChange: [{promptKey: 'review_applicant_cat_info_prompt'}]
+}
+
+export const review_applicant_cat_info_prompt: PromptDefinition = {
+  key: 'review_applicant_cat_info_prompt',
+  title: 'Review applicant cat info',
+  description: 'Reviewer will evaluate appicant cat info for discrepancies.',
+  schema: ReviewApplicantCatInfoPromptSchema,
+  validate: (data, config, allConfig) => {
+    const messages: MutationMessage[] = [] 
+    if (!data) {
+      messages.push({ type: MutationMessageType.error, message: 'Review applicant cat info required' })
+    } else {
+      if (data.previousCatAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'previousCatAcceptable' })
+      if (data.currentCatAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'currentCatAcceptable' })
+      if (data.livingSpaceAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'livingSpaceAcceptable' })
+      if (data.allergeyAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'allergyAcceptable' })
+      if (data.microchipAgree == null) messages.push({ type: MutationMessageType.error, message: 'Agreement designation required', arg: 'microchipAgree' })
     }
     return messages
   }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FieldRadio, FieldCheckbox, FieldSelect, FieldTextInput, FieldNumber } from '@txstate-mws/carbon-svelte'
+  import { FieldRadio, FieldTextInput, FieldNumber } from '@txstate-mws/carbon-svelte'
   export let data
 </script>
 <FieldRadio boolean path="previousPetOwner" legendText="Have you previously owned a pet?" items={[{ label: 'Yes', value: true }, { label: 'No', value: false }]} />
