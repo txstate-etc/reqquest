@@ -92,7 +92,10 @@
             })
           }
         }
-        if (foundCurrent) nextHref = resolve(`/requests/${appRequestForExport.id}/apply/programs`)
+        if (foundCurrent) {
+          nextHref = resolve(`/requests/${appRequestForExport.id}/apply/programs`)
+          foundCurrent = false
+        }
         if (substeps.length > 0) {
           navItems.push({
             id: `application${application.id}`,
