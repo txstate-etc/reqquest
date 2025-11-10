@@ -92,7 +92,7 @@ export const review_applicant_dog_info_prompt: PromptDefinition = {
       if (data.exerciseMinMet == null) {
         messages.push({ type: MutationMessageType.error, message: 'Exercise minimum met required', arg: 'exerciseMinMet' })
       } else {
-        if (data.exerciseException == null) messages.push({ type: MutationMessageType.error, message: 'Exception determination required', arg: 'exerciseException' })
+        if (data.exerciseMinMet === false && data.exerciseException == null) messages.push({ type: MutationMessageType.error, message: 'Exception determination required', arg: 'exerciseException' })
       }
     }
     return messages

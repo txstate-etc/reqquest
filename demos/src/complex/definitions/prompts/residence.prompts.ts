@@ -46,6 +46,9 @@ export const state_residence_prompt: PromptDefinition = {
     if (!data.residentIdDoc) messages.push({ type: MutationMessageType.error, message: 'Identifying documentation required', arg: 'residentIdDoc' })
   
     return messages
+  },
+  gatherConfig: (allPeriodConfig) => {
+     return {'state_residence_prequal_req': {'residentOfState': allPeriodConfig.state_residence_prequal_req.residentOfState}}
   }
 }
 

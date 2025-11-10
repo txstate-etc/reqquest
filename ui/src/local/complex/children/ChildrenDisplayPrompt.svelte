@@ -1,7 +1,7 @@
 <script lang="ts">
   export let data
   export let relatedConfigData
-  $: minAgeConfigData = relatedConfigData.minAge ?? 'Related config data is not working'
+  $: minAgeConfigData = relatedConfigData.children_qual_req.minAge ?? 'Related config data is not working'
 </script>
 <p>Currently have kid(s) under {minAgeConfigData}:  { !!data.underMinAge ? 'Yes': 'No' }</p><br/>
 {#if (!!data.underMinAge) }

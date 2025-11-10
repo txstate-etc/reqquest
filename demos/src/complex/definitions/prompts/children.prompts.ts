@@ -15,5 +15,8 @@ export const children_prompt: PromptDefinition = {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide details such as ages, comfort with animals', arg: 'details' })
     } 
     return messages
-  }
+  },
+  gatherConfig: (allPeriodConfig => {
+    return {'children_qual_req': {'minAge': allPeriodConfig.children_qual_req.minAge}}
+  })
 }
