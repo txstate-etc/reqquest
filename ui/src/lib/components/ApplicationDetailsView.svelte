@@ -1,15 +1,14 @@
 <script lang="ts">
   import type { UIRegistry } from '$lib/registry.js'
-  import { getAppRequestStatusInfo, getApplicationStatusInfo } from '$lib/status-utils.js'
+  import { getAppRequestStatusInfo } from '$lib/status-utils.js'
   import type { Scalars } from '$lib/typed-client/schema'
   import { Panel, TagSet } from '@txstate-mws/carbon-svelte'
   import { Tooltip } from 'carbon-components-svelte'
-  import CheckmarkFilled from 'carbon-icons-svelte/lib/CheckmarkFilled.svelte'
-  import Close from 'carbon-icons-svelte/lib/Close.svelte'
   import WarningAltFilled from 'carbon-icons-svelte/lib/WarningAltFilled.svelte'
   import { isEmpty } from 'txstate-utils'
   import type { AnsweredPrompt, PromptSection, AppRequestForDetails } from './types'
   import RenderDisplayComponent from './RenderDisplayComponent.svelte'
+  import ApplicantProgramList from './ApplicantProgramList.svelte'
 
   // TODO: design alignement could reduce props here
   export let appRequest: AppRequestForDetails | undefined = undefined
@@ -54,11 +53,7 @@
     // Application-Specific Questions
     for (const application of appRequest.applications) {
       const prompts = application.requirements.flatMap(r =>
-        r.prompts.map(p => normalizePrompt({
-          ...p,
-          requirementStatus: r.status,
-          requirementStatusReason: r.statusReason
-        }))
+        r.prompts.map(normalizePrompt)
       )
       if (prompts.length) {
         sections.push({
@@ -99,47 +94,7 @@
         {/if}
 
         <!-- Application Status List -->
-        {#if appRequest.applications.length > 0}
-          <div class="status-list border">
-            {#if !showAppRequestStatus}
-              <dl class="status-list-header [ flex items-center justify-between px-4 py-3 border-b border-black border-solid font-semibold ]">
-                <dt>Program</dt>
-                <dd>Eligibility</dd>
-              </dl>
-            {/if}
-            {#each appRequest.applications as application (application.title)}
-              <dl class="status-list-item flex items-center justify-between px-4 py-3 border-b ">
-                <dt class="status-list-label font-medium">{application.title}</dt>
-                <dd>
-                  {#if statusDisplay === 'icons'}
-                    {@const app = application as typeof application & { statusReason?: string | null }}
-                    <div class="status-icon">
-                      {#if application.status === 'INELIGIBLE'}
-                        <Close size={24} />
-                        <Tooltip>
-                          <p>{app.statusReason ?? 'Not eligible'}</p>
-                        </Tooltip>
-                      {:else if application.status === 'ELIGIBLE'}
-                        <CheckmarkFilled size={24} class="status-icon-complete" />
-                        <Tooltip>
-                          <p>{app.statusReason ?? 'Eligible'}</p>
-                        </Tooltip>
-                      {:else}
-                        <span class="icon-warning"><WarningAltFilled size={24} class="text-grey-900" /></span>
-                        <Tooltip>
-                          <p>{app.statusReason ?? 'Pending'}</p>
-                        </Tooltip>
-                      {/if}
-                    </div>
-                  {:else}
-                    {@const appStatusTag = getApplicationStatusInfo(application.status)}
-                    <TagSet tags={[{ label: appStatusTag.label, type: appStatusTag.color }]} />
-                  {/if}
-                </dd>
-              </dl>
-            {/each}
-          </div>
-        {/if}
+        <ApplicantProgramList {appRequest} viewMode={statusDisplay === 'tags'} />
       </div>
     </section>
 
@@ -149,30 +104,24 @@
         <p>Loading prompt data...</p>
       </Panel>
     {:else if sections.length > 0}
-      {#each sections as section (section.title)}
+      {#each sections as section, sectionIndex (section.title)}
         <Panel title="{section.title}" {expandable} expanded>
           {#if section.prompts.length}
             {#each section.prompts as prompt (prompt.id)}
               {@const def = uiRegistry.getPrompt(prompt.key)}
               <dl class="prompt-list py-4" >
                 <dt class="prompt-term font-medium">
-                  {#if showWarningsInline && (prompt.requirementStatus === 'WARNING' || prompt.requirementStatus === 'DISQUALIFYING')}
+                  {#if showWarningsInline && (prompt.requirements.some(r => r.status === 'WARNING' || r.status === 'DISQUALIFYING'))}
                   <div class="inline-icon flex">
-                    {#if prompt.requirementStatus === 'WARNING'}
-                      <Tooltip>
-                        <div class="icon" slot="icon">
-                          <WarningAltFilled size={16} class="text-grey-900 fill-yellow-300 " />
-                        </div>
-                        <p>{prompt.requirementStatusReason ?? 'Warning'}</p>
-                      </Tooltip>
-                    {:else if prompt.requirementStatus === 'DISQUALIFYING'}
-                      <Tooltip>
-                        <div class="icon" slot="icon">
-                          <WarningAltFilled size={16} class="text-grey-900" />
-                        </div>
-                        <p>{prompt.requirementStatusReason ?? 'Disqualifying'}</p>
-                      </Tooltip>
-                    {/if}
+                    <Tooltip align="start">
+                      <div class="icon" slot="icon">
+                        <WarningAltFilled size={16} />
+                      </div>
+                      {#each prompt.requirements.filter(r => r.status === 'WARNING' || r.status === 'DISQUALIFYING') as r, i (i)}
+                        {#if sectionIndex === 0}<p>{r.status === 'WARNING' ? 'Warning' : 'Disqualifying'} for {r.programName}</p>{/if}
+                        <p>{r.statusReason ?? r.status}</p>
+                      {/each}
+                    </Tooltip>
                   </div>
                   {/if}
                   {prompt.title}
@@ -225,17 +174,8 @@
     grid-template-columns: 1fr;
   }
 
-  .status-list {
-    border-color: var(--cds-border-subtle);
-  }
-
   .status-list-item {
     border-color: var(--cds-border-subtle);
-  }
-
-  .status-list-header {
-    border-color: var(--cds-border-subtle);
-    color: var(--cds-text-01);
   }
 
   .status-list-label {
@@ -244,10 +184,6 @@
 
   .prompt-list {
     border-bottom:1px solid var(--cds-border-subtle);
-  }
-
-  .prompt-list:last-child {
-    /* border-bottom: none; */
   }
 
   .prompt-term {
@@ -260,30 +196,11 @@
     color: var(--cds-text-02);
   }
 
-  .status-icon {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .status-icon :global(.status-icon-complete) {
-    fill: var(--cds-support-04);
-  }
-
-  /* .inline-icon :global(.bx--tooltip__trigger:focus svg) {
-    fill: yellow;
-  } */
-  .inline-icon :global(.bx--tooltip__trigger svg),
-  .icon-warning :global(svg) {
+  .inline-icon :global(.bx--tooltip__trigger svg) {
     fill: var(--cds-support-03, rgba(239, 200, 108, 1));
   }
 
-  .inline-icon :global([data-icon-path="inner-path"]),
-  .icon-warning :global([data-icon-path="inner-path"]) {
+  .inline-icon :global([data-icon-path="inner-path"]) {
     fill: black;
-  }
-
-  .status-icon :global(.bx--tooltip__label) {
-    padding-top:0.5em;
   }
 </style>

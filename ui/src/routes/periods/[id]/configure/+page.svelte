@@ -8,7 +8,6 @@
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../local'
   import PeriodPanel from '$lib/components/PeriodPanel.svelte'
-    import Page from '../../+page.svelte';
 
   export let data: PageData
   $: ({ programs, period } = data)
@@ -50,7 +49,7 @@
   }
 
   async function onSubmit (data: any) {
-    const { success, messages } = await api.updateConfiguration($page.params.id, editingConfigurationDef!.key, data, false)
+    const { success, messages } = await api.updateConfiguration($page.params.id!, editingConfigurationDef!.key, data, false)
     return {
       success,
       messages,
@@ -59,7 +58,7 @@
   }
 
   async function onValidate (data: any) {
-    const { messages } = await api.updateConfiguration($page.params.id, editingConfigurationDef!.key, data, true)
+    const { messages } = await api.updateConfiguration($page.params.id!, editingConfigurationDef!.key, data, true)
     return messages
   }
 

@@ -1,10 +1,14 @@
 import { redirect } from '@sveltejs/kit'
-import { base } from '$app/paths'
-import { api } from '$lib'
+import { resolve } from '$app/paths'
+import { api, enumPromptVisibility } from '$lib'
 import type { PageLoad } from './$types'
 
 export const load: PageLoad = async ({ params }) => {
-  const prompt = await api.getNextPrompt(params.id)
-  if (!prompt) throw redirect(302, `${base}/requests/${params.id}/apply/review`)
-  throw redirect(303, `${base}/requests/${params.id}/apply/${prompt.key}`)
+  const { prequalPrompts } = await api.getApplyNavigation(params.id)
+  for (const prompt of prequalPrompts) {
+    if (!prompt.answered && prompt.visibility === enumPromptVisibility.AVAILABLE && !prompt.moot) {
+      throw redirect(303, resolve(`/requests/${params.id}/apply/${prompt.id}`))
+    }
+  }
+  throw redirect(303, resolve(`/requests/${params.id}/apply/programs`))
 }

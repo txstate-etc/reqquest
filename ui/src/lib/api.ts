@@ -3,6 +3,7 @@ import { APIBase } from '@txstate-mws/sveltekit-utils'
 import type { Feedback } from '@txstate-mws/svelte-forms'
 import { createClient, enumAppRequestIndexDestination, enumPromptVisibility, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleGroup, type AccessRoleInput, type AccessUserFilter, type Application, type AppRequestActivityFilters, type AppRequestFilter, type Pagination, type PeriodUpdate, type PromptVisibility, type RequirementPrompt } from './typed-client/index.js'
 import { DateTime } from 'luxon'
+import { pick } from 'txstate-utils'
 
 class API extends APIBase {
   client = createClient({
@@ -190,26 +191,43 @@ class API extends APIBase {
     type ResponseAppRequest = (typeof response)['appRequests'][0]
     type ResponseApplication = ResponseAppRequest['applications'][0]
     type ResponseRequirement = ResponseApplication['requirements'][0]
-    type ResponsePrompt = ResponseRequirement['prompts'][0]
-    if (response.appRequests.length === 0) return { prequalPrompts: [] as ResponsePrompt[], postqualPrompts: [] as ResponsePrompt[], appRequest: undefined as ResponseAppRequest | undefined }
+    type ResponsePrompt = Omit<ResponseRequirement['prompts'][0], 'requirements'> & { requirements: { status: string, statusReason: string | null, programName: string }[] }
+    if (response.appRequests.length === 0) return { prequalPrompts: [] as ResponsePrompt[], postqualPrompts: [] as ResponsePrompt[], appRequest: undefined }
+    const promptLookup: Record<string, ResponsePrompt> = {}
+    const promptsByKey: Record<string, ResponsePrompt> = {}
     const appRequest = response.appRequests[0]
     const prequalPrompts: ResponsePrompt[] = []
     const postqualPrompts: ResponsePrompt[] = []
-    const applications: ResponseApplication[] = []
+    const applications: (ResponseApplication & { requirements: (ResponseRequirement & { prompts: ResponsePrompt[] })[] })[] = []
     const visibilitiesToShow = new Set<PromptVisibility>([enumPromptVisibility.AVAILABLE, enumPromptVisibility.REQUEST_DUPE])
     for (const application of appRequest.applications) {
-      const applicantRequirements: ResponseRequirement[] = []
+      const applicantRequirements: (ResponseRequirement & { prompts: ResponsePrompt[] })[] = []
       for (const requirement of application.requirements) {
-        if (requirement.type === enumRequirementType.PREQUAL) prequalPrompts.push(...requirement.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE))
-        else if (requirement.type === enumRequirementType.POSTQUAL) postqualPrompts.push(...requirement.prompts.filter(p => !p.moot && p.visibility === enumPromptVisibility.AVAILABLE))
-        else if (requirement.type === enumRequirementType.QUALIFICATION) applicantRequirements.push(requirement)
+        if (requirement.type === enumRequirementType.PREQUAL) prequalPrompts.push(...requirement.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE).map(p => ({ ...p, requirements: [{ ...pick(requirement, 'status', 'statusReason'), programName: application.title }] })))
+        else if (requirement.type === enumRequirementType.POSTQUAL) postqualPrompts.push(...requirement.prompts.filter(p => !p.moot && p.visibility === enumPromptVisibility.AVAILABLE).map(p => ({ ...p, requirements: [{ ...pick(requirement, 'status', 'statusReason'), programName: application.title }] })))
+        else if (requirement.type === enumRequirementType.QUALIFICATION) applicantRequirements.push({ ...requirement, prompts: requirement.prompts.filter(p => !p.moot && visibilitiesToShow.has(p.visibility)).map(p => ({ ...p, requirements: [{ ...pick(requirement, 'status', 'statusReason'), programName: application.title }] })) })
       }
-      applications.push({ ...application, requirements: applicantRequirements.map(r => ({ ...r, prompts: r.prompts.filter(p => !p.moot && visibilitiesToShow.has(p.visibility)) })) })
+      for (const prompt of [...prequalPrompts, ...postqualPrompts, ...applicantRequirements.flatMap(r => r.prompts)]) {
+        promptLookup[prompt.id] = prompt
+        promptsByKey[prompt.key] = prompt
+      }
+      applications.push({ ...application, requirements: applicantRequirements })
     }
-    return { prequalPrompts, postqualPrompts, appRequest: { ...appRequest, applications } }
+    for (const application of appRequest.applications) {
+      for (const requirement of application.requirements) {
+        if ([enumRequirementType.PREQUAL, enumRequirementType.POSTQUAL].includes(requirement.type as any)) {
+          for (const prompt of requirement.prompts) {
+            if (prompt.visibility === enumPromptVisibility.REQUEST_DUPE) {
+              promptsByKey[prompt.key].requirements.push({ ...pick(requirement, 'status', 'statusReason'), programName: application.title })
+            }
+          }
+        }
+      }
+    }
+    return { promptLookup, prequalPrompts, postqualPrompts, appRequest: { ...appRequest, applications } }
   }
 
-  async getApplicantPrompt (appRequestId: string, promptKey: string) {
+  async getApplicantPrompt (appRequestId: string, promptId: string) {
     const response = await this.client.query({
       __name: 'GetPromptData',
       appRequests: {
@@ -241,7 +259,7 @@ class API extends APIBase {
     for (const application of appRequest.applications) {
       for (const requirement of application.requirements.filter(r => r.type === enumRequirementType.PREQUAL || r.type === enumRequirementType.QUALIFICATION || r.type === enumRequirementType.POSTQUAL)) {
         for (const prompt of requirement.prompts) {
-          if (prompt.key === promptKey && prompt.visibility === enumPromptVisibility.AVAILABLE) return { appRequestData: appRequest.data, prompt }
+          if (prompt.id === promptId) return { appRequestData: appRequest.data, prompt }
         }
       }
     }
@@ -304,7 +322,7 @@ class API extends APIBase {
 
   async getAppRequestForExport (appRequestId: string) {
     const response = await this.client.query({
-      __name: 'GetApplyNavigation',
+      __name: 'GetAppRequestForExport',
       appRequests: {
         __args: { filter: { ids: [appRequestId] } },
         id: true,
@@ -344,23 +362,40 @@ class API extends APIBase {
     type ResponseAppRequest = (typeof response)['appRequests'][0]
     type ResponseApplication = ResponseAppRequest['applications'][0]
     type ResponseRequirement = ResponseApplication['requirements'][0]
-    type ResponsePrompt = ResponseRequirement['prompts'][0]
-    if (response.appRequests.length === 0) return { prequalPrompts: [] as ResponsePrompt[], postqualPrompts: [] as ResponsePrompt[], appRequest: undefined as ResponseAppRequest | undefined }
+    type ResponsePrompt = ResponseRequirement['prompts'][0] & { requirements: { status: string, statusReason: string | null, programName: string }[] }
+    if (response.appRequests.length === 0) return { prequalPrompts: [] as ResponsePrompt[], postqualPrompts: [] as ResponsePrompt[], appRequest: undefined }
+    const promptLookup: Record<string, ResponsePrompt> = {}
+    const promptsByKey: Record<string, ResponsePrompt> = {}
     const appRequest = response.appRequests[0]
     const prequalPrompts: ResponsePrompt[] = []
     const postqualPrompts: ResponsePrompt[] = []
-    const applications: ResponseApplication[] = []
+    const applications: (ResponseApplication & { requirements: (ResponseRequirement & { prompts: ResponsePrompt[] })[] })[] = []
     const visibilitiesToShow = new Set<PromptVisibility>([enumPromptVisibility.AVAILABLE])
     for (const application of appRequest.applications) {
-      const applicationSpecificRequirements: ResponseRequirement[] = []
+      const applicantRequirements: (ResponseRequirement & { prompts: ResponsePrompt[] })[] = []
       for (const requirement of application.requirements) {
-        if (requirement.type === enumRequirementType.PREQUAL) prequalPrompts.push(...requirement.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE))
-        else if (requirement.type === enumRequirementType.POSTQUAL) postqualPrompts.push(...requirement.prompts.filter(p => p.moot || p.visibility === enumPromptVisibility.AVAILABLE))
-        else applicationSpecificRequirements.push(requirement)
+        if (requirement.type === enumRequirementType.PREQUAL) prequalPrompts.push(...requirement.prompts.filter(p => p.visibility === enumPromptVisibility.AVAILABLE).map(p => ({ ...p, requirements: [{ ...pick(requirement, 'status', 'statusReason'), programName: application.title }] })))
+        else if (requirement.type === enumRequirementType.POSTQUAL) postqualPrompts.push(...requirement.prompts.filter(p => !p.moot && p.visibility === enumPromptVisibility.AVAILABLE).map(p => ({ ...p, requirements: [{ ...pick(requirement, 'status', 'statusReason'), programName: application.title }] })))
+        else applicantRequirements.push({ ...requirement, prompts: requirement.prompts.filter(p => !p.moot && visibilitiesToShow.has(p.visibility)).map(p => ({ ...p, requirements: [{ ...pick(requirement, 'status', 'statusReason'), programName: application.title }] })) })
       }
-      applications.push({ ...application, requirements: applicationSpecificRequirements.map(r => ({ ...r, prompts: r.prompts.filter(p => !p.moot && visibilitiesToShow.has(p.visibility)) })) })
+      for (const prompt of [...prequalPrompts, ...postqualPrompts, ...applicantRequirements.flatMap(r => r.prompts)]) {
+        promptLookup[prompt.id] = prompt
+        promptsByKey[prompt.key] = prompt
+      }
+      applications.push({ ...application, requirements: applicantRequirements.map(r => ({ ...r, prompts: r.prompts.filter(p => !p.moot && visibilitiesToShow.has(p.visibility)).map(p => ({ ...p, requirements: [{ ...pick(r, 'status', 'statusReason'), programName: application.title }] })) })) })
     }
-    return { prequalPrompts, postqualPrompts, appRequest: { ...appRequest, applications } }
+    for (const application of appRequest.applications) {
+      for (const requirement of application.requirements) {
+        if ([enumRequirementType.PREQUAL, enumRequirementType.POSTQUAL].includes(requirement.type as any)) {
+          for (const prompt of requirement.prompts) {
+            if (prompt.visibility === enumPromptVisibility.REQUEST_DUPE) {
+              promptsByKey[prompt.key].requirements.push({ ...pick(requirement, 'status', 'statusReason'), programName: application.title })
+            }
+          }
+        }
+      }
+    }
+    return { promptLookup, prequalPrompts, postqualPrompts, appRequest: { ...appRequest, applications } }
   }
 
   async createAppRequest (periodId?: string, login?: string, validateOnly?: boolean) {

@@ -10,28 +10,28 @@
   import type { FormStore } from '@txstate-mws/svelte-forms'
   import { Button } from 'carbon-components-svelte'
   import { getContext } from 'svelte'
+  import type { Writable } from 'svelte/store'
   import { afterNavigate, beforeNavigate, goto, invalidate } from '$app/navigation'
-  import { page } from '$app/stores'
   import type { ResolvedPathname } from '$app/types'
   import { api, ButtonLoadingIcon } from '$lib'
   import { uiRegistry } from '../../../../../local/index.js'
   import type { PageData } from './$types.js'
 
   export let data: PageData
-  $: ({ prompt, appRequestData, dataVersion, appRequestForNavigation } = data)
-  $: def = uiRegistry.getPrompt($page.params.promptKey!)
-  const getNextHref = getContext<() => { nextHref: ResolvedPathname, prevHref: ResolvedPathname | undefined }>('nextHref')
+  $: ({ prompt, appRequestData, dataVersion, appRequestForExport } = data)
+  $: def = uiRegistry.getPrompt(prompt.key)
+  const nextHref = getContext<Writable<{ nextHref: ResolvedPathname, prevHref: ResolvedPathname | undefined }>>('nextHref')
 
   let store: FormStore | undefined
   let continueAfterSave = false
   let hasPreviousPrompt = false
 
   function checkPreviousPrompt () {
-    hasPreviousPrompt = getNextHref().prevHref != null
+    hasPreviousPrompt = $nextHref.prevHref != null
   }
 
   async function handleBack () {
-    const previousHref = getNextHref().prevHref
+    const previousHref = $nextHref.prevHref
     if (previousHref) {
       // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved
       await goto(previousHref)
@@ -56,7 +56,7 @@
     await invalidate('request:apply')
     if (continueAfterSave && prompt.answered) {
       // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved
-      await goto(getNextHref().nextHref)
+      await goto($nextHref.nextHref)
     } else await store?.setData(appRequestData[prompt.key] as object)
   }
 
@@ -79,7 +79,7 @@
     <p class="text-center"> {prompt.description}</p>
 </div>
   <Form bind:store submitText="Save & Continue" submit={onSubmit} validate={onValidate} preload={appRequestData[prompt.key]} on:saved={onSaved} let:data>
-    <svelte:component this={def!.formComponent} {data} appRequestId={appRequestForNavigation.id} {appRequestData} fetched={prompt.fetchedData} configData={prompt.relatedConfigData[prompt.key]} relatedConfigData={prompt.relatedConfigData} />
+    <svelte:component this={def!.formComponent} {data} appRequestId={appRequestForExport.id} {appRequestData} fetched={prompt.fetchedData} configData={prompt.relatedConfigData[prompt.key]} relatedConfigData={prompt.relatedConfigData} />
     <svelte:fragment slot="submit" let:submitting>
       <div class='form-submit flex gap-12 justify-center mt-16'>
         {#if hasPreviousPrompt}

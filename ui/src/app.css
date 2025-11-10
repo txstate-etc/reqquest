@@ -4,9 +4,18 @@
 
 
 .repel {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: var(--repel-vertical-alignment, center);
-    gap: var(--gutter, 2em);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: var(--repel-vertical-alignment, center);
+  gap: var(--gutter, 2em);
+}
+
+.bx--tooltip.bx--tooltip {
+  width: max-content;
+  max-width: min(28rem, 90dvw);
+}
+
+.bx--tooltip.bx--tooltip p ~ p {
+  margin-top: 0.5em;
 }

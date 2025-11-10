@@ -1,4 +1,4 @@
-import type { api, ApplicationStatus, AppRequestStatus } from '$lib'
+import type { api, ApplicationStatus, AppRequestStatus, IneligiblePhases } from '$lib'
 
 export type DashboardAppRequest = Awaited<ReturnType<typeof api.getApplicantRequests>>[number]
 
@@ -16,8 +16,11 @@ export interface AnsweredPrompt {
   moot: boolean | null
   visibility: string
   relatedConfigData?: Record<string, any>
-  requirementStatus?: string
-  requirementStatusReason?: string | null
+  requirements: {
+    status: string
+    statusReason: string | null
+    programName: string
+  }[]
 }
 
 export interface PromptSection {
@@ -31,7 +34,9 @@ export interface AppRequestForDetails {
   status: AppRequestStatus
   period?: { name: string }
   applications: {
+    id: string
     title: string
+    ineligiblePhase: IneligiblePhases | null
     status: ApplicationStatus
     statusReason?: string | null
     requirements: {

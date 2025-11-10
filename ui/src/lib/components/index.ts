@@ -1,3 +1,4 @@
+export { default as ApplicantProgramList } from './ApplicantProgramList.svelte'
 export { default as ApplicationDetailsView } from './ApplicationDetailsView.svelte'
 export { default as AppRequestCard } from './AppRequestCard.svelte'
 export { default as ButtonLoadingIcon } from './ButtonLoadingIcon.svelte'

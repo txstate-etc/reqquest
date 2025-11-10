@@ -28,7 +28,21 @@
       group: 'Dashboards',
       hideFromSideNav: !access.viewApplicantDashboard,
       icon: Dashboard,
-      routeId: '/dashboards/applicant'
+      routeId: '/dashboards/applicant',
+      children: [{
+        title: 'Application',
+        routeId: '/requests/[id]/apply',
+        children: [{
+          title: 'Review Your Submission',
+          routeId: '/requests/[id]/apply/review'
+        }, {
+          title: 'Program Review',
+          routeId: '/requests/[id]/apply/programs'
+        }, {
+          routeId: '/requests/[id]/apply/[promptId]',
+          title: $page => $page.data.promptLookup?.[$page.params.promptId!]?.navTitle ?? 'Unknown Prompt'
+        }]
+      }]
     },
     {
       title: 'Reviewer',
@@ -47,13 +61,6 @@
         title: $page => $page.data.basicRequestData ? `${$page.data.basicRequestData.applicant.fullname} (${$page.data.basicRequestData.period.name})` : 'Unknown Request',
         routeId: '/requests/[id]',
         children: [{
-          title: 'Application',
-          routeId: '/requests/[id]/apply',
-          children: [{
-            title: 'Review Your Submission',
-            routeId: '/requests/[id]/apply/review'
-          }]
-        }, {
           title: `Review ${uiRegistry.getWord('appRequest')}`,
           routeId: '/requests/[id]/approve',
           children: [{

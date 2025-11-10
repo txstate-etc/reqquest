@@ -3,7 +3,7 @@ import { error } from '@sveltejs/kit'
 import type { PageLoad } from './$types'
 
 export const load: PageLoad = async ({ params, depends }) => {
-  const { prompt, appRequestData, dataVersion } = await api.getApplicantPrompt(params.id, params.promptKey)
+  const { prompt, appRequestData, dataVersion } = await api.getApplicantPrompt(params.id, params.promptId)
   depends('request:apply')
   if (!prompt) throw error(404, 'Prompt not found')
   return { prompt, appRequestData, dataVersion }

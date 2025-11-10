@@ -1,12 +1,14 @@
 <script lang="ts">
   import { ErrorPage, ProgressNav, type RootStepItem, type StepItem } from '@txstate-mws/carbon-svelte'
   import { setContext } from 'svelte'
+  import { writable } from 'svelte/store'
   import { resolve } from '$app/paths'
   import { page } from '$app/stores'
+  import { enumApplicationStatus, enumRequirementStatus } from '$lib'
   import type { LayoutData } from './$types'
 
   export let data: LayoutData
-  $: ({ appRequestForNavigation, prequalPrompts, postqualPrompts } = data)
+  $: ({ appRequestForExport, prequalPrompts, postqualPrompts } = data)
 
   function getNavItems (..._: any[]) {
     const navItems: RootStepItem[] = []
@@ -16,67 +18,81 @@
     let lastprompt: string | undefined
     for (const prompt of prequalPrompts) {
       if (foundCurrent) {
-        nextHref = resolve(`/requests/${appRequestForNavigation.id}/apply/${prompt.key}`)
+        nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${prompt.id}`)
         foundCurrent = false
-      } else if ($page.params.promptKey === prompt.key) {
+      } else if ($page.params.promptId === prompt.id) {
         foundCurrent = true
-        if (lastprompt) prevHref = resolve(`/requests/${appRequestForNavigation.id}/apply/${lastprompt}`)
+        if (lastprompt) prevHref = resolve(`/requests/${appRequestForExport.id}/apply/${lastprompt}`)
       }
-      lastprompt = prompt.key
+      lastprompt = prompt.id
       navItems.push({
         id: `prompt${prompt.id}`,
         label: prompt.navTitle,
-        href: resolve(`/requests/${appRequestForNavigation.id}/apply/${prompt.key}`),
-        type: $page.params.promptKey === prompt.key
+        href: resolve(`/requests/${appRequestForExport.id}/apply/${prompt.id}`),
+        type: $page.params.promptId === prompt.id
           ? 'current'
           : prompt.answered ? 'complete' : 'available',
         substeps: []
       })
     }
-    if (prequalPrompts.every(p => p.answered)) {
-      if (foundCurrent) nextHref = resolve(`/requests/${appRequestForNavigation.id}/apply/programs`)
+    if (prequalPrompts.some(p => !p.answered)) {
+      nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${prequalPrompts.find(p => !p.answered)!.id}`)
+    } else {
+      if (foundCurrent) nextHref = resolve(`/requests/${appRequestForExport.id}/apply/programs`)
       foundCurrent = false
       if ($page.route.id === '/requests/[id]/apply/programs') {
-        foundCurrent = true
+        const qualFinished = appRequestForExport.applications.every(app => app.status !== enumApplicationStatus.PENDING || app.requirements.every(req => req.status !== enumRequirementStatus.PENDING))
+        const postFinished = postqualPrompts.every(p => p.answered)
+        if (qualFinished && postFinished) {
+          nextHref = resolve(`/requests/${appRequestForExport.id}/apply/review`)
+        } else if (!qualFinished) {
+          const app = appRequestForExport.applications.find(app => app.status === enumApplicationStatus.PENDING)!
+          nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${app.requirements[0].prompts[0].id}`)
+        } else if (!postFinished) {
+          nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${postqualPrompts[0].id}`)
+        } else {
+          nextHref = resolve(`/requests/${appRequestForExport.id}/apply/review`)
+        }
         if (lastprompt) {
-          prevHref = resolve(`/requests/${appRequestForNavigation.id}/apply/${lastprompt}`)
+          prevHref = resolve(`/requests/${appRequestForExport.id}/apply/${lastprompt}`)
         }
       }
       const programReview: RootStepItem = {
         id: 'programs',
         label: 'Program Review',
-        href: resolve(`/requests/${appRequestForNavigation.id}/apply/programs`),
+        href: resolve(`/requests/${appRequestForExport.id}/apply/programs`),
         type: $page.route.id === '/requests/[id]/apply/programs' ? 'current' : 'available',
         substeps: []
       }
       navItems.push(programReview)
       let pastProgramReview = false
-      for (const application of appRequestForNavigation.applications) {
+      for (const application of appRequestForExport.applications) {
         const substeps: StepItem[] = []
         lastprompt = undefined
         for (const requirement of application.requirements) {
           for (const prompt of requirement.prompts) {
             if (foundCurrent) {
-              nextHref = resolve(`/requests/${appRequestForNavigation.id}/apply/${prompt.key}`)
+              nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${prompt.id}`)
               foundCurrent = false
             }
-            if ($page.params.promptKey === prompt.key) {
+            if ($page.params.promptId === prompt.id) {
               pastProgramReview = true
               foundCurrent = true
-              if (lastprompt) prevHref = resolve(`/requests/${appRequestForNavigation.id}/apply/${lastprompt}`)
-              else prevHref = resolve(`/requests/${appRequestForNavigation.id}/apply/programs`)
+              if (lastprompt) prevHref = resolve(`/requests/${appRequestForExport.id}/apply/${lastprompt}`)
+              else prevHref = resolve(`/requests/${appRequestForExport.id}/apply/programs`)
             }
-            lastprompt = prompt.key
+            lastprompt = prompt.id
             substeps.push({
               id: `prompt${prompt.id}`,
               label: prompt.navTitle,
-              href: resolve(`/requests/${appRequestForNavigation.id}/apply/${prompt.key}`),
-              type: $page.params.promptKey === prompt.key
+              href: resolve(`/requests/${appRequestForExport.id}/apply/${prompt.id}`),
+              type: $page.params.promptId === prompt.id
                 ? 'current'
                 : prompt.answered ? 'complete' : 'available'
             })
           }
         }
+        if (foundCurrent) nextHref = resolve(`/requests/${appRequestForExport.id}/apply/programs`)
         if (substeps.length > 0) {
           navItems.push({
             id: `application${application.id}`,
@@ -93,20 +109,20 @@
       }
       for (const prompt of postqualPrompts) {
         if (foundCurrent) {
-          nextHref = resolve(`/requests/${appRequestForNavigation.id}/apply/${prompt.key}`)
+          nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${prompt.id}`)
           foundCurrent = false
         }
-        if ($page.params.promptKey === prompt.key) {
+        if ($page.params.promptId === prompt.id) {
           pastProgramReview = true
           foundCurrent = true
-          if (lastprompt) prevHref = resolve(`/requests/${appRequestForNavigation.id}/apply/${lastprompt}`)
-          else prevHref = resolve(`/requests/${appRequestForNavigation.id}/apply/programs`)
+          if (lastprompt) prevHref = resolve(`/requests/${appRequestForExport.id}/apply/${lastprompt}`)
+          else prevHref = resolve(`/requests/${appRequestForExport.id}/apply/programs`)
         }
         navItems.push({
           id: `prompt${prompt.id}`,
           label: prompt.navTitle,
-          href: resolve(`/requests/${appRequestForNavigation.id}/apply/${prompt.key}`),
-          type: $page.params.promptKey === prompt.key
+          href: resolve(`/requests/${appRequestForExport.id}/apply/${prompt.id}`),
+          type: $page.params.promptId === prompt.id
             ? 'current'
             : prompt.answered ? 'complete' : 'available',
           substeps: []
@@ -116,18 +132,20 @@
       navItems.push({
         id: 'review',
         label: 'Review Submission',
-        href: resolve(`/requests/${appRequestForNavigation.id}/apply/review`),
+        href: resolve(`/requests/${appRequestForExport.id}/apply/review`),
         type: $page.route.id === '/requests/[id]/apply/review' ? 'current' : 'available',
         substeps: []
       })
       if (pastProgramReview) programReview.type = 'complete'
     }
-    nextHref ??= resolve(`/requests/${appRequestForNavigation.id}/apply/review`)
+    nextHref ??= resolve(`/requests/${appRequestForExport.id}/apply/review`)
     return { navItems, nextHref, prevHref }
   }
-  $: ({ navItems, nextHref, prevHref } = getNavItems(appRequestForNavigation, prequalPrompts, $page))
+  $: ({ navItems, nextHref, prevHref } = getNavItems(appRequestForExport, prequalPrompts, $page))
   $: notInNavigation = !navItems.some(item => item.type === 'current' || item.substeps.some(s => s.type === 'current'))
-  setContext('nextHref', () => ({ nextHref, prevHref }))
+  const nextHrefStore = writable({ nextHref, prevHref })
+  $: nextHrefStore.set({ nextHref, prevHref })
+  setContext('nextHref', nextHrefStore)
 </script>
 
 <ProgressNav steps={navItems}>

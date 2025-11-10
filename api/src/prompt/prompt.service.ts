@@ -158,6 +158,10 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     return this.hasControl('PromptAnswer', 'view', { ...prompt.authorizationKeys, ...prompt.appRequestTags })
   }
 
+  mayViewForApplicant (prompt: RequirementPrompt) {
+    return promptRegistry.isUserPrompt(prompt.key) || (prompt.definition.exposeToApplicant != null && prompt.appRequestDbPhase !== AppRequestPhase.SUBMITTED)
+  }
+
   mayUpdate (prompt: RequirementPrompt): boolean {
     if (prompt.appRequestDbStatus !== AppRequestStatusDB.OPEN) return false
     const reqDef = requirementRegistry.get(prompt.requirementKey)
