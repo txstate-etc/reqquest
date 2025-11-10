@@ -2,6 +2,7 @@ import { type PromptDefinition } from '@reqquest/api'
 import { InvalidatedResponse } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
 import { PreviousDogOwnerPromptSchema, CurrentDogOwnerPromptSchema, OwnerDogAllergyPromptSchema, DogExercisePromptSchema, ReviewApplicantDogInfoPromptSchema } from '../models/index.js'
+import { dog_exercise_qual_req } from '../requirements/dog.owner.requirements.js'
 
 
 export const previous_dogowner_prompt: PromptDefinition = {
@@ -67,6 +68,9 @@ export const dog_min_exercise_prompt: PromptDefinition = {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
     }  
     return messages
+  },
+  gatherConfig: (allPeriodConfig) => {
+    return {'dog_exercise_qual_req': {'minExerciseHoursWeekly': allPeriodConfig.dog_exercise_qual_req.minExerciseHoursWeekly}}
   },
   invalidUponChange: [{promptKey: 'review_applicant_dog_info_prompt'}]
 }
