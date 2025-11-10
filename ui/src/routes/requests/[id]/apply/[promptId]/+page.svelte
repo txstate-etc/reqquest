@@ -74,10 +74,11 @@
 </script>
 
 {#if !hideForm}
-<div class="prompt-intro flow max-w-screen-md mx-auto pt-10 px-6">
-    <h2 id="prompt-title" class="font-medium text-xl text-center">{prompt.title}</h2>
+  <div class="prompt-intro flow max-w-screen-md mx-auto pt-10 px-6">
+    <!-- svelte-ignore a11y_autofocus -->
+    <h2 id="prompt-title" tabindex="-1" autofocus class="font-medium text-xl text-center">{prompt.title}</h2>
     <p class="text-center"> {prompt.description}</p>
-</div>
+  </div>
   <Form bind:store submitText="Save & Continue" submit={onSubmit} validate={onValidate} preload={appRequestData[prompt.key]} on:saved={onSaved} let:data>
     <svelte:component this={def!.formComponent} {data} appRequestId={appRequestForExport.id} {appRequestData} fetched={prompt.fetchedData} configData={prompt.relatedConfigData[prompt.key]} relatedConfigData={prompt.relatedConfigData} />
     <svelte:fragment slot="submit" let:submitting>
