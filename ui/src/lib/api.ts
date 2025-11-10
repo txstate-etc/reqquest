@@ -259,11 +259,11 @@ class API extends APIBase {
     for (const application of appRequest.applications) {
       for (const requirement of application.requirements.filter(r => r.type === enumRequirementType.PREQUAL || r.type === enumRequirementType.QUALIFICATION || r.type === enumRequirementType.POSTQUAL)) {
         for (const prompt of requirement.prompts) {
-          if (prompt.id === promptId) return { appRequestData: appRequest.data, prompt }
+          if (prompt.id === promptId) return { prompt }
         }
       }
     }
-    return { appRequestData: appRequest.data, dataVersion: appRequest.dataVersion }
+    return {}
   }
 
   async updatePrompt (promptId: string, data: any, validateOnly: boolean, dataVersion?: number) {
@@ -328,6 +328,7 @@ class API extends APIBase {
         id: true,
         status: true,
         data: true,
+        dataVersion: true,
         period: {
           name: true
         },
@@ -370,7 +371,7 @@ class API extends APIBase {
     const prequalPrompts: ResponsePrompt[] = []
     const postqualPrompts: ResponsePrompt[] = []
     const applications: (ResponseApplication & { requirements: (ResponseRequirement & { prompts: ResponsePrompt[] })[] })[] = []
-    const visibilitiesToShow = new Set<PromptVisibility>([enumPromptVisibility.AVAILABLE])
+    const visibilitiesToShow = new Set<PromptVisibility>([enumPromptVisibility.AVAILABLE, enumPromptVisibility.REQUEST_DUPE])
     for (const application of appRequest.applications) {
       const applicantRequirements: (ResponseRequirement & { prompts: ResponsePrompt[] })[] = []
       for (const requirement of application.requirements) {

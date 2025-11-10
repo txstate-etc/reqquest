@@ -21,9 +21,9 @@
           : 'revisit'
         : 'complete'
   }), {})
-  $: programFirstPromptKey = appRequest.applications.reduce((acc, curr) => ({
+  $: programFirstPromptId = appRequest.applications.reduce((acc, curr) => ({
     ...acc,
-    [curr.id]: curr.requirements.flatMap(r => r.prompts).find(p => p.visibility === enumPromptVisibility.AVAILABLE || p.visibility === enumPromptVisibility.REQUEST_DUPE)?.key
+    [curr.id]: curr.requirements.flatMap(r => r.prompts).find(p => p.visibility === enumPromptVisibility.AVAILABLE || p.visibility === enumPromptVisibility.REQUEST_DUPE)?.id
   }), {})
 </script>
 
@@ -34,7 +34,7 @@
   </header>
   {#each appRequest.applications as application (application.id)}
     {@const programStatus = programButtonStatus[application.id]}
-    {@const programFirstPrompt = programFirstPromptKey[application.id]}
+    {@const programFirstPrompt = programFirstPromptId[application.id]}
     <div class="program column">{application.title}</div>
     <div class="status column" class:no-tooltip={!application.statusReason?.length}>
       {#if !viewMode}

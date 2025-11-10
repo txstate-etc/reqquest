@@ -18,7 +18,7 @@
   import type { PageData } from './$types.js'
 
   export let data: PageData
-  $: ({ prompt, appRequestData, dataVersion, appRequestForExport } = data)
+  $: ({ prompt, appRequestForExport } = data)
   $: def = uiRegistry.getPrompt(prompt.key)
   const nextHref = getContext<Writable<{ nextHref: ResolvedPathname, prevHref: ResolvedPathname | undefined }>>('nextHref')
 
@@ -39,7 +39,7 @@
   }
 
   async function onSubmit (data: any) {
-    const { success, messages } = await api.updatePrompt(prompt.id, data, false, dataVersion)
+    const { success, messages } = await api.updatePrompt(prompt.id, data, false, appRequestForExport.dataVersion)
     return {
       success: !messages.some(m => m.type === 'error' || m.type === 'system'),
       messages,
@@ -57,7 +57,7 @@
     if (continueAfterSave && prompt.answered) {
       // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved
       await goto($nextHref.nextHref)
-    } else await store?.setData(appRequestData[prompt.key] as object)
+    } else await store?.setData(appRequestForExport.data[prompt.key] as object)
   }
 
   // Remove the form from the DOM when navigating between prompts
@@ -79,8 +79,8 @@
     <h2 id="prompt-title" tabindex="-1" autofocus class="font-medium text-xl text-center">{prompt.title}</h2>
     <p class="text-center"> {prompt.description}</p>
   </div>
-  <Form bind:store submitText="Save & Continue" submit={onSubmit} validate={onValidate} preload={appRequestData[prompt.key]} on:saved={onSaved} let:data>
-    <svelte:component this={def!.formComponent} {data} appRequestId={appRequestForExport.id} {appRequestData} fetched={prompt.fetchedData} configData={prompt.relatedConfigData[prompt.key]} relatedConfigData={prompt.relatedConfigData} />
+  <Form bind:store submitText="Save & Continue" submit={onSubmit} validate={onValidate} preload={appRequestForExport.data[prompt.key]} on:saved={onSaved} let:data>
+    <svelte:component this={def!.formComponent} {data} appRequestId={appRequestForExport.id} appRequestData={appRequestForExport.data} fetched={prompt.fetchedData} configData={prompt.relatedConfigData[prompt.key]} relatedConfigData={prompt.relatedConfigData} />
     <svelte:fragment slot="submit" let:submitting>
       <div class='form-submit flex gap-12 justify-center mt-16'>
         {#if hasPreviousPrompt}
