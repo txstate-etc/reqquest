@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { PetOwnerOwnerRequirementConfigData, PetOwnerPromptData } from '../models/index.js'
+import { ChildrenPromptData, PetOwnerOwnerRequirementConfigData, PetOwnerPromptData, ReviewApplicantFosterAPetPromptData } from '../models/index.js'
 
 export const petowner_prequal_req: RequirementDefinition<PetOwnerOwnerRequirementConfigData> = {
   type: RequirementType.PREQUAL,
@@ -27,4 +27,22 @@ export const petowner_prequal_req: RequirementDefinition<PetOwnerOwnerRequiremen
     },
     default: { maxCount: 5 }
   }  
+}
+
+export const review_applicant_foster_a_pet_info_app_req: RequirementDefinition = {
+  type: RequirementType.APPROVAL,
+  key: 'review_applicant_foster_a_pet_info_app_req',
+  title: 'Review applicant foster info',
+  navTitle: 'Review applicant foster info',
+  description: 'A Reviewer will evaluate applicant foster info for discrepancies.',
+  promptKeys: ['review_applicant_foster_a_pet_info_prompt'],
+  promptKeysNoDisplay: ['children_prompt'],
+  resolve: (data, config) => {
+    const childData = data.children_prompt as ChildrenPromptData
+    const revFosterInfoData = data.review_applicant_foster_a_pet_info_prompt as ReviewApplicantFosterAPetPromptData
+    if (revFosterInfoData == null) return { status: RequirementStatus.PENDING }  
+    const underAgeKidCount = (childData.count) ? childData.count : 0   
+    if (underAgeKidCount > 0 && revFosterInfoData.underAgeChildrenAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
+    return { status: RequirementStatus.MET }  
+  }
 }

@@ -18,5 +18,6 @@ export const children_prompt: PromptDefinition = {
   },
   gatherConfig: (allPeriodConfig => {
     return {'children_qual_req': {'minAge': allPeriodConfig.children_qual_req.minAge}}
-  })
+  }),
+  invalidUponChange: [{promptKey: 'review_applicant_foster_a_pet_info_prompt'}]
 }

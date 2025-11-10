@@ -1,6 +1,6 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { PetOwnerPromptSchema } from '../models/index.js'
+import { ChildrenPromptData, PetOwnerPromptSchema, ReviewApplicantFosterAPetPromptSchema } from '../models/index.js'
 
 
 export const petowner_prompt: PromptDefinition = {
@@ -22,4 +22,30 @@ export const petowner_prompt: PromptDefinition = {
     return messages
   }
 }
+
+export const review_applicant_foster_a_pet_info_prompt: PromptDefinition = {
+  key: 'review_applicant_foster_a_pet_info_prompt',
+  title: 'Review applicant foster info',
+  description: 'Reviewer will evaluate applicant foster info for discrepancies.',
+  schema: ReviewApplicantFosterAPetPromptSchema,
+  validate: (data, config, appRequestData) => {
+    const messages: MutationMessage[] = [] 
+    console.log(`Data is ${JSON.stringify(data)}`)
+    console.log(`Config is ${JSON.stringify(config)}`)
+    console.log(`AppRequestData is ${JSON.stringify(appRequestData)}`)  
+    if (!data) {
+      messages.push({ type: MutationMessageType.error, message: 'Review applicant foster info required' })
+    } else {      
+      const childData = appRequestData.children_prompt as ChildrenPromptData // children_qual_req
+      if (childData) {
+        if (childData.underMinAge && data.underAgeChildrenAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'underAgeChildrenAcceptable' })
+      } else {
+        if (data.underAgeChildrenAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'underAgeChildrenAcceptable' })
+      }
+    }      
+    return messages
+  }
+}
+
+const isEmpty = (obj: {}) => !Object.keys(obj).length;
 

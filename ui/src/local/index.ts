@@ -69,6 +69,8 @@ import ComplexReviewApplicantCatInfoPrompt from './complex/catOwner/ReviewApplic
 import ComplexReviewApplicantCatInfoPromptDisplay from './complex/catOwner/ReviewApplicantCatInfoPromptDisplay.svelte'
 import ComplexReviewApplicantDogInfoPrompt from './complex/dogOwner/ReviewApplicantDogInfoPrompt.svelte'
 import ComplexReviewApplicantDogInfoPromptDisplay from './complex/dogOwner/ReviewApplicantDogInfoPromptDisplay.svelte'
+import ComplexReviewApplicantFosterAPetPrompt from './complex/petOwner/ReviewApplicantFosterAPetPrompt.svelte'
+import ComplexReviewApplicantFosterAPetPromptDisplay from './complex/petOwner/ReviewApplicantFosterAPetPromptDisplay.svelte'
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts } = configureDemoInstanceParams()
 
@@ -190,9 +192,7 @@ function configureDemoInstanceParams () {
       applicantDashboardRecentDays: 30,
       programs: [{ key: 'adopt_a_dog_program', icon: DogWalker },
         { key: 'adopt_a_cat_program', icon: PedestrianFamily },
-        /** TOOD: Blocked pending a fix to UI to support shared qual type req per program
-         { key: 'foster_a_pet_program', icon: Gamification }
-        */
+        { key: 'foster_a_pet_program', icon: Gamification }        
       ],
       requirements: [
         { key: 'state_residence_prequal_req', configureComponent: ComplexResidenceConfig },
@@ -210,6 +210,7 @@ function configureDemoInstanceParams () {
         { key: 'children_qual_req', configureComponent: ComplexChildrenConfig },
         { key: 'review_applicant_cat_info_app_req' },
         { key: 'review_applicant_dog_info_app_req' },
+        { key: 'review_application_foster_a_pet_app_req' }
       ],
       prompts: [
         { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
@@ -226,7 +227,8 @@ function configureDemoInstanceParams () {
         { key: 'owner_cat_microchip_service_prompt', formComponent: ComplexOwnerCatMicrochipServicePrompt, displayComponent: ComplexOwnerCatMicrochipServiceDisplayPrompt },
         { key: 'children_prompt', formComponent: ComplexChildrenPrompt, displayComponent: ComplexChildrenDisplayPrompt },
         { key: 'review_applicant_cat_info_prompt', formComponent: ComplexReviewApplicantCatInfoPrompt, displayComponent: ComplexReviewApplicantCatInfoPromptDisplay},
-        { key: 'review_applicant_dog_info_prompt', formComponent: ComplexReviewApplicantDogInfoPrompt, displayComponent: ComplexReviewApplicantDogInfoPromptDisplay}
+        { key: 'review_applicant_dog_info_prompt', formComponent: ComplexReviewApplicantDogInfoPrompt, displayComponent: ComplexReviewApplicantDogInfoPromptDisplay},
+        { key: 'review_applicant_foster_a_pet_info_prompt', formComponent: ComplexReviewApplicantFosterAPetPrompt, displayComponent: ComplexReviewApplicantFosterAPetPromptDisplay}
       ]
     }
   }

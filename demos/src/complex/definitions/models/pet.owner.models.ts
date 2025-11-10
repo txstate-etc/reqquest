@@ -22,3 +22,12 @@ export const PetOwnerOwnerRequirementConfigSchema = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type PetOwnerOwnerRequirementConfigData = FromSchema<typeof PetOwnerOwnerRequirementConfigSchema>
+
+export const ReviewApplicantFosterAPetPromptSchema = {
+  type: 'object',
+  properties: { 
+    underAgeChildrenAcceptable: { type: 'boolean' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type ReviewApplicantFosterAPetPromptData = FromSchema<typeof ReviewApplicantFosterAPetPromptSchema>
