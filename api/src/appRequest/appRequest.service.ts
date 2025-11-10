@@ -277,7 +277,7 @@ export class AppRequestService extends AuthService<AppRequest> {
         if (appRequest.dbStatus === AppRequestStatusDB.WITHDRAWN && this.hasControl('AppRequestOwnReview', 'unwithdraw', appRequest.tags)) return true
         if (!this.hasControl('AppRequest', 'review_own')) return false
       }
-      if (appRequest.dbStatus === AppRequestStatusDB.CLOSED && this.hasControl('AppRequest', 'reopen', appRequest.tags)) return true
+      if (this.hasControl('AppRequest', 'reopen', appRequest.tags)) return true
     }
     return this.hasControl('AppRequest', 'reopen_any', appRequest.tags)
   }
