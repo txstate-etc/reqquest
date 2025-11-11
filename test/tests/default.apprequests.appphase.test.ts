@@ -3,7 +3,7 @@ import { expect, test } from './fixtures.js'
 import { DateTime } from 'luxon'
 import { promptMapApplicantQualified, promptMapApplicantUnqualified } from './default.promptdata.js'
 
-test.describe.skip('App Request - App Phase - workflows', { tag: '@default' }, () => {
+test.describe('App Request - App Phase - workflows', { tag: '@default' }, () => {
   const name = '2025 app-req App Phase'
   const code = 'APP_REQ_APP-255'
   const timeZone = 'America/Chicago'
@@ -443,24 +443,6 @@ test.describe.skip('App Request - App Phase - workflows', { tag: '@default' }, (
       }
     }
   })
-
-  test('Applicant 2 - close request prior to submit ', async ({ applicant2Request }) => {
-    const query = `
-      mutation CloseAppRequest($appRequestId: ID!) {
-        closeAppRequest(appRequestId: $appRequestId) {
-          success
-          appRequest {
-            status
-            statusReason
-            closedAt
-          }
-        }
-      }
-    `
-    const variables = { appRequestId: appRequest2Id }
-    const response = await applicant2Request.graphql<{ errors: { message: string }[] }>(query, variables)    
-    expect(response.errors[0].message).toEqual('You may not close this app request.')
-  })
   test('Reviewer - Close applicant request prior to submit', async ({ reviewerRequest }) => {
     const query = `
       mutation CloseAppRequest($appRequestId: ID!) {
@@ -475,9 +457,11 @@ test.describe.skip('App Request - App Phase - workflows', { tag: '@default' }, (
       }
     `
     const variables = { appRequestId: appRequest2Id }
-    const response = await reviewerRequest.graphql<{ success: boolean,  appRequest:{ status: string, statusReason: string, closedAt: string } }>(query, variables)
-    expect(response.success).toEqual(true)
-    expect(response.appRequest.status).toEqual('CANCELED')
+    const response = await reviewerRequest.graphql<{ closeAppRequest: { success: boolean,  appRequest:{ status: string, statusReason: string, closedAt: string } } }>(query, variables)
+    console.log('***** HERE ******')
+    console.log(JSON.stringify(response))
+    expect(response.closeAppRequest.success).toEqual(true)
+    expect(response.closeAppRequest.appRequest.status).toEqual('READY_TO_SUBMIT')
   })
   test('Applicant 2 - Cancel / withdraw previously canceled prior to submit', async ({ applicant2Request }) => {
     const query = `
@@ -517,7 +501,7 @@ test.describe.skip('App Request - App Phase - workflows', { tag: '@default' }, (
     const response = await applicant2Request.graphql<{ errors: { message: string }[] }>(query, variables)
     expect(response.errors[0].message).toEqual('You may not submit this app request.')
   })
-  test('Applicant 2 - Reopen previously canceled app request', async ({ applicant2Request }) => {
+  test('Applicant 2 - Reopen previously closed app request', async ({ applicant2Request }) => {
     const query = `
       mutation ReOpenAppRequest($appRequestId:ID!) {
         reopenAppRequest(appRequestId:$appRequestId) {

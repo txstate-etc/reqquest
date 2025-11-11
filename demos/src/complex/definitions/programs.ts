@@ -27,7 +27,7 @@ export const adopt_a_cat_program: ProgramDefinition = {
     'living_space_qual_req',
     'owner_cat_allergy_qual_req',
     'owner_cat_microchip_service_qual_req',
-     'terms_and_conditions_post_qual_req',
+    'terms_and_conditions_post_qual_req',
     'review_applicant_cat_info_app_req'
   ]
 }
@@ -42,12 +42,12 @@ export const foster_a_pet_program: ProgramDefinition = {
     'previous_catowner_qual_req',
     'yard_qual_req',
     'living_space_qual_req',
-    'children_qual_req',
-    'terms_and_conditions_post_qual_req',
+    'children_qual_req',    
     'owner_cat_allergy_qual_req',
     'owner_cat_microchip_service_qual_req',
     'owner_dog_allergy_qual_req',
     'dog_exercise_qual_req',
+    'terms_and_conditions_post_qual_req',
     'review_applicant_dog_info_app_req',
     'review_applicant_cat_info_app_req',
     'review_applicant_foster_a_pet_info_app_req'

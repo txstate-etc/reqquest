@@ -1,6 +1,6 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { TermsAndConditionsPromptSchema } from '../models/index.js'
+import { TermsAndConditionsConfigPromptSchema, TermsAndConditionsPromptSchema } from '../models/index.js'
 
 export const terms_and_conditions_prompt: PromptDefinition = {
   key: 'terms_and_conditions_prompt',
@@ -16,6 +16,7 @@ export const terms_and_conditions_prompt: PromptDefinition = {
     return messages
   },
   configuration: {
+    schema: TermsAndConditionsConfigPromptSchema,
     validate: config => {
       const messages: MutationMessage[] = []
       if (config.text == null) {
