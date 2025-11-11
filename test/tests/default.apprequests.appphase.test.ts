@@ -458,8 +458,6 @@ test.describe('App Request - App Phase - workflows', { tag: '@default' }, () => 
     `
     const variables = { appRequestId: appRequest2Id }
     const response = await reviewerRequest.graphql<{ closeAppRequest: { success: boolean,  appRequest:{ status: string, statusReason: string, closedAt: string } } }>(query, variables)
-    console.log('***** HERE ******')
-    console.log(JSON.stringify(response))
     expect(response.closeAppRequest.success).toEqual(true)
     expect(response.closeAppRequest.appRequest.status).toEqual('READY_TO_SUBMIT')
   })
