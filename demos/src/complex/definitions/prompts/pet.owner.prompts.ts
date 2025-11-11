@@ -30,9 +30,6 @@ export const review_applicant_foster_a_pet_info_prompt: PromptDefinition = {
   schema: ReviewApplicantFosterAPetPromptSchema,
   validate: (data, config, appRequestData) => {
     const messages: MutationMessage[] = [] 
-    console.log(`Data is ${JSON.stringify(data)}`)
-    console.log(`Config is ${JSON.stringify(config)}`)
-    console.log(`AppRequestData is ${JSON.stringify(appRequestData)}`)  
     if (!data) {
       messages.push({ type: MutationMessageType.error, message: 'Review applicant foster info required' })
     } else {      
@@ -46,6 +43,3 @@ export const review_applicant_foster_a_pet_info_prompt: PromptDefinition = {
     return messages
   }
 }
-
-const isEmpty = (obj: {}) => !Object.keys(obj).length;
-

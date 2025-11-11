@@ -71,6 +71,9 @@ import ComplexReviewApplicantDogInfoPrompt from './complex/dogOwner/ReviewApplic
 import ComplexReviewApplicantDogInfoPromptDisplay from './complex/dogOwner/ReviewApplicantDogInfoPromptDisplay.svelte'
 import ComplexReviewApplicantFosterAPetPrompt from './complex/petOwner/ReviewApplicantFosterAPetPrompt.svelte'
 import ComplexReviewApplicantFosterAPetPromptDisplay from './complex/petOwner/ReviewApplicantFosterAPetPromptDisplay.svelte'
+import ComplexTermsAndConditionsConfig from './complex/termsAndConditions/TermsAndConditionsConfig.svelte'
+import ComplexTermsAndConditionsPrompt from './complex/termsAndConditions/TermsAndConditionsPrompt.svelte'
+import ComplexTermsAndConditionsPromptDisplay from './complex/termsAndConditions/TermsAndConditionsPromptDisplay.svelte'
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts } = configureDemoInstanceParams()
 
@@ -208,6 +211,7 @@ function configureDemoInstanceParams () {
         { key: 'owner_cat_allergy_qual_req' },
         { key: 'owner_cat_microchip_servive_qual_req' },
         { key: 'children_qual_req', configureComponent: ComplexChildrenConfig },
+        { key: 'terms_and_conditions_post_qual_req'},
         { key: 'review_applicant_cat_info_app_req' },
         { key: 'review_applicant_dog_info_app_req' },
         { key: 'review_application_foster_a_pet_app_req' }
@@ -226,10 +230,11 @@ function configureDemoInstanceParams () {
         { key: 'owner_cat_allergy_prompt', formComponent: ComplexOwnerCatAllergyPrompt, displayComponent: ComplexOwnerCatAllergyDisplayPrompt },
         { key: 'owner_cat_microchip_service_prompt', formComponent: ComplexOwnerCatMicrochipServicePrompt, displayComponent: ComplexOwnerCatMicrochipServiceDisplayPrompt },
         { key: 'children_prompt', formComponent: ComplexChildrenPrompt, displayComponent: ComplexChildrenDisplayPrompt },
-        { key: 'review_applicant_cat_info_prompt', formComponent: ComplexReviewApplicantCatInfoPrompt, displayComponent: ComplexReviewApplicantCatInfoPromptDisplay},
-        { key: 'review_applicant_dog_info_prompt', formComponent: ComplexReviewApplicantDogInfoPrompt, displayComponent: ComplexReviewApplicantDogInfoPromptDisplay},
-        { key: 'review_applicant_foster_a_pet_info_prompt', formComponent: ComplexReviewApplicantFosterAPetPrompt, displayComponent: ComplexReviewApplicantFosterAPetPromptDisplay}
-      ]
+        { key: 'review_applicant_cat_info_prompt', formComponent: ComplexReviewApplicantCatInfoPrompt, displayComponent: ComplexReviewApplicantCatInfoPromptDisplay },
+        { key: 'review_applicant_dog_info_prompt', formComponent: ComplexReviewApplicantDogInfoPrompt, displayComponent: ComplexReviewApplicantDogInfoPromptDisplay },
+        { key: 'review_applicant_foster_a_pet_info_prompt', formComponent: ComplexReviewApplicantFosterAPetPrompt, displayComponent: ComplexReviewApplicantFosterAPetPromptDisplay },
+        { key: 'terms_and_conditions_prompt', configureComponent: ComplexTermsAndConditionsConfig, formComponent: ComplexTermsAndConditionsPrompt, displayComponent: ComplexTermsAndConditionsPromptDisplay }
+      ]      
     }
   }
   return {
