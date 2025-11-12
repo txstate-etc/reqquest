@@ -11,7 +11,7 @@ export const children_prompt: PromptDefinition = {
     const messages: MutationMessage[] = [] 
     if (!data || data.underMinAge == null) messages.push({ type: MutationMessageType.error, message: 'Children information required', arg: 'underMinAge' })
     if (data.underMinAge) {
-      if (data.count == null) messages.push({ type: MutationMessageType.error, message: 'Number of young children is required', arg: 'count' })
+      if (data.count == null || data.count < 1) messages.push({ type: MutationMessageType.error, message: 'Number of young children is required', arg: 'count' })
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide details such as ages, comfort with animals', arg: 'details' })
     } 
     return messages
