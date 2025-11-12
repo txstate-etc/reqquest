@@ -4,7 +4,7 @@
   import { writable } from 'svelte/store'
   import { resolve } from '$app/paths'
   import { page } from '$app/stores'
-  import { enumApplicationStatus, enumRequirementStatus, applicantRequirementTypes } from '$lib'
+  import { applicantRequirementTypes, enumRequirementType } from '$lib'
   import type { LayoutData } from './$types'
 
   export let data: LayoutData
@@ -41,15 +41,17 @@
       if (foundCurrent) nextHref = resolve(`/requests/${appRequestForExport.id}/apply/programs`)
       foundCurrent = false
       if ($page.route.id === '/requests/[id]/apply/programs') {
-        const qualFinished = appRequestForExport.applications.every(app => app.status !== enumApplicationStatus.PENDING || app.requirements.filter(r => applicantRequirementTypes.has(r.type)).every(req => req.status !== enumRequirementStatus.PENDING))
+        const promptsUnderPrograms = appRequestForExport.applications
+          .flatMap(app => app.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION))
+          .flatMap(r => r.prompts)
+        const qualFinished = promptsUnderPrograms.every(p => p.answered)
         const postFinished = postqualPrompts.every(p => p.answered)
-        if (qualFinished && postFinished) {
-          nextHref = resolve(`/requests/${appRequestForExport.id}/apply/review`)
-        } else if (!qualFinished) {
-          const app = appRequestForExport.applications.find(app => app.status === enumApplicationStatus.PENDING)!
-          nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${app.requirements[0].prompts[0].id}`)
+        if (!qualFinished) {
+          const prompt = promptsUnderPrograms.find(p => !p.answered)
+          nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${prompt!.id}`)
         } else if (!postFinished) {
-          nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${postqualPrompts[0].id}`)
+          const prompt = postqualPrompts.find(p => !p.answered)
+          nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${prompt!.id}`)
         } else {
           nextHref = resolve(`/requests/${appRequestForExport.id}/apply/review`)
         }

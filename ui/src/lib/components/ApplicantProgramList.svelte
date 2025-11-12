@@ -4,10 +4,17 @@
   import { Close, InProgress, CheckmarkFilled } from 'carbon-icons-svelte'
   import { ucfirst } from 'txstate-utils'
   import type { AppRequestForDetails } from './types'
-  import { enumApplicationStatus, enumIneligiblePhases, enumPromptVisibility, enumRequirementType, getApplicationStatusInfo } from '$lib'
+  import { enumApplicationStatus, enumIneligiblePhases, enumRequirementType, getApplicationStatusInfo } from '$lib'
 
   export let appRequest: AppRequestForDetails
   export let viewMode = false
+
+  $: promptsByApplicationId = appRequest.applications.reduce((acc, curr) => ({
+    ...acc,
+    [curr.id]: curr.requirements
+      .filter(r => r.type === enumRequirementType.QUALIFICATION)
+      .flatMap(r => r.prompts)
+  }), {})
 
   $: programButtonStatus = appRequest.applications.reduce((acc, curr) => ({
     ...acc,
@@ -25,7 +32,7 @@
   }), {})
   $: programFirstPromptId = appRequest.applications.reduce((acc, curr) => ({
     ...acc,
-    [curr.id]: curr.requirements.flatMap(r => r.prompts).find(p => p.visibility === enumPromptVisibility.AVAILABLE || p.visibility === enumPromptVisibility.REQUEST_DUPE)?.id
+    [curr.id]: (promptsByApplicationId[curr.id].find(p => !p.answered) ?? promptsByApplicationId[curr.id][0])?.id
   }), {})
 </script>
 
