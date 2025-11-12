@@ -48,7 +48,7 @@
   }
 
   async function onValidate (data: any) {
-    const { messages } = await api.updatePrompt(prompt.id, data, true)
+    const { messages } = await api.updatePrompt(prompt.id, data, true, appRequestForExport.dataVersion)
     return messages
   }
 
