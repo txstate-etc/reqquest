@@ -24,7 +24,7 @@
 {#if externalLinks.length > 0}
     <div class="prompt-intro-links flow max-w-screen-md mx-auto px-6">
         <ul class="flex gap-4 flex-wrap mb-4 justify-center">
-        {#each externalLinks.slice(0, 3) as link}
+        {#each externalLinks.slice(0, 3) as link (link.url)}
             <li><Button kind="ghost" icon={Launch} href={link.url}>{link.label}</Button></li>
         {/each}
         </ul>

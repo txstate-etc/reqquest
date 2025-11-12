@@ -4,7 +4,7 @@
   import { Close, InProgress, CheckmarkFilled } from 'carbon-icons-svelte'
   import { ucfirst } from 'txstate-utils'
   import type { AppRequestForDetails } from './types'
-  import { enumApplicationStatus, enumIneligiblePhases, enumPromptVisibility, getApplicationStatusInfo } from '$lib'
+  import { enumApplicationStatus, enumIneligiblePhases, enumPromptVisibility, enumRequirementType, getApplicationStatusInfo } from '$lib'
 
   export let appRequest: AppRequestForDetails
   export let viewMode = false
@@ -13,7 +13,9 @@
     ...acc,
     [curr.id]: curr.status === enumApplicationStatus.PENDING
       ? curr.requirements.some(r => r.prompts.some(p => p.answered))
-        ? 'continue'
+        ? curr.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION).every(r => r.prompts.every(p => p.answered))
+          ? 'complete'
+          : 'continue'
         : 'start'
       : curr.status === enumApplicationStatus.INELIGIBLE
         ? curr.ineligiblePhase === enumIneligiblePhases.PREQUAL
@@ -41,7 +43,7 @@
         <div class="icon-and-tooltip" class:wide-icon={application.status === enumApplicationStatus.INELIGIBLE}>
           {#if application.status === enumApplicationStatus.INELIGIBLE}
             <Close size={32} class="status-icon-ineligible" />
-          {:else if application.status === enumApplicationStatus.PENDING}
+          {:else if ['start', 'continue'].includes(programStatus)}
             <InProgress size={24} class="status-icon-pending" />
           {:else}
             <CheckmarkFilled size={24} class="status-icon-complete" />

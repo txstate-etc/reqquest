@@ -4,7 +4,7 @@
   import { writable } from 'svelte/store'
   import { resolve } from '$app/paths'
   import { page } from '$app/stores'
-  import { enumApplicationStatus, enumRequirementStatus } from '$lib'
+  import { enumApplicationStatus, enumRequirementStatus, applicantRequirementTypes } from '$lib'
   import type { LayoutData } from './$types'
 
   export let data: LayoutData
@@ -41,7 +41,7 @@
       if (foundCurrent) nextHref = resolve(`/requests/${appRequestForExport.id}/apply/programs`)
       foundCurrent = false
       if ($page.route.id === '/requests/[id]/apply/programs') {
-        const qualFinished = appRequestForExport.applications.every(app => app.status !== enumApplicationStatus.PENDING || app.requirements.every(req => req.status !== enumRequirementStatus.PENDING))
+        const qualFinished = appRequestForExport.applications.every(app => app.status !== enumApplicationStatus.PENDING || app.requirements.filter(r => applicantRequirementTypes.has(r.type)).every(req => req.status !== enumRequirementStatus.PENDING))
         const postFinished = postqualPrompts.every(p => p.answered)
         if (qualFinished && postFinished) {
           nextHref = resolve(`/requests/${appRequestForExport.id}/apply/review`)
@@ -70,6 +70,7 @@
         const substeps: StepItem[] = []
         lastprompt = undefined
         for (const requirement of application.requirements) {
+          if (!applicantRequirementTypes.has(requirement.type)) continue
           for (const prompt of requirement.prompts) {
             if (foundCurrent) {
               nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${prompt.id}`)
@@ -92,6 +93,7 @@
             })
           }
         }
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- it can definitely be both true and false, typescript is doing something crazy
         if (foundCurrent) {
           nextHref = resolve(`/requests/${appRequestForExport.id}/apply/programs`)
           foundCurrent = false
@@ -110,6 +112,7 @@
           })
         }
       }
+      lastprompt = undefined
       for (const prompt of postqualPrompts) {
         if (foundCurrent) {
           nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${prompt.id}`)
@@ -121,6 +124,7 @@
           if (lastprompt) prevHref = resolve(`/requests/${appRequestForExport.id}/apply/${lastprompt}`)
           else prevHref = resolve(`/requests/${appRequestForExport.id}/apply/programs`)
         }
+        lastprompt = prompt.id
         navItems.push({
           id: `prompt${prompt.id}`,
           label: prompt.navTitle,

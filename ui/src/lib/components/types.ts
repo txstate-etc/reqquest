@@ -1,4 +1,4 @@
-import type { api, ApplicationStatus, AppRequestStatus, IneligiblePhases } from '$lib'
+import type { api, ApplicationStatus, AppRequestStatus, IneligiblePhases, RequirementType } from '$lib'
 
 export type DashboardAppRequest = Awaited<ReturnType<typeof api.getApplicantRequests>>[number]
 
@@ -41,7 +41,7 @@ export interface AppRequestForDetails {
     statusReason?: string | null
     requirements: {
       id: string
-      type: string
+      type: RequirementType
       status: string
       statusReason: string | null
       prompts: AnsweredPrompt[]

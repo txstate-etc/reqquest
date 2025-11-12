@@ -5,7 +5,6 @@
   import { Panel, TagSet } from '@txstate-mws/carbon-svelte'
   import { Tooltip } from 'carbon-components-svelte'
   import WarningAltFilled from 'carbon-icons-svelte/lib/WarningAltFilled.svelte'
-  import { isEmpty } from 'txstate-utils'
   import type { AnsweredPrompt, PromptSection, AppRequestForDetails } from './types'
   import RenderDisplayComponent from './RenderDisplayComponent.svelte'
   import ApplicantProgramList from './ApplicantProgramList.svelte'
@@ -23,16 +22,12 @@
   export let showWarningsInline = false
   export let showAppRequestStatus = true
   export let statusDisplay: 'tags' | 'icons' = 'tags'
-  export let relatedConfigDataLookup: Record<string, any> | undefined = undefined
 
   /* Normalize a prompt by ensuring it has relatedConfigData. */
   function normalizePrompt (prompt: AnsweredPrompt): AnsweredPrompt {
-    if (!isEmpty(prompt.relatedConfigData)) {
-      return prompt
-    }
     return {
       ...prompt,
-      relatedConfigData: relatedConfigDataLookup?.[prompt.key] ?? {}
+      relatedConfigData: prompt.relatedConfigData ?? {}
     }
   }
 

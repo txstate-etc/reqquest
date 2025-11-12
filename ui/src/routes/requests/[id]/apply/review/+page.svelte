@@ -17,7 +17,7 @@
    * allows them to submit the app request.
    */
   export let data: PageData
-  $: ({ appRequestForExport, prequalPrompts } = data)
+  $: ({ appRequestForExport, prequalPrompts, postqualPrompts } = data)
 
   const nextHref = getContext<Writable<{ nextHref?: ResolvedPathname, prevHref?: ResolvedPathname }>>('nextHref')
   $: hasPreviousPrompt = !!$nextHref.prevHref
@@ -28,14 +28,6 @@
       await goto($nextHref.prevHref)
     }
   }
-
-  // Build lookup of relatedConfigData by prompt key for component to use
-  $: relatedConfigDataLookup = appRequestForExport.applications
-    .flatMap(a => a.requirements.flatMap(r => r.prompts))
-    .reduce((acc, curr) => ({
-      ...acc,
-      [curr.key]: curr.relatedConfigData
-    }), {})
 
   async function onSubmit () {
     const resp = await api.submitAppRequest(appRequestForExport.id)
@@ -48,8 +40,7 @@
   appRequest={appRequestForExport}
   appData={appRequestForExport.data}
   {prequalPrompts}
-  postqualPrompts={undefined}
-  {relatedConfigDataLookup}
+  {postqualPrompts}
   {uiRegistry}
   title="Review Your Submission"
   subtitle="Please review all information before submitting."

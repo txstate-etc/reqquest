@@ -1,25 +1,25 @@
 <script lang="ts">
   import { ActionSet, Panel, TagSet } from '@txstate-mws/carbon-svelte'
   import { Tab, TabContent, Tabs, Tag } from 'carbon-components-svelte'
-  import { uiRegistry } from '../../local'
+  import { SettingsEdit, View } from 'carbon-icons-svelte'
   import { invalidate } from '$app/navigation'
   import { api } from '$lib/api'
   import { page } from '$app/stores'
-  import SettingsEdit from 'carbon-icons-svelte/lib/SettingsEdit.svelte'
-  import View from 'carbon-icons-svelte/lib/View.svelte'
+  import type { UIRegistry } from '$lib/registry'
 
   export let program: any
   export let sharedProgramRequirements: any
   export let openModal: any
   export let onClick: any
+  export let uiRegistry: UIRegistry
 
   const disablePeriodProgram = (requirementKey: string) => async () => {
-    const res = await api.disablePeriodProgramRequirements($page.params.id, requirementKey, true)
+    const res = await api.disablePeriodProgramRequirements($page.params.id!, requirementKey, true)
     await invalidate('api:getPeriodConfigurations')
   }
 
   const enablePeriodProgram = (requirementKey: string) => async () => {
-    const res = await api.disablePeriodProgramRequirements($page.params.id, requirementKey, false)
+    const res = await api.disablePeriodProgramRequirements($page.params.id!, requirementKey, false)
     await invalidate('api:getPeriodConfigurations')
   }
 

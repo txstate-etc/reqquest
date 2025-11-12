@@ -100,12 +100,12 @@
   <svelte:fragment slot='content'>
     <TabContent>
       {#each enabledPrograms as program (program.key)}
-        <PeriodPanel {program} {sharedProgramRequirements} {openModal} {onClick} />
+        <PeriodPanel {program} {sharedProgramRequirements} {openModal} {onClick} {uiRegistry} />
       {/each}
     </TabContent>
     <TabContent>
       {#each disabledPrograms as program (program.key)}
-        <PeriodPanel {program} {sharedProgramRequirements} {openModal} {onClick} />
+        <PeriodPanel {program} {sharedProgramRequirements} {openModal} {onClick} {uiRegistry} />
       {/each}
     </TabContent>
   </svelte:fragment>

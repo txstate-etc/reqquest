@@ -1,5 +1,5 @@
 import type { TagItem } from '@txstate-mws/carbon-svelte'
-import { enumAppRequestStatus, type AppRequestStatus } from './typed-client/schema.js'
+import { enumAppRequestStatus, enumRequirementType, type AppRequestStatus, type RequirementType } from './typed-client/schema.js'
 import { longNumericTime } from './util.js'
 
 interface AppStatusConfig {
@@ -254,6 +254,12 @@ export function getApplicationStatusInfo (status: string): ApplicationStatusTagI
 export const applicantStatuses = new Set<AppRequestStatus>([
   enumAppRequestStatus.STARTED,
   enumAppRequestStatus.READY_TO_SUBMIT
+])
+
+export const applicantRequirementTypes = new Set<RequirementType>([
+  enumRequirementType.PREQUAL,
+  enumRequirementType.POSTQUAL,
+  enumRequirementType.QUALIFICATION
 ])
 
 // ========================================

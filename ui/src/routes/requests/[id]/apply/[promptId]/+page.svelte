@@ -41,7 +41,7 @@
   async function onSubmit (data: any) {
     const { success, messages } = await api.updatePrompt(prompt.id, data, false, appRequestForExport.dataVersion)
     return {
-      success: !messages.some(m => m.type === 'error' || m.type === 'system'),
+      success,
       messages,
       data
     }
