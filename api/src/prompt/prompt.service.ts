@@ -197,6 +197,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
   }
 
   async update (prompt: RequirementPrompt, data: any, validateOnly = false, dataVersion?: number) {
+    data ??= {}
     if (!this.mayUpdate(prompt)) throw new Error('You are not allowed to update this prompt.')
     if (!promptRegistry.validate(prompt.key, data)) throw new Error('Invalid prompt data.')
     const response = new ValidatedAppRequestResponse({ success: true })

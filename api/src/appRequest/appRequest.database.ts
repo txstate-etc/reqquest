@@ -4,7 +4,7 @@ import type { GraphQLError } from 'graphql'
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
 import { clone, groupby, isNotBlank, keyby, omit, stringify } from 'txstate-utils'
-import { ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter, AppRequestStatus, getPeriodWorkflowStages, IneligiblePhases, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, RequirementStatus, RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
+import { ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter, AppRequestStatus, getPeriodWorkflowStages, IneligiblePhases, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, requirementRegistry, RequirementStatus, RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
 
 /**
  * This is the status of the whole appRequest as stored in the database. Each application
@@ -425,8 +425,32 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
     const configLookup: Record<string, any> = configurations.map(c => ({ ...c, data: JSON.parse(c.data ?? '{}') })).reduce((acc, c) => ({ ...acc, [c.definitionKey]: c.data }), {})
 
     for (const prompt of prompts) {
-      const validationMessages = prompt.definition.validate?.(data[prompt.key] ?? {}, configLookup[prompt.key] ?? {}, data, configLookup, db) ?? []
-      prompt.answered = !validationMessages.some(m => m.type === 'error') && !prompt.invalidated
+      if (
+        /**
+         * Some applicant prompts may be optional - as in there are no required fields in them.
+         *
+         * In this case, they will be undefined upon request creation and {} after being viewed and saved
+         * without filling in any fields.
+         *
+         * We want to consider these prompts unanswered until the applicant has at least seen the screen
+         * and hit save. Otherwise the UI may skip over the prompt entirely and the user will never have
+         * a chance to fill it in.
+         *
+         * Reviewers are allowed to leave prompts blank without interacting because their interface is
+         * always an overview of all the prompts in an application, so there is no risk of skipping over one.
+         *
+         * I'm intentionally avoiding using promptRegistry.isUserPrompt() here because in the rare case a
+         * prompt is shared between an applicant requirement and a reviewer requirement, we only want the
+         * applicant version of the prompt to be answered=false.
+         */
+        (data[prompt.key] == null && applicantRequirementTypes.has(requirementRegistry.get(prompt.requirementKey).type))
+        || prompt.invalidated
+      ) {
+        prompt.answered = false
+      } else {
+        const validationMessages = prompt.definition.validate?.(data[prompt.key] ?? {}, configLookup[prompt.key] ?? {}, data, configLookup, db) ?? []
+        prompt.answered = !validationMessages.some(m => m.type === 'error')
+      }
     }
 
     const promptsSeenInRequest = new Set<string>()
