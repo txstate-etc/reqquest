@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { PreviousDogOwnerPromptData, CurrentDogOwnerPromptData, OwnerDogAllergyPromptData, DogExercisePromptData, CurrentDogOwnerRequirementConfigSchema, DogMinExerciseRequirementConfigSchema, ReviewApplicantDogInfoPromptData } from '../models/index.js'
+import { PreviousDogOwnerPromptData, CurrentDogOwnerPromptData, OwnerDogAllergyPromptData, DogExercisePromptData, CurrentDogOwnerRequirementConfigSchema, DogMinExerciseRequirementConfigSchema, ReviewApplicantDogInfoPromptData, ApproveReviewerExerciseExemptionPromptData } from '../models/index.js'
 
 export const previous_dogowner_qual_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
@@ -115,6 +115,25 @@ export const review_applicant_dog_info_app_req: RequirementDefinition = {
     if (revDogInfoData.yardAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revDogInfoData.allergyAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revDogInfoData.exerciseMinMet === false && revDogInfoData.exerciseException === false) return { status: RequirementStatus.DISQUALIFYING }
+    return { status: RequirementStatus.MET }  
+  }
+}
+
+export const approve_reviewer_exercise_exemption_workflow_req: RequirementDefinition = {
+  type: RequirementType.WORKFLOW,
+  key: 'approve_reviewer_exercise_exemption_workflow_req',
+  title: 'Approve exercise exemption',
+  navTitle: 'Approve exercise exemption',
+  description: '2nd level approver confirms exercise exemption allowance',
+  promptKeys: ['approve_reviewer_exercise_exemption_prompt'],
+  promptKeysNoDisplay: ['review_applicant_dog_info_prompt'],
+  resolve: (data, config) => {
+    const appExerciseExemptionData = data.approve_reviewer_exercise_exemption_prompt as ApproveReviewerExerciseExemptionPromptData
+    const revDogInfoData = data.review_applicant_dog_info_prompt as ReviewApplicantDogInfoPromptData
+    if (revDogInfoData.exerciseException === true) {
+      if (appExerciseExemptionData == null) return { status: RequirementStatus.PENDING } 
+      if (appExerciseExemptionData.approve === false) return { status: RequirementStatus.DISQUALIFYING } 
+    }
     return { status: RequirementStatus.MET }  
   }
 }

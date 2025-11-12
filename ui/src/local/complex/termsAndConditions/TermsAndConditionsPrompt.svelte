@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FieldRadio, FieldTextInput, FieldNumber } from '@txstate-mws/carbon-svelte'
+  import { FieldRadio } from '@txstate-mws/carbon-svelte'
   export let configData
   $: tAndCText = configData.text
   

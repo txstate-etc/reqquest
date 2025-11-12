@@ -13,6 +13,13 @@ export const adopt_a_dog_program: ProgramDefinition = {
     'dog_exercise_qual_req',
     'terms_and_conditions_post_qual_req',
     'review_applicant_dog_info_app_req'
+  ],  
+  workflowStages: [{ 
+      key: 'approve_reviewer_exercise_exemption_workflow',
+      nonBlocking: false,
+      title: 'Approve reviewer exercise exemption',
+      requirementKeys: ['approve_reviewer_exercise_exemption_workflow_req']
+    }
   ]
 }
 

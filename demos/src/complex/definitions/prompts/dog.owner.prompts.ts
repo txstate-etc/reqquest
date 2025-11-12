@@ -1,7 +1,7 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { InvalidatedResponse } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { PreviousDogOwnerPromptSchema, CurrentDogOwnerPromptSchema, OwnerDogAllergyPromptSchema, DogExercisePromptSchema, ReviewApplicantDogInfoPromptSchema } from '../models/index.js'
+import { PreviousDogOwnerPromptSchema, CurrentDogOwnerPromptSchema, OwnerDogAllergyPromptSchema, DogExercisePromptSchema, ReviewApplicantDogInfoPromptSchema, ApproveReviewerExerciseExemptionPromptSchema, ApproveReviewerExerciseExemptionConfigSchema } from '../models/index.js'
 import { dog_exercise_qual_req } from '../requirements/dog.owner.requirements.js'
 
 
@@ -97,5 +97,36 @@ export const review_applicant_dog_info_prompt: PromptDefinition = {
     }
     return messages
   }
+}
+
+export const approve_reviewer_exercise_exemption_prompt: PromptDefinition = {
+  key: 'approve_reviewer_exercise_exemption_prompt',
+  title: 'Approve exercise exemption',
+  description: '2nd level approver confirms exercise exemption allowance',
+  schema: ApproveReviewerExerciseExemptionPromptSchema,
+  validate: (data, config, allConfig) => {
+    const messages: MutationMessage[] = [] 
+    if (!data) {
+      messages.push({ type: MutationMessageType.error, message: 'Approve exercise exemption' })
+    } else {
+      if (data.approve == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'previousDogAcceptable' })
+    }
+    return messages
+  },
+  
+  configuration: {
+    schema: ApproveReviewerExerciseExemptionConfigSchema,
+    validate: (config: { text: null }) => {
+      const messages: MutationMessage[] = []
+      if (config.text == null) {
+        messages.push({ type: MutationMessageType.error, message: 'Please specify the exemption approval text', arg: 'text' })
+      }
+      return messages
+    },
+    default: { text: 'Approve exercise exemption as requested by reviewer?' }
+  }, // TODO: Remove this bug workaround once bug #179 is resolved
+  gatherConfig: (allPeriodConfig) => {
+    return {'approve_reviewer_exercise_exemption_prompt': {'text': allPeriodConfig.approve_reviewer_exercise_exemption_prompt.text}}
+  } 
 }
 

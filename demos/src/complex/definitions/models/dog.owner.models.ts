@@ -73,3 +73,21 @@ export const ReviewApplicantDogInfoPromptSchema = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type ReviewApplicantDogInfoPromptData = FromSchema<typeof ReviewApplicantDogInfoPromptSchema>
+
+export const ApproveReviewerExerciseExemptionConfigSchema = {
+  type: 'object',
+  properties: { 
+    text: { type: 'string' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type ApproveReviewerExerciseExemptionConfigData = FromSchema<typeof ApproveReviewerExerciseExemptionConfigSchema>
+
+export const ApproveReviewerExerciseExemptionPromptSchema = {
+  type: 'object',
+  properties: { 
+    approve: { type: 'boolean' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type ApproveReviewerExerciseExemptionPromptData = FromSchema<typeof ApproveReviewerExerciseExemptionPromptSchema>
