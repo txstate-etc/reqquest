@@ -214,10 +214,10 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
       ])
       appRequestData = appRequestDataPair?.data ?? {}
       if (!appRequest) throw new Error('AppRequest not found')
-      for (const message of prompt.definition.preValidate?.(data, allConfigData[prompt.key] ?? {}, data, allConfigData, db) ?? []) response.addMessage(message.message, message.arg, message.type)
+      for (const message of prompt.definition.preValidate?.(data, allConfigData[prompt.key] ?? {}, appRequestData, allConfigData, db) ?? []) response.addMessage(message.message, message.arg, message.type)
       if (response.hasErrors()) return
-      const processedData = prompt.definition.preProcessData ? await prompt.definition.preProcessData(data, this.ctx, appRequest, data, allConfigData, db) : data
-      for (const message of prompt.definition.validate?.(processedData, allConfigData[prompt.key] ?? {}, data, allConfigData, db) ?? []) response.addMessage(message.message, message.arg, message.type)
+      const processedData = prompt.definition.preProcessData ? await prompt.definition.preProcessData(data, this.ctx, appRequest, appRequestData, allConfigData, db) : data
+      for (const message of prompt.definition.validate?.(processedData, allConfigData[prompt.key] ?? {}, appRequestData, allConfigData, db) ?? []) response.addMessage(message.message, message.arg, message.type)
       if (dataVersion != null && appRequest.dataVersion !== dataVersion) {
         throw new Error('Someone else is working on the same request and made changes since you loaded. Copy any unsaved work into another document and reload the page to see what has changed.')
       }
