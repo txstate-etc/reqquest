@@ -65,7 +65,7 @@ export async function getRequirementPrompts (filter: RequirementPromptFilter, td
 }
 
 export async function setRequirementPromptValid (prompt: RequirementPrompt, tdb: Queryable = db) {
-  await tdb.update('UPDATE requirement_prompts SET invalidated = 0, invalidatedReason = NULL WHERE id = ?', [prompt.internalId])
+  await tdb.update('UPDATE requirement_prompts SET invalidated = 0, invalidatedReason = NULL WHERE promptKey = ?', [prompt.key])
 }
 
 export async function setRequirementPromptsInvalid (invalidateResponses: InvalidatedResponse[], tdb: Queryable = db) {
