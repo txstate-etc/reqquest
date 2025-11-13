@@ -24,11 +24,7 @@
 
   let store: FormStore | undefined
   let continueAfterSave = false
-  let hasPreviousPrompt = false
-
-  function checkPreviousPrompt () {
-    hasPreviousPrompt = $nextHref.prevHref != null
-  }
+  $: hasPreviousPrompt = $nextHref.prevHref != null
 
   async function handleBack () {
     const previousHref = $nextHref.prevHref
@@ -65,11 +61,9 @@
   let hideForm = false
   beforeNavigate(() => {
     hideForm = true
-    store?.reset()
   })
   afterNavigate(() => {
     hideForm = false
-    checkPreviousPrompt()
   })
 </script>
 
@@ -79,7 +73,7 @@
     <h2 id="prompt-title" tabindex="-1" autofocus class="font-medium text-xl text-center">{prompt.title}</h2>
     <p class="text-center"> {prompt.description}</p>
   </div>
-  <Form bind:store submitText="Save & Continue" submit={onSubmit} validate={onValidate} preload={appRequestForExport.data[prompt.key]} on:saved={onSaved} let:data>
+  <Form bind:store hideFallbackMessage submit={onSubmit} validate={onValidate} preload={appRequestForExport.data[prompt.key]} on:saved={onSaved} let:data>
     <svelte:component this={def!.formComponent} {data} appRequestId={appRequestForExport.id} appRequestData={appRequestForExport.data} fetched={prompt.fetchedData} configData={prompt.configurationData} relatedConfigData={prompt.relatedConfigData} />
     <svelte:fragment slot="submit" let:submitting>
       <div class='form-submit flex gap-12 justify-center mt-16'>

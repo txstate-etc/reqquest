@@ -266,7 +266,6 @@
   }
 
   async function onSaved () {
-    toasts.add('Application created successfully', 'success', 5000)
     await goto(resolve(`/requests/${lastInsertedId}/apply`))
   }
 
