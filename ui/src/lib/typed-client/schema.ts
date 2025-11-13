@@ -630,7 +630,7 @@ export interface RequirementPrompt {
     /** Whether the prompt has been answered on this request. */
     answered: Scalars['Boolean']
     /** The configuration data for this prompt in the app request's period. */
-    configurationData: (Scalars['JsonData'] | null)
+    configurationData: Scalars['JsonData']
     /** The data that has been gathered from the user in response to this prompt. The schema is controlled by the question's implementation. */
     data: (Scalars['JsonData'] | null)
     /** A brief description of the prompt. This should be shown to administrators to help explain the full meaning of the prompt while assigning permissions or editing its configuration. */

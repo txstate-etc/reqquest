@@ -15,7 +15,8 @@ export interface AnsweredPrompt {
   invalidatedReason: string | null
   moot: boolean | null
   visibility: string
-  relatedConfigData?: Record<string, any>
+  configurationData: Record<string, any>
+  relatedConfigData: Record<string, any>
   requirements: {
     status: string
     statusReason: string | null

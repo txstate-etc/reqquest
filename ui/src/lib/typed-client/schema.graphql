@@ -1392,7 +1392,7 @@ type RequirementPrompt {
   answered: Boolean!
 
   """The configuration data for this prompt in the app request's period."""
-  configurationData: JsonData
+  configurationData: JsonData!
 
   """
   The data that has been gathered from the user in response to this prompt. The schema is controlled by the question's implementation.

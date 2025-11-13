@@ -248,6 +248,7 @@ class API extends APIBase {
               answered: true,
               visibility: true,
               fetchedData: true,
+              configurationData: true,
               relatedConfigData: true
             }
           }
@@ -354,6 +355,7 @@ class API extends APIBase {
               moot: true,
               invalidated: true,
               invalidatedReason: true,
+              configurationData: true,
               relatedConfigData: true
             }
           }
@@ -721,6 +723,7 @@ class API extends APIBase {
               navTitle: true,
               answered: true,
               visibility: true,
+              configurationData: true,
               relatedConfigData: true,
               moot: true,
               invalidated: true,
@@ -790,6 +793,7 @@ class API extends APIBase {
           __args: { promptId },
           data: true,
           preloadData: true,
+          configurationData: true,
           relatedConfigData: true,
           fetchedData: true
         }

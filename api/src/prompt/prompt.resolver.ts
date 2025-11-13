@@ -38,9 +38,9 @@ export class RequirementPromptResolver {
     return await ctx.svc(RequirementPromptService).getPreloadData(requirementPrompt)
   }
 
-  @FieldResolver(type => JsonData, { nullable: true, description: 'The configuration data for this prompt in the app request\'s period.' })
+  @FieldResolver(type => JsonData, { description: 'The configuration data for this prompt in the app request\'s period.' })
   async configurationData (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt) {
-    await ctx.svc(RequirementPromptService).getConfigData(requirementPrompt)
+    return await ctx.svc(RequirementPromptService).getConfigData(requirementPrompt) ?? {}
   }
 
   @FieldResolver(type => JsonData, { description: 'All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it.' })

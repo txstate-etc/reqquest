@@ -23,14 +23,6 @@
   export let showAppRequestStatus = true
   export let statusDisplay: 'tags' | 'icons' = 'tags'
 
-  /* Normalize a prompt by ensuring it has relatedConfigData. */
-  function normalizePrompt (prompt: AnsweredPrompt): AnsweredPrompt {
-    return {
-      ...prompt,
-      relatedConfigData: prompt.relatedConfigData ?? {}
-    }
-  }
-
   // Group prompts by sections
   $: sections = (() => {
     if (!appRequest) return []
@@ -41,15 +33,13 @@
     if (prequalPrompts?.length) {
       sections.push({
         title: 'General Questions',
-        prompts: prequalPrompts.map(normalizePrompt)
+        prompts: prequalPrompts
       })
     }
 
     // Application-Specific Questions
     for (const application of appRequest.applications) {
-      const prompts = application.requirements.flatMap(r =>
-        r.prompts.map(normalizePrompt)
-      )
+      const prompts = application.requirements.flatMap(r => r.prompts)
       if (prompts.length) {
         sections.push({
           title: application.title,
@@ -62,7 +52,7 @@
     if (postqualPrompts?.length) {
       sections.push({
         title: 'Additional Questions',
-        prompts: postqualPrompts.map(normalizePrompt)
+        prompts: postqualPrompts
       })
     }
 
@@ -122,7 +112,7 @@
                   {prompt.title}
                 </dt>
                 <dd class="prompt-answer" class:large={def?.displayMode === 'large'}>
-                  <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appData} prompt={prompt} relatedConfigData={prompt.relatedConfigData ?? {}} />
+                  <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appData} prompt={prompt} configData={prompt.configurationData} relatedConfigData={prompt.relatedConfigData} />
                 </dd>
               </dl>
             {/each}
