@@ -72,7 +72,8 @@ export default [
     languageOptions: {
       ...love.languageOptions,
       parserOptions: {
-        ...love.languageOptions.parserOptions
+        ...love.languageOptions.parserOptions,
+        projectService: true
       }
     },
     ...customConfig
