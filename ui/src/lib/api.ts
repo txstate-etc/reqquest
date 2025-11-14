@@ -78,16 +78,23 @@ class API extends APIBase {
     return { users: response.accessUsers, pageInfo: response.pageInfo.accessUsers }
   }
 
-  async getApplicantRequests (additionalFilters = {}) {
+  async getApplicantRequests (additionalFilters = {}, paged: Pagination) {
     const filter = { own: true, ...additionalFilters }
     const response = await this.client.query({
       __name: 'GetApplicantRequests',
       appRequests: {
-        __args: { filter },
+        __args: { filter, paged },
         id: true,
         status: true,
         createdAt: true,
         updatedAt: true,
+        complete: true,
+        applicant: {
+          fullname: true,
+          otherIdentifiers: {
+            id: true
+          }
+        },
         period: {
           name: true,
           openDate: true,
