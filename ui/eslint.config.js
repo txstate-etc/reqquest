@@ -59,7 +59,6 @@ export default [
     languageOptions: {
       parser: svelteParser,
       parserOptions: {
-        project: './api/tsconfig.json',
         projectService: true,
         extraFileExtensions: ['.svelte'],
         parser: love.languageOptions.parser,
@@ -73,8 +72,7 @@ export default [
     languageOptions: {
       ...love.languageOptions,
       parserOptions: {
-        ...love.languageOptions.parserOptions,
-        project: './api/tsconfig.json',
+        ...love.languageOptions.parserOptions
       }
     },
     ...customConfig
