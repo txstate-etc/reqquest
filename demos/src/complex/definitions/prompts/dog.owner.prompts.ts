@@ -112,8 +112,7 @@ export const approve_reviewer_exercise_exemption_prompt: PromptDefinition = {
       if (data.approve == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'previousDogAcceptable' })
     }
     return messages
-  },
-  
+  },  
   configuration: {
     schema: ApproveReviewerExerciseExemptionConfigSchema,
     validate: (config: { text: null }) => {
