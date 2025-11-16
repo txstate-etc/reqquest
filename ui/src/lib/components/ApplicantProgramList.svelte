@@ -1,36 +1,38 @@
 <script lang="ts">
   import { TagSet } from '@txstate-mws/carbon-svelte'
-  import { Button, Tooltip } from 'carbon-components-svelte'
+  import { Button } from 'carbon-components-svelte'
   import { Close, InProgress, CheckmarkFilled } from 'carbon-icons-svelte'
   import { ucfirst } from 'txstate-utils'
-  import type { AppRequestForDetails } from './types'
+  import type { ApplicationForDetails } from './types'
   import { enumApplicationStatus, enumIneligiblePhases, enumRequirementType, getApplicationStatusInfo } from '$lib'
+  import ApplicantProgramListTooltip from './ApplicantProgramListTooltip.svelte'
+  import WarningIconYellow from './WarningIconYellow.svelte'
 
-  export let appRequest: AppRequestForDetails
+  export let applications: ApplicationForDetails[]
   export let viewMode = false
 
-  $: promptsByApplicationId = appRequest.applications.reduce((acc, curr) => ({
+  $: promptsByApplicationId = applications.reduce((acc, curr) => ({
     ...acc,
     [curr.id]: curr.requirements
       .filter(r => r.type === enumRequirementType.QUALIFICATION)
       .flatMap(r => r.prompts)
   }), {})
 
-  $: programButtonStatus = appRequest.applications.reduce((acc, curr) => ({
+  $: programButtonStatus = applications.reduce((acc, curr) => ({
     ...acc,
-    [curr.id]: curr.status === enumApplicationStatus.PENDING
+    [curr.id]: curr.completionStatus === enumApplicationStatus.PENDING
       ? curr.requirements.some(r => r.prompts.some(p => p.answered))
         ? curr.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION).every(r => r.prompts.every(p => p.answered))
           ? 'complete'
           : 'continue'
         : 'start'
-      : curr.status === enumApplicationStatus.INELIGIBLE
+      : curr.completionStatus === enumApplicationStatus.INELIGIBLE
         ? curr.ineligiblePhase === enumIneligiblePhases.PREQUAL
           ? 'ineligible'
           : 'revisit'
         : 'complete'
   }), {})
-  $: programFirstPromptId = appRequest.applications.reduce((acc, curr) => ({
+  $: programFirstPromptId = applications.reduce((acc, curr) => ({
     ...acc,
     [curr.id]: (promptsByApplicationId[curr.id].find(p => !p.answered) ?? promptsByApplicationId[curr.id][0])?.id
   }), {})
@@ -41,25 +43,23 @@
     <div class="program column">Program</div>
     <div class="status column">Eligibility</div>
   </header>
-  {#each appRequest.applications as application (application.id)}
+  {#each applications as application (application.id)}
     {@const programStatus = programButtonStatus[application.id]}
     {@const programFirstPrompt = programFirstPromptId[application.id]}
     <div class="program column">{application.title}</div>
     <div class="status column" class:no-tooltip={!application.statusReason?.length}>
       {#if !viewMode}
-        <div class="icon-and-tooltip" class:wide-icon={application.status === enumApplicationStatus.INELIGIBLE}>
-          {#if application.status === enumApplicationStatus.INELIGIBLE}
+        <div class="icon-and-tooltip" class:wide-icon={application.completionStatus === enumApplicationStatus.INELIGIBLE}>
+          {#if application.completionStatus === enumApplicationStatus.INELIGIBLE}
             <Close size={32} class="status-icon-ineligible" />
           {:else if ['start', 'continue'].includes(programStatus)}
             <InProgress size={24} class="status-icon-pending" />
+          {:else if application.hasWarning}
+            <WarningIconYellow size={24} class="status-icon-warning" />
           {:else}
             <CheckmarkFilled size={24} class="status-icon-complete" />
           {/if}
-          {#if application.statusReason?.length}
-            <Tooltip align="end" direction="bottom" triggerText="" class="reason-tooltip">
-              {application.statusReason}
-            </Tooltip>
-          {/if}
+          <ApplicantProgramListTooltip {application} />
         </div>
         {#if programFirstPrompt && programStatus !== 'ineligible'}
           <Button size="small" kind={programStatus === 'complete' ? 'ghost' : programStatus === 'revisit' ? 'secondary' : 'primary'} href={programFirstPrompt}>{ucfirst(programStatus)}</Button>
@@ -67,6 +67,7 @@
       {:else}
         {@const statusInfo = getApplicationStatusInfo(application.status)}
         <TagSet tags={[{ type: statusInfo.color, label: statusInfo.label }]} />
+        <ApplicantProgramListTooltip {application} />
       {/if}
     </div>
   {/each}

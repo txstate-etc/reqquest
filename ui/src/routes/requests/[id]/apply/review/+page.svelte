@@ -17,7 +17,7 @@
    * allows them to submit the app request.
    */
   export let data: PageData
-  $: ({ appRequestForExport, prequalPrompts, postqualPrompts } = data)
+  $: ({ appRequestForExport, prequalPrompts, postqualPrompts, applicationsForNavNoDupes } = data)
 
   const nextHref = getContext<Writable<{ nextHref?: ResolvedPathname, prevHref?: ResolvedPathname }>>('nextHref')
   $: hasPreviousPrompt = !!$nextHref.prevHref
@@ -38,6 +38,7 @@
 
 <ApplicationDetailsView
   appRequest={appRequestForExport}
+  applications={applicationsForNavNoDupes}
   appData={appRequestForExport.data}
   {prequalPrompts}
   {postqualPrompts}

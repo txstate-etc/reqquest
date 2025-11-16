@@ -2,7 +2,7 @@
   import { goto, invalidate } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { api, ApplicationDetailsView, AppRequestCard, IntroPanel } from '$lib'
-  import type { AppRequestForDetails, AppRequestForExportResponse, DashboardAppRequest } from '$lib/components/types'
+  import type { ApplicationForDetails, AppRequestForDetails, AppRequestForExportResponse, DashboardAppRequest } from '$lib/components/types'
   import { getPeriodDisplayInfo, getPeriodStatus, getStatusActionType, getSubmitButtonText } from '$lib/status-utils.js'
   import type { Scalars } from '$lib/typed-client/schema'
   import { CardGrid, FieldMultiselect, FilterUI, Panel, PanelDialog, Toasts } from '@txstate-mws/carbon-svelte'
@@ -37,6 +37,7 @@
   let appData: Scalars['JsonData'] = {}
   let prequalPrompts: AppRequestForExportResponse['prequalPrompts'] | undefined = undefined
   let postqualPrompts: AppRequestForExportResponse['postqualPrompts'] | undefined = undefined
+  let applications: ApplicationForDetails[] = []
   let filterDataSearch: FilterState | undefined
 
   // Modal State
@@ -197,11 +198,10 @@
 
       selectedAppRequest = details.appRequest as AppRequestForDetails | undefined
 
-      if (details.appRequest) {
-        appData = details.appRequest.data
-        prequalPrompts = details.prequalPrompts
-        postqualPrompts = details.postqualPrompts
-      }
+      appData = details.appRequest.data
+      applications = details.applicationsReviewNoDupes
+      prequalPrompts = details.prequalPrompts
+      postqualPrompts = details.postqualPrompts
     } catch (error) {
       showError('Failed to load application details')
       console.error('Error loading application details:', error)
@@ -349,7 +349,8 @@
                   <div class="min-w-[250px] intro-dropdown-wrapper">
                     <Dropdown
                       size="lg"
-                      titleText="Select a {uiRegistry.getWord('period').toLowerCase()}"
+                      labelText="Select a {uiRegistry.getWord('period').toLowerCase()}"
+                      hideLabel
                       placeholder="Choose a {uiRegistry.getWord('period').toLowerCase()}"
                       bind:selectedId={selectedPeriodId}
                       items={displayablePeriods.map(p => ({
@@ -424,15 +425,18 @@
     submitText={selectedAppRequest?.status ? getSubmitButtonText(selectedAppRequest.status) : ''}
     on:cancel={closeSidePanel}
     on:submit={handleSubmitAction}>
-    <ApplicationDetailsView
-      appRequest={selectedAppRequest ?? undefined}
-      {appData}
-      {prequalPrompts}
-      {postqualPrompts}
-      {loading}
-      {uiRegistry}
-      title={selectedAppRequest?.period?.name ? `View your ${selectedAppRequest.period.name} application` : 'View your application'}
-    />
+    {#if selectedAppRequest}
+      <ApplicationDetailsView
+        appRequest={selectedAppRequest}
+        {applications}
+        {appData}
+        {prequalPrompts}
+        {postqualPrompts}
+        {loading}
+        {uiRegistry}
+        title={selectedAppRequest.period?.name ? `View your ${selectedAppRequest.period.name} application` : 'View your application'}
+      />
+    {/if}
   </PanelDialog>
 
   <Modal

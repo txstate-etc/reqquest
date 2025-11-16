@@ -4,11 +4,11 @@
   import { writable } from 'svelte/store'
   import { resolve } from '$app/paths'
   import { page } from '$app/stores'
-  import { applicantRequirementTypes, enumRequirementType } from '$lib'
+  import { applicantRequirementTypes, enumPromptVisibility, enumRequirementType } from '$lib'
   import type { LayoutData } from './$types'
 
   export let data: LayoutData
-  $: ({ appRequestForExport, prequalPrompts, postqualPrompts } = data)
+  $: ({ appRequestForExport, prequalPrompts, postqualPrompts, applicationsForNavNoDupes } = data)
 
   function getNavItems (..._: any[]) {
     const navItems: RootStepItem[] = []
@@ -41,7 +41,7 @@
       if (foundCurrent) nextHref = resolve(`/requests/${appRequestForExport.id}/apply/programs`)
       foundCurrent = false
       if ($page.route.id === '/requests/[id]/apply/programs') {
-        const promptsUnderPrograms = appRequestForExport.applications
+        const promptsUnderPrograms = applicationsForNavNoDupes
           .flatMap(app => app.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION))
           .flatMap(r => r.prompts)
         const qualFinished = promptsUnderPrograms.every(p => p.answered)
@@ -68,12 +68,13 @@
       }
       navItems.push(programReview)
       let pastProgramReview = false
-      for (const application of appRequestForExport.applications) {
+      for (const application of applicationsForNavNoDupes) {
         const substeps: StepItem[] = []
         lastprompt = undefined
         for (const requirement of application.requirements) {
           if (!applicantRequirementTypes.has(requirement.type)) continue
           for (const prompt of requirement.prompts) {
+            if (prompt.visibility !== enumPromptVisibility.AVAILABLE) continue
             if (foundCurrent) {
               nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${prompt.id}`)
               foundCurrent = false

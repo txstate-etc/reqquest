@@ -607,8 +607,8 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       }
       if (requirementsResolution === 'fail') {
         if (phase === 'acceptance') application.ineligiblePhase = IneligiblePhases.ACCEPTANCE
-        else if (phase === 'applicant') application.ineligiblePhase = application.phase === ApplicationPhase.PREQUAL ? IneligiblePhases.PREQUAL : IneligiblePhases.QUALIFICATION
-        else if (phase === 'review') application.ineligiblePhase = application.phase === ApplicationPhase.PREAPPROVAL ? IneligiblePhases.PREAPPROVAL : IneligiblePhases.APPROVAL
+        else if (phase === 'applicant') application.ineligiblePhase = firstFailingRequirement?.type === RequirementType.PREQUAL ? IneligiblePhases.PREQUAL : IneligiblePhases.QUALIFICATION
+        else if (phase === 'review') application.ineligiblePhase = firstFailingRequirement?.type === RequirementType.PREAPPROVAL ? IneligiblePhases.PREAPPROVAL : IneligiblePhases.APPROVAL
         else if (phase === 'blocking') application.ineligiblePhase ??= IneligiblePhases.WORKFLOW
       }
     }

@@ -4,13 +4,14 @@
   import type { Scalars } from '$lib/typed-client/schema'
   import { Panel, TagSet } from '@txstate-mws/carbon-svelte'
   import { Tooltip } from 'carbon-components-svelte'
-  import WarningAltFilled from 'carbon-icons-svelte/lib/WarningAltFilled.svelte'
-  import type { AnsweredPrompt, PromptSection, AppRequestForDetails } from './types'
+  import type { AnsweredPrompt, PromptSection, AppRequestForDetails, ApplicationForDetails } from './types'
   import RenderDisplayComponent from './RenderDisplayComponent.svelte'
   import ApplicantProgramList from './ApplicantProgramList.svelte'
+  import WarningIconYellow from './WarningIconYellow.svelte'
 
   // TODO: design alignement could reduce props here
-  export let appRequest: AppRequestForDetails | undefined = undefined
+  export let appRequest: AppRequestForDetails
+  export let applications: ApplicationForDetails[]
   export let appData: Scalars['JsonData'] = {}
   export let prequalPrompts: AnsweredPrompt[] | undefined = undefined
   export let postqualPrompts: AnsweredPrompt[] | undefined = undefined
@@ -25,8 +26,6 @@
 
   // Group prompts by sections
   $: sections = (() => {
-    if (!appRequest) return []
-
     const sections: PromptSection[] = []
 
     // General Questions === PREQUAL prompts
@@ -38,7 +37,7 @@
     }
 
     // Application-Specific Questions
-    for (const application of appRequest.applications) {
+    for (const application of applications) {
       const prompts = application.requirements.flatMap(r => r.prompts)
       if (prompts.length) {
         sections.push({
@@ -79,7 +78,7 @@
         {/if}
 
         <!-- Application Status List -->
-        <ApplicantProgramList {appRequest} viewMode={statusDisplay === 'tags'} />
+        <ApplicantProgramList {applications} viewMode={statusDisplay === 'tags'} />
       </div>
     </section>
 
@@ -89,33 +88,33 @@
         <p>Loading prompt data...</p>
       </Panel>
     {:else if sections.length > 0}
-      {#each sections as section, sectionIndex (section.title)}
+      {#each sections as section (section.title)}
         <Panel title="{section.title}" {expandable} expanded>
           {#if section.prompts.length}
-            {#each section.prompts as prompt (prompt.id)}
-              {@const def = uiRegistry.getPrompt(prompt.key)}
-              <dl class="prompt-list py-4" >
-                <dt class="prompt-term font-medium">
-                  {#if showWarningsInline && (prompt.requirements.some(r => r.status === 'WARNING' || r.status === 'DISQUALIFYING'))}
-                  <div class="inline-icon flex">
+            <dl class="prompt-list">
+              {#each section.prompts as prompt (prompt.id)}
+                {@const def = uiRegistry.getPrompt(prompt.key)}
+                <dt class="prompt-term [ font-medium ]">
+                  {#if showWarningsInline && (prompt.statusReasons.some(r => r.status === 'WARNING' || r.status === 'DISQUALIFYING'))}
                     <Tooltip align="start">
                       <div class="icon" slot="icon">
-                        <WarningAltFilled size={16} />
+                        <WarningIconYellow size={16} />
                       </div>
-                      {#each prompt.requirements.filter(r => r.status === 'WARNING' || r.status === 'DISQUALIFYING') as r, i (i)}
-                        {#if sectionIndex === 0}<p>{r.status === 'WARNING' ? 'Warning' : 'Disqualifying'} for {r.programName}</p>{/if}
-                        <p>{r.statusReason ?? r.status}</p>
+                      {#each prompt.statusReasons.filter(r => r.status === 'WARNING' || r.status === 'DISQUALIFYING') as r, i (i)}
+                        <p>
+                          {r.status === 'WARNING' ? 'Warning' : 'Disqualifying'}{#if section.title !== r.programName}&nbsp;for {r.programName}{/if}<br>
+                          {r.statusReason}
+                        </p>
                       {/each}
                     </Tooltip>
-                  </div>
                   {/if}
                   {prompt.title}
                 </dt>
-                <dd class="prompt-answer" class:large={def?.displayMode === 'large'}>
+                <dd class="prompt-answer flow" class:large={def?.displayMode === 'large'}>
                   <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appData} prompt={prompt} configData={prompt.configurationData} relatedConfigData={prompt.relatedConfigData} />
                 </dd>
-              </dl>
-            {/each}
+              {/each}
+            </dl>
           {/if}
         </Panel>
       {/each}
@@ -140,12 +139,6 @@
 
   .status-list-item {
     border-bottom: 1px solid var(--cds-border-subtle);
-
-  }
-  dl:not(:has(dl)) {
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    row-gap:0.5rem;
   }
 
   .prompt-answer :global(dl) {
@@ -153,10 +146,6 @@
     display:grid;
     grid-template-columns: 1fr 1fr;
     row-gap:0.5rem;
-  }
-
-  .prompt-answer.large {
-    grid-template-columns: 1fr;
   }
 
   .status-list-item {
@@ -168,24 +157,30 @@
   }
 
   .prompt-list {
-    border-bottom:1px solid var(--cds-border-subtle);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+    row-gap: 0.5rem;
+  }
+  .prompt-list dt, .prompt-list dd {
+    padding-bottom: 0.5rem;
   }
 
   .prompt-term {
     display: flex;
     gap:1em;
     color: var(--cds-text-01);
+    border-bottom: 1px solid var(--cds-border-subtle);
+  }
+  .prompt-term:has(+ .prompt-answer.large) {
+    border-bottom: none;
   }
 
   .prompt-answer {
     color: var(--cds-text-02);
+    border-bottom: 1px solid var(--cds-border-subtle);
   }
-
-  .inline-icon :global(.bx--tooltip__trigger svg) {
-    fill: var(--cds-support-03, rgba(239, 200, 108, 1));
-  }
-
-  .inline-icon :global([data-icon-path="inner-path"]) {
-    fill: black;
+  .prompt-answer.large {
+    grid-column: span 2;
   }
 </style>
