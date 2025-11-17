@@ -123,9 +123,9 @@ export const approve_reviewer_exercise_exemption_prompt: PromptDefinition = {
       return messages
     },
     default: { text: 'Approve exercise exemption as requested by reviewer?' }
-  }, // TODO: Remove this bug workaround once bug #179 is resolved
-  gatherConfig: (allPeriodConfig) => {
-    return {'approve_reviewer_exercise_exemption_prompt': {'text': allPeriodConfig.approve_reviewer_exercise_exemption_prompt.text}}
-  } 
+  }//, // TODO: Remove this bug workaround once bug #179 is resolved
+  //gatherConfig: (allPeriodConfig) => {
+  //  return {'approve_reviewer_exercise_exemption_prompt': {'text': allPeriodConfig.approve_reviewer_exercise_exemption_prompt.text}}
+  //} 
 }
 

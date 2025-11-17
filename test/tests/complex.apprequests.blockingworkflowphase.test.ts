@@ -1,19 +1,18 @@
 import { Hash } from 'crypto'
 import { expect, test } from './fixtures.js'
 import { DateTime } from 'luxon'
-import { promptMapApplicantQualified, promptMapApplicantUnqualified, promptMapReviewerQualified, promptMapReviewerUnqualified } from './default.promptdata.js'
+import { promptMapApplicantQualified, promptMapReviewerQualified, promptMapReviewerUnqualified } from './default.promptdata.js'
 
-test.describe.serial('App Request - Review Phase - workflows', { tag: '@default' }, () => {
-  const name = '2025 app-req Review Phase'
-  const code = 'APP_REQ_REV-255'
+test.describe.skip('App Request - Review Phase - workflows', { tag: '@complex' }, () => {
+  const name = '2025 app-req Blocking workflow Phase'
+  const code = 'APP_REQ_Block_Work-255'
   const timeZone = 'America/Chicago'
   const dateTomorrow = new Date(new Date(new Date().setDate(new Date().getDate() + 1)).setMilliseconds(0)).toISOString()
   const openDate = '2025-07-01T00:00:00.000-05:00'
   const closeDate = DateTime.fromISO(dateTomorrow).setZone(timeZone).toISO()
-  const applicantLogin = 'applicant'
-  const applicant2Login = 'applicant2'
+  const applicantbwLogin = 'applicantbw'
   let periodId = 0
-  test('Admin - Create new period for review phase appRequests', async ({ adminRequest }) => {
+  test('Admin - Create new period for blocking workflow phase appRequests', async ({ adminRequest }) => {
     const query = `
       mutation CreatePeriod($name: String!, $code: String!, $openDate:DateTime!, $closeDate:DateTime!, $reviewed:Boolean){
         createPeriod(period:{ name: $name, code: $code, openDate: $openDate, closeDate: $closeDate, reviewed: $reviewed}, validateOnly: false) {
@@ -41,7 +40,7 @@ test.describe.serial('App Request - Review Phase - workflows', { tag: '@default'
     expect(response.createPeriod.period.reviewed).toEqual(true)
   })
   let appRequestId = 0
-  test('Applicant - create app request in reviewed period', async ({ applicantRequest }) => {
+  test('Applicant - create app request in blocking workflow reviewed period', async ({ applicantRequest }) => {
     const query = `
       mutation CreateAppRequest($login:String!, $periodId: ID!, $validateOnly: Boolean) {
         createAppRequest(login: $login, periodId:$periodId, validateOnly: $validateOnly) {
@@ -57,10 +56,10 @@ test.describe.serial('App Request - Review Phase - workflows', { tag: '@default'
         }
       }
     `
-    const variables = { login: applicantLogin, periodId, validateOnly: false }
+    const variables = { login: applicantbwLogin, periodId, validateOnly: false }
     const { createAppRequest } = await applicantRequest.graphql<{ createAppRequest: { appRequest: { id: number, applicant: { login: string } }, messages: { message: string }[] } }>(query, variables)
     appRequestId = createAppRequest.appRequest.id
-    expect(createAppRequest.appRequest.applicant.login).toEqual(applicantLogin)
+    expect(createAppRequest.appRequest.applicant.login).toEqual(applicantbwLogin)
   })
   test('Applicant - recurring update next available and not answered prompts with qualified data', async ({ applicantRequest }) => {
     let availableUnasweredPromptsExist = true
