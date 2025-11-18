@@ -3,7 +3,8 @@ import { expect, test } from './fixtures.js'
 import { DateTime } from 'luxon'
 import { promptMapApplicantQualified, promptMapReviewerQualified, promptMapReviewerUnqualified } from './default.promptdata.js'
 
-test.describe.skip('App Request - Review Phase - workflows', { tag: '@complex' }, () => {
+// TODO:  Skip until valid tests complete
+test.describe.skip('App Request - Blocking workflow Phase - workflows', { tag: '@complex' }, () => {
   const name = '2025 app-req Blocking workflow Phase'
   const code = 'APP_REQ_Block_Work-255'
   const timeZone = 'America/Chicago'
@@ -139,146 +140,6 @@ test.describe.skip('App Request - Review Phase - workflows', { tag: '@complex' }
     const response = await applicantRequest.graphql<{ submitAppRequest: { appRequest: { id: string, status: string }, messages: { arg: String, message: string, type: string }[], success: boolean } }>(query, variables)
     lastAppRequestStatus = response.submitAppRequest.appRequest.status
     expect(response.submitAppRequest.success).toEqual(true)
-  })
-  test('Reviewer - recurring update next available and not answered prompts with NOT passing data', async ({ reviewerRequest }) => {
-    let availableUnasweredPromptsExist = true
-    let promptIteration = 0
-    while (availableUnasweredPromptsExist && (promptIteration < promptMapReviewerUnqualified.size)) {
-      promptIteration++
-      const query_get_prompts = `
-        query GetPromptsForRequest($appRequestIds: [ID!]) {
-          appRequests(filter: {ids:$appRequestIds}) {
-            applications {
-              programKey
-              requirements {
-                smartTitle
-                prompts {
-                  id
-                  key
-                  title
-                  navTitle
-                  answered
-                  visibility
-                  requirement {
-                    type
-                  }
-                }
-              }
-            }
-          }
-        }
-      `
-      const query_update_prompt = `
-        mutation UpdatePrompt($promptId: ID!,$data: JsonData!,$validateOnly: Boolean, $dataVersion: Int){
-          updatePrompt(promptId:$promptId, data:$data, validateOnly:$validateOnly, dataVersion: $dataVersion){
-            success
-            messages {
-              message
-              type
-              arg
-            }
-          }
-        }
-      `
-      const query_get_prompt_variables = { appRequestIds: [appRequestId] }
-      const response = await reviewerRequest.graphql<{ appRequests: { applications: { programKey: string, requirements: { smartTitle: string, prompts: { id: number, key: string, answered: string, visibility: string, requirement: { type: string } }[] }[] }[] }[] }>(query_get_prompts, query_get_prompt_variables)
-      expect(response.appRequests[0].applications.length).toBeGreaterThanOrEqual(1)
-
-      const allAvailableUnansweredPrompts = response.appRequests.flatMap(appReq => appReq.applications.flatMap(app => app.requirements.flatMap(req => req.prompts.filter(prompt => !prompt.answered && prompt.visibility === 'AVAILABLE' && prompt.requirement.type === 'APPROVAL'))))
-      if (allAvailableUnansweredPrompts.length < 1) availableUnasweredPromptsExist = false
-      // update unanswered available prompts
-      for (const availablePrompt of allAvailableUnansweredPrompts) {
-        const promptMapReviewer = promptMapReviewerUnqualified.get(availablePrompt.key)
-        if (promptMapReviewer) { // only test if map to valid prompt data exists
-          for (const value of promptMapReviewer) {
-            const query_update_prompt_variables = { promptId: availablePrompt.id, data: value[1], validateOnly: false }
-            const { updatePrompt } = await reviewerRequest.graphql<{ updatePrompt: { success: boolean, messages: { message: string }[] } }>(query_update_prompt, query_update_prompt_variables)
-            expect(updatePrompt.success).toEqual(true)
-          }
-        }
-      }
-    }
-  })
-  // check program eligibility
-  test('Applicant - check app request eligibility per program with unqualified data', async ({ reviewerRequest }) => {
-    const query_get_prompts = `
-        query GetPromptsForRequest($appRequestIds: [ID!]) {
-          appRequests(filter: {ids:$appRequestIds}) {
-            applications {
-              status
-              programKey
-            }
-          }
-        }
-      `
-    const query_get_prompt_variables = { appRequestIds: [appRequestId] }
-    const response = await reviewerRequest.graphql<{ appRequests: { applications: { programKey: string, status: string }[] }[] }>(query_get_prompts, query_get_prompt_variables)
-    for (const app of response.appRequests[0].applications) {
-      if (app.programKey === 'adopt_a_dog_program') {
-        expect(app.status).toEqual('ELIGIBLE')
-      } else if (app.programKey === 'adopt_a_cat_program') {
-        expect(app.status).toEqual('INELIGIBLE')
-      }
-    }
-  })
-  test('Reviewer - recurring update unqualified approval type requirements with qualifying data', async ({ reviewerRequest }) => {
-    let promptsExist = true
-    let promptIteration = 0
-    while (promptsExist && (promptIteration < promptMapReviewerQualified.size)) {
-      promptIteration++
-      const query_get_prompts = `
-        query GetPromptsForRequest($appRequestIds: [ID!]) {
-          appRequests(filter: {ids:$appRequestIds}) {
-            applications {
-              programKey
-              requirements {
-                smartTitle
-                prompts {
-                  id
-                  key
-                  title
-                  navTitle
-                  answered
-                  visibility
-                  requirement {
-                    type
-                  }
-                }
-              }
-            }
-          }
-        }
-      `
-      const query_update_prompt = `
-        mutation UpdatePrompt($promptId: ID!,$data: JsonData!,$validateOnly: Boolean, $dataVersion: Int){
-          updatePrompt(promptId:$promptId, data:$data, validateOnly:$validateOnly, dataVersion: $dataVersion){
-            success
-            messages {
-              message
-              type
-              arg
-            }
-          }
-        }
-      `
-      const query_get_prompt_variables = { appRequestIds: [appRequestId] }
-      const response = await reviewerRequest.graphql<{ appRequests: { applications: { programKey: string, requirements: { smartTitle: string, prompts: { id: number, key: string, answered: string, visibility: string, requirement: { type: string } }[] }[] }[] }[] }>(query_get_prompts, query_get_prompt_variables)
-      expect(response.appRequests[0].applications.length).toBeGreaterThanOrEqual(1)
-
-      const allAvailablePrompts = response.appRequests.flatMap(appReq => appReq.applications.flatMap(app => app.requirements.flatMap(req => req.prompts.filter(prompt => prompt.visibility === 'AVAILABLE' && prompt.requirement.type === 'APPROVAL'))))
-      if (allAvailablePrompts.length < 1) promptsExist = false
-      // update unanswered available prompts
-      for (const availablePrompt of allAvailablePrompts) {
-        const promptMapReviewer = promptMapReviewerQualified.get(availablePrompt.key)
-        if (promptMapReviewer) { // only test if map to valid prompt data exists
-          for (const value of promptMapReviewer) {
-            const query_update_prompt_variables = { promptId: availablePrompt.id, data: value[1], validateOnly: false }
-            const { updatePrompt } = await reviewerRequest.graphql<{ updatePrompt: { success: boolean, messages: { message: string }[] } }>(query_update_prompt, query_update_prompt_variables)
-            expect(updatePrompt.success).toEqual(true)
-          }
-        }
-      }
-    }
   })
   // check program eligibility
   test('Applicant - check app request eligibility per program with ALL qualified data', async ({ reviewerRequest }) => {

@@ -61,7 +61,7 @@ export const owner_cat_microchip_service_prompt: PromptDefinition = {
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = [] 
     if (!data || data.agreeToPay == null) messages.push({ type: MutationMessageType.error, message: 'Owner microship service information required', arg: 'agreeToPat' })
-    if (data.allergic) {
+    if (!data.agreeToPay) {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
     }
     return messages
