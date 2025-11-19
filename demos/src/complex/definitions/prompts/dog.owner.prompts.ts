@@ -28,6 +28,11 @@ export const previous_dog_surrender_prompt: PromptDefinition = {
   title: 'Previously surrendered dog',
   description: 'Applicant will identify if they have previously surrendered a pet.',
   schema: PreviousDogSurrenderedPromptSchema,
+  preload: (appReq, config, appReqData) => {
+
+    console.log(`Preload app surrender request data: ${JSON.stringify(appReqData)}`)
+    if (appReqData.previous_dog_surrender_foster_prompt.surrendered != null) return { surrendered: appReqData.previous_dog_surrender_foster_prompt.surrendered }
+  },
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = [] 
     if (!data || data.surrendered == null) messages.push({ type: MutationMessageType.error, message: 'Previous dog surrendered input required', arg: 'surrendered' })
@@ -39,10 +44,24 @@ export const previous_dog_surrender_prompt: PromptDefinition = {
   invalidUponChange: [{promptKey: 'review_applicant_dog_info_prompt'}]
 }
 
-export const previous_dog_surrender_prompt_for_foster = structuredClone(previous_dog_surrender_prompt)
-previous_dog_surrender_prompt_for_foster.key = 'previous_dog_surrender_prompt_for_foster'
-previous_dog_surrender_prompt_for_foster.preload = (appReq, config, appReqData) => {
-  if (appReqData.previous_dog_surrender_prompt.surrendered != null) return { surrendered: appReqData.previous_dog_surrender_prompt.surrendered }
+export const previous_dog_surrender_foster_prompt: PromptDefinition = {
+  key: 'previous_dog_surrender_foster_prompt',
+  title: 'Previously surrendered dog',
+  description: 'Applicant will identify if they have previously surrendered a pet.',
+  schema: PreviousDogSurrenderedPromptSchema,
+  preload: (appReq, config, appReqData) => {
+    console.log(`Preload app surrender foster request data: ${JSON.stringify(appReqData)}`)
+    if (appReqData.previous_dog_surrender_prompt.surrendered != null) return { surrendered: appReqData.previous_dog_surrender_prompt.surrendered }
+  },
+  validate: (data, config, allConfig) => {
+    const messages: MutationMessage[] = [] 
+    if (!data || data.surrendered == null) messages.push({ type: MutationMessageType.error, message: 'Previous dog surrendered input required', arg: 'surrendered' })
+    if (data.surrendered) {
+      if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide details on why surrender occurred', arg: 'details' })
+    } 
+    return messages
+  },
+  invalidUponChange: [{promptKey: 'review_applicant_dog_info_prompt'}]
 }
 
 export const current_dogowner_prompt: PromptDefinition = {

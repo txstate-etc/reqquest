@@ -77,6 +77,8 @@ import ComplexTermsAndConditionsPromptDisplay from './complex/termsAndConditions
 import ComplexApproveReviewerExerciseExemptionConfig from './complex/dogOwner/ApproveReviewerExerciseExemptionConfig.svelte'
 import ComplexApproveReviewerExerciseExemptionPrompt from './complex/dogOwner/ApproveReviewerExerciseExemptionPrompt.svelte'
 import ComplexApproveReviewerExerciseExemptionPromptDisplay from './complex/dogOwner/ApproveReviewerExerciseExemptionPromptDisplay.svelte'
+import ComplexPreviousDogSurrenderPrompt from './complex/dogOwner/PreviousDogSurrenderPrompt.svelte'
+import ComplexPreviousDogSurrenderDisplayPrompt from './complex/dogOwner/PreviousDogSurrenderDisplayPrompt.svelte'
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts } = configureDemoInstanceParams()
 
@@ -218,7 +220,9 @@ function configureDemoInstanceParams () {
         { key: 'review_applicant_cat_info_app_req' },
         { key: 'review_applicant_dog_info_app_req' },
         { key: 'review_application_foster_a_pet_app_req' },
-        { key: 'approve_reviewer_exercise_exemption_workflow_req'}
+        { key: 'approve_reviewer_exercise_exemption_workflow_req'},
+        { key: 'previous_dog_surrender_qual_req'},
+        { key: 'previous_dog_surrender_foster_qual_req'}
       ],
       prompts: [
         { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
@@ -238,7 +242,8 @@ function configureDemoInstanceParams () {
         { key: 'review_applicant_dog_info_prompt', formComponent: ComplexReviewApplicantDogInfoPrompt, displayComponent: ComplexReviewApplicantDogInfoPromptDisplay },
         { key: 'review_applicant_foster_a_pet_info_prompt', formComponent: ComplexReviewApplicantFosterAPetPrompt, displayComponent: ComplexReviewApplicantFosterAPetPromptDisplay },
         { key: 'terms_and_conditions_prompt', configureComponent: ComplexTermsAndConditionsConfig, formComponent: ComplexTermsAndConditionsPrompt, displayComponent: ComplexTermsAndConditionsPromptDisplay }, 
-        { key: 'approve_reviewer_exercise_exemption_prompt', configureComponent: ComplexApproveReviewerExerciseExemptionConfig, formComponent: ComplexApproveReviewerExerciseExemptionPrompt, displayComponent: ComplexApproveReviewerExerciseExemptionPromptDisplay }
+        { key: 'previous_dog_surrender_prompt', formComponent: ComplexPreviousDogSurrenderPrompt, displayComponent:ComplexPreviousDogSurrenderDisplayPrompt },
+        { key: 'previous_dog_surrender_foster_prompt', formComponent: ComplexPreviousDogSurrenderPrompt, displayComponent:ComplexPreviousDogSurrenderDisplayPrompt }
       ]      
     }
   }

@@ -42,8 +42,25 @@ export const previous_dog_surrender_qual_req: RequirementDefinition = {
   }
 }
 
-export const previous_dog_surrender_foster_qual_req = structuredClone(previous_dog_surrender_qual_req)
-previous_dog_surrender_foster_qual_req.promptKeys = ['previous_dog_surrender_prompt_for_foster']
+export const previous_dog_surrender_foster_qual_req: RequirementDefinition = {
+  type: RequirementType.QUALIFICATION,
+  key: 'previous_dog_surrender_foster_qual_req',
+  title: 'Provide previous dog surrender info',
+  navTitle: 'Previous dog surrender info',
+  description: 'Provide previous dog surrender information',
+  promptKeys: ['previous_dog_surrender_foster_prompt'],
+  resolve: (data, config) => {
+    const dogSurrenderPromptData = data.previous_dog_surrender_foster_prompt as PreviousDogSurrenderedPromptData
+    if (dogSurrenderPromptData?.surrendered != null) {
+      if (dogSurrenderPromptData.surrendered === true) {
+        return { status: RequirementStatus.WARNING, reason: 'Previously surrending a dog is usually a disqualifier.  Exceptions on a case by case basis.' }
+      } else { 
+        return { status: RequirementStatus.MET }
+      }
+    }
+    return { status: RequirementStatus.PENDING }
+  }
+}
 
 export const current_dogowner_qual_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
