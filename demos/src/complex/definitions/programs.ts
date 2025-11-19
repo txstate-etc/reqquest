@@ -11,6 +11,7 @@ export const adopt_a_dog_program: ProgramDefinition = {
     'yard_qual_req',
     'owner_dog_allergy_qual_req',
     'dog_exercise_qual_req',
+    'previous_dog_surrender_qual_req',
     'terms_and_conditions_post_qual_req',
     'review_applicant_dog_info_app_req'
   ],  
@@ -54,6 +55,7 @@ export const foster_a_pet_program: ProgramDefinition = {
     'owner_cat_microchip_service_qual_req',
     'owner_dog_allergy_qual_req',
     'dog_exercise_qual_req',
+    'previous_dog_surrender_foster_qual_req',
     'terms_and_conditions_post_qual_req',
     'review_applicant_dog_info_app_req',
     'review_applicant_cat_info_app_req',

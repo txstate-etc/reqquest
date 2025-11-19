@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { PreviousDogOwnerPromptData, CurrentDogOwnerPromptData, OwnerDogAllergyPromptData, DogExercisePromptData, CurrentDogOwnerRequirementConfigSchema, DogMinExerciseRequirementConfigSchema, ReviewApplicantDogInfoPromptData, ApproveReviewerExerciseExemptionPromptData } from '../models/index.js'
+import { PreviousDogOwnerPromptData, CurrentDogOwnerPromptData, OwnerDogAllergyPromptData, DogExercisePromptData, CurrentDogOwnerRequirementConfigSchema, DogMinExerciseRequirementConfigSchema, ReviewApplicantDogInfoPromptData, ApproveReviewerExerciseExemptionPromptData, PreviousDogSurrenderedPromptData } from '../models/index.js'
 
 export const previous_dogowner_qual_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
@@ -21,6 +21,29 @@ export const previous_dogowner_qual_req: RequirementDefinition = {
     return { status: RequirementStatus.PENDING }
   }
 }
+
+export const previous_dog_surrender_qual_req: RequirementDefinition = {
+  type: RequirementType.QUALIFICATION,
+  key: 'previous_dog_surrender_qual_req',
+  title: 'Provide previous dog surrender info',
+  navTitle: 'Previous dog surrender info',
+  description: 'Provide previous dog surrender information',
+  promptKeys: ['previous_dog_surrender_prompt'],
+  resolve: (data, config) => {
+    const dogSurrenderPromptData = data.previous_dog_surrender_prompt as PreviousDogSurrenderedPromptData
+    if (dogSurrenderPromptData?.surrendered != null) {
+      if (dogSurrenderPromptData.surrendered === true) {
+        return { status: RequirementStatus.WARNING, reason: 'Previously surrending a dog is usually a disqualifier.  Exceptions on a case by case basis.' }
+      } else { 
+        return { status: RequirementStatus.MET }
+      }
+    }
+    return { status: RequirementStatus.PENDING }
+  }
+}
+
+export const previous_dog_surrender_foster_qual_req = structuredClone(previous_dog_surrender_qual_req)
+previous_dog_surrender_foster_qual_req.promptKeys = ['previous_dog_surrender_prompt_for_foster']
 
 export const current_dogowner_qual_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
@@ -114,6 +137,7 @@ export const review_applicant_dog_info_app_req: RequirementDefinition = {
     if (revDogInfoData.currentDogAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revDogInfoData.yardAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revDogInfoData.allergyAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
+    if (revDogInfoData.surrenderedAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revDogInfoData.exerciseMinMet === false && revDogInfoData.exerciseException === false) return { status: RequirementStatus.DISQUALIFYING }
     return { status: RequirementStatus.MET }  
   }

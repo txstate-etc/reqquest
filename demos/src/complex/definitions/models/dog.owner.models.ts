@@ -11,6 +11,16 @@ export const PreviousDogOwnerPromptSchema = {
 } as const satisfies SchemaObject
 export type PreviousDogOwnerPromptData = FromSchema<typeof PreviousDogOwnerPromptSchema>
 
+export const PreviousDogSurrenderedPromptSchema = {
+  type: 'object',
+  properties: { 
+    surrendered: { type: 'boolean' },
+    details: { type: 'string' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type PreviousDogSurrenderedPromptData = FromSchema<typeof PreviousDogSurrenderedPromptSchema>
+
 export const CurrentDogOwnerRequirementConfigSchema = {
   type: 'object',
   properties: { 
@@ -67,6 +77,7 @@ export const ReviewApplicantDogInfoPromptSchema = {
     currentDogAcceptable: { type: 'boolean' },
     yardAcceptable: { type: 'boolean' },
     allergyAcceptable: { type: 'boolean' },
+    surrenderedAcceptable: { type: 'boolean' },
     exerciseMinMet: { type: 'boolean' },
     exerciseException: { type: 'boolean' }
   },

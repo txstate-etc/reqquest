@@ -1,7 +1,7 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { InvalidatedResponse } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { PreviousDogOwnerPromptSchema, CurrentDogOwnerPromptSchema, OwnerDogAllergyPromptSchema, DogExercisePromptSchema, ReviewApplicantDogInfoPromptSchema, ApproveReviewerExerciseExemptionPromptSchema, ApproveReviewerExerciseExemptionConfigSchema } from '../models/index.js'
+import { PreviousDogOwnerPromptSchema, CurrentDogOwnerPromptSchema, OwnerDogAllergyPromptSchema, DogExercisePromptSchema, ReviewApplicantDogInfoPromptSchema, ApproveReviewerExerciseExemptionPromptSchema, ApproveReviewerExerciseExemptionConfigSchema, PreviousDogSurrenderedPromptSchema } from '../models/index.js'
 import { dog_exercise_qual_req } from '../requirements/dog.owner.requirements.js'
 
 
@@ -21,6 +21,28 @@ export const previous_dogowner_prompt: PromptDefinition = {
     return messages
   },
   invalidUponChange: [{promptKey: 'review_applicant_dog_info_prompt'}]
+}
+
+export const previous_dog_surrender_prompt: PromptDefinition = {
+  key: 'previous_dog_surrender_prompt',
+  title: 'Previously surrendered dog',
+  description: 'Applicant will identify if they have previously surrendered a pet.',
+  schema: PreviousDogSurrenderedPromptSchema,
+  validate: (data, config, allConfig) => {
+    const messages: MutationMessage[] = [] 
+    if (!data || data.surrendered == null) messages.push({ type: MutationMessageType.error, message: 'Previous dog surrendered input required', arg: 'surrendered' })
+    if (data.surrendered) {
+      if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide details on why surrender occurred', arg: 'details' })
+    } 
+    return messages
+  },
+  invalidUponChange: [{promptKey: 'review_applicant_dog_info_prompt'}]
+}
+
+export const previous_dog_surrender_prompt_for_foster = structuredClone(previous_dog_surrender_prompt)
+previous_dog_surrender_prompt_for_foster.key = 'previous_dog_surrender_prompt_for_foster'
+previous_dog_surrender_prompt_for_foster.preload = (appReq, config, appReqData) => {
+  if (appReqData.previous_dog_surrender_prompt.surrendered != null) return { surrendered: appReqData.previous_dog_surrender_prompt.surrendered }
 }
 
 export const current_dogowner_prompt: PromptDefinition = {
@@ -89,6 +111,7 @@ export const review_applicant_dog_info_prompt: PromptDefinition = {
       if (data.currentDogAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'currentDogAcceptable' })
       if (data.yardAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'yardAcceptable' })
       if (data.allergyAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'allergyAcceptable' })
+      if (data.surrenderedAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'surrenderedAcceptable' })
       if (data.exerciseMinMet == null) {
         messages.push({ type: MutationMessageType.error, message: 'Exercise minimum met required', arg: 'exerciseMinMet' })
       } else {
