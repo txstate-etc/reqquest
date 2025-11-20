@@ -12,6 +12,5 @@ export const promptMapApplicantQualified: Map<string, Map<string, any>> = new Ma
 ])
 
 export const promptMapReviewerQualified: Map<string, Map<string, any>> = new Map([
-  ['review_applicant_cat_info_prompt', new Map<string, ReviewApplicantCatInfoPromptData>([['pass_0', { previousCatAcceptable: true, currentCatAcceptable: true, livingSpaceAcceptable: true, allergyAcceptable: true, microchipAgree: true }]])],
-
+  ['review_applicant_cat_info_prompt', new Map<string, ReviewApplicantCatInfoPromptData>([['pass_0', { previousCatAcceptable: true, currentCatAcceptable: true, livingSpaceAcceptable: true, allergyAcceptable: true, microchipAgree: true }]])]
 ])

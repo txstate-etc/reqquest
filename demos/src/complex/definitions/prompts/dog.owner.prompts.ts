@@ -29,9 +29,8 @@ export const previous_dog_surrender_prompt: PromptDefinition = {
   description: 'Applicant will identify if they have previously surrendered a pet.',
   schema: PreviousDogSurrenderedPromptSchema,
   preload: (appReq, config, appReqData) => {
-
-    console.log(`Preload app surrender request data: ${JSON.stringify(appReqData)}`)
-    if (appReqData.previous_dog_surrender_foster_prompt.surrendered != null) return { surrendered: appReqData.previous_dog_surrender_foster_prompt.surrendered }
+    console.log(`*****Preload app surrender request data: ${JSON.stringify(appReqData)}`)
+    if (appReqData.previous_dog_surrender_foster_prompt?.surrendered != null) return { surrendered: appReqData.previous_dog_surrender_foster_prompt.surrendered }
   },
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = [] 
@@ -50,8 +49,8 @@ export const previous_dog_surrender_foster_prompt: PromptDefinition = {
   description: 'Applicant will identify if they have previously surrendered a pet.',
   schema: PreviousDogSurrenderedPromptSchema,
   preload: (appReq, config, appReqData) => {
-    console.log(`Preload app surrender foster request data: ${JSON.stringify(appReqData)}`)
-    if (appReqData.previous_dog_surrender_prompt.surrendered != null) return { surrendered: appReqData.previous_dog_surrender_prompt.surrendered }
+    console.log(`*****Preload app surrender foster request data: ${JSON.stringify(appReqData)}`)
+    if (appReqData.previous_dog_surrender_prompt?.surrendered != null) return { surrendered: appReqData.previous_dog_surrender_prompt.surrendered }
   },
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = [] 
