@@ -3,8 +3,10 @@ import { extractMergedFilters, extractPaginationParams, type ColumnDefinition, t
 import type { PageLoad } from './$types'
 import type { AccessUserFilter, Pagination } from '$lib'
 import { omit } from 'txstate-utils'
+import { uiRegistry } from '../../../local'
 
 export const load: PageLoad = async ({ url, depends }) => {
+  const roleUsersAttributeDescription = uiRegistry.config.roleUsersAttributeDescription ?? ''
   const query = extractMergedFilters(url)
   const { search, applicationRoles } = query
   const groupingsQuery = omit(query, 'search', 'applicationRoles')
@@ -84,5 +86,5 @@ export const load: PageLoad = async ({ url, depends }) => {
   }
 
   depends('api:getAccessUsers')
-  return { columns, rows, filters, page: pageInfo?.currentPage, totalItems: pageInfo?.totalItems }
+  return { columns, rows, filters, page: pageInfo?.currentPage, totalItems: pageInfo?.totalItems, roleUsersAttributeDescription }
 }

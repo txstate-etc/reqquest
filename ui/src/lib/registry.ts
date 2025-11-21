@@ -150,6 +150,11 @@ export interface UIConfig {
   supportUrl?: string
   extraNavItems?: LayoutStructureNodeRoot<LayoutStructureNode>[]
   /**
+   * This is where you should describe what kind of attributes app users will be able to search users by.
+   * Displayed on user management page /roles/users.
+   */
+  roleUsersAttributeDescription?: string
+  /**
    * These options give you the ability to customize the terminology used in the UI.
    *
    * This is useful for changing the wording to better fit your project's

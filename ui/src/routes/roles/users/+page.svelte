@@ -3,9 +3,10 @@
   import type { PageData } from './$types'
   import { Pagination } from '@txstate-mws/carbon-svelte'
   import { DateTime } from 'luxon';
+  import { IntroPanel } from '$lib'
 
   export let data: PageData
-  $: ({ columns, rows, filters, page, totalItems, availableApplicationRoles } = data)
+  $: ({ columns, rows, filters, page, totalItems, availableApplicationRoles, roleUsersAttributeDescription } = data)
 
   function handlePagination(event: CustomEvent<{ page: number, pageSize: number, totalItems: number}>) {
     // event: {"isTrusted": false}
@@ -22,7 +23,10 @@
   let usersSearchFormData: UsersSearchForm | undefined
   
 </script>
-
+<IntroPanel
+  title="Manage Users"
+  subtitle={roleUsersAttributeDescription || 'This is where you should describe what kind of attributes app users will be able to search users by'}
+/>
 <FilterUI
   search
   on:apply={e => { usersSearchFormData = e.detail }}
