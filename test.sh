@@ -19,11 +19,8 @@ if [ "$MULTI_EXITCODE" -eq 1 ]; then
   exit $MULTI_EXITCODE
 fi
 
-exit $MULTI_EXITCODE ###TODO:  Remove post complex implementation
+DEMO_INSTANCE="complex" TEST_TAGS="@all|@complex" docker-compose -p "$(basename $PWD)-test" -f docker-compose.test.yml $override up --build --exit-code-from testing-container
+COMPLEX_EXITCODE=$?
+docker-compose -p "$(basename $PWD)-test" -f docker-compose.test.yml $override down -v
 
-####TODO - After complex demo instance up
-#DEMO_INSTANCE="complex" TEST_TAGS="@all|@complex" docker-compose -p "$(basename $PWD)-test" -f docker-compose.test.yml $override up --build --exit-code-from testing-container
-#COMPLEX_EXITCODE=$?
-#docker-compose -p "$(basename $PWD)-test" -f docker-compose.test.yml $override down -v
-
-#exit $COMPLEX_EXITCODE
+exit $COMPLEX_EXITCODE
