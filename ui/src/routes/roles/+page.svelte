@@ -105,8 +105,8 @@
         editingRole = transformFromAPI(role)
       }
     },
-    { label: 'View', icon: View, href: `/roles/${role.id}`,  },
-    { label: 'Duplicate', icon: Copy, onClick: () => {
+    { label: 'View permissions', icon: View, href: `/roles/${role.id}`,  },
+    { label: 'Duplicate role', icon: Copy, onClick: () => {
         createDialog = true;
         const duplicateRole = transformFromAPI(role)
         let name = duplicateRole.name
@@ -123,7 +123,7 @@
         editingRole = { ...omit(duplicateRole, 'name', 'id'), name }
       }
     },
-    { label: 'Delete', icon: TrashCan, onClick: () => openRoleDeleteDialog(role) }
+    { label: 'Delete role', icon: TrashCan, onClick: () => openRoleDeleteDialog(role) }
   ]}
   noItemsTitle='There are no groups associated with this Role'
   noItemsSubtitle=''
