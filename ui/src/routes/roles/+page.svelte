@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ActionSet, Card, CardGrid, ColumnList, FieldMore, FieldMultiselect, FieldTextArea, FieldTextInput, PanelFormDialog, type ComboMenuItem } from '@txstate-mws/carbon-svelte'
+  import { ActionSet, Card, CardGrid, ColumnList, FieldMore, FieldMultiselect, FieldTextArea, FieldTextInput, PanelFormDialog, Toasts, type ComboMenuItem } from '@txstate-mws/carbon-svelte'
+  import { toasts } from '@txstate-mws/svelte-components'
   import { Modal } from 'carbon-components-svelte'
   import Add from 'carbon-icons-svelte/lib/Add.svelte'
   import Settings from 'carbon-icons-svelte/lib/Settings.svelte'
@@ -12,7 +13,7 @@
   import { invalidate } from '$app/navigation'
   import { api, type AccessRole, type AccessRoleGroup, type AccessRoleInput } from '$lib'
   import type { PageData } from './$types'
-  import { DateTime } from 'luxon';
+  import type { DateTime } from 'luxon'
 
   export let data: PageData
   export let rolenames = new Set()
@@ -30,6 +31,7 @@
 
   let createDialog = false
   let editingRole: AccessRoleUpdateForm | undefined
+  let isDuplicating = false
 
   async function validate (role: AccessRoleUpdateForm) {
     const response = await api.upsertRole(editingRole?.id, role, true)
@@ -44,7 +46,21 @@
     }
   }
 
-  function onSaved () {
+  function onSaved (event: CustomEvent<AccessRoleUpdateForm>) {
+    const roleName = event.detail.name
+    let title: string
+    let message: string
+    if (editingRole?.id) {
+      title = 'Role edited'
+      message = `The role ${roleName} was successfully edited.`
+    } else if (isDuplicating) {
+      title = 'Role duplicated'
+      message = `The role ${roleName} was successfully duplicated.`
+    } else {
+      title = 'New role created'
+      message = `The role ${roleName} was successfully created.`
+    }
+    toasts.add({ type: 'success', title, message })
     closeDialog()
     invalidate('api:getRoleList').catch(console.error)
   }
@@ -52,6 +68,7 @@
   function closeDialog () {
     createDialog = false
     editingRole = undefined
+    isDuplicating = false
   }
 
   let deleteDialog = false
@@ -68,6 +85,11 @@
     try {
       if (!deleteDialogRole) throw new Error('No role selected for deletion')
       await api.deleteRole(deleteDialogRole.id)
+      toasts.add({
+        type: 'success',
+        title: 'Role deleted',
+        message: `The role ${deleteDialogRole.name} was successfully deleted.`
+      })
       closeRoleDeleteDialog()
       await invalidate('api:getRoleList')
     } catch (e: any) {
@@ -87,6 +109,7 @@
     onClick: () => {
       createDialog = true
       editingRole = undefined
+      isDuplicating = false
     }
   }
 ]}/>
@@ -101,27 +124,29 @@
   listActionsIncludeLabels={false}
   listActions={[
     { label: 'Edit', icon: Settings, onClick: () => {
-        createDialog = true;
-        editingRole = transformFromAPI(role)
-      }
+      createDialog = true
+      editingRole = transformFromAPI(role)
+      isDuplicating = false
+    }
     },
-    { label: 'View permissions', icon: View, href: `/roles/${role.id}`,  },
+    { label: 'View permissions', icon: View, href: `/roles/${role.id}` },
     { label: 'Duplicate role', icon: Copy, onClick: () => {
-        createDialog = true;
-        const duplicateRole = transformFromAPI(role)
-        let name = duplicateRole.name
-        while (rolenames.has(name)) {
-          let s = name.search(/[0-9]+$/g);
-          if (s !== -1) {
-            let count = parseInt(name.slice(s))
-            name = name.slice(0, s) + (count + 1).toString()
-          } else {
-            name = name + '-1'
-          }
+      createDialog = true
+      isDuplicating = true
+      const duplicateRole = transformFromAPI(role)
+      let name = duplicateRole.name
+      while (rolenames.has(name)) {
+        const s = name.search(/[0-9]+$/g)
+        if (s !== -1) {
+          const count = parseInt(name.slice(s))
+          name = name.slice(0, s) + (count + 1).toString()
+        } else {
+          name = name + '-1'
         }
-        // rolenames.add(name)
-        editingRole = { ...omit(duplicateRole, 'name', 'id'), name }
       }
+        // rolenames.add(name)
+      editingRole = { ...omit(duplicateRole, 'name', 'id'), name }
+    }
     },
     { label: 'Delete role', icon: TrashCan, onClick: () => openRoleDeleteDialog(role) }
   ]}
@@ -132,7 +157,7 @@
     { id: 'manager', label: 'Manager', render: row => (Array.isArray(row.managers) && row.managers.length > 0) ? row.managers[0].fullname + '<br/>' + row.managers[0].email : 'no manager information' },
     { id: 'added', label: 'Added Date', render: row => (row.dateAdded) ? (row.dateAdded as DateTime).toFormat('MM/dd/yyyy') : '--/--/----' }
   ]}
-  rows={role.groups.map(g => ({...g, id: g.roleId + g.groupName}))}/>
+  rows={role.groups.map(g => ({ ...g, id: g.roleId + g.groupName }))}/>
 </div>
 {/each}
 
@@ -150,6 +175,7 @@
   modalHeading="Delete Role"
   primaryButtonText="Delete"
   secondaryButtonText="Cancel"
+  danger
   size="sm"
   on:click:button--secondary={closeRoleDeleteDialog}
   on:submit={executeRoleDelete}>

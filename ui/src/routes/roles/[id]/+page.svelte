@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { ColumnList, FieldCheckboxList, FieldHidden, FieldMultiselect, FieldSelect, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
+  import { ColumnList, FieldCheckboxList, FieldHidden, FieldMultiselect, FieldSelect, Panel, PanelFormDialog, Toasts } from '@txstate-mws/carbon-svelte'
+  import { toasts } from '@txstate-mws/svelte-components'
   import { Modal, TooltipDefinition } from 'carbon-components-svelte'
   import Add from 'carbon-icons-svelte/lib/Add.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
   import { setContext } from 'svelte'
-  import { groupby, pick } from 'txstate-utils'
+  import { groupby, pick, ucfirst } from 'txstate-utils'
   import { invalidate } from '$app/navigation'
   import { api, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessTagInput } from '$lib'
   import type { PageData } from './$types'
@@ -60,7 +61,25 @@
     grantToEdit = undefined
     grantToEditInput = undefined
   }
-  async function onSaveGrant () {
+  async function onSaveGrant (event: CustomEvent<AccessRoleGrantCreateForm | AccessRoleGrantUpdateForm>) {
+    const controlGroupName = event.detail.controlGroup
+    if (!controlGroupName) {
+      console.error('No control group in form submission')
+      return
+    }
+    const grantName = controlGroupLookup[controlGroupName]?.title
+    if (!grantName) {
+      console.error('Control group not found in lookup')
+      return
+    }
+    const isEdit = !!grantToEdit
+    const type = isEdit ? (grantToEdit!.allow ? 'grant' : 'exception') : (grantCreateAllow ? 'grant' : 'exception')
+    const action = isEdit ? 'edited' : 'added'
+    toasts.add({
+      type: 'success',
+      title: `${ucfirst(type)} ${action}`,
+      message: `The ${type} ${grantName} was successfully ${action}.`
+    })
     await invalidate('api:getRoleDetails')
     onCloseEdit()
   }
@@ -90,7 +109,22 @@
   }
   async function executeDelete () {
     try {
-      await api.deleteGrant(grantToDelete!.id)
+      if (!grantToDelete) {
+        console.error('No grant selected for deletion')
+        return
+      }
+      const type = grantToDelete.allow ? 'grant' : 'exception'
+      const grantName = controlGroupLookup[grantToDelete.controlGroup.name]?.title
+      if (!grantName) {
+        console.error('Control group not found in lookup')
+        return
+      }
+      await api.deleteGrant(grantToDelete.id)
+      toasts.add({
+        type: 'success',
+        title: `${ucfirst(type)} deleted`,
+        message: `The ${type} ${grantName} was successfully deleted.`
+      })
       await invalidate('api:getRoleDetails')
     } finally {
       closeDeleteConfirmation()
@@ -105,7 +139,7 @@
   <div class="groups">
     <h3>Groups</h3>
     <ul>
-      {#each role.groups as group}
+      {#each role.groups as group (group.groupName)}
         <li>{group.groupName}</li>
       {/each}
     </ul>
@@ -204,7 +238,7 @@
         {/if}
       </svelte:fragment>
     </FieldCheckboxList>
-    {#each controlGroup.tags as category}
+    {#each controlGroup.tags as category (category.category)}
       <FieldMultiselect
         path="tags.{category.category}"
         titleText={category.label}
@@ -259,6 +293,7 @@
     modalHeading="Delete {grantToDelete.allow ? 'Grant' : 'Exception'}"
     primaryButtonText="Delete"
     secondaryButtonText="Cancel"
+    danger
     size="sm"
     on:click:button--primary={executeDelete}
     on:click:button--secondary={closeDeleteConfirmation}
