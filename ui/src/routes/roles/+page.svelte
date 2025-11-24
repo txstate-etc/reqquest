@@ -1,19 +1,17 @@
 <script lang="ts">
-  import { ActionSet, Card, CardGrid, ColumnList, FieldMore, FieldMultiselect, FieldTextArea, FieldTextInput, PanelFormDialog, Toasts, type ComboMenuItem } from '@txstate-mws/carbon-svelte'
+  import { ActionSet, ColumnList, FieldMore, FieldTextArea, FieldTextInput, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
-  import { Modal } from 'carbon-components-svelte'
+  import { Button, Modal } from 'carbon-components-svelte'
   import Add from 'carbon-icons-svelte/lib/Add.svelte'
-  import Settings from 'carbon-icons-svelte/lib/Settings.svelte'
-  // Edit is using Settings icon
-  // import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
+  import SettingsEdit from 'carbon-icons-svelte/lib/SettingsEdit.svelte'
+  import { invalidate } from '$app/navigation'
+  import { api, type AccessRoleInput } from '$lib'
+  import Copy from 'carbon-icons-svelte/lib/Copy.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
   import View from 'carbon-icons-svelte/lib/View.svelte'
-  import Copy from 'carbon-icons-svelte/lib/Copy.svelte'
-  import { omit, pick } from 'txstate-utils'
-  import { invalidate } from '$app/navigation'
-  import { api, type AccessRole, type AccessRoleGroup, type AccessRoleInput } from '$lib'
-  import type { PageData } from './$types'
   import type { DateTime } from 'luxon'
+  import { omit, pick } from 'txstate-utils'
+  import type { PageData } from './$types'
 
   export let data: PageData
   export let rolenames = new Set()
@@ -118,56 +116,68 @@
 <div class="admin-settings">
   <h2 class="text-lg">{role.name}</h2>
   <p>{role.description}</p>
-<ColumnList
-  title={role.name}
-  listActionsMaxButtons={2}
-  listActionsIncludeLabels={false}
-  listActions={[
-    { label: 'Edit', icon: Settings, onClick: () => {
-      createDialog = true
-      editingRole = transformFromAPI(role)
-      isDuplicating = false
-    }
-    },
-    { label: 'View permissions', icon: View, href: `/roles/${role.id}` },
-    { label: 'Duplicate role', icon: Copy, onClick: () => {
-      createDialog = true
-      isDuplicating = true
-      const duplicateRole = transformFromAPI(role)
-      let name = duplicateRole.name
-      while (rolenames.has(name)) {
-        const s = name.search(/[0-9]+$/g)
-        if (s !== -1) {
-          const count = parseInt(name.slice(s))
-          name = name.slice(0, s) + (count + 1).toString()
-        } else {
-          name = name + '-1'
-        }
+<div class="role-list">
+  <ColumnList
+    title={role.name}
+    listActionsMaxButtons={2}
+    listActionsIncludeLabels={false}
+    listActions={[
+      { label: 'Edit', icon: SettingsEdit, onClick: () => {
+        createDialog = true
+        editingRole = transformFromAPI(role)
+        isDuplicating = false
       }
-        // rolenames.add(name)
-      editingRole = { ...omit(duplicateRole, 'name', 'id'), name }
-    }
-    },
-    { label: 'Delete role', icon: TrashCan, onClick: () => openRoleDeleteDialog(role) }
-  ]}
-  noItemsTitle='There are no groups associated with this Role'
-  noItemsSubtitle=''
-  columns={[
-    { id: 'group', label: 'Group', get: 'groupName' },
-    { id: 'manager', label: 'Manager', render: row => (Array.isArray(row.managers) && row.managers.length > 0) ? row.managers[0].fullname + '<br/>' + row.managers[0].email : 'no manager information' },
-    { id: 'added', label: 'Added Date', render: row => (row.dateAdded) ? (row.dateAdded as DateTime).toFormat('MM/dd/yyyy') : '--/--/----' }
-  ]}
-  rows={role.groups.map(g => ({ ...g, id: g.roleId + g.groupName }))}/>
+      },
+      { label: 'View permissions', icon: View, href: `/roles/${role.id}` },
+      { label: 'Duplicate role', icon: Copy, onClick: () => {
+        createDialog = true
+        isDuplicating = true
+        const duplicateRole = transformFromAPI(role)
+        let name = duplicateRole.name
+        while (rolenames.has(name)) {
+          const s = name.search(/[0-9]+$/g)
+          if (s !== -1) {
+            const count = parseInt(name.slice(s))
+            name = name.slice(0, s) + (count + 1).toString()
+          } else {
+            name = name + '-1'
+          }
+        }
+          // rolenames.add(name)
+        editingRole = { ...omit(duplicateRole, 'name', 'id'), name }
+      }
+      },
+      { label: 'Delete role', icon: TrashCan, onClick: () => openRoleDeleteDialog(role) }
+    ]}
+    noItemsTitle='There are no groups associated with this Role'
+    noItemsSubtitle=''
+    columns={[
+      { id: 'group', label: 'Group', get: 'groupName' },
+      { id: 'manager', label: 'Manager', render: row => (Array.isArray(row.managers) && row.managers.length > 0) ? row.managers[0].fullname + '<br/>' + row.managers[0].email : 'no manager information' },
+      { id: 'added', label: 'Added Date', render: row => (row.dateAdded) ? (row.dateAdded as DateTime).toFormat('MM/dd/yyyy') : '--/--/----' }
+    ]}
+    rows={role.groups.map(g => ({ ...g, id: g.roleId + g.groupName }))}/>
+  </div>
 </div>
 {/each}
 
 {#if createDialog}
-  <PanelFormDialog open title="Create Role" preload={editingRole ? pick(editingRole, 'name', 'description', 'groups') : undefined} submit={onSubmit} {validate} on:saved={onSaved} on:cancel={closeDialog}>
+  <PanelFormDialog open title={editingRole?.id ? 'Edit role' : 'Create Role'} preload={editingRole ? pick(editingRole, 'name', 'description', 'groups') : undefined} submit={onSubmit} {validate} on:saved={onSaved} on:cancel={closeDialog} unsavedWarning >
+    <p class="panel-description [ text-sm ] ">You can grant or restrict access to various features and data after creating the role.</p>
     <FieldTextInput path="name" labelText="Role Name" required notNull />
-    <FieldTextArea path="description" labelText="Description" />
+    <FieldTextArea path="description" labelText="Description" helperText="This will help other admins understand what the role does." />
     <FieldMore path="groups" legendText="Groups" required>
       <FieldTextInput path="" labelText="Group Name" placeholder="Enter group name"/>
     </FieldMore>
+    <svelte:fragment slot="afterform">
+      {#if editingRole?.id && !isDuplicating}
+        <div class="[ -mt-8 ]">
+          <Button kind="secondary" icon={Add} href="/roles/{editingRole.id}">
+            Edit permissions
+          </Button>
+        </div>
+      {/if}
+    </svelte:fragment>
   </PanelFormDialog>
 {/if}
 <Modal
@@ -194,5 +204,14 @@
   :global(div.admin-settings p) {
     padding: 0 8px 8px 8px;
     line-height: calc(2rem - 10px);
+  }
+
+  .panel-description {
+    margin-bottom: 1rem;
+    color: var(--cds-text-01);
+  }
+
+  .role-list :global(.column-list-head) {
+    background: var(--cds-ui-03);
   }
 </style>
