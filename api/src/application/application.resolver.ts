@@ -1,5 +1,5 @@
 import { Arg, Ctx, FieldResolver, ID, Mutation, Resolver, Root } from 'type-graphql'
-import { ApplicationActions, Application, RQContext, ApplicationRequirementService, ApplicationRequirement, ApplicationService, ValidatedAppRequestResponse, PeriodWorkflowStage, ProgramService } from '../internal.js'
+import { ApplicationActions, Application, RQContext, ApplicationRequirementService, ApplicationRequirement, ApplicationService, ValidatedAppRequestResponse, PeriodWorkflowStage, ProgramService, AppRequestStatusDB, AppRequestPhase } from '../internal.js'
 
 @Resolver(of => Application)
 export class ApplicationResolver {
@@ -12,6 +12,21 @@ export class ApplicationResolver {
   async workflowStage (@Ctx() ctx: RQContext, @Root() application: Application) {
     if (!application.workflowStageKey) return null
     return await ctx.svc(ProgramService).findWorkflowStage(application.periodId, application.programKey, application.workflowStageKey)
+  }
+
+  @FieldResolver(returns => [PeriodWorkflowStage], { description: 'All workflow stages defined for the program/period of this application, in evaluation order.' })
+  async workflowStages (@Ctx() ctx: RQContext, @Root() application: Application) {
+    return await ctx.svc(ProgramService).findWorkflowStagesByPeriodIdAndProgramKey(application.periodId, application.programKey)
+  }
+
+  @FieldResolver(returns => PeriodWorkflowStage, { nullable: true, description: 'The next workflow stage for this application that would be active after activating the advanceWorkflow mutation. Null if the application or current user is not allowed to advance.' })
+  async nextWorkflowStage (@Ctx() ctx: RQContext, @Root() application: Application) {
+    return await ctx.svc(ApplicationService).getNextWorkflowStage(application)
+  }
+
+  @FieldResolver(returns => PeriodWorkflowStage, { nullable: true, description: 'The previous workflow stage for this application that would be active after activating the reverseWorkflow mutation. Null if the application or current user is not allowed to reverse.' })
+  async previousWorkflowStage (@Ctx() ctx: RQContext, @Root() application: Application) {
+    return await ctx.svc(ApplicationService).getPreviousWorkflowStage(application)
   }
 
   @FieldResolver(returns => ApplicationActions)

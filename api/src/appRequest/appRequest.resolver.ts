@@ -93,32 +93,25 @@ export class AppRequestResolver {
     return await ctx.svc(AppRequestService).submit(appRequest)
   }
 
-  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Make an offer on the app request. If all applications are ineligible, or if there are no acceptance requirements, the applications will advance to the non-blocking workflow, or absent that, be marked complete.' })
-  async offerAppRequest (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
-    const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
-    if (!appRequest) throw new Error('App request not found.')
-    return await ctx.svc(AppRequestService).offer(appRequest)
-  }
-
-  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Cancel or withdraw the app request, depending on its current phase. This is only available if the app request is in a cancellable state.' })
-  async cancelAppRequest (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string, @Arg('dataVersion', type => Int, { nullable: true, description: 'If the user is currently viewing some of the app request details, include the dataVersion here to make the cancellation fail when the app request has been updated by another user.' }) dataVersion?: number) {
-    const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
-    if (!appRequest) throw new Error('App request not found.')
-    return await ctx.svc(AppRequestService).cancelRequest(appRequest, dataVersion)
-  }
-
-  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Reopen the app request. This is only available if the app request is in a state that allows reopening.' })
-  async reopenAppRequest (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
-    const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
-    if (!appRequest) throw new Error('App request not found.')
-    return await ctx.svc(AppRequestService).reopen(appRequest)
-  }
-
   @Mutation(returns => ValidatedAppRequestResponse, { description: 'Return the app request to the applicant phase. This is only available if the app request is in a state that allows returning.' })
-  async returnAppRequest (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
+  async returnToApplicant (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
     const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
     if (!appRequest) throw new Error('App request not found.')
     return await ctx.svc(AppRequestService).returnToApplicant(appRequest)
+  }
+
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Make an offer on the app request. If all applications are ineligible, or if there are no acceptance requirements, the applications will advance to the non-blocking workflow, or absent that, be marked complete.' })
+  async completeReview (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
+    const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
+    if (!appRequest) throw new Error('App request not found.')
+    return await ctx.svc(AppRequestService).completeReview(appRequest)
+  }
+
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Return the app request to the review phase from acceptance, non-blocking workflow, or completion.' })
+  async returnToReview (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
+    const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
+    if (!appRequest) throw new Error('App request not found.')
+    return await ctx.svc(AppRequestService).returnToReview(appRequest)
   }
 
   @Mutation(returns => ValidatedAppRequestResponse, { description: 'This is for the applicant to accept or reject the offer that was made based on their app request. The difference between accept and reject is determined by the status of the acceptance requirements. They will still "accept offer" after they answer that they do not want the offer. If there is non-blocking workflow on any applications, the first one in each will begin. Applications without non-blocking workflow will be advanced to the COMPLETE phase. If all applications are complete, the app request will be closed.' })
@@ -128,13 +121,6 @@ export class AppRequestResolver {
     return await ctx.svc(AppRequestService).acceptOffer(appRequest)
   }
 
-  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Return the app request to the review phase from non-blocking workflow or completion. This does not cover reclaiming an offer - see reverseOffer for that. It also does not cover returning from review to acceptance - see returnToReview for that.' })
-  async returnToReview (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
-    const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
-    if (!appRequest) throw new Error('App request not found.')
-    return await ctx.svc(AppRequestService).returnToReview(appRequest)
-  }
-
   @Mutation(returns => ValidatedAppRequestResponse, { description: 'Return the app request to the acceptance phase from non-blocking workflow or completion.' })
   async returnToOffer (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
     const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
@@ -142,11 +128,25 @@ export class AppRequestResolver {
     return await ctx.svc(AppRequestService).returnToOffer(appRequest)
   }
 
-  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Withdraw the offer and return the app request to the review phase for changes.' })
-  async reverseOffer (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Complete the app request. This is generally only available if request is in non-blocking workflow and all applications are complete.' })
+  async completeRequest (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
     const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
     if (!appRequest) throw new Error('App request not found.')
-    return await ctx.svc(AppRequestService).reverseOffer(appRequest)
+    return await ctx.svc(AppRequestService).completeRequest(appRequest)
+  }
+
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'If request is complete, undo and return to non-blocking workflow.' })
+  async returnToNonBlocking (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
+    const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
+    if (!appRequest) throw new Error('App request not found.')
+    return await ctx.svc(AppRequestService).returnToNonBlocking(appRequest)
+  }
+
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Cancel or withdraw the app request, depending on its current phase. This is only available if the app request is in a cancellable state.' })
+  async cancelAppRequest (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string, @Arg('dataVersion', type => Int, { nullable: true, description: 'If the user is currently viewing some of the app request details, include the dataVersion here to make the cancellation fail when the app request has been updated by another user.' }) dataVersion?: number) {
+    const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
+    if (!appRequest) throw new Error('App request not found.')
+    return await ctx.svc(AppRequestService).cancelRequest(appRequest, dataVersion)
   }
 
   @Mutation(returns => ValidatedAppRequestResponse, { description: 'Close the app request. Generally this is always available and will freeze the request/applications in their current phase/status.' })
@@ -154,6 +154,13 @@ export class AppRequestResolver {
     const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
     if (!appRequest) throw new Error('App request not found.')
     return await ctx.svc(AppRequestService).close(appRequest)
+  }
+
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Reopen the app request. This is only available if the app request is in a state that allows reopening.' })
+  async reopenAppRequest (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
+    const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
+    if (!appRequest) throw new Error('App request not found.')
+    return await ctx.svc(AppRequestService).reopen(appRequest)
   }
 
   @Mutation(returns => ValidatedAppRequestResponse, { description: 'Add a note to the app request.' })
@@ -206,23 +213,23 @@ export class AppRequestAccessResolver {
   }
 
   @FieldResolver(returns => Boolean, { description: 'User may return this app request to the applicant phase.' })
-  return (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
-    return ctx.svc(AppRequestService).mayReturn(appRequest)
+  returnToApplicant (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    return ctx.svc(AppRequestService).mayReturnToApplicant(appRequest)
   }
 
-  @FieldResolver(returns => Boolean, { description: 'User may make an offer on this app request. Sends the app request to the acceptance phase.' })
-  offer (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
-    return ctx.svc(AppRequestService).mayOffer(appRequest)
+  @FieldResolver(returns => Boolean, { description: 'User may complete the review app request. Sends the app request to the acceptance phase, or if there is no acceptance phase, to the non-blocking workflow or completion.' })
+  completeReview (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    return ctx.svc(AppRequestService).mayCompleteReview(appRequest)
+  }
+
+  @FieldResolver(returns => Boolean, { description: 'User may return the app request to the review phase from non-blocking workflow or completion. This does not cover reclaiming an offer - see reverseOffer for that. It also does not cover returning from completion to acceptance - see returnToOffer for that.' })
+  returnToReview (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    return ctx.svc(AppRequestService).mayReturnToReview(appRequest)
   }
 
   @FieldResolver(returns => Boolean, { description: 'User may finalize the acceptance or denial of the offer. Sends the app request to non-blocking workflow (or completion).' })
-  accept (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
-    return ctx.svc(AppRequestService).mayAccept(appRequest)
-  }
-
-  @FieldResolver(returns => Boolean, { description: 'User may withdraw the offer and return the app request to the review phase for changes.' })
-  reverseOffer (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
-    return ctx.svc(AppRequestService).mayReverseOffer(appRequest)
+  acceptOffer (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    return ctx.svc(AppRequestService).mayAcceptOffer(appRequest)
   }
 
   @FieldResolver(returns => Boolean, { description: 'User may return the app request to the acceptance phase from non-blocking workflow or completion.' })
@@ -230,9 +237,14 @@ export class AppRequestAccessResolver {
     return ctx.svc(AppRequestService).mayReturnToOffer(appRequest)
   }
 
-  @FieldResolver(returns => Boolean, { description: 'User may return the app request to the review phase from non-blocking workflow or completion. This does not cover reclaiming an offer - see reverseOffer for that. It also does not cover returning from completion to acceptance - see returnToOffer for that.' })
-  returnToReview (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
-    return ctx.svc(AppRequestService).mayReturnToReview(appRequest)
+  @FieldResolver(returns => Boolean, { description: 'User may complete the app request. All non-blocking workflow must be complete.' })
+  completeRequest (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    return ctx.svc(AppRequestService).mayCompleteRequest(appRequest)
+  }
+
+  @FieldResolver(returns => Boolean, { description: 'User may return to the non-blocking workflow phase from completion.' })
+  returnToNonBlocking (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    return ctx.svc(AppRequestService).mayReturnToNonBlocking(appRequest)
   }
 }
 

@@ -1,5 +1,5 @@
 import db from 'mysql2-async/db'
-import { Application, ApplicationFilter, ApplicationPhase, ApplicationStatus, AppRequestPhase, AppRequestStatusDB, evaluateAppRequest, IneligiblePhases, PeriodWorkflowRow, programRegistry } from '../internal.js'
+import { Application, ApplicationFilter, ApplicationPhase, ApplicationStatus, AppRequestPhase, AppRequestStatus, AppRequestStatusDB, IneligiblePhases, PeriodWorkflowRow, programRegistry } from '../internal.js'
 import { Queryable } from 'mysql2-async'
 import { findIndex } from 'txstate-utils'
 
@@ -15,6 +15,8 @@ export interface ApplicationRow {
   computedIneligiblePhase?: IneligiblePhases
   workflowStage: string
   appRequestStatus: AppRequestStatusDB
+  appRequestComputedStatus: AppRequestStatus
+  appRequestPhase: AppRequestPhase
 }
 
 function processFilters (filter: ApplicationFilter) {
@@ -33,7 +35,7 @@ export async function getApplications (filter: ApplicationFilter, tdb: Queryable
   const { where, binds } = processFilters(filter)
   const rows = await tdb.getall<ApplicationRow>(`
     SELECT a.id, a.appRequestId, ar.periodId, a.programKey, ar.userId, a.computedStatus, a.computedStatusReason, a.computedPhase,
-      a.computedIneligiblePhase, a.workflowStage, ar.status AS appRequestStatus
+      a.computedIneligiblePhase, a.workflowStage, ar.status AS appRequestStatus, ar.phase AS appRequestPhase, ar.computedStatus AS appRequestComputedStatus
     FROM applications a
     INNER JOIN app_requests ar ON ar.id = a.appRequestId
     WHERE (${where.join(') AND (')})
@@ -122,20 +124,18 @@ export async function reverseWorkflow (applicationId: string, tdb: Queryable = d
   `, [application.programKey, application.periodId])
   const blocking = stages.filter(stage => !!stage.blocking)
   const nonblocking = stages.filter(stage => !stage.blocking)
-
-  const fromStage = stages.find(stage => stage.stageKey === application.workflowStage)
-  if (!fromStage) return
-  const activeStages = fromStage.blocking ? blocking : nonblocking
-  const currIdx = findIndex(activeStages, stage => stage.stageKey === fromStage.stageKey)
+  const currentlyBlocking = application.appRequestPhase === AppRequestPhase.WORKFLOW_NONBLOCKING ? false : true
+  const activeStages = currentlyBlocking ? blocking : nonblocking
+  const fromStage = activeStages.find(stage => stage.stageKey === application.workflowStage)
+  const currIdx = findIndex(activeStages, stage => stage.stageKey === fromStage?.stageKey)
   let toStage: PeriodWorkflowRow | undefined = activeStages[(currIdx ?? 0) - 1]
   let toPhase: ApplicationPhase | undefined
-  if (fromStage.blocking) {
+  if (currentlyBlocking) {
     toPhase = toStage ? ApplicationPhase.WORKFLOW_BLOCKING : ApplicationPhase.APPROVAL
   } else if (toStage != null) {
     toPhase = ApplicationPhase.WORKFLOW_NONBLOCKING
   } else {
     throw new Error('Cannot reverse workflow any further.')
   }
-
   await tdb.update('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [toPhase, toStage?.stageKey, applicationId])
 }

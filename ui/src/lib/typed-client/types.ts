@@ -476,7 +476,7 @@ export default {
             ]
         },
         "AppRequestActions": {
-            "accept": [
+            "acceptOffer": [
                 36
             ],
             "cancel": [
@@ -485,22 +485,25 @@ export default {
             "close": [
                 36
             ],
-            "offer": [
+            "completeRequest": [
+                36
+            ],
+            "completeReview": [
                 36
             ],
             "reopen": [
                 36
             ],
-            "return": [
+            "returnToApplicant": [
+                36
+            ],
+            "returnToNonBlocking": [
                 36
             ],
             "returnToOffer": [
                 36
             ],
             "returnToReview": [
-                36
-            ],
-            "reverseOffer": [
                 36
             ],
             "review": [
@@ -679,8 +682,14 @@ export default {
             "navTitle": [
                 74
             ],
+            "nextWorkflowStage": [
+                64
+            ],
             "phase": [
                 33
+            ],
+            "previousWorkflowStage": [
+                64
             ],
             "programKey": [
                 74
@@ -698,6 +707,9 @@ export default {
                 74
             ],
             "workflowStage": [
+                64
+            ],
+            "workflowStages": [
                 64
             ],
             "__typename": [
@@ -948,6 +960,24 @@ export default {
                     ]
                 }
             ],
+            "completeRequest": [
+                75,
+                {
+                    "appRequestId": [
+                        44,
+                        "ID!"
+                    ]
+                }
+            ],
+            "completeReview": [
+                75,
+                {
+                    "appRequestId": [
+                        44,
+                        "ID!"
+                    ]
+                }
+            ],
             "createAppRequest": [
                 75,
                 {
@@ -988,15 +1018,6 @@ export default {
                     ]
                 }
             ],
-            "offerAppRequest": [
-                75,
-                {
-                    "appRequestId": [
-                        44,
-                        "ID!"
-                    ]
-                }
-            ],
             "reopenAppRequest": [
                 75,
                 {
@@ -1006,7 +1027,16 @@ export default {
                     ]
                 }
             ],
-            "returnAppRequest": [
+            "returnToApplicant": [
+                75,
+                {
+                    "appRequestId": [
+                        44,
+                        "ID!"
+                    ]
+                }
+            ],
+            "returnToNonBlocking": [
                 75,
                 {
                     "appRequestId": [
@@ -1025,15 +1055,6 @@ export default {
                 }
             ],
             "returnToReview": [
-                75,
-                {
-                    "appRequestId": [
-                        44,
-                        "ID!"
-                    ]
-                }
-            ],
-            "reverseOffer": [
                 75,
                 {
                     "appRequestId": [

@@ -1,5 +1,5 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
-import { ApplicationRow, AppRequestStatusDB, ProgramDefinition, programRegistry } from '../internal.js'
+import { ApplicationRow, AppRequestPhase, AppRequestStatus, AppRequestStatusDB, ProgramDefinition, programRegistry } from '../internal.js'
 
 export enum ApplicationStatus {
   PENDING = 'PENDING',
@@ -37,6 +37,7 @@ export enum ApplicationPhase {
   ACCEPTANCE = 'ACCEPTANCE',
   READY_TO_ACCEPT = 'READY_TO_ACCEPT',
   WORKFLOW_NONBLOCKING = 'WORKFLOW_NONBLOCKING',
+  READY_TO_COMPLETE = 'READY_TO_COMPLETE',
   COMPLETE = 'COMPLETE'
 }
 
@@ -58,6 +59,7 @@ registerEnumType(ApplicationPhase, {
     ACCEPTANCE: { description: 'The application has been reviewed and an offer has been made to the applicant. The applicant must accept the offer.' },
     READY_TO_ACCEPT: { description: 'An offer has been made to the applicant. The acceptance requirements are no longer pending, the application is ready to be finalized.' },
     WORKFLOW_NONBLOCKING: { description: 'The application has been offered and accepted and now there is a workflow process to audit the review AFTER marking the application status as eligible or ineligible. Requirements from non-blocking workflow states cannot affect the application status, but the application will not proceed to the complete phase until all workflow stages are non-PENDING.' },
+    READY_TO_COMPLETE: { description: 'All non-blocking workflow stages are complete. The application is ready to be finalized.' },
     COMPLETE: { description: 'The application has been reviewed. If there was a workflow, it is complete. If there was an acceptance phase, the offer was accepted or rejected.' }
   }
 })
@@ -103,6 +105,9 @@ export class Application {
     this.navTitle = this.program.title ?? this.program.title
     this.authorizationKeys = { program: [this.program.key] }
     this.closed = row.appRequestStatus !== AppRequestStatusDB.OPEN
+    this.appRequestPhase = row.appRequestPhase
+    this.appRequestStatus = row.appRequestStatus
+    this.appRequestComputedStatus = row.appRequestComputedStatus
   }
 
   @Field(() => ID)
@@ -139,6 +144,9 @@ export class Application {
   authorizationKeys: Record<string, string[]>
   workflowStageKey?: string
   closed: boolean
+  appRequestPhase: AppRequestPhase
+  appRequestStatus: AppRequestStatusDB
+  appRequestComputedStatus: AppRequestStatus
 }
 
 @ObjectType()

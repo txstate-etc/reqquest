@@ -56,3 +56,6 @@ export interface ApplicationForDetails {
     prompts: AnsweredPrompt[]
   }[]
 }
+
+export const phaseChangeMutations = ['submitAppRequest', 'returnToApplicant', 'completeAppRequestReview', 'returnToReview', 'acceptOffer', 'returnToOffer', 'completeRequest', 'returnToNonBlocking'] as const
+export type PhaseChangeMutations = typeof phaseChangeMutations[number]

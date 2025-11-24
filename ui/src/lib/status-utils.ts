@@ -105,13 +105,13 @@ export const APP_REQUEST_STATUS_CONFIG: Record<AppRequestStatus, AppStatusConfig
     category: 'current'
   },
   REVIEW_COMPLETE: {
-    label: 'Review complete',
-    description: 'Review is complete, processing next steps.',
+    label: 'In review',
+    description: 'Application is being reviewed.',
     color: 'blue',
-    waitingOn: 'System',
+    waitingOn: 'Reviewer',
     buttonText: 'Export Application',
     actionType: 'export',
-    category: 'past'
+    category: 'current'
   },
   APPROVED: {
     label: 'Approved',
@@ -166,6 +166,79 @@ export const APP_REQUEST_STATUS_CONFIG: Record<AppRequestStatus, AppStatusConfig
     buttonText: '',
     actionType: 'none',
     category: 'past'
+  }
+}
+
+export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, Pick<AppStatusConfig, 'label' | 'description' | 'color'>> = {
+  STARTED: {
+    label: 'In progress',
+    description: 'Application is in progress and has not been submitted.',
+    color: 'green'
+  },
+  READY_TO_SUBMIT: {
+    label: 'In progress',
+    description: 'Application is complete and ready to submit.',
+    color: 'green'
+  },
+  PREAPPROVAL: {
+    label: 'Review pending',
+    description: 'Application submitted and waiting for pre-approval requirements.',
+    color: 'blue'
+  },
+  APPROVAL: {
+    label: 'In review',
+    description: 'Application is being reviewed.',
+    color: 'blue'
+  },
+  ACCEPTANCE: {
+    label: 'Offer pending',
+    description: 'Waiting for you to respond to the offer.',
+    color: 'teal'
+  },
+  ACCEPTED: {
+    label: 'Offer accepted',
+    description: 'You have accepted an offer.',
+    color: 'green'
+  },
+  READY_TO_ACCEPT: {
+    label: 'Offer pending',
+    description: 'You have been offered and can now accept.',
+    color: 'teal'
+  },
+  REVIEW_COMPLETE: {
+    label: 'Ready to release',
+    description: 'Review is ready to be released to the applicant.',
+    color: 'blue'
+  },
+  APPROVED: {
+    label: 'Approved',
+    description: 'Your application has been approved.',
+    color: 'green'
+  },
+  NOT_APPROVED: {
+    label: 'Ineligible',
+    description: 'Your application was not approved.',
+    color: 'red'
+  },
+  NOT_ACCEPTED: {
+    label: 'Offer declined',
+    description: 'The offer was not accepted.',
+    color: 'gray'
+  },
+  CANCELLED: {
+    label: 'Cancelled',
+    description: 'Application was cancelled before submission.',
+    color: 'gray'
+  },
+  WITHDRAWN: {
+    label: 'Withdrawn',
+    description: 'Application was withdrawn after submission.',
+    color: 'gray'
+  },
+  DISQUALIFIED: {
+    label: 'Ineligible',
+    description: 'All applications have been disqualified.',
+    color: 'red'
   }
 }
 

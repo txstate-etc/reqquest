@@ -8,8 +8,8 @@ import {
   AppRequestAccessResolver, PeriodProgramResolver,
   AccessUserResolver, AccessRoleResolver, RoleActionsResolver, RequirementPromptActionsResolver, accessMigrations,
   DatabaseMigration, initializeDb, DateTimeScalar, rqContextMixin, ProgramDefinition,
-  RequirementDefinition, PromptDefinition, AppDefinition, ProgramGroupDefinition, programRegistry,
-  programGroupRegistry, promptRegistry, requirementRegistry, appConfig, promptMigrations,
+  RequirementDefinition, PromptDefinition, AppDefinition, programRegistry,
+  promptRegistry, requirementRegistry, appConfig, promptMigrations,
   requirementMigrations, appRequestMigrations, RQContextClass, ensureConfigurationRecords,
   periodMigrations, AccessControlGroupResolver, AppRequestResolver, ApplicationResolver, ApplicationRequirementResolver,
   RequirementPromptResolver, PeriodResolver, PeriodActionsResolver, ConfigurationResolver,
@@ -43,7 +43,6 @@ export interface RQStartOpts extends Omit<GQLStartOpts, 'resolvers'> {
   pastPrograms?: ProgramDefinition[]
   requirements: RequirementDefinition[]
   prompts: PromptDefinition[]
-  programGroups: ProgramGroupDefinition[]
 }
 
 export class RQServer extends GQLServer {
@@ -112,7 +111,6 @@ export class RQServer extends GQLServer {
     appConfig.customContext = options.customContext as RQContextClass
     for (const prompt of options.prompts) promptRegistry.register(prompt)
     for (const requirement of options.requirements) requirementRegistry.register(requirement)
-    for (const group of options.programGroups) programGroupRegistry.register(group)
     for (const program of options.programs) programRegistry.register(program, true)
     for (const program of options.pastPrograms ?? []) programRegistry.register(program, false)
     programRegistry.finalize()

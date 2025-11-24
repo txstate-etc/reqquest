@@ -31,7 +31,7 @@ async function main () {
 
   await server.app.register(analyticsPlugin, { appName: 'reqquest', authorize: req => !!req.auth?.username.length })
 
-  const { programGroups, programs, requirements, prompts, migrations, multipleRequestsPerPeriod } = configureDemoInstanceParams()
+  const { programs, requirements, prompts, migrations, multipleRequestsPerPeriod } = configureDemoInstanceParams()
 
   const userTypes: Record<string, { groups: string[], otherInfo: { email: {} } }> = {
     su: { groups: ['sudoers'], otherInfo: { email: {} } },
@@ -91,7 +91,6 @@ async function main () {
         return groupnames.map(groupName => ({ groupName, managers: [{ fullname: `${String(groupName).charAt(0).toLocaleUpperCase() + String(groupName).slice(1)} Lastname`, email: `${groupName.toLocaleLowerCase()}@txstate.edu` }], dateCreated: groupDateAdded(groupName) }))
       }
     },
-    programGroups,
     programs,
     requirements,
     prompts,
@@ -103,7 +102,6 @@ main().catch(e => { console.error(e) })
 
 function configureDemoInstanceParams () {
   if (process.env.DEMO_INSTANCE === 'simple') return {
-    programGroups: [],
     programs: Object.values(simplePrograms),
     requirements: Object.values(simpleRequirements),
     prompts: Object.values(simplePrompts),
@@ -111,7 +109,6 @@ function configureDemoInstanceParams () {
     multipleRequestsPerPeriod: false
   }
   else if (process.env.DEMO_INSTANCE === 'multi') return {
-    programGroups: [],
     programs: Object.values(multiPrograms),
     requirements: Object.values(multiRequirements),
     prompts: Object.values(multiPrompts),
@@ -119,7 +116,6 @@ function configureDemoInstanceParams () {
     multipleRequestsPerPeriod: true
   }
   else if (process.env.DEMO_INSTANCE === 'complex') return {
-    programGroups: [],
     programs: Object.values(complexPrograms),
     requirements: Object.values(complexRequirements),
     prompts: Object.values(complexPrompts),
@@ -127,7 +123,6 @@ function configureDemoInstanceParams () {
     multipleRequestsPerPeriod: false
   }
   return {
-    programGroups: [],
     programs: Object.values(defaultPrograms),
     requirements: Object.values(defaultRequirements),
     prompts: Object.values(defaultPrompts),

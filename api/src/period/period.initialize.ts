@@ -43,6 +43,7 @@ export const periodMigrations: DatabaseMigration[] = [
           periodId INT UNSIGNED NOT NULL,
           programKey VARCHAR(255) NOT NULL,
           requirementKey VARCHAR(255) NOT NULL,
+          workflowStageKey VARCHAR(255) NULL,
           disabled TINYINT(1) NOT NULL DEFAULT 0,
           updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           PRIMARY KEY (periodId, programKey, requirementKey),

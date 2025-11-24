@@ -8,15 +8,23 @@ import {
   AppRequestStatus, appRequestMakeOffer, getAppRequestTags, ApplicationRequirementService,
   recordAppRequestActivity, addAppRequestNote, closeAppRequest, getAppRequestActivity,
   AppRequestActivityFilters, PeriodService, createAppRequest, Period, appConfig, AccessUser, ReqquestUser,
-  AccessDatabase, cancelAppRequest, reopenAppRequest, returnAppRequest, acceptOffer, ApplicationPhase,
+  AccessDatabase, cancelAppRequest, reopenAppRequest, appRequestReturnToApplicant, acceptOffer, ApplicationPhase,
   ApplicationService, RequirementPromptService,
   AppRequestPhase,
   appRequestReturnToOffer,
   appRequestReturnToReview,
   promptRegistry,
   PaginationInfoWithTotalItems,
-  Pagination
+  Pagination,
+  appRequestComplete,
+  appRequestReturnToNonBlocking
 } from '../internal.js'
+
+const phaseNames = {
+  [AppRequestPhase.ACCEPTANCE]: 'offer acceptance',
+  [AppRequestPhase.WORKFLOW_NONBLOCKING]: 'final workflow tasks',
+  [AppRequestPhase.COMPLETE]: 'completion'
+}
 
 const appReqByIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -289,53 +297,63 @@ export class AppRequestService extends AuthService<AppRequest> {
     return this.isOwn(appRequest) || this.hasControl('AppRequest', 'submit', appRequest.tags)
   }
 
-  mayReturn (appRequest: AppRequest) {
+  mayReturnToApplicant (appRequest: AppRequest) {
     if (this.isClosed(appRequest)) return false
     if (appRequest.phase !== AppRequestPhase.SUBMITTED) return false
     if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false
     return this.hasControl('AppRequest', 'return', appRequest.tags)
   }
 
-  mayOffer (appRequest: AppRequest) {
+  mayCompleteReview (appRequest: AppRequest) {
     if (this.isClosed(appRequest)) return false
     if (appRequest.phase !== AppRequestPhase.SUBMITTED) return false
     if (appRequest.status !== AppRequestStatus.REVIEW_COMPLETE) return false
-    if (!this.isAcceptancePeriod(appRequest.periodId)) return false
-    if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false
-    return this.hasControl('AppRequest', 'offer', appRequest.tags)
-  }
-
-  mayReverseOffer (appRequest: AppRequest) {
-    if (this.isClosed(appRequest)) return false
-    if ([AppRequestPhase.ACCEPTANCE].includes(appRequest.phase)) return false
-    if (!this.isAcceptancePeriod(appRequest.periodId)) return false
     if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false
     return this.hasControl('AppRequest', 'offer', appRequest.tags)
   }
 
   mayReturnToOffer (appRequest: AppRequest) {
     if (this.isClosed(appRequest)) return false
-    if (appRequest.phase !== AppRequestPhase.ACCEPTANCE) return false
     if (!this.isAcceptancePeriod(appRequest.periodId)) return false
+    if (![AppRequestPhase.WORKFLOW_NONBLOCKING, AppRequestPhase.COMPLETE].includes(appRequest.phase)) return false
+    if (appRequest.phase === AppRequestPhase.COMPLETE && this.isNonBlockingWorkflowPeriod(appRequest.periodId)) return false
     if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false
-    return this.hasControl('AppRequest', 'offer', appRequest.tags)
+    return this.hasControl('AppRequest', 'return', appRequest.tags)
   }
 
-  /**
-   * Current user may return the app request from complete to review
-   *
-   * Returns false if we are in a period that has an acceptance phase, but mayReturnToOffer may be true
-   */
   mayReturnToReview (appRequest: AppRequest) {
     if (this.isClosed(appRequest)) return false
     if (this.isAcceptancePeriod(appRequest.periodId)) return false
-    if (![AppRequestPhase.COMPLETE, AppRequestPhase.WORKFLOW_NONBLOCKING].includes(appRequest.phase)) return false
+    if (![AppRequestPhase.COMPLETE, AppRequestPhase.WORKFLOW_NONBLOCKING, AppRequestPhase.ACCEPTANCE].includes(appRequest.phase)) return false
+    // cannot skip over acceptance phase if there is one
+    if ([AppRequestPhase.WORKFLOW_NONBLOCKING, AppRequestPhase.COMPLETE].includes(appRequest.phase) && this.isAcceptancePeriod(appRequest.periodId)) return false
+    // cannot skip over non-blocking workflow if there is some
+    if (appRequest.phase === AppRequestPhase.COMPLETE && this.isNonBlockingWorkflowPeriod(appRequest.periodId)) return false
     if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false
-    return this.hasControl('AppRequest', 'return_to_review', appRequest.tags)
+    return this.hasControl('AppRequest', 'review', appRequest.tags)
   }
 
-  mayAccept (appRequest: AppRequest) {
-    return this.maySubmit(appRequest)
+  mayCompleteRequest (appRequest: AppRequest) {
+    if (this.isClosed(appRequest)) return false
+    // appRequest.readyToComplete is computed for us by evaluateAppRequest and includes non-blocking workflow check and applications are all ready to complete
+    if (!appRequest.readyToComplete) return false
+    if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false
+    return this.hasControl('AppRequest', 'review', appRequest.tags)
+  }
+
+  mayReturnToNonBlocking (appRequest: AppRequest) {
+    if (this.isClosed(appRequest)) return false
+    if (appRequest.phase !== AppRequestPhase.COMPLETE) return false
+    if (!this.isNonBlockingWorkflowPeriod(appRequest.periodId)) return false
+    if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false
+    return this.hasControl('AppRequest', 'review', appRequest.tags)
+  }
+
+  mayAcceptOffer (appRequest: AppRequest) {
+    if (this.isClosed(appRequest)) return false
+    if (!this.isInOpenPeriod(appRequest)) return false
+    if (appRequest.status !== AppRequestStatus.READY_TO_ACCEPT) return false
+    return this.isOwn(appRequest) || this.hasControl('AppRequest', 'submit', appRequest.tags)
   }
 
   async create (periodId: string, login: string, validateOnly?: boolean) {
@@ -396,115 +414,133 @@ export class AppRequestService extends AuthService<AppRequest> {
     return response
   }
 
+  async phaseChange (appRequest: AppRequest, check: (response: ValidatedAppRequestResponse) => Promise<void>, action: (response: ValidatedAppRequestResponse) => Promise<void>, activity: string) {
+    const response = new ValidatedAppRequestResponse()
+    await check(response)
+    if (response.hasErrors()) return response
+    const beforeApps = await this.svc(ApplicationService).findByAppRequest(appRequest)
+    const beforeAppsByProgramKey = keyby(beforeApps, app => app.programKey)
+    await action(response)
+    if (response.hasErrors()) return response
+    await this.recordActivity(appRequest, activity)
+    this.loaders.clear()
+    response.appRequest = (await this.findById(appRequest.id))!
+    try {
+      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, appRequest.status)
+      const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
+      for (const app of applications) {
+        const oldPhase = beforeAppsByProgramKey[app.programKey]?.phase
+        if (app.phase !== oldPhase) await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, oldPhase)
+      }
+    } catch (err) {
+      console.error(err)
+    }
+    return response
+  }
+
   async submit (appRequest: AppRequest) {
-    if (!this.maySubmit(appRequest)) throw new Error('You may not submit this app request.')
-    const response = new ValidatedAppRequestResponse()
-    if (response.hasErrors()) return response
-    await submitAppRequest(appRequest.internalId)
-    await this.recordActivity(appRequest, 'Submitted')
-    this.loaders.clear()
-    response.appRequest = (await this.findById(appRequest.id))!
-    try {
-      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, AppRequestStatus.READY_TO_SUBMIT)
-      const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
-      for (const app of applications) {
-        await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, ApplicationPhase.READY_TO_SUBMIT)
-      }
-    } catch (err) {
-      console.error(err)
-    }
-
-    return response
+    return await this.phaseChange(appRequest,
+      async () => {
+        if (!this.maySubmit(appRequest)) throw new Error('You may not submit this app request.')
+      },
+      async () => {
+        await submitAppRequest(appRequest.internalId)
+      },
+      'Submitted request for review.'
+    )
   }
 
-  async offer (appRequest: AppRequest) {
-    if (!this.mayOffer(appRequest)) throw new Error('You may not make an offer on this app request.')
-    const response = new ValidatedAppRequestResponse()
-    if (response.hasErrors()) return response
-    await appRequestMakeOffer(appRequest.internalId)
-    await this.recordActivity(appRequest, 'Made Offer')
-    this.loaders.clear()
-    response.appRequest = (await this.findById(appRequest.id))!
-    try {
-      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, AppRequestStatus.REVIEW_COMPLETE)
-      const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
-      for (const app of applications) {
-        await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, ApplicationPhase.REVIEW_COMPLETE)
-      }
-    } catch (err) {
-      console.error(err)
-    }
-
-    return response
-  }
-
-  async reverseOffer (appRequest: AppRequest) {
-    if (!this.mayReverseOffer(appRequest)) throw new Error('You may not reverse this offer.')
-    const response = new ValidatedAppRequestResponse()
-    if (response.hasErrors()) return response
-    const beforeApps = await this.svc(ApplicationService).findByAppRequest(appRequest)
-    const beforeAppsByProgramKey = keyby(beforeApps, app => app.programKey)
-    await appRequestReturnToReview(appRequest.internalId)
-    await this.recordActivity(appRequest, 'Pulled Back Offer')
-    this.loaders.clear()
-    response.appRequest = (await this.findById(appRequest.id))!
-    try {
-      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, appRequest.status)
-      const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
-      for (const app of applications) {
-        await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, beforeAppsByProgramKey[app.programKey].phase)
-      }
-    } catch (err) {
-      console.error(err)
-    }
-
-    return response
-  }
-
-  async returnToOffer (appRequest: AppRequest) {
-    if (!this.mayReturnToOffer(appRequest)) throw new Error('You may not return this app request to the acceptance phase.')
-    const response = new ValidatedAppRequestResponse()
-    if (response.hasErrors()) return response
-    const beforeApps = await this.svc(ApplicationService).findByAppRequest(appRequest)
-    const beforeAppsByProgramKey = keyby(beforeApps, app => app.programKey)
-    await appRequestReturnToOffer(appRequest.internalId)
-    await this.recordActivity(appRequest, 'Returned to Acceptance Phase')
-    this.loaders.clear()
-    response.appRequest = (await this.findById(appRequest.id))!
-    try {
-      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, appRequest.status)
-      const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
-      for (const app of applications) {
-        await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, beforeAppsByProgramKey[app.programKey].phase)
-      }
-    } catch (err) {
-      console.error(err)
-    }
-
-    return response
+  async completeReview (appRequest: AppRequest) {
+    const nextPhase = this.isAcceptancePeriod(appRequest.periodId)
+      ? AppRequestPhase.ACCEPTANCE
+      : this.isNonBlockingWorkflowPeriod(appRequest.periodId)
+        ? AppRequestPhase.WORKFLOW_NONBLOCKING
+        : AppRequestPhase.COMPLETE
+    return await this.phaseChange(appRequest,
+      async () => {
+        if (!this.mayCompleteReview(appRequest)) throw new Error('You may not complete review of this app request.')
+      },
+      async () => {
+        await appRequestMakeOffer(appRequest.internalId, nextPhase)
+      },
+      `Completed Review, advanced to ${phaseNames[nextPhase]}.`
+    )
   }
 
   async returnToReview (appRequest: AppRequest) {
-    if (!this.mayReturnToReview(appRequest)) throw new Error('You may not return this app request to the review phase.')
-    const response = new ValidatedAppRequestResponse()
-    if (response.hasErrors()) return response
-    const beforeApps = await this.svc(ApplicationService).findByAppRequest(appRequest)
-    const beforeAppsByProgramKey = keyby(beforeApps, app => app.programKey)
-    await appRequestReturnToReview(appRequest.internalId)
-    await this.recordActivity(appRequest, 'Returned to Review Phase')
-    this.loaders.clear()
-    response.appRequest = (await this.findById(appRequest.id))!
-    try {
-      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, appRequest.status)
-      const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
-      for (const app of applications) {
-        await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, beforeAppsByProgramKey[app.programKey].phase)
-      }
-    } catch (err) {
-      console.error(err)
-    }
+    return await this.phaseChange(appRequest,
+      async () => {
+        if (!this.mayReturnToReview(appRequest)) throw new Error('You may not return this app request to the review phase.')
+      },
+      async () => {
+        await appRequestReturnToReview(appRequest.internalId)
+      },
+      'Returned entire request to review phase.'
+    )
+  }
 
-    return response
+  async returnToOffer (appRequest: AppRequest) {
+    return await this.phaseChange(appRequest,
+      async () => {
+        if (!this.mayReturnToOffer(appRequest)) throw new Error('You may not reverse this offer.')
+      },
+      async () => {
+        await appRequestReturnToOffer(appRequest.internalId)
+      },
+      'Returned request to applicant\'s offer acceptance phase.'
+    )
+  }
+
+  async returnToApplicant (appRequest: AppRequest, dataVersion?: number) {
+    return await this.phaseChange(appRequest,
+      async () => {
+        if (!this.mayReturnToApplicant(appRequest)) throw new Error('You may not return this app request.')
+      },
+      async () => {
+        await appRequestReturnToApplicant(appRequest.internalId, dataVersion)
+      },
+      'Returned to applicant'
+    )
+  }
+
+  async acceptOffer (appRequest: AppRequest, dataVersion?: number) {
+    const nextPhase = this.isNonBlockingWorkflowPeriod(appRequest.periodId)
+      ? AppRequestPhase.WORKFLOW_NONBLOCKING
+      : AppRequestPhase.COMPLETE
+
+    return await this.phaseChange(appRequest,
+      async () => {
+        if (!this.mayAcceptOffer(appRequest)) throw new Error('You may not accept an offer on this app request.')
+      },
+      async () => {
+        await acceptOffer(appRequest.internalId, nextPhase, dataVersion)
+      },
+      'Accepted'
+    )
+  }
+
+  async completeRequest (appRequest: AppRequest) {
+    return await this.phaseChange(appRequest,
+      async () => {
+        if (!this.mayCompleteRequest(appRequest)) throw new Error('You may not complete this app request.')
+      },
+      async () => {
+        await appRequestComplete(appRequest.internalId)
+      },
+      'Completed Request.'
+    )
+  }
+
+  async returnToNonBlocking (appRequest: AppRequest) {
+    return await this.phaseChange(appRequest,
+      async () => {
+        if (!this.mayReturnToNonBlocking(appRequest)) throw new Error('You may not return this app request to non-blocking workflow.')
+      },
+      async () => {
+        await appRequestReturnToNonBlocking(appRequest.internalId)
+      },
+      'Returned to non-blocking workflow phase.'
+    )
   }
 
   async close (appRequest: AppRequest) {
@@ -523,6 +559,31 @@ export class AppRequestService extends AuthService<AppRequest> {
     return response
   }
 
+  async cancelRequest (appRequest: AppRequest, dataVersion?: number) {
+    const withdrawn = appRequest.phase !== AppRequestPhase.STARTED
+    return await this.phaseChange(appRequest,
+      async () => {
+        if (!this.mayCancel(appRequest)) throw new Error('You may not cancel this app request.')
+      },
+      async () => {
+        await cancelAppRequest(appRequest.internalId, dataVersion)
+      },
+      withdrawn ? 'Withdrew' : 'Cancelled'
+    )
+  }
+
+  async reopen (appRequest: AppRequest) {
+    return await this.phaseChange(appRequest,
+      async () => {
+        if (!this.mayReopen(appRequest)) throw new Error('You may not reopen this app request.')
+      },
+      async () => {
+        await reopenAppRequest(appRequest.internalId)
+      },
+      'Reopened'
+    )
+  }
+
   async addNote (appRequest: AppRequest, note: string, internal: boolean) {
     if (!this.mayAddNote(appRequest)) throw new Error('You may not add a note to this app request.')
     const response = new ValidatedAppRequestResponse()
@@ -532,93 +593,6 @@ export class AppRequestService extends AuthService<AppRequest> {
     await this.recordActivity(appRequest, 'Added Note', { description: note })
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
-    return response
-  }
-
-  async cancelRequest (appRequest: AppRequest, dataVersion?: number) {
-    if (!this.mayCancel(appRequest)) throw new Error('You may not cancel this app request.')
-    const response = new ValidatedAppRequestResponse()
-    if (response.hasErrors()) return response
-    const applicationsBefore = await this.svc(ApplicationService).findByAppRequest(appRequest)
-    const appBeforePhase = applicationsBefore.reduce((acc, app) => ({ ...acc, [app.programKey]: app.phase }), {} as Record<string, ApplicationPhase>)
-    const withdrawn = await cancelAppRequest(appRequest.internalId, dataVersion)
-    await this.recordActivity(appRequest, withdrawn ? 'Withdrew' : 'Cancelled')
-    this.loaders.clear()
-    response.appRequest = (await this.findById(appRequest.id))!
-    try {
-      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, appRequest.status)
-      const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
-      for (const app of applications) {
-        await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, appBeforePhase[app.programKey])
-      }
-    } catch (err) {
-      console.error(err)
-    }
-
-    return response
-  }
-
-  async reopen (appRequest: AppRequest) {
-    if (!this.mayReopen(appRequest)) throw new Error('You may not reopen this app request.')
-    const response = new ValidatedAppRequestResponse()
-    if (response.hasErrors()) return response
-    const applicationsBefore = await this.svc(ApplicationService).findByAppRequest(appRequest)
-    const appBeforePhase = applicationsBefore.reduce((acc, app) => ({ ...acc, [app.programKey]: app.phase }), {} as Record<string, ApplicationPhase>)
-    await reopenAppRequest(appRequest.internalId)
-    await this.recordActivity(appRequest, 'Reopened')
-    this.loaders.clear()
-    response.appRequest = (await this.findById(appRequest.id))!
-    try {
-      const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
-      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, appRequest.status)
-      for (const app of applications) {
-        await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, appBeforePhase[app.programKey])
-      }
-    } catch (err) {
-      console.error(err)
-    }
-    return response
-  }
-
-  async returnToApplicant (appRequest: AppRequest, dataVersion?: number) {
-    if (!this.mayReturn(appRequest)) throw new Error('You may not return this app request.')
-    const response = new ValidatedAppRequestResponse()
-    if (response.hasErrors()) return response
-    const applicationsBefore = await this.svc(ApplicationService).findByAppRequest(appRequest)
-    const appBeforePhase = applicationsBefore.reduce((acc, app) => ({ ...acc, [app.programKey]: app.phase }), {} as Record<string, ApplicationPhase>)
-    await returnAppRequest(appRequest.internalId, dataVersion)
-    await this.recordActivity(appRequest, 'Returned to applicant')
-    this.loaders.clear()
-    response.appRequest = (await this.findById(appRequest.id))!
-    try {
-      const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
-      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, appRequest.status)
-      for (const app of applications) {
-        await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, appBeforePhase[app.programKey])
-      }
-    } catch (err) {
-      console.error(err)
-    }
-    return response
-  }
-
-  async acceptOffer (appRequest: AppRequest, dataVersion?: number) {
-    if (!this.mayAccept(appRequest)) throw new Error('You may not accept an offer on this app request.')
-    const response = new ValidatedAppRequestResponse()
-    if (response.hasErrors()) return response
-    await acceptOffer(appRequest.internalId, dataVersion)
-    await this.recordActivity(appRequest, 'Accepted')
-    this.loaders.clear()
-    response.appRequest = (await this.findById(appRequest.id))!
-    try {
-      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, AppRequestStatus.READY_TO_ACCEPT)
-      const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
-      for (const app of applications) {
-        await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, ApplicationPhase.READY_TO_ACCEPT)
-      }
-    } catch (err) {
-      console.error(err)
-    }
     return response
   }
 }

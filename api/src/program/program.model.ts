@@ -64,3 +64,24 @@ export class PeriodProgramFilters {
 
 @ObjectType()
 export class PeriodProgramActions {}
+
+@InputType()
+export class WorkflowStageFilters {
+  @Field(() => [String], { nullable: true })
+  workflowIds?: { periodId: string, programKey: string, workflowKey: string }[]
+
+  @Field(() => [ID], { nullable: true })
+  periodIds?: string[]
+
+  @Field(() => [String], { nullable: true })
+  workflowKeys?: string[]
+
+  @Field(() => Boolean, { nullable: true })
+  hasEnabledRequirements?: boolean
+
+  @Field(() => Boolean, { nullable: true })
+  blocking?: boolean
+
+  @Field(() => [PeriodProgramKey], { nullable: true })
+  periodIdProgramKeys?: { periodId: string, programKey: string }[]
+}

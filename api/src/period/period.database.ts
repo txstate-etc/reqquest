@@ -31,7 +31,7 @@ export interface PeriodProgramRequirementRow {
   periodId: number
   programKey: string
   requirementKey: string
-  workflowStage?: string
+  workflowStageKey?: string
   disabled: 0 | 1
 }
 
@@ -110,11 +110,11 @@ export async function getPeriodsEmpty (periodIds: string[]) {
   return periodIds.map(id => ({ id, empty: emptyPeriodIds.has(Number(id)) }))
 }
 
-export async function getAcceptancePeriodIds () {
+export async function getAcceptancePeriodIds (tdb: Queryable = db) {
   const requirementKeys = requirementRegistry.list().filter(r => r.type === RequirementType.ACCEPTANCE).map(r => r.key)
   if (!requirementKeys.length) return new Set<string>()
   const binds: any[] = []
-  const rows = await db.getvals<number>(`
+  const rows = await tdb.getvals<number>(`
     SELECT DISTINCT p.id
     FROM periods p
     INNER JOIN period_programs pp ON pp.periodId = p.id
@@ -122,6 +122,18 @@ export async function getAcceptancePeriodIds () {
     WHERE pp.disabled = 0 AND ppr.disabled = 0 AND ppr.requirementKey IN (${db.in(binds, requirementKeys)})
   `, binds)
   return new Set(rows.map(String))
+}
+
+export async function getNonBlockingWorkflowPeriodIds () {
+  const periodIds = await db.getvals<number>(`
+    SELECT DISTINCT p.id
+    FROM periods p
+    INNER JOIN period_programs pp ON pp.periodId = p.id
+    INNER JOIN period_program_requirements ppr ON ppr.periodId = p.id AND pp.programKey = ppr.programKey
+    INNER JOIN period_workflow_stages pws ON pws.periodId = p.id AND pws.programKey = pp.programKey AND ppr.workflowStageKey = pws.stageKey
+    WHERE pp.disabled = 0 AND ppr.disabled = 0 AND ppr.workflowStageKey IS NOT NULL AND pws.blocking = 0
+  `)
+  return new Set(periodIds.map(String))
 }
 
 export async function copyConfigurations (fromPeriodId: number | string | undefined, toPeriodId: number | string, db: Queryable) {
@@ -191,8 +203,8 @@ export async function copyConfigurations (fromPeriodId: number | string | undefi
   if (reachableRequirementKeys.length) {
     const binds: any[] = []
     await db.insert(`
-      INSERT INTO period_program_requirements (periodId, programKey, requirementKey, disabled)
-      VALUES ${db.in(binds, reachableProgramKeys.flatMap(pk => reachableRequirementKeys.map(rk => [toPeriodId, pk, rk, disabledByRequirementKeyAndProgramKey[rk]?.[pk] ? 1 : 0])))}
+      INSERT INTO period_program_requirements (periodId, programKey, requirementKey, workflowStageKey, disabled)
+      VALUES ${db.in(binds, reachableProgramKeys.flatMap(pk => reachableRequirementKeys.map(rk => [toPeriodId, pk, rk, programRegistry.getWorkflowStageByProgramAndRequirementKey(pk, rk)?.key, disabledByRequirementKeyAndProgramKey[rk]?.[pk] ? 1 : 0])))}
     `, binds)
   }
 }
@@ -404,8 +416,8 @@ export async function ensureConfigurationRecords (periodIds?: number[], tdb?: Qu
     if (requirementsToInsert.length) {
       const binds: any[] = []
       await db.insert(`
-        INSERT INTO period_program_requirements (periodId, programKey, requirementKey)
-        VALUES ${db.in(binds, requirementsToInsert.map(({ periodId, programKey, requirementKey }) => [periodId, programKey, requirementKey]))}
+        INSERT INTO period_program_requirements (periodId, programKey, requirementKey, workflowStageKey, disabled)
+        VALUES ${db.in(binds, requirementsToInsert.map(({ periodId, programKey, requirementKey }) => [periodId, programKey, requirementKey, programRegistry.getWorkflowStageByProgramAndRequirementKey(programKey, requirementKey)?.key, 0]))}
       `, binds)
     }
     if (requirementsToDelete.length) {

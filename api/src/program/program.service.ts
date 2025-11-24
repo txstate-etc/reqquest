@@ -1,5 +1,5 @@
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { AuthService, getPeriodPrograms, getPeriodWorkflowStages, PeriodProgramFilters, Program, programRegistry } from '../internal.js'
+import { AuthService, getPeriodPrograms, getPeriodWorkflowStages, PeriodProgramFilters, Program, programRegistry, WorkflowStageFilters } from '../internal.js'
 
 const periodProgramByPeriodAndKey = new PrimaryKeyLoader({
   fetch: async (periodKeys: { periodId: string, key: string }[]) => {
@@ -24,8 +24,8 @@ const workflowStageByWorkflowId = new PrimaryKeyLoader({
 })
 
 const workflowStageByPeriodIdAndProgramKeyLoader = new OneToManyLoader({
-  fetch: async (periodIdProgramKeys: { periodId: string, programKey: string }[]) => {
-    return await getPeriodWorkflowStages({ periodIdProgramKeys })
+  fetch: async (periodIdProgramKeys: { periodId: string, programKey: string }[], filter?: { hasEnabledRequirements?: boolean }) => {
+    return await getPeriodWorkflowStages({ ...filter, periodIdProgramKeys })
   },
   extractKey: row => ({ periodId: row.periodId, programKey: row.programKey }),
   idLoader: workflowStageByWorkflowId
@@ -49,8 +49,8 @@ export class ProgramService extends AuthService<Program> {
     return await this.loaders.get(periodProgramByPeriodAndKey).load({ periodId, key })
   }
 
-  async findWorkflowStagesByPeriodIdAndProgramKey (periodId: string, programKey: string) {
-    return await this.loaders.get(workflowStageByPeriodIdAndProgramKeyLoader).load({ periodId, programKey })
+  async findWorkflowStagesByPeriodIdAndProgramKey (periodId: string, programKey: string, filter?: WorkflowStageFilters) {
+    return await this.loaders.get(workflowStageByPeriodIdAndProgramKeyLoader, filter).load({ periodId, programKey })
   }
 
   async findWorkflowStage (periodId: string, programKey: string, workflowKey: string) {

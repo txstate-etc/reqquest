@@ -1,7 +1,7 @@
 import { AuthorizedServiceSync, Context, MockContext } from '@txstate-mws/graphql-server'
 import { FastifyRequest } from 'fastify'
 import { Cache, isNotBlank } from 'txstate-utils'
-import { AccessUser, appConfig, AccessDatabase, AccessRoleServiceInternal, getAcceptancePeriodIds, ReqquestUser, PaginationInfoShared, Pagination, PaginationWithCursor } from '../internal.js'
+import { AccessUser, appConfig, AccessDatabase, AccessRoleServiceInternal, getAcceptancePeriodIds, ReqquestUser, PaginationInfoShared, Pagination, PaginationWithCursor, getNonBlockingWorkflowPeriodIds } from '../internal.js'
 import { sleep } from 'txstate-utils'
 
 type RoleLookup = Record<string, Record<string, Record<number, Record<string, Set<string>>>>>
@@ -15,6 +15,10 @@ export abstract class AuthService<ObjType, RedactedType = ObjType> extends Autho
 
   isAcceptancePeriod (periodId: string) {
     return this.ctx.authInfo.acceptancePeriods.has(periodId)
+  }
+
+  isNonBlockingWorkflowPeriod (periodId: string) {
+    return this.ctx.authInfo.nonBlockingPeriods.has(periodId)
   }
 
   protected get login () {
@@ -76,6 +80,7 @@ export interface AuthInfo {
   impersonationUser?: AccessUser
   roleLookups: RoleLookup[]
   acceptancePeriods: Set<string>
+  nonBlockingPeriods: Set<string>
 }
 
 const allGroupCache = new Cache(async () => {
@@ -120,11 +125,15 @@ const userCache = new Cache(async (login: string, ctx: Context) => {
 const acceptancePeriodsCache = new Cache(async () => {
   return await getAcceptancePeriodIds()
 })
+const nonBlockingWorkflowPeriodsCache = new Cache(async () => {
+  return await getNonBlockingWorkflowPeriodIds()
+})
 
 const authCache = new Cache(async (login: string, ctx: Context) => {
-  const periodPromise = acceptancePeriodsCache.get()
+  const acceptancePeriodPromise = acceptancePeriodsCache.get()
+  const nonBlockingPeriodPromise = nonBlockingWorkflowPeriodsCache.get()
   const user = await userCache.get(login, ctx)
-  if (!user) return { user: undefined, roleLookups: [], acceptancePeriods: await periodPromise }
+  if (!user) return { user: undefined, roleLookups: [], acceptancePeriods: await acceptancePeriodPromise, nonBlockingPeriods: await nonBlockingPeriodPromise }
   const scopes = new Set<string>(isNotBlank(ctx.auth?.scope) ? ctx.auth.scope.split(' ') : [])
   const roles = (await ctx.svc(AccessRoleServiceInternal).findAccessRolesByUserId(user.internalId)).filter(r => (r.scope == null && scopes.size === 0) || scopes.has(r.scope ?? ''))
   // load up all the roles with their grants, grants with their controls, etc
@@ -146,7 +155,7 @@ const authCache = new Cache(async (login: string, ctx: Context) => {
     }
     roleLookups.push(mergedPerRole)
   }
-  return { user, roleLookups, acceptancePeriods: await periodPromise }
+  return { user, roleLookups, acceptancePeriods: await acceptancePeriodPromise, nonBlockingPeriods: await nonBlockingPeriodPromise }
 }, { freshseconds: 30, staleseconds: 300 }) // 1 minute, 5 minutes
 
 export interface RQContext extends Context {

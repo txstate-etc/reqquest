@@ -4,7 +4,7 @@ import type { GraphQLError } from 'graphql'
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
 import { clone, groupby, isNotBlank, keyby, omit, stringify } from 'txstate-utils'
-import { ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter, AppRequestStatus, getPeriodWorkflowStages, IneligiblePhases, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, requirementRegistry, RequirementStatus, RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
+import { ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter, AppRequestStatus, getAcceptancePeriodIds, getApplications, getPeriodWorkflowStages, IneligiblePhases, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, requirementRegistry, RequirementStatus, RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
 
 /**
  * This is the status of the whole appRequest as stored in the database. Each application
@@ -46,6 +46,7 @@ export interface AppRequestRow {
   status: AppRequestStatusDB
   phase: AppRequestPhase
   computedStatus: AppRequestStatus
+  computedReadyToComplete: 0 | 1
   createdAt: Date
   updatedAt: Date
   closedAt: Date
@@ -209,7 +210,7 @@ export async function getIndexesInUse (category: string) {
 }
 
 export async function updateAppRequestComputed (appRequest: AppRequest, db: Queryable) {
-  await db.execute('UPDATE app_requests SET computedStatus = ? WHERE id = ?', [appRequest.status, appRequest.internalId])
+  await db.execute('UPDATE app_requests SET computedStatus = ?, computedReadyToComplete = ? WHERE id = ?', [appRequest.status, appRequest.readyToComplete ? 1 : 0, appRequest.internalId])
 }
 
 export async function createAppRequest (periodId: number, userId: number) {
@@ -232,7 +233,7 @@ export async function submitAppRequest (appRequestId: number) {
   await evaluateAppRequest(appRequestId)
 }
 
-export async function returnAppRequest (appRequestId: number, dataVersion?: number) {
+export async function appRequestReturnToApplicant (appRequestId: number, dataVersion?: number) {
   await appRequestTransaction(appRequestId, async db => {
     const where = dataVersion != null ? ' AND dataVersion = ?' : ''
     const binds: any[] = [AppRequestPhase.STARTED, appRequestId]
@@ -241,6 +242,19 @@ export async function returnAppRequest (appRequestId: number, dataVersion?: numb
     if (!updated) throw new Error('Someone else is working on the same request and made changes since you loaded. Reload the page to try again.')
     await evaluateAppRequest(appRequestId, db)
   })
+}
+
+export async function appRequestComplete (appRequestId: number, tdb: Queryable = db) {
+  const applications = await getApplications({ appRequestIds: [String(appRequestId)] }, tdb)
+  const computedStatus = applications.some(a => a.status === ApplicationStatus.ACCEPTED)
+    ? AppRequestStatus.ACCEPTED
+    : applications.some(a => a.status === ApplicationStatus.ELIGIBLE)
+      ? AppRequestStatus.APPROVED
+      : applications.some(a => a.status === ApplicationStatus.REJECTED)
+        ? AppRequestStatus.NOT_ACCEPTED
+        : AppRequestStatus.NOT_APPROVED
+  await tdb.execute('UPDATE applications SET computedPhase = ?, workflowStage = NULL WHERE appRequestId = ?', [ApplicationPhase.COMPLETE, appRequestId])
+  await tdb.execute('UPDATE app_requests SET phase = ?, computedStatus = ? WHERE id = ?', [AppRequestPhase.COMPLETE, computedStatus, appRequestId])
 }
 
 export async function restoreAppRequest (appRequestId: number) {
@@ -280,30 +294,28 @@ export async function reopenAppRequest (appRequestId: number) {
   })
 }
 
-export async function acceptOffer (appRequestId: number, existingDataVersion?: number) {
+export async function acceptOffer (appRequestId: number, nextPhase: AppRequestPhase, incomingDataVersion?: number) {
+  if (nextPhase === AppRequestPhase.COMPLETE) return await appRequestComplete(appRequestId, db)
   return await appRequestTransaction(appRequestId, async db => {
-    const row = await db.getrow<{ status: AppRequestStatusDB, computedStatus: AppRequestStatus, dataVersion: number, periodId: number }>('SELECT status, computedStatus, dataVersion, periodId FROM app_requests WHERE id = ?', [appRequestId])
-    if (!row) throw new Error(`AppRequest ${appRequestId} not found`)
-    if (existingDataVersion && row.dataVersion !== existingDataVersion) throw new Error('Someone else is working on the same request and made changes since you loaded. Reload the page to try again.')
-    if (row.computedStatus !== AppRequestStatus.READY_TO_ACCEPT) throw new Error(`AppRequest ${appRequestId} is not ready to accept.`)
-    const nonblockingWorkflows = await db.getvals<string>('SELECT DISTINCT stageKey FROM period_workflow_stages WHERE periodId = ? AND blocking = 0', [row.periodId])
-    let newPhase: AppRequestPhase
-    let newStatus = row.status
-    if (nonblockingWorkflows.length) {
-      newPhase = AppRequestPhase.WORKFLOW_NONBLOCKING
-    } else {
-      newPhase = AppRequestPhase.COMPLETE
-      newStatus = AppRequestStatusDB.CLOSED
-      await db.update('UPDATE applications SET computedPhase = ? WHERE appRequestId = ?', [ApplicationPhase.COMPLETE, appRequestId])
+    const existingDataVersion = await db.getval<number>('SELECT dataVersion FROM app_requests WHERE id = ?', [appRequestId])
+    if (existingDataVersion == null) throw new Error(`AppRequest ${appRequestId} not found`)
+    if (incomingDataVersion && existingDataVersion !== incomingDataVersion) throw new Error('Someone else is working on the same request and made changes since you loaded. Reload the page to try again.')
+    const applications = await getApplications({ appRequestIds: [String(appRequestId)] }, db)
+    const workflowStages = await getPeriodWorkflowStages({ periodIds: [applications[0]?.periodId], hasEnabledRequirements: true, blocking: false }, db)
+    for (const application of applications) {
+      await db.execute('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [ApplicationPhase.WORKFLOW_NONBLOCKING, workflowStages.find(w => w.programKey === application.programKey)?.key, application.internalId])
     }
-    await db.update('UPDATE app_requests SET phase = ?, status = ?, computedStatus = ? WHERE id = ?', [newPhase, newStatus, AppRequestStatus.ACCEPTED, appRequestId])
+    await db.update('UPDATE app_requests SET phase = ? WHERE id = ?', [nextPhase, appRequestId])
     await evaluateAppRequest(appRequestId, db)
   })
 }
 
-export async function appRequestMakeOffer (appRequestId: number) {
-  await db.execute('UPDATE app_requests SET phase = ? WHERE id = ?', [AppRequestPhase.ACCEPTANCE, appRequestId])
-  await evaluateAppRequest(appRequestId)
+export async function appRequestMakeOffer (appRequestId: number, nextPhase: AppRequestPhase.ACCEPTANCE | AppRequestPhase.WORKFLOW_NONBLOCKING | AppRequestPhase.COMPLETE) {
+  if (nextPhase !== AppRequestPhase.ACCEPTANCE) return await acceptOffer(appRequestId, nextPhase, undefined)
+  await appRequestTransaction(appRequestId, async db => {
+    await db.execute('UPDATE app_requests SET phase = ? WHERE id = ?', [nextPhase, appRequestId])
+    await evaluateAppRequest(appRequestId, db)
+  })
 }
 
 export async function appRequestReturnToOffer (appRequestId: number) {
@@ -314,6 +326,18 @@ export async function appRequestReturnToOffer (appRequestId: number) {
 export async function appRequestReturnToReview (appRequestId: number) {
   await db.execute('UPDATE app_requests SET phase = ? WHERE id = ?', [AppRequestPhase.SUBMITTED, appRequestId])
   await evaluateAppRequest(appRequestId)
+}
+
+export async function appRequestReturnToNonBlocking (appRequestId: number) {
+  return await appRequestTransaction(appRequestId, async db => {
+    await db.execute('UPDATE app_requests SET phase = ? WHERE id = ?', [AppRequestPhase.WORKFLOW_NONBLOCKING, appRequestId])
+    const applications = await getApplications({ appRequestIds: [String(appRequestId)] }, db)
+    const workflowStages = await getPeriodWorkflowStages({ periodIds: [applications[0]?.periodId], hasEnabledRequirements: true, blocking: false }, db)
+    for (const app of applications) {
+      await db.execute('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE appRequestId = ?', [ApplicationPhase.WORKFLOW_NONBLOCKING, workflowStages.toReversed().find(s => s.programKey === app.programKey), appRequestId])
+    }
+    await evaluateAppRequest(appRequestId, db)
+  })
 }
 
 /**
@@ -401,8 +425,8 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
     const appRequest = (await getAppRequests({ internalIds: [appRequestInternalId] }, db))[0]
     if (!appRequest) throw new Error(`AppRequest ${appRequestInternalId} not found`)
 
-    // if the appRequest is closed, we don't need to evaluate
-    if (appRequest.dbStatus !== AppRequestStatusDB.OPEN) return
+    // if the appRequest is closed or complete, we don't need to evaluate
+    if (appRequest.dbStatus !== AppRequestStatusDB.OPEN || appRequest.phase === AppRequestPhase.COMPLETE) return
 
     const data = (await getAppRequestData([appRequest.internalId], db))[0].data
 
@@ -472,7 +496,9 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
             ? activeWorkflowStage?.blocking
               ? 'blocking'
               : 'nonblocking'
-            : 'review'
+            : appRequest.phase === AppRequestPhase.WORKFLOW_NONBLOCKING
+              ? 'nonblocking'
+              : 'review'
 
       // in the reviewer's view, we will often want related requirements to be grouped together,
       // so we will probably have a mixed overall order like:
@@ -491,8 +517,8 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       const blockingWorkflowRequirements = requirements.filter(req => req.workflowStageKey ? workflowStageLookup[req.workflowStageKey]?.blocking : false)
       const currentWorkflowRequirements = requirements.filter(req => req.workflowStageKey === application.workflowStageKey)
 
-      // if we are in applicant phase, we only need to evaluate prequal and qualification requirements
-      // or perhaps acceptance requirements if we are in acceptance phase
+      // if we are in applicant phase, we only need to evaluate prequal, postqual, and qualification requirements
+      // acceptance requirements if we are in acceptance phase, etc
       const sortedRequirements = phase === 'applicant'
         ? [...prequalRequirements, ...qualificationRequirements, ...postqualRequirements]
         : phase === 'acceptance'
@@ -577,7 +603,11 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       application.statusReason = firstFailingRequirement?.statusReason ?? firstPendingRequirement?.statusReason
 
       application.phase = phase === 'nonblocking'
-        ? application.phase
+        ? application.workflowStageKey
+          ? requirementsResolution === 'pass'
+            ? ApplicationPhase.READY_FOR_WORKFLOW
+            : ApplicationPhase.WORKFLOW_NONBLOCKING
+          : ApplicationPhase.READY_TO_COMPLETE
         : phase === 'acceptance'
           ? requirementsResolution !== 'pending'
             ? ApplicationPhase.READY_TO_ACCEPT
@@ -610,6 +640,8 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
         else if (phase === 'applicant') application.ineligiblePhase = firstFailingRequirement?.type === RequirementType.PREQUAL ? IneligiblePhases.PREQUAL : IneligiblePhases.QUALIFICATION
         else if (phase === 'review') application.ineligiblePhase = firstFailingRequirement?.type === RequirementType.PREAPPROVAL ? IneligiblePhases.PREAPPROVAL : IneligiblePhases.APPROVAL
         else if (phase === 'blocking') application.ineligiblePhase ??= IneligiblePhases.WORKFLOW
+      } else if (phase !== 'nonblocking') {
+        application.ineligiblePhase = undefined
       }
     }
 
@@ -626,9 +658,11 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
     else if (applications.some(a => a.phase === ApplicationPhase.PREAPPROVAL)) appRequest.status = AppRequestStatus.PREAPPROVAL
     else if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_BLOCKING)) appRequest.status = AppRequestStatus.APPROVAL
     else if (applications.some(a => a.phase === ApplicationPhase.APPROVAL)) appRequest.status = AppRequestStatus.APPROVAL
-    else if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_NONBLOCKING)) appRequest.status = AppRequestStatus.APPROVED
-    else if (applications.every(a => a.phase === ApplicationPhase.COMPLETE)) appRequest.status = AppRequestStatus.APPROVED
+    else if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_NONBLOCKING)) appRequest.status = applications.some(a => a.status === ApplicationStatus.ACCEPTED) ? AppRequestStatus.ACCEPTED : AppRequestStatus.APPROVED
+    else if (applications.every(a => a.phase === ApplicationPhase.COMPLETE)) appRequest.status = applications.some(a => a.status === ApplicationStatus.ACCEPTED) ? AppRequestStatus.ACCEPTED : AppRequestStatus.APPROVED
     else appRequest.status = AppRequestStatus.STARTED
+
+    appRequest.readyToComplete = appRequest.phase === AppRequestPhase.WORKFLOW_NONBLOCKING && applications.every(a => a.phase === ApplicationPhase.READY_TO_COMPLETE)
 
     // save the results of the evaluation to the database
     await updateAppRequestComputed(appRequest, db)
@@ -728,7 +762,8 @@ export async function logMutation (queryTime: number, operationName: string, que
   }
 }
 
-export async function appRequestTransaction<T = any> (appRequestInternalId: number, callback: (db: Queryable) => Promise<T>) {
+export async function appRequestTransaction<T = any> (appRequestInternalId: number, callback: (db: Queryable) => Promise<T>, tdb?: Queryable) {
+  if (tdb) return await callback(tdb)
   return await db.transaction(async db => {
     // lock the appRequest while we evaluate
     await db.getval('SELECT id FROM app_requests WHERE id = ? FOR UPDATE', [appRequestInternalId])

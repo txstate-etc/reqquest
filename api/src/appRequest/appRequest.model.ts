@@ -63,6 +63,7 @@ export class AppRequest {
     this.periodOpensAt = DateTime.fromJSDate(row.periodOpensAt)
     this.tags = tags ?? {}
     this.dataVersion = row.dataVersion
+    this.readyToComplete = !!row.computedReadyToComplete
   }
 
   @Field(type => ID)
@@ -96,6 +97,7 @@ export class AppRequest {
   periodId: string
   periodCode?: string
   tags?: Record<string, string[]>
+  readyToComplete: boolean
 }
 
 export enum AppRequestIndexDestination {

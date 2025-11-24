@@ -13,6 +13,7 @@ export const appRequestMigrations: DatabaseMigration[] = [
           status VARCHAR(255) NOT NULL DEFAULT '${AppRequestStatusDB.OPEN}',
           phase VARCHAR(255) NOT NULL DEFAULT '${AppRequestPhase.STARTED}',
           computedStatus VARCHAR(255) NOT NULL DEFAULT 'PREQUAL',
+          computedReadyToComplete TINYINT(1) NOT NULL DEFAULT 0,
           createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           submittedAt DATETIME,

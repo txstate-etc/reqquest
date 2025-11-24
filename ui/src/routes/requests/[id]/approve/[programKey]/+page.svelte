@@ -2,7 +2,7 @@
   import { Card, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
   import { Form } from '@txstate-mws/svelte-forms'
-  import { Button, Tooltip } from 'carbon-components-svelte'
+  import { Button, Select, SelectItem, Tooltip } from 'carbon-components-svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
   import WarningAltFilled from 'carbon-icons-svelte/lib/WarningAltFilled.svelte'
@@ -124,9 +124,7 @@
 
   function onPromptSubmit (id: string) {
     return async (data: any) => {
-      console.log('onPromptSubmit', data)
       const response = await api.updatePrompt(id, data, false)
-      console.log('onPromptSubmit response', response)
       return response
     }
   }
@@ -141,6 +139,15 @@
   async function onPromptSaved (data: any) {
     await invalidate('request:approve')
     closePromptDialog()
+  }
+
+  let appAction: '' | 'advanceWorkflow' | 'reverseWorkflow' = ''
+  async function onAppAction () {
+    if (appAction === 'advanceWorkflow') {
+      await advanceWorkflow()
+    } else if (appAction === 'reverseWorkflow') {
+      await reverseWorkflow()
+    }
   }
 
   async function advanceWorkflow () {
@@ -237,8 +244,20 @@
       </dl>
     </Panel>
   {/each}
-  {#if application.actions.advanceWorkflow}<Button on:click={advanceWorkflow}>Advance Application</Button>{/if}
-  {#if application.actions.reverseWorkflow}<Button on:click={reverseWorkflow}>Previous Workflow Stage</Button>{/if}
+  {#if application.actions.advanceWorkflow || application.actions.reverseWorkflow}
+    <div class="app-actions [ flex items-end ]">
+      <Select bind:selected={appAction} labelText="Next step" size="sm">
+        <SelectItem value="" text="Choose one" />
+        {#if application.actions.advanceWorkflow}
+          <SelectItem value="advanceWorkflow" text={'Send to ' + (application.nextWorkflowStage?.title ?? (application.workflowStage?.blocking ? 'Review Complete' : 'Complete'))} />
+        {/if}
+        {#if application.actions.reverseWorkflow}
+          <SelectItem value="reverseWorkflow" text={'Return to ' + (application.previousWorkflowStage?.title ?? 'Review')} />
+        {/if}
+      </Select>
+      <Button on:click={onAppAction} size="small" class="ml-[4px]">Confirm</Button>
+    </div>
+  {/if}
 </ApproveLayout>
 
 {#if showPromptDialog && promptBeingEdited}
@@ -269,7 +288,7 @@
   .prompts dt, .prompts dd {
     position: relative;
     border-bottom: 1px solid var(--cds-border-subtle);
-    padding: 1rem 15px;
+    padding: 0.8rem 15px;
   }
   .prompts dt.small {
     padding-right: 15px;
@@ -315,5 +334,12 @@
   }
   .prompts dt :global(.disqualifying-icon) {
     fill: var(--cds-support-01, #da1e28);
+  }
+
+  .app-actions {
+    width: fit-content;
+  }
+  .app-actions :global(.bx--select) {
+    width: auto;
   }
 </style>

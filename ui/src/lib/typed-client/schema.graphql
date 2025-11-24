@@ -344,7 +344,7 @@ type AppRequestActions {
   """
   User may finalize the acceptance or denial of the offer. Sends the app request to non-blocking workflow (or completion).
   """
-  accept: Boolean!
+  acceptOffer: Boolean!
 
   """
   User may cancel this app request as the owner. Separate from closing as a reviewer/admin.
@@ -357,9 +357,14 @@ type AppRequestActions {
   close: Boolean!
 
   """
-  User may make an offer on this app request. Sends the app request to the acceptance phase.
+  User may complete the app request. All non-blocking workflow must be complete.
   """
-  offer: Boolean!
+  completeRequest: Boolean!
+
+  """
+  User may complete the review app request. Sends the app request to the acceptance phase, or if there is no acceptance phase, to the non-blocking workflow or completion.
+  """
+  completeReview: Boolean!
 
   """
   User may reopen this app request, whether as the owner or as a reviewer/admin.
@@ -367,7 +372,10 @@ type AppRequestActions {
   reopen: Boolean!
 
   """User may return this app request to the applicant phase."""
-  return: Boolean!
+  returnToApplicant: Boolean!
+
+  """User may return to the non-blocking workflow phase from completion."""
+  returnToNonBlocking: Boolean!
 
   """
   User may return the app request to the acceptance phase from non-blocking workflow or completion.
@@ -378,11 +386,6 @@ type AppRequestActions {
   User may return the app request to the review phase from non-blocking workflow or completion. This does not cover reclaiming an offer - see reverseOffer for that. It also does not cover returning from completion to acceptance - see returnToOffer for that.
   """
   returnToReview: Boolean!
-
-  """
-  User may withdraw the offer and return the app request to the review phase for changes.
-  """
-  reverseOffer: Boolean!
 
   """Whether the user can view this app request as a reviewer."""
   review: Boolean!
@@ -653,9 +656,19 @@ type Application {
   navTitle: String!
 
   """
+  The next workflow stage for this application that would be active after activating the advanceWorkflow mutation. Null if the application or current user is not allowed to advance.
+  """
+  nextWorkflowStage: PeriodWorkflowStage
+
+  """
   The phase of the application. This is usually a computed field, not stored in the database.
   """
   phase: ApplicationPhase!
+
+  """
+  The previous workflow stage for this application that would be active after activating the reverseWorkflow mutation. Null if the application or current user is not allowed to reverse.
+  """
+  previousWorkflowStage: PeriodWorkflowStage
 
   """The program key this application corresponds to."""
   programKey: String!
@@ -674,6 +687,11 @@ type Application {
   If the program has workflow, it may be divided into multiple stages of audit, each with their own requirements/prompts. This indicates which stage we are currently evaluating, or null if we are not in the workflow phase. An application with no workflow defined will never be in the workflow phase. Starts at 1.
   """
   workflowStage: PeriodWorkflowStage
+
+  """
+  All workflow stages defined for the program/period of this application, in evaluation order.
+  """
+  workflowStages: [PeriodWorkflowStage!]!
 }
 
 type ApplicationActions {
@@ -723,6 +741,11 @@ enum ApplicationPhase {
   An offer has been made to the applicant. The acceptance requirements are no longer pending, the application is ready to be finalized.
   """
   READY_TO_ACCEPT
+
+  """
+  All non-blocking workflow stages are complete. The application is ready to be finalized.
+  """
+  READY_TO_COMPLETE
 
   """
   The applicant has filled out their portion of the prompts but has not yet submitted for review.
@@ -1001,15 +1024,20 @@ type Mutation {
   """
   closeAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
 
-  """Create a new app request."""
-  createAppRequest(login: String!, periodId: ID!, validateOnly: Boolean): ValidatedAppRequestResponse!
-  createPeriod(copyPeriodId: String, period: PeriodUpdate!, validateOnly: Boolean): ValidatedPeriodResponse!
-  deletePeriod(periodId: ID!): ValidatedResponse!
+  """
+  Complete the app request. This is generally only available if request is in non-blocking workflow and all applications are complete.
+  """
+  completeRequest(appRequestId: ID!): ValidatedAppRequestResponse!
 
   """
   Make an offer on the app request. If all applications are ineligible, or if there are no acceptance requirements, the applications will advance to the non-blocking workflow, or absent that, be marked complete.
   """
-  offerAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
+  completeReview(appRequestId: ID!): ValidatedAppRequestResponse!
+
+  """Create a new app request."""
+  createAppRequest(login: String!, periodId: ID!, validateOnly: Boolean): ValidatedAppRequestResponse!
+  createPeriod(copyPeriodId: String, period: PeriodUpdate!, validateOnly: Boolean): ValidatedPeriodResponse!
+  deletePeriod(periodId: ID!): ValidatedResponse!
 
   """
   Reopen the app request. This is only available if the app request is in a state that allows reopening.
@@ -1019,7 +1047,10 @@ type Mutation {
   """
   Return the app request to the applicant phase. This is only available if the app request is in a state that allows returning.
   """
-  returnAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
+  returnToApplicant(appRequestId: ID!): ValidatedAppRequestResponse!
+
+  """If request is complete, undo and return to non-blocking workflow."""
+  returnToNonBlocking(appRequestId: ID!): ValidatedAppRequestResponse!
 
   """
   Return the app request to the acceptance phase from non-blocking workflow or completion.
@@ -1027,14 +1058,9 @@ type Mutation {
   returnToOffer(appRequestId: ID!): ValidatedAppRequestResponse!
 
   """
-  Return the app request to the review phase from non-blocking workflow or completion. This does not cover reclaiming an offer - see reverseOffer for that. It also does not cover returning from review to acceptance - see returnToReview for that.
+  Return the app request to the review phase from acceptance, non-blocking workflow, or completion.
   """
   returnToReview(appRequestId: ID!): ValidatedAppRequestResponse!
-
-  """
-  Withdraw the offer and return the app request to the review phase for changes.
-  """
-  reverseOffer(appRequestId: ID!): ValidatedAppRequestResponse!
 
   """
   Moves the application back to the previous workflow stage. If on the first blocking workflow stage, moves back to APPROVAL. If on the first non-blocking workflow, throws an error.

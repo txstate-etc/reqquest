@@ -3,8 +3,9 @@ import { APIBase } from '@txstate-mws/sveltekit-utils'
 import type { Feedback } from '@txstate-mws/svelte-forms'
 import { createClient, enumAppRequestIndexDestination, enumIneligiblePhases, enumPromptVisibility, enumRequirementStatus, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleGroup, type AccessRoleInput, type AccessUserFilter, type AppRequestActivityFilters, type AppRequestFilter, type IneligiblePhases, type Pagination, type PeriodUpdate, type PromptVisibility, type RequirementStatus, type RequirementType } from './typed-client/index.js'
 import { DateTime } from 'luxon'
-import { pick } from 'txstate-utils'
+import { pick, ucfirst } from 'txstate-utils'
 import { error } from '@sveltejs/kit'
+import type { PhaseChangeMutations } from './components/types.js'
 
 export type CompletionStatus = 'ELIGIBLE' | 'INELIGIBLE' | 'PENDING'
 
@@ -115,12 +116,10 @@ class API extends APIBase {
           }
         },
         actions: {
+          acceptOffer: true,
           cancel: true,
-          close: true,
-          reopen: true,
-          return: true,
-          review: true,
-          offer: true,
+          returnToApplicant: true,
+          returnToOffer: true,
           submit: true
         }
       }
@@ -433,20 +432,20 @@ class API extends APIBase {
     return { ...this.mutationForDialog(response.createAppRequest), id: response.createAppRequest.appRequest?.id }
   }
 
-  async submitAppRequest (appRequestId: string) {
-    const response = await this.client.mutation({
-      __name: 'SubmitAppRequest',
-      submitAppRequest: {
-        __args: { appRequestId },
-        success: true,
-        messages: {
-          message: true,
-          type: true,
-          arg: true
+  async appRequestPhaseChange (appRequestId: string, phaseChange: PhaseChangeMutations) {
+    const response = await this.graphql<Record<string, { success: boolean, messages: { message: string, type: 'error' | 'warning' | 'success', arg?: string }[] }>>(`
+      mutation AppRequestPhaseChange($appRequestId: ID!) {
+        ${phaseChange}(appRequestId: $appRequestId) {
+          success
+          messages {
+            message
+            type
+            arg
+          }
         }
       }
-    })
-    return this.mutationForDialog(response.submitAppRequest)
+    `, { appRequestId })
+    return this.mutationForDialog(response[phaseChange])
   }
 
   async cancelAppRequest (appRequestId: string, dataVersion?: number) {
@@ -481,22 +480,6 @@ class API extends APIBase {
     return this.mutationForDialog(response.reopenAppRequest)
   }
 
-  async returnAppRequest (appRequestId: string) {
-    const response = await this.client.mutation({
-      __name: 'ReturnAppRequest',
-      returnAppRequest: {
-        __args: { appRequestId },
-        success: true,
-        messages: {
-          message: true,
-          type: true,
-          arg: true
-        }
-      }
-    })
-    return this.mutationForDialog(response.returnAppRequest)
-  }
-
   async advanceWorkflow (applicationId: string) {
     const response = await this.client.mutation({
       __name: 'AdvanceWorkflow',
@@ -527,22 +510,6 @@ class API extends APIBase {
       }
     })
     return this.mutationForDialog(response.reverseWorkflow)
-  }
-
-  async makeOffer (appRequestId: string) {
-    const response = await this.client.mutation({
-      __name: 'MakeOffer',
-      offerAppRequest: {
-        __args: { appRequestId },
-        success: true,
-        messages: {
-          message: true,
-          type: true,
-          arg: true
-        }
-      }
-    })
-    return this.mutationForDialog(response.offerAppRequest)
   }
 
   async closeAppRequest (appRequestId: string) {
@@ -591,13 +558,7 @@ class API extends APIBase {
           }
         },
         actions: {
-          cancel: true,
-          close: true,
-          reopen: true,
-          return: true,
-          review: true,
-          offer: true,
-          submit: true
+          review: true
         }
       },
       appRequestIndexes: {
@@ -681,12 +642,18 @@ class API extends APIBase {
           programKey: true
         },
         actions: {
-          offer: true,
+          acceptOffer: true,
+          cancel: true,
           close: true,
+          completeRequest: true,
+          completeReview: true,
           reopen: true,
+          returnToApplicant: true,
+          returnToNonBlocking: true,
           returnToOffer: true,
           returnToReview: true,
-          reverseOffer: true
+          review: true,
+          submit: true
         }
       }
     })
@@ -709,6 +676,17 @@ class API extends APIBase {
           title: true,
           navTitle: true,
           programKey: true,
+          workflowStage: {
+            blocking: true
+          },
+          nextWorkflowStage: {
+            key: true,
+            title: true
+          },
+          previousWorkflowStage: {
+            key: true,
+            title: true
+          },
           actions: {
             advanceWorkflow: true,
             reverseWorkflow: true
@@ -744,16 +722,18 @@ class API extends APIBase {
           }
         },
         actions: {
-          return: true,
-          reopen: true,
-          close: true,
-          review: true,
-          offer: true,
-          returnToOffer: true,
-          accept: true,
+          acceptOffer: true,
           cancel: true,
+          close: true,
+          completeRequest: true,
+          completeReview: true,
+          reopen: true,
+          returnToApplicant: true,
+          returnToNonBlocking: true,
+          returnToOffer: true,
           returnToReview: true,
-          reverseOffer: true
+          review: true,
+          submit: true
         }
       }
     })

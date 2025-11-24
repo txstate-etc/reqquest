@@ -1,11 +1,11 @@
 <script lang="ts">
   import { TabLinks } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
-  import { Button } from 'carbon-components-svelte'
+  import { Button, Select, SelectItem } from 'carbon-components-svelte'
   import { invalidateAll } from '$app/navigation'
   import { resolve } from '$app/paths'
   import type { LayoutData } from './$types.js'
-  import { api, IntroPanel, applicantStatuses, APP_REQUEST_STATUS_CONFIG, longNumericTime } from '$lib'
+  import { api, IntroPanel, applicantStatuses, REVIEWER_STATUS_CONFIG, longNumericTime, phaseChangeMutations, type PhaseChangeMutations } from '$lib'
 
   export let data: LayoutData
   $: ({ basicRequestData, requestId } = data)
@@ -20,18 +20,40 @@
     }
   ]
 
-  async function makeOffer () {
-    const response = await api.makeOffer(requestId)
+  const translateMutations = {
+    submitAppRequest: 'submitted request for review.',
+    returnToApplicant: 'returned request to applicant',
+    completeAppRequestReview: 'completed request review',
+    returnToReview: 'returned request to review',
+    acceptOffer: 'accepted offer',
+    returnToOffer: 'returned request to applicant to accept offer',
+    completeRequest: 'marked request as complete',
+    returnToNonBlocking: 'returned request to non-blocking workflow tasks'
+  }
+
+  let appRequestAction: '' | PhaseChangeMutations | 'reopen' | 'close' = ''
+  async function onAppRequestAction () {
+    if ((phaseChangeMutations as readonly string[]).includes(appRequestAction)) {
+      await appRequestPhaseChange(appRequestAction as PhaseChangeMutations)
+    } else if (appRequestAction === 'close') {
+      await closeRequest()
+    } else if (appRequestAction === 'reopen') {
+      await reopenRequest()
+    }
+  }
+
+  async function appRequestPhaseChange (action: PhaseChangeMutations) {
+    const response = await api.appRequestPhaseChange(requestId, action)
     if (!response.success) {
       toasts.add({
         type: 'error',
-        title: 'Could not send application to applicant',
+        title: 'Action Failed',
         message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
       })
     } else {
       toasts.add({
         type: 'success',
-        message: 'Application sent to applicant.'
+        message: `Successfully ${translateMutations[action]}.`
       })
     }
     await invalidateAll()
@@ -70,16 +92,15 @@
     }
     await invalidateAll()
   }
-
 </script>
 
 <IntroPanel
   title={basicRequestData.period.name + (basicRequestData.period.code ? ` (${basicRequestData.period.code})` : '')}
   subtitle="Review and complete the application below or advance it in the workflow."
-  tags={[{ label: APP_REQUEST_STATUS_CONFIG[basicRequestData.status].label, type: APP_REQUEST_STATUS_CONFIG[basicRequestData.status].color }]}
+  tags={[{ label: REVIEWER_STATUS_CONFIG[basicRequestData.status].label, type: REVIEWER_STATUS_CONFIG[basicRequestData.status].color }]}
 >
-  <svelte:fragment slot="block-end">
-    <section class="text-base text-center flex-col gap-2">
+  <div class="block-end flex items-center" slot="block-end">
+    <section class="text-base text-center flex-col gap-2 mr-[12px]">
       <dl class="flex gap-4  text-sm">
         <div class="flex flex-col bg-[var(--cds-ui-03,#d9d9d9)] py-4 px-4  justify-center">
           <dt class="font-bold">
@@ -119,15 +140,51 @@
         </div>
       </dl>
     </section>
-
-    {#if basicRequestData.actions.offer}
-      <Button on:click={makeOffer}>Complete Review</Button>
-    {:else if basicRequestData.actions.reopen}
-      <Button on:click={reopenRequest}>Reopen Request</Button>
-    {:else if basicRequestData.actions.close && basicRequestData.complete}
-      <Button on:click={closeRequest}>Close Request</Button>
+    {#if basicRequestData.actions.completeReview || basicRequestData.actions.completeRequest || basicRequestData.actions.reopen || basicRequestData.actions.close || basicRequestData.actions.returnToApplicant || basicRequestData.actions.returnToOffer || basicRequestData.actions.returnToReview || basicRequestData.actions.returnToNonBlocking || basicRequestData.actions.submit || basicRequestData.actions.acceptOffer}
+      <Select bind:selected={appRequestAction} labelText="Application action" size="sm">
+        <SelectItem value="" text="Choose one" />
+        {#if basicRequestData.actions.completeReview}
+          <SelectItem value="completeReview" text="Complete Review" />
+        {/if}
+        {#if basicRequestData.actions.completeRequest}
+          <SelectItem value="completeRequest" text="Complete Request" />
+        {/if}
+        {#if basicRequestData.actions.reopen}
+          <SelectItem value="reopen" text="Reopen Request" />
+        {/if}
+        {#if basicRequestData.actions.close}
+          <SelectItem value="close" text="Close Request" />
+        {/if}
+        {#if basicRequestData.actions.returnToApplicant}
+          <SelectItem value="returnToApplicant" text="Return To Applicant" />
+        {/if}
+        {#if basicRequestData.actions.returnToOffer}
+          <SelectItem value="returnToOffer" text="Return To Offer" />
+        {/if}
+        {#if basicRequestData.actions.returnToReview}
+          <SelectItem value="returnToReview" text="Return To Review" />
+        {/if}
+        {#if basicRequestData.actions.returnToNonBlocking}
+          <SelectItem value="returnToNonBlocking" text="Return To Final Workflow Tasks" />
+        {/if}
+        {#if basicRequestData.actions.submit}
+          <SelectItem value="submit" text="Submit On Behalf Of Applicant" />
+        {/if}
+        {#if basicRequestData.actions.acceptOffer}
+          <SelectItem value="acceptOffer" text="Accept Offer On Behalf Of Applicant" />
+        {/if}
+      </Select>
+      <Button on:click={onAppRequestAction} size="small" class="ml-[4px]">Apply</Button>
     {/if}
-  </svelte:fragment>
+  </div>
 </IntroPanel>
 <TabLinks {tabs} />
 <slot />
+<style>
+  .block-end :global(.bx--label) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: translateY(-100%);
+  }
+</style>

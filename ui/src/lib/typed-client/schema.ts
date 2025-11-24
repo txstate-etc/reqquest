@@ -206,23 +206,25 @@ export interface AppRequest {
 
 export interface AppRequestActions {
     /** User may finalize the acceptance or denial of the offer. Sends the app request to non-blocking workflow (or completion). */
-    accept: Scalars['Boolean']
+    acceptOffer: Scalars['Boolean']
     /** User may cancel this app request as the owner. Separate from closing as a reviewer/admin. */
     cancel: Scalars['Boolean']
     /** User may close this app request as a reviewer/admin. Separate from cancelling as the app request owner. */
     close: Scalars['Boolean']
-    /** User may make an offer on this app request. Sends the app request to the acceptance phase. */
-    offer: Scalars['Boolean']
+    /** User may complete the app request. All non-blocking workflow must be complete. */
+    completeRequest: Scalars['Boolean']
+    /** User may complete the review app request. Sends the app request to the acceptance phase, or if there is no acceptance phase, to the non-blocking workflow or completion. */
+    completeReview: Scalars['Boolean']
     /** User may reopen this app request, whether as the owner or as a reviewer/admin. */
     reopen: Scalars['Boolean']
     /** User may return this app request to the applicant phase. */
-    return: Scalars['Boolean']
+    returnToApplicant: Scalars['Boolean']
+    /** User may return to the non-blocking workflow phase from completion. */
+    returnToNonBlocking: Scalars['Boolean']
     /** User may return the app request to the acceptance phase from non-blocking workflow or completion. */
     returnToOffer: Scalars['Boolean']
     /** User may return the app request to the review phase from non-blocking workflow or completion. This does not cover reclaiming an offer - see reverseOffer for that. It also does not cover returning from completion to acceptance - see returnToOffer for that. */
     returnToReview: Scalars['Boolean']
-    /** User may withdraw the offer and return the app request to the review phase for changes. */
-    reverseOffer: Scalars['Boolean']
     /** Whether the user can view this app request as a reviewer. */
     review: Scalars['Boolean']
     /** User may submit this app request either as or on behalf of the owner. */
@@ -288,8 +290,12 @@ export interface Application {
     ineligiblePhase: (IneligiblePhases | null)
     /** The navigation title of the program this application is for. */
     navTitle: Scalars['String']
+    /** The next workflow stage for this application that would be active after activating the advanceWorkflow mutation. Null if the application or current user is not allowed to advance. */
+    nextWorkflowStage: (PeriodWorkflowStage | null)
     /** The phase of the application. This is usually a computed field, not stored in the database. */
     phase: ApplicationPhase
+    /** The previous workflow stage for this application that would be active after activating the reverseWorkflow mutation. Null if the application or current user is not allowed to reverse. */
+    previousWorkflowStage: (PeriodWorkflowStage | null)
     /** The program key this application corresponds to. */
     programKey: Scalars['String']
     requirements: ApplicationRequirement[]
@@ -300,6 +306,8 @@ export interface Application {
     title: Scalars['String']
     /** If the program has workflow, it may be divided into multiple stages of audit, each with their own requirements/prompts. This indicates which stage we are currently evaluating, or null if we are not in the workflow phase. An application with no workflow defined will never be in the workflow phase. Starts at 1. */
     workflowStage: (PeriodWorkflowStage | null)
+    /** All workflow stages defined for the program/period of this application, in evaluation order. */
+    workflowStages: PeriodWorkflowStage[]
     __typename: 'Application'
 }
 
@@ -317,7 +325,7 @@ export interface ApplicationActions {
  *     is computed based on the status of the appRequest and of the requirements for the program.
  *   
  */
-export type ApplicationPhase = 'ACCEPTANCE' | 'APPROVAL' | 'COMPLETE' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION' | 'READY_FOR_WORKFLOW' | 'READY_TO_ACCEPT' | 'READY_TO_SUBMIT' | 'REVIEW_COMPLETE' | 'WORKFLOW_BLOCKING' | 'WORKFLOW_NONBLOCKING'
+export type ApplicationPhase = 'ACCEPTANCE' | 'APPROVAL' | 'COMPLETE' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION' | 'READY_FOR_WORKFLOW' | 'READY_TO_ACCEPT' | 'READY_TO_COMPLETE' | 'READY_TO_SUBMIT' | 'REVIEW_COMPLETE' | 'WORKFLOW_BLOCKING' | 'WORKFLOW_NONBLOCKING'
 
 
 /** The specific instance of a requirement on a particular application. Stores the status of the requirement, e.g. being satisfied or not. */
@@ -433,22 +441,24 @@ export interface Mutation {
     cancelAppRequest: ValidatedAppRequestResponse
     /** Close the app request. Generally this is always available and will freeze the request/applications in their current phase/status. */
     closeAppRequest: ValidatedAppRequestResponse
+    /** Complete the app request. This is generally only available if request is in non-blocking workflow and all applications are complete. */
+    completeRequest: ValidatedAppRequestResponse
+    /** Make an offer on the app request. If all applications are ineligible, or if there are no acceptance requirements, the applications will advance to the non-blocking workflow, or absent that, be marked complete. */
+    completeReview: ValidatedAppRequestResponse
     /** Create a new app request. */
     createAppRequest: ValidatedAppRequestResponse
     createPeriod: ValidatedPeriodResponse
     deletePeriod: ValidatedResponse
-    /** Make an offer on the app request. If all applications are ineligible, or if there are no acceptance requirements, the applications will advance to the non-blocking workflow, or absent that, be marked complete. */
-    offerAppRequest: ValidatedAppRequestResponse
     /** Reopen the app request. This is only available if the app request is in a state that allows reopening. */
     reopenAppRequest: ValidatedAppRequestResponse
     /** Return the app request to the applicant phase. This is only available if the app request is in a state that allows returning. */
-    returnAppRequest: ValidatedAppRequestResponse
+    returnToApplicant: ValidatedAppRequestResponse
+    /** If request is complete, undo and return to non-blocking workflow. */
+    returnToNonBlocking: ValidatedAppRequestResponse
     /** Return the app request to the acceptance phase from non-blocking workflow or completion. */
     returnToOffer: ValidatedAppRequestResponse
-    /** Return the app request to the review phase from non-blocking workflow or completion. This does not cover reclaiming an offer - see reverseOffer for that. It also does not cover returning from review to acceptance - see returnToReview for that. */
+    /** Return the app request to the review phase from acceptance, non-blocking workflow, or completion. */
     returnToReview: ValidatedAppRequestResponse
-    /** Withdraw the offer and return the app request to the review phase for changes. */
-    reverseOffer: ValidatedAppRequestResponse
     /** Moves the application back to the previous workflow stage. If on the first blocking workflow stage, moves back to APPROVAL. If on the first non-blocking workflow, throws an error. */
     reverseWorkflow: ValidatedAppRequestResponse
     roleAddGrant: AccessRoleValidatedResponse
@@ -967,23 +977,25 @@ export interface AppRequestGenqlSelection{
 
 export interface AppRequestActionsGenqlSelection{
     /** User may finalize the acceptance or denial of the offer. Sends the app request to non-blocking workflow (or completion). */
-    accept?: boolean | number
+    acceptOffer?: boolean | number
     /** User may cancel this app request as the owner. Separate from closing as a reviewer/admin. */
     cancel?: boolean | number
     /** User may close this app request as a reviewer/admin. Separate from cancelling as the app request owner. */
     close?: boolean | number
-    /** User may make an offer on this app request. Sends the app request to the acceptance phase. */
-    offer?: boolean | number
+    /** User may complete the app request. All non-blocking workflow must be complete. */
+    completeRequest?: boolean | number
+    /** User may complete the review app request. Sends the app request to the acceptance phase, or if there is no acceptance phase, to the non-blocking workflow or completion. */
+    completeReview?: boolean | number
     /** User may reopen this app request, whether as the owner or as a reviewer/admin. */
     reopen?: boolean | number
     /** User may return this app request to the applicant phase. */
-    return?: boolean | number
+    returnToApplicant?: boolean | number
+    /** User may return to the non-blocking workflow phase from completion. */
+    returnToNonBlocking?: boolean | number
     /** User may return the app request to the acceptance phase from non-blocking workflow or completion. */
     returnToOffer?: boolean | number
     /** User may return the app request to the review phase from non-blocking workflow or completion. This does not cover reclaiming an offer - see reverseOffer for that. It also does not cover returning from completion to acceptance - see returnToOffer for that. */
     returnToReview?: boolean | number
-    /** User may withdraw the offer and return the app request to the review phase for changes. */
-    reverseOffer?: boolean | number
     /** Whether the user can view this app request as a reviewer. */
     review?: boolean | number
     /** User may submit this app request either as or on behalf of the owner. */
@@ -1087,8 +1099,12 @@ export interface ApplicationGenqlSelection{
     ineligiblePhase?: boolean | number
     /** The navigation title of the program this application is for. */
     navTitle?: boolean | number
+    /** The next workflow stage for this application that would be active after activating the advanceWorkflow mutation. Null if the application or current user is not allowed to advance. */
+    nextWorkflowStage?: PeriodWorkflowStageGenqlSelection
     /** The phase of the application. This is usually a computed field, not stored in the database. */
     phase?: boolean | number
+    /** The previous workflow stage for this application that would be active after activating the reverseWorkflow mutation. Null if the application or current user is not allowed to reverse. */
+    previousWorkflowStage?: PeriodWorkflowStageGenqlSelection
     /** The program key this application corresponds to. */
     programKey?: boolean | number
     requirements?: ApplicationRequirementGenqlSelection
@@ -1099,6 +1115,8 @@ export interface ApplicationGenqlSelection{
     title?: boolean | number
     /** If the program has workflow, it may be divided into multiple stages of audit, each with their own requirements/prompts. This indicates which stage we are currently evaluating, or null if we are not in the workflow phase. An application with no workflow defined will never be in the workflow phase. Starts at 1. */
     workflowStage?: PeriodWorkflowStageGenqlSelection
+    /** All workflow stages defined for the program/period of this application, in evaluation order. */
+    workflowStages?: PeriodWorkflowStageGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -1235,22 +1253,24 @@ export interface MutationGenqlSelection{
     dataVersion?: (Scalars['Int'] | null)} })
     /** Close the app request. Generally this is always available and will freeze the request/applications in their current phase/status. */
     closeAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
+    /** Complete the app request. This is generally only available if request is in non-blocking workflow and all applications are complete. */
+    completeRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
+    /** Make an offer on the app request. If all applications are ineligible, or if there are no acceptance requirements, the applications will advance to the non-blocking workflow, or absent that, be marked complete. */
+    completeReview?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Create a new app request. */
     createAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {login: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     createPeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {copyPeriodId?: (Scalars['String'] | null), period: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
     deletePeriod?: (ValidatedResponseGenqlSelection & { __args: {periodId: Scalars['ID']} })
-    /** Make an offer on the app request. If all applications are ineligible, or if there are no acceptance requirements, the applications will advance to the non-blocking workflow, or absent that, be marked complete. */
-    offerAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Reopen the app request. This is only available if the app request is in a state that allows reopening. */
     reopenAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Return the app request to the applicant phase. This is only available if the app request is in a state that allows returning. */
-    returnAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
+    returnToApplicant?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
+    /** If request is complete, undo and return to non-blocking workflow. */
+    returnToNonBlocking?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Return the app request to the acceptance phase from non-blocking workflow or completion. */
     returnToOffer?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
-    /** Return the app request to the review phase from non-blocking workflow or completion. This does not cover reclaiming an offer - see reverseOffer for that. It also does not cover returning from review to acceptance - see returnToReview for that. */
+    /** Return the app request to the review phase from acceptance, non-blocking workflow, or completion. */
     returnToReview?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
-    /** Withdraw the offer and return the app request to the review phase for changes. */
-    reverseOffer?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Moves the application back to the previous workflow stage. If on the first blocking workflow stage, moves back to APPROVAL. If on the first non-blocking workflow, throws an error. */
     reverseWorkflow?: (ValidatedAppRequestResponseGenqlSelection & { __args: {applicationId: Scalars['ID']} })
     roleAddGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grant: AccessRoleGrantCreate, roleId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
@@ -1968,6 +1988,7 @@ export const enumApplicationPhase = {
    QUALIFICATION: 'QUALIFICATION' as const,
    READY_FOR_WORKFLOW: 'READY_FOR_WORKFLOW' as const,
    READY_TO_ACCEPT: 'READY_TO_ACCEPT' as const,
+   READY_TO_COMPLETE: 'READY_TO_COMPLETE' as const,
    READY_TO_SUBMIT: 'READY_TO_SUBMIT' as const,
    REVIEW_COMPLETE: 'REVIEW_COMPLETE' as const,
    WORKFLOW_BLOCKING: 'WORKFLOW_BLOCKING' as const,
