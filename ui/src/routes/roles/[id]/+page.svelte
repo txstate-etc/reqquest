@@ -11,6 +11,7 @@
   import { api, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessTagInput } from '$lib'
   import type { PageData } from './$types'
   import ControlWithTooltip from './ControlWithTooltip.svelte'
+  import IntroPanel from '$lib/components/IntroPanel.svelte'
 
   export let data: PageData
   $: ({ role, controlGroups, controlGroupLookup } = data)
@@ -132,91 +133,92 @@
   }
 </script>
 
-<Panel title="{role.name} Details">
-  <div class="description">
-    {role.description ?? ''}
-  </div>
-  <div class="groups">
-    <h3>Groups</h3>
+<IntroPanel title="{role.name} permissions" subtitle={role.description ?? ''}>
+<div class="groups [ text-sm ] flow" style="--flow-space:0.5rem;">
+    <h3 class="font-medium ">Groups</h3>
     <ul>
       {#each role.groups as group (group.groupName)}
         <li>{group.groupName}</li>
       {/each}
     </ul>
   </div>
-</Panel>
-
-<ColumnList
-  title="Grants for Role: {role.name}"
-  listActions={[
-    {
-      label: 'Add Grant',
-      icon: Add,
-      onClick: () => {
-        showGrantCreate = true
-        grantCreateAllow = true
+</IntroPanel>
+<div class="columnlist-wrap flow" style="--flow-space:3em;">
+  <div class="role-list">
+    <ColumnList
+    title="Grants for Role: {role.name}"
+    listActions={[
+      {
+        label: 'Add Grant',
+        icon: Add,
+        onClick: () => {
+          showGrantCreate = true
+          grantCreateAllow = true
+        }
       }
-    }
-  ]}
-  columns={[
-    { id: 'controlGroup', label: 'Grants', render: grant => grant.controlGroup.title },
-    { id: 'controls', label: 'Controls', component: ControlWithTooltip },
-    { id: 'tags', label: 'Restrictions', render: grant => tagsRender(grant.tags) }
-  ]}
-  rows={grants}
-  actions={row => [
-    {
-      label: 'Edit',
-      icon: Edit,
-      onClick: onGrantEdit(row),
-      disabled: !row.actions.update
-    },
-    {
-      label: 'Delete',
-      icon: TrashCan,
-      onClick: onGrantDelete(row),
-      disabled: !row.actions.delete
-    }
-  ]}
-/>
-<br><br>
-<ColumnList
-  title="Exceptions for Role: {role.name}"
-  columns={[
-    { id: 'controlGroup', label: 'Exceptions', render: grant => grant.controlGroup.title },
-    { id: 'controls', label: 'Controls', render: grant => grant.controls.join(', ') },
-    { id: 'tags', label: 'Restrictions', render: grant => grant.tags.map(t => t.label).join(', ') }
-  ]}
-  noItemsKind='info'
-  noItemsTitle=''
-  noItemsSubtitle='No exceptions on this role.'
-  rows={exceptions}
-  listActions={[
-    {
-      label: 'Add Exception',
-      icon: Add,
-      onClick: () => {
-        showGrantCreate = true
-        grantCreateAllow = false
+    ]}
+    columns={[
+      { id: 'controlGroup', label: 'Grants', render: grant => grant.controlGroup.title },
+      { id: 'controls', label: 'Controls', component: ControlWithTooltip },
+      { id: 'tags', label: 'Restrictions', render: grant => tagsRender(grant.tags) }
+    ]}
+    rows={grants}
+    actions={row => [
+      {
+        label: 'Edit',
+        icon: Edit,
+        onClick: onGrantEdit(row),
+        disabled: !row.actions.update
+      },
+      {
+        label: 'Delete',
+        icon: TrashCan,
+        onClick: onGrantDelete(row),
+        disabled: !row.actions.delete
       }
-    }
-  ]}
-  actions={row => [
-    {
-      label: 'Edit',
-      icon: Edit,
-      onClick: onGrantEdit(row),
-      disabled: !row.actions.update
-    },
-    {
-      label: 'Delete',
-      icon: TrashCan,
-      onClick: onGrantDelete(row),
-      disabled: !row.actions.delete
-    }
-  ]}
-/>
+    ]}
+    />
+  </div>
 
+  <div class="role-list">
+    <ColumnList
+    title="Exceptions for Role: {role.name}"
+    columns={[
+      { id: 'controlGroup', label: 'Exceptions', render: grant => grant.controlGroup.title },
+      { id: 'controls', label: 'Controls', render: grant => grant.controls.join(', ') },
+      { id: 'tags', label: 'Restrictions', render: grant => grant.tags.map(t => t.label).join(', ') }
+    ]}
+    noItemsKind='info'
+    noItemsTitle=''
+    noItemsSubtitle='No exceptions on this role.'
+    rows={exceptions}
+    listActions={[
+      {
+        label: 'Add Exception',
+        icon: Add,
+        onClick: () => {
+          showGrantCreate = true
+          grantCreateAllow = false
+        }
+      }
+    ]}
+    actions={row => [
+      {
+        label: 'Edit',
+        icon: Edit,
+        onClick: onGrantEdit(row),
+        disabled: !row.actions.update
+      },
+      {
+        label: 'Delete',
+        icon: TrashCan,
+        onClick: onGrantDelete(row),
+        disabled: !row.actions.delete
+      }
+    ]}
+    />
+  </div>
+</div>
 {#if showGrantEdit && grantToEdit}
   {@const controlGroup = controlGroupLookup[grantToEdit.controlGroup.name]}
   <PanelFormDialog open title="Edit {grantToEdit.allow ? 'Grant' : 'Exception'}" submit={onEditSubmit} validate={onEditValidate} on:cancel={onCloseEdit} on:saved={onSaveGrant} preload={grantToEditInput} let:data>
@@ -304,3 +306,9 @@
     <p>This action cannot be undone.</p>
   </Modal>
 {/if}
+
+<style>
+  .role-list :global(.column-list-head) {
+    background: var(--cds-ui-03);
+  }
+</style>
