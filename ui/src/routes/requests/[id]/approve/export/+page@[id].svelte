@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ApplicationDetailsView } from '$lib/components'
-  import { uiRegistry } from '../../../../local'
+  import { uiRegistry } from '../../../../../local'
   import type { PageData } from './$types'
 
   export let data: PageData
@@ -19,6 +19,9 @@
       loading={false}
       {uiRegistry}
       expandable={false}
+      showWarningsInline={true}
+      title="Review Application"
+      subtitle="Complete application details for review."
     />
   </div>
 

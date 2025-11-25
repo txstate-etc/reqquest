@@ -26,6 +26,7 @@ export interface AnsweredPrompt {
 export interface PromptSection {
   title: string
   prompts: AnsweredPrompt[]
+  subsections?: PromptSection[]
 }
 
 // what the ApplicationDetailsView needs

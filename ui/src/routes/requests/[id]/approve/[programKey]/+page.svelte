@@ -3,6 +3,7 @@
   import { toasts } from '@txstate-mws/svelte-components'
   import { Form } from '@txstate-mws/svelte-forms'
   import { Button, Select, SelectItem, Tooltip } from 'carbon-components-svelte'
+  import DocumentExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
   import WarningAltFilled from 'carbon-icons-svelte/lib/WarningAltFilled.svelte'
@@ -247,8 +248,8 @@
       </dl>
     </Panel>
   {/each}
-  {#if application.actions.advanceWorkflow || application.actions.reverseWorkflow}
-    <div class="app-actions [ flex items-end ]">
+  <div class="app-actions [ flex items-end ]">
+    {#if application.actions.advanceWorkflow || application.actions.reverseWorkflow}
       <Select bind:selected={appAction} labelText="Next step" size="sm">
         <SelectItem value="" text="Choose one" />
         {#if application.actions.advanceWorkflow}
@@ -259,8 +260,9 @@
         {/if}
       </Select>
       <Button on:click={onAppAction} size="small" class="ml-[4px]">Confirm</Button>
-    </div>
-  {/if}
+    {/if}
+    <Button href={`/requests/${appRequest.id}/approve/export`} kind="secondary" size="small" icon={DocumentExport} class="ml-[32px]">Export</Button>
+  </div>
 </ApproveLayout>
 
 {#if showPromptDialog && promptBeingEdited}
