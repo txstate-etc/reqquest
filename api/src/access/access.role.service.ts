@@ -167,6 +167,12 @@ export class AccessRoleService extends AuthService<AccessRole> {
 
   async validateAccessRole (id: string | null, roleInput: AccessRoleInput): Promise<AccessRoleValidatedResponse> {
     const valid = new AccessRoleValidatedResponse({ success: true, messages: [] })
+    if (isBlank(roleInput.name)) {
+      valid.addMessage('Role name is required.', 'name', MutationMessageType.error)
+    }
+    if (!roleInput.groups?.length) {
+      valid.addMessage('At least one group is required.', 'groups', MutationMessageType.error)
+    }
     const role = (await database.getAccessRoles({ names: [roleInput.name] }))[0] // check if role already exists
     if (role && role.id !== id) {
       valid.addMessage(`Role with name '${roleInput.name}' already exists`, 'name', MutationMessageType.error)
