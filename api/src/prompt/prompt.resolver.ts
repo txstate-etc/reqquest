@@ -43,9 +43,9 @@ export class RequirementPromptResolver {
     return await ctx.svc(RequirementPromptService).getConfigData(requirementPrompt) ?? {}
   }
 
-  @FieldResolver(type => JsonData, { description: 'All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it.' })
-  async relatedConfigData (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt) {
-    return await ctx.svc(RequirementPromptService).getRelatedConfigData(requirementPrompt)
+  @FieldResolver(type => JsonData, { description: 'Extra configuration data that is relevant for this prompt. This configuration is explicitly gathered from related requirements and prompts by the gatherConfig function in the prompt definition.' })
+  async gatheredConfigData (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt) {
+    return await ctx.svc(RequirementPromptService).getGatheredConfigData(requirementPrompt)
   }
 
   @FieldResolver(type => ApplicationRequirement, { description: 'The requirement that this prompt is associated with.' })

@@ -281,7 +281,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * viewer, you must provide this function to gather the data. For example, if your prompt shows
    * something like "Your income is $X of the maximum $Y allowed", where the $Y comes from the requirement
    * configuration, you would need to provide this function to gather that requirement configuration data,
-   * since by default only the prompt's own configuration data is available.
+   * since by default only the prompt's own configuration data is available (via the `configData` prop).
    *
    * Similarly, if there is configuration in another requirement or prompt that is only logically related
    * to the current prompt, you can use this function to gather that data as well.
@@ -292,7 +292,8 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * you can format it however you like.
    *
    * This function runs any time your prompt is displayed normally, and is provided to the display
-   * component. Contrast that with `fetch`, which only runs when the prompt is being edited.
+   * component as the `gatheredConfigData` prop. Contrast that with `fetch`, which only runs when the prompt
+   * is being edited.
    *
    * Be aware that the data returned by this function will be available to users even if the prompt's
    * display component hides it or transforms it, but only users who have view access to the prompt. In
@@ -303,15 +304,18 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    */
   gatherConfig?: (allPeriodConfig: Record<string, any>) => Record<string, any>
   /**
-   * When you provide an `exposeToApplicant` function, this function will be run in place of gatherConfig.
-   * This way you can hide some of the configuration data from applicants on prompts that are originally
-   * intended for reviewers, but have some applicant-facing display.
+   * When you provide an `exposeToApplicant` function, you are exposing this prompt to applicants, even
+   * if they otherwise wouldn't see it. Now that you've done that, it's possible they will ask for the
+   * `gatheredConfigData` as well. In that case, gatherConfig cannot be used, because it would expose
+   * information that was meant for reviewers.
    *
-   * By default, no configuration data is exposed to the applicant, even if gatherConfig is provided.
+   * By default, no configuration data is exposed to the applicant, which should be safe in most cases.
+   * But if you do need to expose some configuration data to the applicant, because you have some
+   * applicant-facing display, you can provide this function.
    *
    * If this is provided and gatherConfig is not, this function will be used to gather configuration
    * in both cases. So if you provided exposeToApplicant but want to expose the same configuration to
-   * the applicant as to reviewers, you can just provide this function.
+   * the applicant as to reviewers, you can just provide this function and leave `gatherConfig` undefined.
    */
   gatherConfigForApplicant?: (allPeriodConfig: Record<string, any>) => Record<string, any>
   /**

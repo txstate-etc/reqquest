@@ -185,7 +185,7 @@ class API extends APIBase {
               visibility: true,
               fetchedData: true,
               configurationData: true,
-              relatedConfigData: true
+              gatheredConfigData: true
             }
           }
         }
@@ -246,7 +246,7 @@ class API extends APIBase {
           requirements: {
             prompts: {
               key: true,
-              relatedConfigData: true
+              gatheredConfigData: true
             }
           }
         }
@@ -392,7 +392,7 @@ class API extends APIBase {
               invalidated: true,
               invalidatedReason: true,
               configurationData: true,
-              relatedConfigData: true
+              gatheredConfigData: true
             }
           }
         }
@@ -710,7 +710,7 @@ class API extends APIBase {
               answered: true,
               visibility: true,
               configurationData: true,
-              relatedConfigData: true,
+              gatheredConfigData: true,
               moot: true,
               invalidated: true,
               invalidatedReason: true,
@@ -782,7 +782,7 @@ class API extends APIBase {
           data: true,
           preloadData: true,
           configurationData: true,
-          relatedConfigData: true,
+          gatheredConfigData: true,
           fetchedData: true
         }
       }

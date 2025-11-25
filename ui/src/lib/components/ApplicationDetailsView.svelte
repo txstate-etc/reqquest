@@ -111,7 +111,7 @@
                   {prompt.title}
                 </dt>
                 <dd class="prompt-answer flow" class:large={def?.displayMode === 'large'}>
-                  <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appData} prompt={prompt} configData={prompt.configurationData} relatedConfigData={prompt.relatedConfigData} />
+                  <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appData} prompt={prompt} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
                 </dd>
               {/each}
             </dl>

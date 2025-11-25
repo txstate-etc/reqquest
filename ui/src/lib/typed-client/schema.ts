@@ -647,6 +647,8 @@ export interface RequirementPrompt {
     description: (Scalars['String'] | null)
     /** Any data that the API needs to provide to the UI to build the prompt form properly. For instance, it could pull reference information from an external system, e.g. a student's course schedule, for display in the prompt dialog. Null if the user is not currently allowed to update the prompt. */
     fetchedData: (Scalars['JsonData'] | null)
+    /** Extra configuration data that is relevant for this prompt. This configuration is explicitly gathered from related requirements and prompts by the gatherConfig function in the prompt definition. */
+    gatheredConfigData: Scalars['JsonData']
     id: Scalars['ID']
     /** When true, this prompt has been invalidated by the answer to another prompt. The `answered` field should remain false until the user specifically answers this prompt again, regardless of the output of the definition's `complete` method. */
     invalidated: Scalars['Boolean']
@@ -660,8 +662,6 @@ export interface RequirementPrompt {
     navTitle: Scalars['String']
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
     preloadData: (Scalars['JsonData'] | null)
-    /** All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it. */
-    relatedConfigData: Scalars['JsonData']
     /** The requirement that this prompt is associated with. */
     requirement: ApplicationRequirement
     /** A human readable title for the prompt. This is what will be shown to users. */
@@ -1504,6 +1504,8 @@ export interface RequirementPromptGenqlSelection{
     fetchedData?: { __args: {
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
+    /** Extra configuration data that is relevant for this prompt. This configuration is explicitly gathered from related requirements and prompts by the gatherConfig function in the prompt definition. */
+    gatheredConfigData?: boolean | number
     id?: boolean | number
     /** When true, this prompt has been invalidated by the answer to another prompt. The `answered` field should remain false until the user specifically answers this prompt again, regardless of the output of the definition's `complete` method. */
     invalidated?: boolean | number
@@ -1519,8 +1521,6 @@ export interface RequirementPromptGenqlSelection{
     preloadData?: { __args: {
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
-    /** All the configuration data that could be relevant for this prompt. This includes its own config, and also the config data for any requirements and programs that are related to it. */
-    relatedConfigData?: boolean | number
     /** The requirement that this prompt is associated with. */
     requirement?: ApplicationRequirementGenqlSelection
     /** A human readable title for the prompt. This is what will be shown to users. */

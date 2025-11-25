@@ -7,7 +7,7 @@
   export let appData: Record<string, any>
   export let prompt: { key: string, answered: boolean, moot: boolean | null, invalidated: boolean | null, invalidatedReason: string | null }
   export let configData: Record<string, any>
-  export let relatedConfigData: Record<string, any>
+  export let gatheredConfigData: Record<string, any>
   export let showMoot = false
 </script>
 
@@ -20,7 +20,7 @@
     <em>No display component registered.</em>
     <pre>{JSON.stringify(appData[prompt.key] ?? {}, null, 2)}</pre>
   {:else}
-    <svelte:component this={def.displayComponent} {appRequestId} data={appData[prompt.key]} appRequestData={appData} {configData} {relatedConfigData} />
+    <svelte:component this={def.displayComponent} {appRequestId} data={appData[prompt.key]} appRequestData={appData} {configData} {gatheredConfigData} />
     {#if prompt.invalidated}
       <InlineNotification kind="warning-alt" title="Invalid Answer" subtitle={prompt.invalidatedReason ?? undefined} class="mt-2" lowContrast hideCloseButton />
     {/if}

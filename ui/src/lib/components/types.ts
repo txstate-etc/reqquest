@@ -15,7 +15,7 @@ export interface AnsweredPrompt {
   moot: boolean | null
   visibility: string
   configurationData: Record<string, any>
-  relatedConfigData: Record<string, any>
+  gatheredConfigData: Record<string, any>
   statusReasons: {
     status: string
     statusReason: string | null

@@ -4,7 +4,7 @@
   import { Button, Modal, ToastNotification } from 'carbon-components-svelte'
   import type { StateResidencePromptData } from './types.js'
   export let data: Partial<StateResidencePromptData>
-  export let relatedConfigData
+  export let gatheredConfigData
   export let appRequestId
   const prompt_key = 'state_residence_prompt'
   const promptIdFileChecksum = 'residentIdDoc/shasum'
@@ -12,11 +12,11 @@
   let objURL: string | null = null
   let displayIdFileErr: string | null
   let modalOpen = false
-  $: residentOfState = (relatedConfigData?.state_residence_req) ? `${relatedConfigData.state_residence_req.residentOfState}` : 'NO state_residence_req related'
+  $: residentOfState = (gatheredConfigData?.state_residence_req) ? `${gatheredConfigData.state_residence_req.residentOfState}` : 'NO state_residence_req related'
   async function displayIdFile(): Promise<boolean> {
     if (objURL) { // id file already downloaded
       displayIdFileErr = null
-      return true 
+      return true
     }
     try {
       const ep = `${PUBLIC_API_BASE}/download/${appRequestId}/${prompt_key}/${promptIdFileChecksum}`
@@ -32,7 +32,7 @@
     catch (err) {
       displayIdFileErr = err
       return false
-    }   
+    }
     displayIdFileErr = null
     return true
   }
@@ -46,10 +46,10 @@
         {data.streetAddress} <br/>
         {data.city}, {residentOfState} {data.zipCode}
       </b>
-   </p>  
-   <br/> 
+   </p>
+   <br/>
    <p>
-      <Button on:click={async () => modalOpen = await displayIdFile()}>Display Id file</Button>      
+      <Button on:click={async () => modalOpen = await displayIdFile()}>Display Id file</Button>
    </p>
 {:else}
   <p>Not a resident of {residentOfState}.</p>

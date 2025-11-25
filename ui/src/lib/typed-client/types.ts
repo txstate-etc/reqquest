@@ -1637,6 +1637,9 @@ export default {
                     ]
                 }
             ],
+            "gatheredConfigData": [
+                49
+            ],
             "id": [
                 44
             ],
@@ -1662,9 +1665,6 @@ export default {
                         74
                     ]
                 }
-            ],
-            "relatedConfigData": [
-                49
             ],
             "requirement": [
                 34

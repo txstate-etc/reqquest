@@ -230,13 +230,13 @@
             <dd class="flow" class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
               {#if editMode}
                 <Form preload={appRequest.data[prompt.key]} submit={onPromptSubmit(prompt.id)} validate={onPromptValidate(prompt.id)} autoSave on:autosaved={onPromptSaved} let:data let:messages>
-                  <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} fetched={prompt.fetchedData} configData={prompt.configurationData} relatedConfigData={prompt.relatedConfigData} />
+                  <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
                   {#each messages as message (message.message, message.type)}
                     <FormInlineNotification {message} />
                   {/each}
                 </Form>
               {:else}
-                <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} configData={prompt.configurationData} relatedConfigData={prompt.relatedConfigData} showMoot />
+                <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
                 {#if prompt.actions.update}
                   <Button kind="ghost" size="field" icon={Edit} iconDescription="Edit Prompt" class="prompt-edit" on:click={editPrompt(prompt)} />
                 {/if}
@@ -276,7 +276,7 @@
     let:data
   >
     {@const def = uiRegistry.getPrompt(promptBeingEdited.key)}
-    <svelte:component this={def!.formComponent} appRequestId={appRequest.id} {data} appRequestData={promptBeingEdited.data} fetched={promptBeingEdited.fetchedData} configData={promptBeingEdited.relatedConfigData[promptBeingEdited.key]} relatedConfigData={promptBeingEdited.relatedConfigData} />
+    <svelte:component this={def!.formComponent} appRequestId={appRequest.id} {data} appRequestData={promptBeingEdited.data} fetched={promptBeingEdited.fetchedData} configData={promptBeingEdited.gatheredConfigData[promptBeingEdited.key]} gatheredConfigData={promptBeingEdited.gatheredConfigData} />
   </PanelFormDialog>
 {/if}
 
