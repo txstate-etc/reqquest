@@ -640,7 +640,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
         else if (phase === 'applicant') application.ineligiblePhase = firstFailingRequirement?.type === RequirementType.PREQUAL ? IneligiblePhases.PREQUAL : IneligiblePhases.QUALIFICATION
         else if (phase === 'review') application.ineligiblePhase = firstFailingRequirement?.type === RequirementType.PREAPPROVAL ? IneligiblePhases.PREAPPROVAL : IneligiblePhases.APPROVAL
         else if (phase === 'blocking') application.ineligiblePhase ??= IneligiblePhases.WORKFLOW
-      } else if (phase !== 'nonblocking') {
+      } else if (phase !== 'nonblocking' && phase !== 'blocking') {
         application.ineligiblePhase = undefined
       }
     }
