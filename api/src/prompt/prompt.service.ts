@@ -164,28 +164,28 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
 
   mayUpdate (prompt: RequirementPrompt): boolean {
     if (prompt.appRequestDbStatus !== AppRequestStatusDB.OPEN) return false
-    const reqDef = requirementRegistry.get(prompt.requirementKey)
+    if (prompt.locked) return false
     if (this.isOwn(prompt)) {
-      if (prompt.appRequestDbPhase === AppRequestPhase.STARTED && preSubmitTypes.has(reqDef.type)) return true
-      if (prompt.appRequestDbPhase === AppRequestPhase.ACCEPTANCE && reqDef.type === RequirementType.ACCEPTANCE) return true
+      if (prompt.appRequestDbPhase === AppRequestPhase.STARTED && preSubmitTypes.has(prompt.requirementType)) return true
+      if (prompt.appRequestDbPhase === AppRequestPhase.ACCEPTANCE && prompt.requirementType === RequirementType.ACCEPTANCE) return true
       if (!this.hasControl('AppRequest', 'review_own', prompt.appRequestTags)) return false
     }
     const hasUpdate = this.hasControl('PromptAnswer', 'update', { ...prompt.authorizationKeys, ...prompt.appRequestTags })
     const hasUpdateAnytime = this.hasControl('PromptAnswer', 'update_anytime', { ...prompt.authorizationKeys, ...prompt.appRequestTags })
     if (prompt.appRequestDbPhase === AppRequestPhase.SUBMITTED) {
-      if (reqDef.type === RequirementType.WORKFLOW) {
+      if (prompt.requirementType === RequirementType.WORKFLOW) {
         if (prompt.workflowStage === prompt.applicationWorkflowStage) {
           return hasUpdate || hasUpdateAnytime
         }
-      } else if (preSubmitTypes.has(reqDef.type) || reviewTypes.has(reqDef.type)) {
+      } else if (preSubmitTypes.has(prompt.requirementType) || reviewTypes.has(prompt.requirementType)) {
         if (prompt.applicationPhase !== ApplicationPhase.REVIEW_COMPLETE) return hasUpdate || hasUpdateAnytime
       }
     } else if (prompt.appRequestDbPhase === AppRequestPhase.ACCEPTANCE) {
-      if (reqDef.type === RequirementType.ACCEPTANCE) {
+      if (prompt.requirementType === RequirementType.ACCEPTANCE) {
         return hasUpdate || hasUpdateAnytime
       }
     } else if (prompt.appRequestDbPhase === AppRequestPhase.STARTED) {
-      if (preSubmitTypes.has(reqDef.type)) {
+      if (preSubmitTypes.has(prompt.requirementType)) {
         return hasUpdateAnytime
       }
     } else if (prompt.appRequestDbPhase === AppRequestPhase.WORKFLOW_NONBLOCKING) {

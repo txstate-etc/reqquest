@@ -1,6 +1,6 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { ApplicationPhase, ApplicationRequirement, AppRequestPhase, AppRequestStatusDB, InvalidatedResponse, PeriodConfigurationRow, PeriodPrompt, PeriodPromptFilters, promptRegistry, PromptVisibility, RequirementPrompt, RequirementPromptFilter } from '../internal.js'
+import { ApplicationPhase, ApplicationRequirement, AppRequestPhase, AppRequestStatusDB, InvalidatedResponse, PeriodConfigurationRow, PeriodPrompt, PeriodPromptFilters, promptRegistry, PromptVisibility, RequirementPrompt, RequirementPromptFilter, RequirementType } from '../internal.js'
 
 export interface PromptRow {
   id: number
@@ -11,11 +11,13 @@ export interface PromptRow {
   applicationId: number
   requirementId: number
   requirementKey: string
+  requirementType: RequirementType
   programKey: string
   userId: number
   promptKey: string
   answered: 0 | 1
   moot: 0 | 1
+  locked: 0 | 1
   invalidated: 0 | 1
   invalidatedReason: string | null
   visibility: PromptVisibility
@@ -53,7 +55,7 @@ export async function getRequirementPrompts (filter: RequirementPromptFilter, td
   const { where, binds } = processFilters(filter)
   const rows = await tdb.getall<PromptRow>(`
     SELECT p.*, ar.userId, ar.periodId, r.requirementKey, a.programKey, ar.status AS appRequestDbStatus, ar.phase AS appRequestDbPhase,
-      r.workflowStage, a.workflowStage AS applicationWorkflowStage, a.computedPhase AS applicationPhase
+      r.workflowStage, a.workflowStage AS applicationWorkflowStage, a.computedPhase AS applicationPhase, r.type AS requirementType
     FROM requirement_prompts p
     INNER JOIN application_requirements r ON r.id=p.requirementId
     INNER JOIN applications a ON a.id=r.applicationId
@@ -101,7 +103,7 @@ export async function syncPromptRecords (requirement: ApplicationRequirement, db
 
 export async function updatePromptComputed (prompts: RequirementPrompt[], db: Queryable) {
   for (const prompt of prompts) {
-    await db.update('UPDATE requirement_prompts SET visibility = ?, answered = ?, moot = ? WHERE id = ?', [prompt.visibility, prompt.answered, prompt.moot, prompt.internalId])
+    await db.update('UPDATE requirement_prompts SET visibility = ?, answered = ?, moot = ?, locked = ? WHERE id = ?', [prompt.visibility, prompt.answered, prompt.moot, prompt.locked, prompt.internalId])
   }
 }
 

@@ -1,9 +1,10 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { Application, ApplicationRequirement, ApplicationRequirementFilter, PeriodProgramRequirementFilters, PeriodProgramRequirementRow, PeriodProgramRequirement, RequirementStatus } from '../internal.js'
+import { Application, ApplicationRequirement, ApplicationRequirementFilter, PeriodProgramRequirementFilters, PeriodProgramRequirementRow, PeriodProgramRequirement, RequirementStatus, requirementRegistry, RequirementType } from '../internal.js'
 
 export interface ApplicationRequirementRow {
   id: number
+  type: RequirementType
   applicationId: number
   appRequestId: number
   periodId: number
@@ -68,8 +69,8 @@ export async function syncRequirementRecords (application: Application, enabledK
   if (requirementsToInsert.length) {
     const binds: any[] = []
     await db.insert(`
-      INSERT INTO application_requirements (applicationId, appRequestId, requirementKey, workflowStage)
-      VALUES ${db.in(binds, requirementsToInsert.map(requirementKey => [application.internalId, application.appRequestId, requirementKey, workflowRequirementKeyStage.get(requirementKey) ?? 0]))}
+      INSERT INTO application_requirements (type, applicationId, appRequestId, requirementKey, workflowStage)
+      VALUES ${db.in(binds, requirementsToInsert.map(requirementKey => [requirementRegistry.get(requirementKey)?.type ?? RequirementType.QUALIFICATION, application.internalId, application.appRequestId, requirementKey, workflowRequirementKeyStage.get(requirementKey) ?? 0]))}
     `, binds)
   }
   if (requirementsToDelete.length) {
@@ -78,7 +79,7 @@ export async function syncRequirementRecords (application: Application, enabledK
   }
   for (let i = 0; i < activeRequirementKeys.length; i++) {
     const requirementKey = activeRequirementKeys[i]
-    await db.update('UPDATE application_requirements SET workflowStage = ?, evaluationOrder = ? WHERE applicationId = ? AND requirementKey = ?', [workflowRequirementKeyStage.get(requirementKey) ?? 0, i, application.internalId, requirementKey])
+    await db.update('UPDATE application_requirements SET type = ?, workflowStage = ?, evaluationOrder = ? WHERE applicationId = ? AND requirementKey = ?', [requirementRegistry.get(requirementKey)?.type ?? RequirementType.QUALIFICATION, workflowRequirementKeyStage.get(requirementKey) ?? 0, i, application.internalId, requirementKey])
   }
   return await getApplicationRequirements({ applicationIds: [application.id] }, db)
 }

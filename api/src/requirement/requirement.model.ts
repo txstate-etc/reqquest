@@ -90,6 +90,7 @@ export class ApplicationRequirement extends Requirement {
     super(definition)
     this.internalId = row.id
     this.id = String(row.id)
+    this.type = row.type
     this.definition = definition
     this.programKey = row.programKey
     this.applicationInternalId = row.applicationId

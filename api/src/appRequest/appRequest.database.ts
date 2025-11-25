@@ -3,7 +3,7 @@ import type { FastifyTxStateAuthInfo } from 'fastify-txstate'
 import type { GraphQLError } from 'graphql'
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { clone, groupby, isNotBlank, keyby, omit, stringify } from 'txstate-utils'
+import { clone, findIndex, groupby, isNotBlank, keyby, omit, stringify } from 'txstate-utils'
 import { ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter, AppRequestStatus, getAcceptancePeriodIds, getApplications, getPeriodWorkflowStages, IneligiblePhases, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, requirementRegistry, RequirementStatus, RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
 
 /**
@@ -467,7 +467,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
          * prompt is shared between an applicant requirement and a reviewer requirement, we only want the
          * applicant version of the prompt to be answered=false.
          */
-        (data[prompt.key] == null && applicantRequirementTypes.has(requirementRegistry.get(prompt.requirementKey).type))
+        (data[prompt.key] == null && applicantRequirementTypes.has(prompt.requirementType))
         || prompt.invalidated
       ) {
         prompt.answered = false
@@ -478,6 +478,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
     }
 
     const promptsSeenInRequest = new Set<string>()
+    const promptKeysLocked = new Set<string>()
     for (const application of applications) {
       const requirements = reqLookup[application.id] ?? []
       const workflowStages = workflowStagesByProgramKey[application.programKey] ?? []
@@ -488,17 +489,19 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
         previousWorkflowStages.push(stage)
       }
 
-      const phase = appRequest.phase === AppRequestPhase.STARTED
-        ? 'applicant'
-        : appRequest.phase === AppRequestPhase.ACCEPTANCE
-          ? 'acceptance'
-          : application.workflowStageKey
-            ? activeWorkflowStage?.blocking
-              ? 'blocking'
-              : 'nonblocking'
-            : appRequest.phase === AppRequestPhase.WORKFLOW_NONBLOCKING
-              ? 'nonblocking'
-              : 'review'
+      const phase = application.phase === ApplicationPhase.COMPLETE || application.phase === ApplicationPhase.READY_TO_COMPLETE
+        ? 'complete'
+        : appRequest.phase === AppRequestPhase.STARTED
+          ? 'applicant'
+          : appRequest.phase === AppRequestPhase.ACCEPTANCE
+            ? 'acceptance'
+            : application.workflowStageKey
+              ? activeWorkflowStage?.blocking
+                ? 'blocking'
+                : 'nonblocking'
+              : appRequest.phase === AppRequestPhase.WORKFLOW_NONBLOCKING
+                ? 'nonblocking'
+                : 'review'
 
       // in the reviewer's view, we will often want related requirements to be grouped together,
       // so we will probably have a mixed overall order like:
@@ -508,24 +511,29 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       // requirement: reviewer must confirm upload is a proof of insurance (APPROVAL)
       // we therefore cannot demand that the developer put requirements in an order where all prequals
       // precede all approvals, etc. Instead, we will sort them here.
-      const prequalRequirements = requirements.filter(req => req.definition.type === 'PREQUAL')
-      const qualificationRequirements = requirements.filter(req => req.definition.type === 'QUALIFICATION')
-      const postqualRequirements = requirements.filter(req => req.definition.type === 'POSTQUAL')
-      const preapprovalRequirements = requirements.filter(req => req.definition.type === 'PREAPPROVAL')
-      const approvalRequirements = requirements.filter(req => req.definition.type === 'APPROVAL')
-      const acceptanceRequirements = requirements.filter(req => req.definition.type === 'ACCEPTANCE')
+      const prequalRequirements = requirements.filter(req => req.type === RequirementType.PREQUAL)
+      const qualificationRequirements = requirements.filter(req => req.type === RequirementType.QUALIFICATION)
+      const postqualRequirements = requirements.filter(req => req.type === RequirementType.POSTQUAL)
+      const preapprovalRequirements = requirements.filter(req => req.type === RequirementType.PREAPPROVAL)
+      const approvalRequirements = requirements.filter(req => req.type === RequirementType.APPROVAL)
+      const acceptanceRequirements = requirements.filter(req => req.type === RequirementType.ACCEPTANCE)
       const blockingWorkflowRequirements = requirements.filter(req => req.workflowStageKey ? workflowStageLookup[req.workflowStageKey]?.blocking : false)
+      const nonblockingWorkflowRequirements = requirements.filter(req => req.workflowStageKey ? !workflowStageLookup[req.workflowStageKey]?.blocking : false)
       const currentWorkflowRequirements = requirements.filter(req => req.workflowStageKey === application.workflowStageKey)
+      const presubmitRequirements = [...prequalRequirements, ...qualificationRequirements, ...postqualRequirements]
+      const reviewRequirements = [...presubmitRequirements, ...preapprovalRequirements, ...approvalRequirements]
 
       // if we are in applicant phase, we only need to evaluate prequal, postqual, and qualification requirements
       // acceptance requirements if we are in acceptance phase, etc
-      const sortedRequirements = phase === 'applicant'
-        ? [...prequalRequirements, ...qualificationRequirements, ...postqualRequirements]
-        : phase === 'acceptance'
-          ? acceptanceRequirements
-          : phase === 'blocking' || phase === 'nonblocking'
-            ? currentWorkflowRequirements
-            : [...prequalRequirements, ...qualificationRequirements, ...preapprovalRequirements, ...approvalRequirements, ...blockingWorkflowRequirements]
+      const sortedRequirements = phase === 'complete'
+        ? []
+        : phase === 'applicant'
+          ? presubmitRequirements
+          : phase === 'acceptance'
+            ? acceptanceRequirements
+            : phase === 'blocking' || phase === 'nonblocking'
+              ? currentWorkflowRequirements
+              : reviewRequirements
 
       const promptsSeenInApplication = new Set<string>()
       let applicationIsIneligible = false
@@ -586,7 +594,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
           ? 'pending'
           : 'pass'
 
-      application.status = phase === 'nonblocking'
+      application.status = phase === 'nonblocking' || phase === 'complete'
         ? application.status
         : phase === 'acceptance'
           ? requirementsResolution === 'pass'
@@ -602,35 +610,37 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
 
       application.statusReason = firstFailingRequirement?.statusReason ?? firstPendingRequirement?.statusReason
 
-      application.phase = phase === 'nonblocking'
-        ? application.workflowStageKey
-          ? requirementsResolution === 'pass'
-            ? ApplicationPhase.READY_FOR_WORKFLOW
-            : ApplicationPhase.WORKFLOW_NONBLOCKING
-          : ApplicationPhase.READY_TO_COMPLETE
-        : phase === 'acceptance'
-          ? requirementsResolution !== 'pending'
-            ? ApplicationPhase.READY_TO_ACCEPT
-            : ApplicationPhase.ACCEPTANCE
-          : phase === 'applicant'
+      application.phase = phase === 'complete'
+        ? ApplicationPhase.COMPLETE
+        : phase === 'nonblocking'
+          ? application.workflowStageKey
+            ? requirementsResolution === 'pass'
+              ? ApplicationPhase.READY_FOR_WORKFLOW
+              : ApplicationPhase.WORKFLOW_NONBLOCKING
+            : ApplicationPhase.READY_TO_COMPLETE
+          : phase === 'acceptance'
             ? requirementsResolution !== 'pending'
-              ? ApplicationPhase.READY_TO_SUBMIT
-              : nonPassingRequirement?.type === RequirementType.PREQUAL
-                ? ApplicationPhase.PREQUAL
-                : ApplicationPhase.QUALIFICATION
-            : phase === 'review'
+              ? ApplicationPhase.READY_TO_ACCEPT
+              : ApplicationPhase.ACCEPTANCE
+            : phase === 'applicant'
               ? requirementsResolution !== 'pending'
-                ? application.phase === ApplicationPhase.REVIEW_COMPLETE
-                  ? ApplicationPhase.REVIEW_COMPLETE
-                  : ApplicationPhase.READY_FOR_WORKFLOW
-                : nonPassingRequirement?.type === RequirementType.PREAPPROVAL
-                  ? ApplicationPhase.PREAPPROVAL
-                  : ApplicationPhase.APPROVAL
-              : requirementsResolution === 'pass' // phase === 'blocking'
-                ? application.phase = ApplicationPhase.REVIEW_COMPLETE
-                  ? ApplicationPhase.REVIEW_COMPLETE
-                  : ApplicationPhase.READY_FOR_WORKFLOW
-                : ApplicationPhase.WORKFLOW_BLOCKING
+                ? ApplicationPhase.READY_TO_SUBMIT
+                : nonPassingRequirement?.type === RequirementType.PREQUAL
+                  ? ApplicationPhase.PREQUAL
+                  : ApplicationPhase.QUALIFICATION
+              : phase === 'review'
+                ? requirementsResolution !== 'pending'
+                  ? application.phase === ApplicationPhase.REVIEW_COMPLETE
+                    ? ApplicationPhase.REVIEW_COMPLETE
+                    : ApplicationPhase.READY_FOR_WORKFLOW
+                  : nonPassingRequirement?.type === RequirementType.PREAPPROVAL
+                    ? ApplicationPhase.PREAPPROVAL
+                    : ApplicationPhase.APPROVAL
+                : requirementsResolution === 'pass' // phase === 'blocking'
+                  ? application.phase === ApplicationPhase.REVIEW_COMPLETE
+                    ? ApplicationPhase.REVIEW_COMPLETE
+                    : ApplicationPhase.READY_FOR_WORKFLOW
+                  : ApplicationPhase.WORKFLOW_BLOCKING
 
       if (application.phase === ApplicationPhase.READY_FOR_WORKFLOW && applications.length === 1 && (!workflowStages.length || workflowStages[workflowStages.length - 1].key === application.workflowStageKey)) {
         application.phase = ApplicationPhase.REVIEW_COMPLETE
@@ -640,9 +650,31 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
         else if (phase === 'applicant') application.ineligiblePhase = firstFailingRequirement?.type === RequirementType.PREQUAL ? IneligiblePhases.PREQUAL : IneligiblePhases.QUALIFICATION
         else if (phase === 'review') application.ineligiblePhase = firstFailingRequirement?.type === RequirementType.PREAPPROVAL ? IneligiblePhases.PREAPPROVAL : IneligiblePhases.APPROVAL
         else if (phase === 'blocking') application.ineligiblePhase ??= IneligiblePhases.WORKFLOW
-      } else if (phase !== 'nonblocking' && phase !== 'blocking') {
+      } else if (phase !== 'nonblocking' && phase !== 'blocking' && phase !== 'complete') {
         application.ineligiblePhase = undefined
       }
+
+      const requirementsToLock = []
+      if ([ApplicationPhase.REVIEW_COMPLETE].includes(application.phase)) {
+        requirementsToLock.push(...reviewRequirements)
+      } else if ([ApplicationPhase.READY_TO_COMPLETE, ApplicationPhase.COMPLETE].includes(application.phase)) {
+        requirementsToLock.push(...requirements)
+      } else if (phase === 'blocking') {
+        requirementsToLock.push(...reviewRequirements, ...blockingWorkflowRequirements.slice(0, findIndex(blockingWorkflowRequirements, r => r.workflowStageKey === application.workflowStageKey) ?? blockingWorkflowRequirements.length))
+      } else if (phase === 'nonblocking') {
+        requirementsToLock.push(...reviewRequirements, ...blockingWorkflowRequirements, ...acceptanceRequirements, ...nonblockingWorkflowRequirements.slice(0, findIndex(nonblockingWorkflowRequirements, r => r.workflowStageKey === application.workflowStageKey) ?? nonblockingWorkflowRequirements.length))
+      } else if (phase === 'acceptance') {
+        requirementsToLock.push(...reviewRequirements, ...blockingWorkflowRequirements)
+      }
+      for (const requirement of requirementsToLock) {
+        for (const prompt of prompts.filter(p => p.requirementId === requirement.id)) {
+          promptKeysLocked.add(prompt.key)
+        }
+      }
+    }
+
+    for (const prompt of prompts) {
+      prompt.locked = promptKeysLocked.has(prompt.key)
     }
 
     // determine appRequest status based on the application statuses

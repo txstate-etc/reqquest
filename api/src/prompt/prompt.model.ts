@@ -1,5 +1,5 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
-import { ApplicationPhase, AppRequestPhase, AppRequestStatusDB, PromptDefinition, promptRegistry, PromptRow } from '../internal.js'
+import { ApplicationPhase, AppRequestPhase, AppRequestStatusDB, PromptDefinition, promptRegistry, PromptRow, RequirementType } from '../internal.js'
 
 export enum PromptVisibility {
   UNREACHABLE = 'UNREACHABLE',
@@ -51,6 +51,7 @@ export class RequirementPrompt extends Prompt {
     this.requirementInternalId = row.requirementId
     this.requirementId = String(row.requirementId)
     this.requirementKey = row.requirementKey
+    this.requirementType = row.requirementType
     this.programKey = row.programKey
     this.applicationInternalId = row.applicationId
     this.applicationId = String(row.applicationId)
@@ -65,6 +66,7 @@ export class RequirementPrompt extends Prompt {
     this.invalidatedReason = row.invalidatedReason ?? undefined
     this.visibility = row.visibility
     this.moot = !!row.moot
+    this.locked = !!row.locked
     this.workflowStage = row.workflowStage ?? undefined
     this.applicationWorkflowStage = row.applicationWorkflowStage ?? undefined
     this.applicationPhase = row.applicationPhase
@@ -98,6 +100,7 @@ export class RequirementPrompt extends Prompt {
   requirementInternalId: number
   requirementId: string
   requirementKey: string
+  requirementType: RequirementType
   programKey: string
   periodId: string
   appRequestDbStatus: AppRequestStatusDB
@@ -105,6 +108,7 @@ export class RequirementPrompt extends Prompt {
   workflowStage?: string
   applicationWorkflowStage?: string
   applicationPhase: ApplicationPhase
+  locked: boolean
 }
 
 @ObjectType()

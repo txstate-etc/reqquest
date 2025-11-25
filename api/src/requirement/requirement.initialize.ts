@@ -8,6 +8,7 @@ export const requirementMigrations: DatabaseMigration[] = [
       await db.execute(`
         CREATE TABLE IF NOT EXISTS application_requirements (
           id INT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
+          type VARCHAR(255) NOT NULL,
           applicationId INT UNSIGNED NOT NULL,
           appRequestId INT UNSIGNED NOT NULL,
           requirementKey VARCHAR(255) NOT NULL,
