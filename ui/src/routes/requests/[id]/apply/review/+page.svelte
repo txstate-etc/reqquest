@@ -4,7 +4,7 @@
   import Touch_1 from 'carbon-icons-svelte/lib/Touch_1.svelte'
   import { getContext } from 'svelte'
   import type { Writable } from 'svelte/store'
-  import { goto } from '$app/navigation'
+  import { afterNavigate, goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import type { ResolvedPathname } from '$app/types'
   import { api, ApplicationDetailsView, enumAppRequestStatus } from '$lib'
@@ -34,6 +34,15 @@
     if (resp.success) await goto(resolve('/dashboards/applicant'))
     else toasts.add({ type: 'error', title: 'Submission Failed', message: resp.messages.map(m => m.message).join('\n') || 'There was an error submitting your application. Please try again later.' })
   }
+
+  afterNavigate(() => {
+    console.log('focusing h2', document.querySelector('h2'))
+    const h2 = document.querySelector('h2')
+    if (h2) {
+      h2.tabIndex = -1
+      h2.focus()
+    }
+  })
 </script>
 
 <ApplicationDetailsView

@@ -2,6 +2,7 @@
   import { Button } from 'carbon-components-svelte'
   import { getContext } from 'svelte'
   import type { Writable } from 'svelte/store'
+  import { afterNavigate } from '$app/navigation'
   import type { PageData } from './$types'
   import ProgressNavContainer from '../ProgressNavContainer.svelte'
   import { ApplicantProgramList, enumApplicationStatus } from '$lib'
@@ -13,6 +14,15 @@
   let nextHref: string | undefined
   const getNextHref = getContext<Writable<{ nextHref: string | undefined, prevHref: string | undefined }>>('nextHref')
   $: ({ prevHref, nextHref } = $getNextHref)
+
+  afterNavigate(() => {
+    console.log('focusing h2', document.querySelector('h2'))
+    const h2 = document.querySelector('h2')
+    if (h2) {
+      h2.tabIndex = -1
+      h2.focus()
+    }
+  })
 </script>
 
 <ProgressNavContainer title="Your potential programs" subtitle='Select "Start" to answer additional qualifying questions about the benefits you may be eligible for.'>
