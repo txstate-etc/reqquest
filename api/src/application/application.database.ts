@@ -80,7 +80,9 @@ export async function advanceWorkflow (applicationId: string, tdb: Queryable = d
   if (application.computedPhase !== ApplicationPhase.READY_FOR_WORKFLOW) throw new Error('Application is not ready to advance workflow.')
 
   const stages = await tdb.getall<PeriodWorkflowRow>(`
-    SELECT w.* FROM period_workflow_stages w
+    SELECT DISTINCT w.* FROM period_workflow_stages w
+    INNER JOIN application_requirements r ON r.workflowStage = w.stageKey
+    INNER JOIN applications a ON a.id = r.applicationId AND a.programKey = w.programKey
     WHERE w.programKey=? AND w.periodId=?
     ORDER BY w.evaluationOrder
   `, [application.programKey, application.periodId])
@@ -118,7 +120,9 @@ export async function reverseWorkflow (applicationId: string, tdb: Queryable = d
   if (!application) throw new Error(`Application not found: ${applicationId}`)
 
   const stages = await tdb.getall<PeriodWorkflowRow>(`
-    SELECT w.* FROM period_workflow_stages w
+    SELECT DISTINCT w.* FROM period_workflow_stages w
+    INNER JOIN application_requirements r ON r.workflowStage = w.stageKey
+    INNER JOIN applications a ON a.id = r.applicationId AND a.programKey = w.programKey
     WHERE w.programKey=? AND w.periodId=?
     ORDER BY w.evaluationOrder
   `, [application.programKey, application.periodId])
