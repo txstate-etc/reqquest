@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Card, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
+  import { Card, FormInlineNotification, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
   import { Form } from '@txstate-mws/svelte-forms'
   import { Button, Select, SelectItem, Tooltip } from 'carbon-components-svelte'
@@ -229,8 +229,11 @@
             </dt>
             <dd class="flow" class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
               {#if editMode}
-                <Form preload={appRequest.data[prompt.key]} submit={onPromptSubmit(prompt.id)} validate={onPromptValidate(prompt.id)} autoSave on:autosaved={onPromptSaved} let:data>
+                <Form preload={appRequest.data[prompt.key]} submit={onPromptSubmit(prompt.id)} validate={onPromptValidate(prompt.id)} autoSave on:autosaved={onPromptSaved} let:data let:messages>
                   <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} fetched={prompt.fetchedData} configData={prompt.configurationData} relatedConfigData={prompt.relatedConfigData} />
+                  {#each messages as message (message.message, message.type)}
+                    <FormInlineNotification {message} />
+                  {/each}
                 </Form>
               {:else}
                 <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} configData={prompt.configurationData} relatedConfigData={prompt.relatedConfigData} showMoot />
