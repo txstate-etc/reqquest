@@ -112,7 +112,12 @@ class API extends APIBase {
           requirements: {
             id: true,
             status: true,
-            statusReason: true
+            statusReason: true,
+            prompts: {
+              id: true,
+              invalidated: true,
+              invalidatedReason: true
+            }
           }
         },
         actions: {
