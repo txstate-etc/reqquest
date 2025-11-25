@@ -17,7 +17,13 @@
   export let onAcceptanceNavigate: ((requestId: string) => void) | undefined = undefined
 
   $: statusInfo = getAppRequestStatusInfo(request.status)
-  $: navButton = getNavigationButton(request.status, request.id)
+  $: firstInvalidatedPrompt = request.applications
+    .flatMap(app => app.requirements)
+    .flatMap(req => req.prompts)
+    .find(p => p.invalidated && p.invalidatedReason)
+  $: navButton = firstInvalidatedPrompt
+    ? { label: 'Make corrections', href: `/requests/${request.id}/apply/${firstInvalidatedPrompt.id}` }
+    : getNavigationButton(request.status, request.id)
 
   async function handleAcceptanceClick () {
     if (onAcceptanceNavigate) {
@@ -86,6 +92,32 @@
                     <ol class="list-decimal">
                       {#each failedRequirements as requirement (requirement.id)}
                         <li class="failed-requirement">{requirement.statusReason}</li>
+                      {/each}
+                    </ol>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+            </div>
+            {/if}
+          {/if}
+
+          <!-- Corrections needed for non-INELIGIBLE applications -->
+          {#if application.status !== 'INELIGIBLE'}
+            {@const invalidatedPrompts = application.requirements
+              .flatMap(req => req.prompts)
+              .filter(p => p.invalidated && p.invalidatedReason)}
+            {#if invalidatedPrompts.length === 1}
+              <p class="status-reason mt-2 mb-0 text-sm">{invalidatedPrompts[0].invalidatedReason}</p>
+            {/if}
+            {#if invalidatedPrompts.length > 1}
+            <div class="flex">
+              <BadgeNumber value={invalidatedPrompts.length} class="mt-5 mr-2" style="--badge-bg: #FBE9EA; --badge-text:#a11c25" />
+              <div class="corrections-needed mt-2 w-full">
+                <Accordion align="start">
+                  <AccordionItem title="Corrections needed">
+                    <ol class="list-decimal">
+                      {#each invalidatedPrompts as prompt (prompt.id)}
+                        <li>{prompt.invalidatedReason}</li>
                       {/each}
                     </ol>
                   </AccordionItem>
