@@ -229,7 +229,7 @@
             </dt>
             <dd class="flow" class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
               {#if editMode}
-                <Form preload={appRequest.data[prompt.key]} submit={onPromptSubmit(prompt.id)} validate={onPromptValidate(prompt.id)} autoSave on:autosaved={onPromptSaved} let:data let:messages>
+                <Form preload={prompt.preloadData} submit={onPromptSubmit(prompt.id)} validate={onPromptValidate(prompt.id)} autoSave on:autosaved={onPromptSaved} let:data let:messages>
                   <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
                   {#each messages as message (message.message, message.type)}
                     <FormInlineNotification {message} />
@@ -272,11 +272,11 @@
     validate={onPromptValidate(promptBeingEdited.id)}
     on:saved={onPromptSaved}
     centered
-    preload={appRequest.data[promptBeingEdited.key]}
+    preload={promptBeingEdited.preloadData}
     let:data
   >
     {@const def = uiRegistry.getPrompt(promptBeingEdited.key)}
-    <svelte:component this={def!.formComponent} appRequestId={appRequest.id} {data} appRequestData={promptBeingEdited.data} fetched={promptBeingEdited.fetchedData} configData={promptBeingEdited.gatheredConfigData[promptBeingEdited.key]} gatheredConfigData={promptBeingEdited.gatheredConfigData} />
+    <svelte:component this={def!.formComponent} appRequestId={appRequest.id} {data} appRequestData={promptBeingEdited.data} fetched={promptBeingEdited.fetchedData} configData={promptBeingEdited.configurationData} gatheredConfigData={promptBeingEdited.gatheredConfigData} />
   </PanelFormDialog>
 {/if}
 

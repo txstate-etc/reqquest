@@ -183,6 +183,7 @@ class API extends APIBase {
               description: true,
               answered: true,
               visibility: true,
+              preloadData: true,
               fetchedData: true,
               configurationData: true,
               gatheredConfigData: true
@@ -714,6 +715,7 @@ class API extends APIBase {
               moot: true,
               invalidated: true,
               invalidatedReason: true,
+              preloadData: true,
               fetchedData: true,
               actions: {
                 update: true
