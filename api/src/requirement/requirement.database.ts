@@ -51,6 +51,7 @@ export async function getApplicationRequirements (filter: ApplicationRequirement
 export async function syncRequirementRecords (application: Application, enabledKeys: Set<string>, db: Queryable) {
   const existingRequirements = await db.getall<ApplicationRequirementRow>('SELECT * FROM application_requirements WHERE applicationId = ?', [application.internalId])
   const existingRequirementKeys = new Set(existingRequirements.map(row => row.requirementKey))
+  // TODO: this needs to be using the period to see what's disalbled/enabled!
   const activeRequirementKeys = application.program.requirementKeys.filter(requirementKey => enabledKeys.has(requirementKey))
   const activeRequirementKeysSet = new Set(activeRequirementKeys)
   const workflowRequirementKeys: string[] = []

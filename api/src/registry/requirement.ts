@@ -189,7 +189,7 @@ class RequirementRegistry {
   }
 
   finalize () {
-    const reachableKeys = new Set(programRegistry.reachable.flatMap(program => program.requirementKeys))
+    const reachableKeys = new Set(programRegistry.reachable.flatMap(program => [...program.requirementKeys, ...program.workflowStages?.flatMap(stage => stage.requirementKeys) ?? []]))
     this.reachable = this.requirementsList.filter(requirement => reachableKeys.has(requirement.key))
     promptRegistry.finalize()
     for (const reqKey of Object.keys(this.requirements)) {
