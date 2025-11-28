@@ -1,5 +1,5 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
-import { ApplicationRequirementRow, PeriodProgramKey, PeriodProgramRequirementRow, programRegistry, RequirementDefinitionProcessed, requirementRegistry, WorkflowStage } from '../internal.js'
+import { ApplicationPhase, ApplicationRequirementRow, PeriodProgramKey, PeriodProgramRequirementRow, programRegistry, RequirementDefinitionProcessed, requirementRegistry, WorkflowStage } from '../internal.js'
 
 @ObjectType({ description: 'A requirement for a program. Each program has an ordered array of requirements, all of which must pass for an application to the program to succeed.' })
 export class Requirement {
@@ -74,10 +74,12 @@ registerEnumType(RequirementStatus, {
 @ObjectType({ description: 'The specific instance of a requirement on a particular application. Stores the status of the requirement, e.g. being satisfied or not.' })
 export class ApplicationRequirement extends Requirement {
   internalId: number
+  evaluationOrder: number
   appRequestInternalId: number
   appRequestId: string
   applicationInternalId: number
   applicationId: string
+  applicationPhase: ApplicationPhase
   userInternalId: number
   periodId: string
   programKey: string
@@ -90,11 +92,13 @@ export class ApplicationRequirement extends Requirement {
     super(definition)
     this.internalId = row.id
     this.id = String(row.id)
+    this.evaluationOrder = row.evaluationOrder
     this.type = row.type
     this.definition = definition
     this.programKey = row.programKey
     this.applicationInternalId = row.applicationId
     this.applicationId = String(row.applicationId)
+    this.applicationPhase = row.applicationPhase
     this.appRequestInternalId = row.appRequestId
     this.appRequestId = String(row.appRequestId)
     this.periodId = String(row.periodId)
@@ -103,6 +107,24 @@ export class ApplicationRequirement extends Requirement {
     this.statusReason = row.statusReason
     this.workflowStageKey = row.workflowStage
     this.workflowStageDefinition = row.workflowStage ? programRegistry.workflowStagesByKey[row.workflowStage] : undefined
+  }
+
+  static clone (req: ApplicationRequirement) {
+    return new ApplicationRequirement({
+      id: req.internalId,
+      type: req.type,
+      applicationId: req.applicationInternalId,
+      applicationPhase: req.applicationPhase,
+      appRequestId: req.appRequestInternalId,
+      periodId: Number(req.periodId),
+      userId: req.userInternalId,
+      requirementKey: req.key,
+      programKey: req.programKey,
+      evaluationOrder: req.evaluationOrder,
+      status: req.status,
+      statusReason: req.statusReason,
+      workflowStage: req.workflowStageKey
+    })
   }
 
   @Field(type => ID)

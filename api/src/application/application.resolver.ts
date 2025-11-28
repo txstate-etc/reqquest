@@ -1,8 +1,13 @@
 import { Arg, Ctx, FieldResolver, ID, Mutation, Resolver, Root } from 'type-graphql'
-import { ApplicationActions, Application, RQContext, ApplicationRequirementService, ApplicationRequirement, ApplicationService, ValidatedAppRequestResponse, PeriodWorkflowStage, ProgramService, AppRequestStatusDB, AppRequestPhase } from '../internal.js'
+import { ApplicationActions, Application, RQContext, ApplicationRequirementService, ApplicationRequirement, ApplicationService, ValidatedAppRequestResponse, PeriodWorkflowStage, ProgramService, AppRequestStatusDB, AppRequestPhase, ApplicationStatus } from '../internal.js'
 
 @Resolver(of => Application)
 export class ApplicationResolver {
+  @FieldResolver(returns => ID, { description: 'The status of the application. If the current user is not authorized to see the full status, this will return PENDING.' })
+  status (@Ctx() ctx: RQContext, @Root() application: Application) {
+    return ctx.svc(ApplicationService).maySeeFullStatus(application) ? application.status : ApplicationStatus.PENDING
+  }
+
   @FieldResolver(returns => [ApplicationRequirement])
   async requirements (@Ctx() ctx: RQContext, @Root() application: Application) {
     return await ctx.svc(ApplicationRequirementService).findByApplication(application)

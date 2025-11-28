@@ -4,7 +4,7 @@ import {
   ApplicationRequirementFilter, PeriodProgramRequirement, getPeriodProgramRequirements,
   PeriodProgramKey, PeriodProgramRequirementKey, PeriodRequirementKey, AppRequest,
   AppRequestService, updatePeriodProgramRequirement, RequirementType,
-  ConfigurationService
+  ConfigurationService, statusVisibleToApplicantPhases, RequirementStatus
 } from '../internal.js'
 import { BaseService } from '@txstate-mws/graphql-server'
 
@@ -80,8 +80,24 @@ export class ApplicationRequirementService extends AuthService<ApplicationRequir
   // to everyone who can see the app request, we have a mayViewDetails below to control
   // elevated access like viewing the configuration data
   mayView (requirement: ApplicationRequirement): boolean {
+    // TODO: block applicants from viewing non-blocking workflow requirements
     if (this.isOwn(requirement)) return true
     return this.hasControl('AppRequest', 'review', requirement.appRequestTags)
+  }
+
+  // remove requirement statuses for review requirements
+  removeProperties (req: ApplicationRequirement) {
+    const redactTitle = this.isOwn(req) && !this.hasControl('AppRequest', 'review_own', req.appRequestTags)
+    const redactStatus = redactTitle && !statusVisibleToApplicantPhases.has(req.applicationPhase) && [RequirementType.APPROVAL, RequirementType.WORKFLOW].includes(req.type)
+    const ret = redactTitle || redactStatus ? ApplicationRequirement.clone(req) : req
+    if (redactTitle) {
+      ret.title = ''
+    }
+    if (redactStatus) {
+      ret.status = RequirementStatus.PENDING
+      ret.statusReason = undefined
+    }
+    return ret
   }
 
   mayViewConfig (requirement: ApplicationRequirement) {

@@ -18,6 +18,17 @@ const byAppRequestId = new OneToManyLoader({
   idLoader: appByInternalIdLoader
 })
 
+export const statusVisibleToApplicantPhases = new Set<ApplicationPhase>([
+  ApplicationPhase.PREQUAL,
+  ApplicationPhase.QUALIFICATION,
+  ApplicationPhase.READY_TO_SUBMIT,
+  ApplicationPhase.ACCEPTANCE,
+  ApplicationPhase.READY_TO_ACCEPT,
+  ApplicationPhase.WORKFLOW_NONBLOCKING,
+  ApplicationPhase.READY_TO_COMPLETE,
+  ApplicationPhase.COMPLETE
+])
+
 export class ApplicationServiceInternal extends BaseService<Application> {
   async findByInternalId (internalId: number, appRequestTags?: Record<string, string[]>) {
     const application = await this.loaders.get(appByInternalIdLoader).load(String(internalId))
@@ -77,6 +88,11 @@ export class ApplicationService extends AuthService<Application> {
   mayViewAsReviewer (application: Application) {
     if (this.isOwn(application) && !this.hasControl('AppRequest', 'review_own')) return false
     return this.hasControl('Application', 'view', application.authorizationKeys)
+  }
+
+  maySeeFullStatus (application: Application) {
+    if (this.mayViewAsReviewer(application)) return true
+    return statusVisibleToApplicantPhases.has(application.phase)
   }
 
   mayAdvanceWorkflow (application: Application) {

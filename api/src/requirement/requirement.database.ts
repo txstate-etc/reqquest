@@ -1,11 +1,12 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { Application, ApplicationRequirement, ApplicationRequirementFilter, PeriodProgramRequirementFilters, PeriodProgramRequirementRow, PeriodProgramRequirement, RequirementStatus, requirementRegistry, RequirementType } from '../internal.js'
+import { Application, ApplicationRequirement, ApplicationRequirementFilter, PeriodProgramRequirementFilters, PeriodProgramRequirementRow, PeriodProgramRequirement, RequirementStatus, requirementRegistry, RequirementType, ApplicationPhase } from '../internal.js'
 
 export interface ApplicationRequirementRow {
   id: number
   type: RequirementType
   applicationId: number
+  applicationPhase: ApplicationPhase
   appRequestId: number
   periodId: number
   userId: number
@@ -38,7 +39,7 @@ async function processFilters (filter: ApplicationRequirementFilter) {
 export async function getApplicationRequirements (filter: ApplicationRequirementFilter, tdb: Queryable = db) {
   const { where, binds } = await processFilters(filter)
   const rows = await tdb.getall<ApplicationRequirementRow>(`
-    SELECT r.*, a.periodId, app.programKey, a.userId
+    SELECT r.*, a.periodId, app.programKey, a.userId, app.computedPhase as applicationPhase
     FROM application_requirements r
     INNER JOIN applications app ON app.id=r.applicationId
     INNER JOIN app_requests a ON a.id=r.appRequestId
