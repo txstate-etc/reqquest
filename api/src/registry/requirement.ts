@@ -154,6 +154,9 @@ class RequirementRegistry {
   protected requirementsList: RequirementDefinitionProcessed[] = []
   protected configValidators: Record<string, ValidateFunction> = {}
   public authorizationKeys: Record<string, string[]> = {}
+  // all the requirement definitions that are still actively used in new periods
+  // it's possible to have definitions registered that are no longer used, but must be
+  // registered so that historical data can be interpreted/rendered
   public reachable: RequirementDefinitionProcessed[] = []
 
   register (definition: RequirementDefinition) {

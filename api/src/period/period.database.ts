@@ -193,7 +193,7 @@ export async function copyConfigurations (fromPeriodId: number | string | undefi
     }
   }
 
-  const reachableRequirementKeys = [...requirementRegistry.reachable.map(r => r.key), ...programRegistry.reachable.flatMap(p => p.workflowStages?.flatMap(stage => stage.requirementKeys ?? []) ?? [])]
+  const reachableRequirementKeys = requirementRegistry.reachable.map(r => r.key)
   const disabledRequirementKeys = await db.getall<{ requirementKey: string, programKey: string }>('SELECT requirementKey, programKey FROM period_program_requirements WHERE periodId = ? AND disabled = 1', [fromPeriodId])
   const disabledByRequirementKeyAndProgramKey = disabledRequirementKeys.reduce((acc, { requirementKey, programKey }) => {
     acc[requirementKey] ??= {}
