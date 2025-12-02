@@ -4,7 +4,8 @@
   import type { Scalars } from '$lib/typed-client/schema'
   import { enumRequirementType, type RequirementType } from '$lib/typed-client/index.js'
   import { Panel, TagSet } from '@txstate-mws/carbon-svelte'
-  import { Tooltip } from 'carbon-components-svelte'
+  import { Button, InlineNotification, Tooltip } from 'carbon-components-svelte'
+  import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import type { AnsweredPrompt, PromptSection, AppRequestForDetails, ApplicationForDetails } from './types'
   import RenderDisplayComponent from './RenderDisplayComponent.svelte'
   import ApplicantProgramList from './ApplicantProgramList.svelte'
@@ -22,6 +23,7 @@
   export let subtitle = 'Select document names to preview them.'
   export let expandable = true
   export let showWarningsInline = false
+  export let showCorrectionsInline = false
   export let showAppRequestStatus = true
   export let statusDisplay: 'tags' | 'icons' = 'tags'
 
@@ -70,6 +72,10 @@
   function getWarnings (prompt: AnsweredPrompt) {
     return prompt.statusReasons.filter(r => r.status === 'WARNING' || r.status === 'DISQUALIFYING')
   }
+
+  function needsCorrection (prompt: AnsweredPrompt) {
+    return prompt.invalidated && prompt.invalidatedReason
+  }
 </script>
 
 {#if appRequest}
@@ -82,9 +88,9 @@
     <section class="prompt-section">
       <div class="status-content">
         {#if showAppRequestStatus}
-          <dl class="status-list-item [ flex items-center justify-between px-4 py-3 border-b ]">
+          <dl class="status-list-item [ flex items-center justify-between px-2 py-3 border-b ]">
             <dt class="status-list-label font-medium">Application Status</dt>
-            <dd>
+            <dd class="px-2">
               <TagSet tags={[{ label: getAppRequestStatusInfo(appRequest.status).label, type: getAppRequestStatusInfo(appRequest.status).color }]} />
             </dd>
           </dl>
@@ -121,11 +127,27 @@
                       {/each}
                     </Tooltip>
                   {/if}
+                  {#if showCorrectionsInline && needsCorrection(prompt)}
+                    <Tooltip align="start">
+                      <div class="icon" slot="icon">
+                        <WarningIconYellow size={16} />
+                      </div>
+                      <p>Correction needed<br>{prompt.invalidatedReason}</p>
+                    </Tooltip>
+                  {/if}
                   {prompt.title}
                 </dt>
                 <dd class="prompt-answer flow" class:large={def?.displayMode === 'large'}>
                   <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appData} prompt={prompt} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
+                  {#if showCorrectionsInline && needsCorrection(prompt)}
+                    <Button kind="ghost" size="small" icon={Edit} iconDescription="Edit this answer" href={`/requests/${appRequest.id}/apply/${prompt.id}`} class="edit-button" />
+                  {/if}
                 </dd>
+                {#if showCorrectionsInline && needsCorrection(prompt)}
+                  <div class="correction-notice">
+                    <InlineNotification kind="warning-alt" title="Correction needed" subtitle={prompt.invalidatedReason ?? ''} hideCloseButton lowContrast />
+                  </div>
+                {/if}
               {/each}
             </dl>
           {/if}
@@ -151,11 +173,27 @@
                           {/each}
                         </Tooltip>
                       {/if}
+                      {#if showCorrectionsInline && needsCorrection(prompt)}
+                        <Tooltip align="start">
+                          <div class="icon" slot="icon">
+                            <WarningIconYellow size={16} />
+                          </div>
+                          <p>Correction needed<br>{prompt.invalidatedReason}</p>
+                        </Tooltip>
+                      {/if}
                       {prompt.title}
                     </dt>
                     <dd class="prompt-answer flow" class:large={def?.displayMode === 'large'}>
                       <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appData} prompt={prompt} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
+                      {#if showCorrectionsInline && needsCorrection(prompt)}
+                        <Button kind="ghost" size="small" icon={Edit} iconDescription="Edit this answer" href={`/requests/${appRequest.id}/apply/${prompt.id}`} class="edit-button" />
+                      {/if}
                     </dd>
+                    {#if showCorrectionsInline && needsCorrection(prompt)}
+                      <div class="correction-notice">
+                        <InlineNotification kind="warning-alt" title="Correction needed" subtitle={prompt.invalidatedReason ?? ''} hideCloseButton lowContrast />
+                      </div>
+                    {/if}
                   {/each}
                 </dl>
               </Panel>
@@ -193,6 +231,13 @@
     row-gap:0.5rem;
   }
 
+  .status-content dl {
+    padding-block-start:1em;
+    display:grid;
+    grid-template-columns: 2fr 1fr;
+    row-gap:0.5rem;
+  }
+
   .status-list-item {
     border-color: var(--cds-border-subtle);
   }
@@ -227,5 +272,20 @@
   }
   .prompt-answer.large {
     grid-column: span 2;
+  }
+
+  .correction-notice {
+    grid-column: span 2;
+    margin-bottom: 0.5rem;
+  }
+
+  .correction-notice :global(.bx--inline-notification) {
+    max-width: 100%;
+  }
+
+  .prompt-answer :global(.edit-button) {
+    float: right;
+    margin-top: -0.5rem;
+    --cds-icon-01: var(--cds-link-01);
   }
 </style>

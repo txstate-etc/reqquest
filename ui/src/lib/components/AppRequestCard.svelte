@@ -55,7 +55,12 @@
 
     {#if request.applications.length > 0}
       {#each request.applications as application (application.id)}
-        {@const appStatusTag = getApplicationStatusInfo(application.status)}
+        {@const invalidatedPrompts = application.requirements
+          .flatMap(req => req.prompts)
+          .filter(p => p.invalidated && p.invalidatedReason)}
+        {@const appStatusTag = invalidatedPrompts.length > 0
+          ? { label: 'Needs corrections', color: 'magenta' as const }
+          : getApplicationStatusInfo(application.status)}
         <div class="program-status py-2 px-4 mb-4">
           <div class="flex items-center">
             <span class="font-medium">{application.title}</span>
@@ -73,7 +78,7 @@
           </div>
 
           <!-- Status reason -->
-          {#if application.statusReason && application.status !== 'INELIGIBLE'}
+          {#if application.statusReason && application.status !== 'INELIGIBLE' && invalidatedPrompts.length === 0}
             <p class="status-reason mt-2 mb-0 text-sm">{application.statusReason}</p>
           {/if}
 
@@ -102,19 +107,18 @@
           {/if}
 
           <!-- Corrections needed for non-INELIGIBLE applications -->
-          {#if application.status !== 'INELIGIBLE'}
-            {@const invalidatedPrompts = application.requirements
-              .flatMap(req => req.prompts)
-              .filter(p => p.invalidated && p.invalidatedReason)}
-            {#if invalidatedPrompts.length === 1}
-              <p class="status-reason mt-2 mb-0 text-sm">{invalidatedPrompts[0].invalidatedReason}</p>
-            {/if}
-            {#if invalidatedPrompts.length > 1}
+          {#if application.status !== 'INELIGIBLE' && invalidatedPrompts.length === 1}
+            <div class="flex items-center">
+              <BadgeNumber value={1} class="mt-2 mr-2" style="--badge-bg: #FBE9EA; --badge-text:#a11c25" />
+              <p class="mt-2 mb-0 text-sm">{invalidatedPrompts[0].invalidatedReason}</p>
+            </div>
+          {/if}
+          {#if application.status !== 'INELIGIBLE' && invalidatedPrompts.length > 1}
             <div class="flex">
               <BadgeNumber value={invalidatedPrompts.length} class="mt-5 mr-2" style="--badge-bg: #FBE9EA; --badge-text:#a11c25" />
               <div class="corrections-needed mt-2 w-full">
                 <Accordion align="start">
-                  <AccordionItem title="Corrections needed">
+                  <AccordionItem title="Multiple corrections needed">
                     <ol class="list-decimal">
                       {#each invalidatedPrompts as prompt (prompt.id)}
                         <li>{prompt.invalidatedReason}</li>
@@ -124,7 +128,6 @@
                 </Accordion>
               </div>
             </div>
-            {/if}
           {/if}
         </div>
       {/each}

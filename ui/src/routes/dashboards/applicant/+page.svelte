@@ -435,6 +435,7 @@
         {loading}
         {uiRegistry}
         title={selectedAppRequest.period?.name ? `View your ${selectedAppRequest.period.name} application` : 'View your application'}
+        showCorrectionsInline
       />
     {/if}
   </PanelDialog>
