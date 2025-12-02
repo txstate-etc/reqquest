@@ -40,7 +40,7 @@ export const review_applicant_foster_a_pet_info_app_req: RequirementDefinition =
   resolve: (data, config) => {
     const childData = data.children_prompt as ChildrenPromptData
     const revFosterInfoData = data.review_applicant_foster_a_pet_info_prompt as ReviewApplicantFosterAPetPromptData
-    if (revFosterInfoData == null) return { status: RequirementStatus.PENDING }  
+    if (childData?.underMinAge && revFosterInfoData == null) return { status: RequirementStatus.PENDING }  
     const underAgeKidCount = (childData.count) ? childData.count : 0   
     if (underAgeKidCount > 0 && revFosterInfoData.underAgeChildrenAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     return { status: RequirementStatus.MET }  

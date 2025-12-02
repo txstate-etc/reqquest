@@ -30,16 +30,10 @@ export const review_applicant_foster_a_pet_info_prompt: PromptDefinition = {
   schema: ReviewApplicantFosterAPetPromptSchema,
   validate: (data, config, appRequestData) => {
     const messages: MutationMessage[] = [] 
-    if (!data) {
+    const childData = appRequestData.children_prompt as ChildrenPromptData // children_qual_req
+    if (childData?.underMinAge && (!data || data.underAgeChildrenAcceptable == null)) {
       messages.push({ type: MutationMessageType.error, message: 'Review applicant foster info required' })
-    } else {      
-      const childData = appRequestData.children_prompt as ChildrenPromptData // children_qual_req
-      if (childData) {
-        if (childData.underMinAge && data.underAgeChildrenAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'underAgeChildrenAcceptable' })
-      } else {
-        if (data.underAgeChildrenAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'underAgeChildrenAcceptable' })
-      }
-    }      
+    }   
     return messages
   }
 }
