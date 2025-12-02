@@ -66,5 +66,12 @@ export const foster_a_pet_program: ProgramDefinition = {
     'review_applicant_cat_info_app_req',
     'review_applicant_foster_a_pet_info_app_req',
     'review_movie_lover_app_req'
+  ],
+  workflowStages: [{ 
+      key: 'approve_reviewer_exercise_exemption_workflow',
+      nonBlocking: false,
+      title: 'Approve reviewer exercise exemption',
+      requirementKeys: ['approve_reviewer_exercise_exemption_workflow_req']
+    }
   ]
 }
