@@ -29,8 +29,9 @@ export const previous_dog_surrender_prompt: PromptDefinition = {
   description: 'Applicant will identify if they have previously surrendered a pet.',
   schema: PreviousDogSurrenderedPromptSchema,
   preload: (appReq, config, appReqData) => {
-    console.log(`*****Preload app surrender request data: ${JSON.stringify(appReqData)}`)
-    if (appReqData.previous_dog_surrender_foster_prompt?.surrendered != null) return { surrendered: appReqData.previous_dog_surrender_foster_prompt.surrendered }
+    if (appReqData.previous_dog_surrender_foster_prompt?.surrendered != null) {
+      return { surrendered: appReqData.previous_dog_surrender_foster_prompt.surrendered, details:  appReqData.previous_dog_surrender_foster_prompt.details}
+    } 
   },
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = [] 
@@ -49,8 +50,9 @@ export const previous_dog_surrender_foster_prompt: PromptDefinition = {
   description: 'Applicant will identify if they have previously surrendered a pet.',
   schema: PreviousDogSurrenderedPromptSchema,
   preload: (appReq, config, appReqData) => {
-    console.log(`*****Preload app surrender foster request data: ${JSON.stringify(appReqData)}`)
-    if (appReqData.previous_dog_surrender_prompt?.surrendered != null) return { surrendered: appReqData.previous_dog_surrender_prompt.surrendered }
+    if (appReqData.previous_dog_surrender_prompt?.surrendered != null) {
+      return { surrendered: appReqData.previous_dog_surrender_prompt.surrendered, details: appReqData.previous_dog_surrender_prompt.details }
+    }
   },
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = [] 
@@ -164,9 +166,9 @@ export const approve_reviewer_exercise_exemption_prompt: PromptDefinition = {
       return messages
     },
     default: { text: 'Approve exercise exemption as requested by reviewer?' }
-  }//, // TODO: Remove this bug workaround once bug #179 is resolved
-  //gatherConfig: (allPeriodConfig) => {
-  //  return {'approve_reviewer_exercise_exemption_prompt': {'text': allPeriodConfig.approve_reviewer_exercise_exemption_prompt.text}}
-  //} 
+  },
+  gatherConfig: (allPeriodConfig) => {
+    return {'approve_reviewer_exercise_exemption_prompt': {'text': allPeriodConfig.approve_reviewer_exercise_exemption_prompt.text}}
+  } 
 }
 

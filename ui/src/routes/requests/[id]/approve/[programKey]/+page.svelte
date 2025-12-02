@@ -250,7 +250,7 @@
   {/each}
   <div class="app-actions [ flex items-end ]">
     {#if application.actions.advanceWorkflow || application.actions.reverseWorkflow}
-      <Select bind:selected={appAction} labelText="Next step" size="sm">
+      <Select bind:selected={appAction} labelText="Next step" size="sm">        
         <SelectItem value="" text="Choose one" />
         {#if application.actions.advanceWorkflow}
           <SelectItem value="advanceWorkflow" text={'Send to ' + (application.nextWorkflowStage?.title ?? (application.workflowStage?.blocking ? 'Review Complete' : 'Complete'))} />

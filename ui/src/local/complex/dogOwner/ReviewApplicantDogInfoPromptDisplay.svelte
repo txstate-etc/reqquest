@@ -7,6 +7,7 @@ Current dog info is {!data.currentDogAcceptable ? 'un' : ''}acceptable.<br>
 Yard info is {!data.yardAcceptable ? 'un' : ''}acceptable.<br>
 Allergy info is {!data.allergyAcceptable ? 'un' : ''}acceptable.<br>
 Exercise minimum was {!data.exerciseMinMet ? 'not ' : ''}met.<br>
+Surrendered info is {!data.surrenderedAcceptable ? 'not' : ''}acceptable.<br>
 {#if (!data.exerciseMinMet )} 
   Exercise exemption was {!data.exerciseException ? 'not ' : ''}granted.<br>
 {/if}

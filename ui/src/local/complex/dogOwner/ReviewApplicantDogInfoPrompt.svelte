@@ -31,6 +31,13 @@
   ]
 } />
 
+<FieldRadio boolean path="surrenderedAcceptable" labelText="Is the surrendered information acceptable?" items={
+  [
+    { value: true, label: 'Yes' },
+    { value: false, label: 'No' }    
+  ]
+} />
+
 <FieldRadio boolean path="exerciseMinMet" labelText="Is the minimum exercise agreement met?" items={
   [
     { value: true, label: 'Yes' },

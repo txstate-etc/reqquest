@@ -25,9 +25,8 @@ export const terms_and_conditions_prompt: PromptDefinition = {
       return messages
     },
     default: { text: 'You consent to surrending your first child as collateral for being approved for one of the programs.  Collateral will be returned after 1 year of adequate pet care.' }
-  }//,
-  // TODO: Remove this bug workaround once bug #179 is resolved
-  //gatherConfig: (allPeriodConfig) => {
-  //  return {'terms_and_conditions_prompt': {'text': allPeriodConfig.terms_and_conditions_prompt.text}}
-  //}  
+  },
+  gatherConfig: (allPeriodConfig) => {
+    return {'terms_and_conditions_prompt': {'text': allPeriodConfig.terms_and_conditions_prompt.text}}
+  }  
 }
