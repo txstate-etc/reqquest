@@ -5,6 +5,6 @@
   $: minExerciseHours = gatheredConfigData.dog_exercise_qual_req.minExerciseHoursWeekly
 </script>
 <p>Agreed to exercise dog at least {minExerciseHours} hours: { !!data.agreeToExercise ? 'Yes': 'No' }</p><br/>
-{#if (!!data.agreeToExercise) }
+{#if (!data.agreeToExercise) }
    Details: { data.details }<br/>
 {/if}

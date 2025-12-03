@@ -225,10 +225,10 @@ function configureDemoInstanceParams () {
         { key: 'review_applicant_cat_info_app_req' },
         { key: 'review_applicant_dog_info_app_req' },
         { key: 'review_application_foster_a_pet_app_req' },
-        { key: 'review_movie_lover_app_req' },
-        { key: 'approve_reviewer_exercise_exemption_workflow_req'},
+        { key: 'review_movie_lover_app_req' },        
         { key: 'previous_dog_surrender_qual_req'},
-        { key: 'previous_dog_surrender_foster_qual_req'}
+        { key: 'previous_dog_surrender_foster_qual_req'},
+        { key: 'approve_reviewer_exercise_exemption_workflow_req', configureComponent: ComplexApproveReviewerExerciseExemptionConfig}
       ],
       prompts: [
         { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
@@ -251,7 +251,8 @@ function configureDemoInstanceParams () {
         { key: 'review_movie_lover_answers_prompt', formComponent: ComplexReviewMovieLoverPrompt, displayComponent: ComplexReviewMovieLoverDisplayPrompt },
         { key: 'terms_and_conditions_prompt', configureComponent: ComplexTermsAndConditionsConfig, formComponent: ComplexTermsAndConditionsPrompt, displayComponent: ComplexTermsAndConditionsPromptDisplay }, 
         { key: 'previous_dog_surrender_prompt', formComponent: ComplexPreviousDogSurrenderPrompt, displayComponent:ComplexPreviousDogSurrenderDisplayPrompt },
-        { key: 'previous_dog_surrender_foster_prompt', formComponent: ComplexPreviousDogSurrenderPrompt, displayComponent:ComplexPreviousDogSurrenderDisplayPrompt }
+        { key: 'previous_dog_surrender_foster_prompt', formComponent: ComplexPreviousDogSurrenderPrompt, displayComponent:ComplexPreviousDogSurrenderDisplayPrompt },
+        { key: 'approve_reviewer_exercise_exemption_prompt', formComponent: ComplexApproveReviewerExerciseExemptionPrompt, displayComponent: ComplexApproveReviewerExerciseExemptionPromptDisplay}
       ]      
     }
   }
