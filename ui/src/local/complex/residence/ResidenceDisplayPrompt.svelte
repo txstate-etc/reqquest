@@ -40,7 +40,6 @@
 
 {#if (gatheredConfigData.state_residence_prequal_req.residentOfState.find(state => data.state === state))}
    <p>Resident of {data.state} </p>
-   <br>
    <p>
       <b>
         {data.firstName} {data.lastName} <br/>
@@ -48,7 +47,6 @@
         {data.city}, {data.state} {data.zipCode}
       </b>
    </p>
-   <br/>
    <p>
       <Button on:click={async () => modalOpen = await displayIdFile()}>Display Id file</Button>
    </p>

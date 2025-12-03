@@ -1,8 +1,8 @@
 <script lang="ts">
   export let data
 </script>
-<p>Name: { data.name ?? 'unknown' }</p><br/>
-<p>Quest: { data.quest ?? 'unknown' }</p><br/>
-<p>Favorite Color: { data.favoriteColor ?? 'unknown' }</p><br/>
-<p>Capital of Assyria: { data.capitalOfAssyria ?? 'unknown' }</p><br/>
-<p>Air-speed velocity of unladen swallow: { data.airSpeedOfUnladenSwallow ?? 'unknown' }</p><br/>
+<p>Name: { data.name ?? 'unknown' }</p>
+<p>Quest: { data.quest ?? 'unknown' }</p>
+<p>Favorite Color: { data.favoriteColor ?? 'unknown' }</p>
+<p>Capital of Assyria: { data.capitalOfAssyria ?? 'unknown' }</p>
+<p>Air-speed velocity of unladen swallow: { data.airSpeedOfUnladenSwallow ?? 'unknown' }</p>
