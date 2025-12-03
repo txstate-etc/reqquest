@@ -20,7 +20,7 @@ export const stateList: { value: string, label: string }[] = [
   { value: 'IA', label: 'Iowa' },
   { value: 'KS', label: 'Kansas' },
   { value: 'KY', label: 'Kentucky' },
-  { value: 'LA', label: 'Louisiana'},
+  { value: 'LA', label: 'Louisiana' },
   { value: 'MD', label: 'Maryland' },
   { value: 'ME', label: 'Maine' },
   { value: 'MA', label: 'Massachusetts' },
@@ -86,14 +86,14 @@ export type UploadInfoWithSumData = FromSchema<typeof UploadInfoWithSumSchema>
 
 export const StateResidencePromptSchema = {
   type: 'object',
-  properties: { 
+  properties: {
     firstName: { type: 'string' },
     lastName: { type: 'string' },
     streetAddress: { type: 'string' },
     emailAddress: { type: 'string' },
     phoneNumber: { type: 'string' },
     city: { type: 'string' },
-    state: { type: 'string', enum: stateNames},
+    state: { type: 'string', enum: stateNames },
     zipCode: { type: 'string' },
     residentIdDoc: UploadInfoWithSumSchema,
     residentIdDocRequired: { type: 'boolean' }
@@ -101,6 +101,3 @@ export const StateResidencePromptSchema = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type StateResidencePromptData = FromSchema<typeof StateResidencePromptSchema>
-
-
-

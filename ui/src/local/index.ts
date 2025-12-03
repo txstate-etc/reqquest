@@ -204,7 +204,7 @@ function configureDemoInstanceParams () {
       applicantDashboardRecentDays: 30,
       programs: [{ key: 'adopt_a_dog_program', icon: DogWalker },
         { key: 'adopt_a_cat_program', icon: PedestrianFamily },
-        { key: 'foster_a_pet_program', icon: Gamification }        
+        { key: 'foster_a_pet_program', icon: Gamification }
       ],
       requirements: [
         { key: 'state_residence_prequal_req', configureComponent: ComplexResidenceConfig },
@@ -220,15 +220,15 @@ function configureDemoInstanceParams () {
         { key: 'owner_cat_allergy_qual_req' },
         { key: 'owner_cat_microchip_servive_qual_req' },
         { key: 'children_qual_req', configureComponent: ComplexChildrenConfig },
-        { key: 'movie_lover_qual_req' },        
-        { key: 'terms_and_conditions_post_qual_req'},
+        { key: 'movie_lover_qual_req' },
+        { key: 'terms_and_conditions_post_qual_req' },
         { key: 'review_applicant_cat_info_app_req' },
         { key: 'review_applicant_dog_info_app_req' },
         { key: 'review_application_foster_a_pet_app_req' },
-        { key: 'review_movie_lover_app_req' },        
-        { key: 'previous_dog_surrender_qual_req'},
-        { key: 'previous_dog_surrender_foster_qual_req'},
-        { key: 'approve_reviewer_exercise_exemption_workflow_req', configureComponent: ComplexApproveReviewerExerciseExemptionConfig}
+        { key: 'review_movie_lover_app_req' },
+        { key: 'previous_dog_surrender_qual_req' },
+        { key: 'previous_dog_surrender_foster_qual_req' },
+        { key: 'approve_reviewer_exercise_exemption_workflow_req', configureComponent: ComplexApproveReviewerExerciseExemptionConfig }
       ],
       prompts: [
         { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
@@ -244,16 +244,16 @@ function configureDemoInstanceParams () {
         { key: 'owner_cat_allergy_prompt', formComponent: ComplexOwnerCatAllergyPrompt, displayComponent: ComplexOwnerCatAllergyDisplayPrompt },
         { key: 'owner_cat_microchip_service_prompt', formComponent: ComplexOwnerCatMicrochipServicePrompt, displayComponent: ComplexOwnerCatMicrochipServiceDisplayPrompt },
         { key: 'children_prompt', formComponent: ComplexChildrenPrompt, displayComponent: ComplexChildrenDisplayPrompt },
-        { key: 'bridge_of_death_prompt', formComponent: ComplexBridgeOfDeathPrompt, displayComponent: ComplexBridgeOfDeathDisplayPrompt},
+        { key: 'bridge_of_death_prompt', formComponent: ComplexBridgeOfDeathPrompt, displayComponent: ComplexBridgeOfDeathDisplayPrompt },
         { key: 'review_applicant_cat_info_prompt', formComponent: ComplexReviewApplicantCatInfoPrompt, displayComponent: ComplexReviewApplicantCatInfoPromptDisplay },
         { key: 'review_applicant_dog_info_prompt', formComponent: ComplexReviewApplicantDogInfoPrompt, displayComponent: ComplexReviewApplicantDogInfoPromptDisplay },
         { key: 'review_applicant_foster_a_pet_info_prompt', formComponent: ComplexReviewApplicantFosterAPetPrompt, displayComponent: ComplexReviewApplicantFosterAPetPromptDisplay },
         { key: 'review_movie_lover_answers_prompt', formComponent: ComplexReviewMovieLoverPrompt, displayComponent: ComplexReviewMovieLoverDisplayPrompt },
-        { key: 'terms_and_conditions_prompt', configureComponent: ComplexTermsAndConditionsConfig, formComponent: ComplexTermsAndConditionsPrompt, displayComponent: ComplexTermsAndConditionsPromptDisplay }, 
-        { key: 'previous_dog_surrender_prompt', formComponent: ComplexPreviousDogSurrenderPrompt, displayComponent:ComplexPreviousDogSurrenderDisplayPrompt },
-        { key: 'previous_dog_surrender_foster_prompt', formComponent: ComplexPreviousDogSurrenderPrompt, displayComponent:ComplexPreviousDogSurrenderDisplayPrompt },
-        { key: 'approve_reviewer_exercise_exemption_prompt', formComponent: ComplexApproveReviewerExerciseExemptionPrompt, displayComponent: ComplexApproveReviewerExerciseExemptionPromptDisplay}
-      ]      
+        { key: 'terms_and_conditions_prompt', configureComponent: ComplexTermsAndConditionsConfig, formComponent: ComplexTermsAndConditionsPrompt, displayComponent: ComplexTermsAndConditionsPromptDisplay },
+        { key: 'previous_dog_surrender_prompt', formComponent: ComplexPreviousDogSurrenderPrompt, displayComponent: ComplexPreviousDogSurrenderDisplayPrompt },
+        { key: 'previous_dog_surrender_foster_prompt', formComponent: ComplexPreviousDogSurrenderPrompt, displayComponent: ComplexPreviousDogSurrenderDisplayPrompt },
+        { key: 'approve_reviewer_exercise_exemption_prompt', formComponent: ComplexApproveReviewerExerciseExemptionPrompt, displayComponent: ComplexApproveReviewerExerciseExemptionPromptDisplay }
+      ]
     }
   }
   return {

@@ -123,7 +123,7 @@ test.describe('App Request - App Phase - workflows', { tag: '@default' }, () => 
         }
       }
     `
-    const beforeCloseDate = closeDate //DateTime.fromISO('2025-12-01T01:00:00.000-05:00').setZone(timeZone).toISO()
+    const beforeCloseDate = closeDate // DateTime.fromISO('2025-12-01T01:00:00.000-05:00').setZone(timeZone).toISO()
     const variables = { periodId, name, code, openDate, closeDate: beforeCloseDate, reviewed: true }
     const { updatePeriod } = await adminRequest.graphql<{ updatePeriod: { period: { id: number, name: string, code: string, closeDate: string, openDate: string, archiveDate: string, reviewed: boolean }, messages: { message: string }[] } }>(query, variables)
     expect(updatePeriod.period.id).toEqual(periodId)
