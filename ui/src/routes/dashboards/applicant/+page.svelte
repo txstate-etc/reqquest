@@ -126,18 +126,18 @@
         label: 'View Application',
         onClick: async () => await openSidePanel(request)
       },
-      {
-        label: 'Download Offer',
-        onClick: async () => await downloadOffer(request.id),
-        icon: Download,
-        disabled: !request.actions.offer
-      },
-      {
-        label: 'Appeal Decision',
-        onClick: async () => await appealDecision(request.id),
-        icon: Warning,
-        disabled: !request.actions.return
-      },
+      // {
+      //   label: 'Download Offer',
+      //   onClick: async () => await downloadOffer(request.id),
+      //   icon: Download,
+      //   disabled: !request.actions.offer
+      // },
+      // {
+      //   label: 'Appeal Decision',
+      //   onClick: async () => await appealDecision(request.id),
+      //   icon: Warning,
+      //   disabled: !request.actions.returnToApplicant
+      // },
       {
         label: 'Export Application',
         onClick: async () => await exportApplication(request.id),
@@ -148,37 +148,37 @@
         onClick: () => { cancelConfirmation = { open: true, requestId: request.id, isWithdraw: submitted } },
         icon: Close,
         disabled: !request.actions.cancel
-      },
-      {
-        label: 'Reinstate Application',
-        onClick: async () => await reinstateApplication(request.id),
-        icon: Reset,
-        disabled: !request.actions.reopen
       }
+      // {
+      //   label: 'Reinstate Application',
+      //   onClick: async () => await reinstateApplication(request.id),
+      //   icon: Reset,
+      //   disabled: !request.actions.reopen
+      // }
     ]
   }
 
   // ==========================================
   // Application Actions
   // ==========================================
-  const appealDecision = async (requestId: string) =>
-    await handleApiAction(
-      async () => await api.returnAppRequest(requestId),
-      'Failed to appeal decision',
-      'Appeal submitted successfully'
-    )
+  // const appealDecision = async (requestId: string) =>
+  //   await handleApiAction(
+  //     async () => await api.returnAppRequest(requestId),
+  //     'Failed to appeal decision',
+  //     'Appeal submitted successfully'
+  //   )
 
-  const reinstateApplication = async (requestId: string) =>
-    await handleApiAction(
-      async () => await api.reopenAppRequest(requestId),
-      'Failed to reinstate application',
-      'Application reinstated successfully'
-    )
+  // const reinstateApplication = async (requestId: string) =>
+  //   await handleApiAction(
+  //     async () => await api.reopenAppRequest(requestId),
+  //     'Failed to reinstate application',
+  //     'Application reinstated successfully'
+  //   )
 
-  async function downloadOffer (requestId: string) {
-    // TODO: Implement actual download logic
-    console.log('Download offer for', requestId)
-  }
+  // async function downloadOffer (requestId: string) {
+  //   // TODO: Implement actual download logic
+  //   console.log('Download offer for', requestId)
+  // }
 
   async function exportApplication (requestId: string) {
     await goto(resolve(`/requests/${requestId}/export`))
@@ -245,9 +245,9 @@
     case 'export':
       await exportApplication(id)
       break
-    case 'download':
-      await downloadOffer(id)
-      break
+    // case 'download':
+    //   await downloadOffer(id)
+    //   break
     case 'none':
       // No action for completed/final statuses
       break

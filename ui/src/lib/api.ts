@@ -123,6 +123,7 @@ class API extends APIBase {
         actions: {
           acceptOffer: true,
           cancel: true,
+          reopen: true,
           returnToApplicant: true,
           returnToOffer: true,
           submit: true
