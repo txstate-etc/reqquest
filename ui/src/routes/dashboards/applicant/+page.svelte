@@ -199,7 +199,7 @@
       selectedAppRequest = details.appRequest as AppRequestForDetails | undefined
 
       appData = details.appRequest.data
-      applications = details.applicationsReviewNoDupes
+      applications = details.applicationsReview
       prequalPrompts = details.prequalPrompts
       postqualPrompts = details.postqualPrompts
     } catch (error) {

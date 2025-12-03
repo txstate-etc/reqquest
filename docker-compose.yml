@@ -34,6 +34,7 @@ services:
       PUBLIC_AUTH_REDIRECT: http://localhost:3001/login?clientId=reqquest&returnUrl=http%3A%2F%2Flocalhost
       PUBLIC_ENVIRONMENT: 'DEV'
       PUBLIC_DEMO_INSTANCE: '${DEMO_INSTANCE:-default}'
+      PUBLIC_SHOW_DUPLICATE_PROMPTS: 'false'
     volumes:
       - ./ui/src:/usr/app/src
       - ./ui/.svelte-kit/types:/usr/app/.svelte-kit/types

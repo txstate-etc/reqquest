@@ -1,13 +1,14 @@
-import { PUBLIC_API_BASE, PUBLIC_AUTH_REDIRECT } from '$env/static/public'
+import { PUBLIC_API_BASE, PUBLIC_AUTH_REDIRECT, PUBLIC_SHOW_DUPLICATE_PROMPTS } from '$env/static/public'
 import { APIBase } from '@txstate-mws/sveltekit-utils'
 import type { Feedback } from '@txstate-mws/svelte-forms'
 import { createClient, enumAppRequestIndexDestination, enumIneligiblePhases, enumPromptVisibility, enumRequirementStatus, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleGroup, type AccessRoleInput, type AccessUserFilter, type AppRequestActivityFilters, type AppRequestFilter, type IneligiblePhases, type Pagination, type PeriodUpdate, type PromptVisibility, type RequirementStatus, type RequirementType } from './typed-client/index.js'
 import { DateTime } from 'luxon'
-import { pick, ucfirst } from 'txstate-utils'
+import { omit, pick } from 'txstate-utils'
 import { error } from '@sveltejs/kit'
 import type { PhaseChangeMutations } from './components/types.js'
 
 export type CompletionStatus = 'ELIGIBLE' | 'INELIGIBLE' | 'PENDING'
+const showDupePrompts = PUBLIC_SHOW_DUPLICATE_PROMPTS === 'true'
 
 class API extends APIBase {
   client = createClient({
@@ -412,7 +413,11 @@ class API extends APIBase {
     type ResponsePrompt = ResponseRequirement['prompts'][0]
 
     const splitInfo = API.splitPromptsForApplicant<ResponsePrompt, ResponseRequirement, ResponseApplication>(response.appRequests[0]?.applications ?? [])
-    return { ...splitInfo, appRequest: response.appRequests[0] }
+    return {
+      ...omit(splitInfo, 'applicationsForNavNoDupes', 'applicationsForNavWithDupes', 'applicationsReviewNoDupes', 'applicationsReviewWithDupes'),
+      applicationsForNav: showDupePrompts ? splitInfo.applicationsForNavWithDupes : splitInfo.applicationsForNavNoDupes,
+      applicationsReview: showDupePrompts ? splitInfo.applicationsReviewWithDupes : splitInfo.applicationsReviewNoDupes,
+      appRequest: response.appRequests[0] }
   }
 
   async createAppRequest (periodId?: string, login?: string, validateOnly?: boolean) {

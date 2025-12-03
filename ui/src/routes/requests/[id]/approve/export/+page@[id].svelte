@@ -4,7 +4,7 @@
   import type { PageData } from './$types'
 
   export let data: PageData
-  $: ({ appRequest, appData, prequalPrompts, postqualPrompts, applicationsReviewWithDupes } = data)
+  $: ({ appRequest, appData, prequalPrompts, postqualPrompts, applicationsReview } = data)
 </script>
 
 {#if appRequest}
@@ -12,7 +12,7 @@
   <div class="export-content max-w-4xl ">
     <ApplicationDetailsView
       {appRequest}
-      applications={applicationsReviewWithDupes}
+      applications={applicationsReview}
       {appData}
       {prequalPrompts}
       {postqualPrompts}
