@@ -155,8 +155,7 @@ test.describe('App Request - Blocking workflow Phase - workflows', { tag: '@comp
     const query_get_prompt_variables = { appRequestIds: [appRequestId] }
     const response = await reviewerRequest.graphql<{ appRequests: { applications: { programKey: string, status: string }[] }[] }>(query_get_prompts, query_get_prompt_variables)
     for (const app of response.appRequests[0].applications) {
-      // console.log(`***Program: ${app.programKey}, status: ${app.status}`)
-      // expect(app.status).toEqual('ELIGIBLE')
+      expect(app.status).toEqual('PENDING')
     }
   })
 })

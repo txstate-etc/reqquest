@@ -96,6 +96,7 @@ export const StateResidencePromptSchema = {
     state: { type: 'string', enum: stateNames},
     zipCode: { type: 'string' },
     residentIdDoc: UploadInfoWithSumSchema,
+    residentIdDocRequired: { type: 'boolean' }
   },
   additionalProperties: false
 } as const satisfies SchemaObject

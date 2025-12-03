@@ -21,6 +21,7 @@ export interface StateResidencePromptData {
   state: string,
   zipCode: string,
   residentIdDoc: UploadInfoWithSumSchema,
+  residentIdDocRequired: boolean
 }
 
 export interface StateResidencePromptReviewData extends StateResidencePromptData {

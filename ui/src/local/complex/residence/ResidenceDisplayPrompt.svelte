@@ -47,9 +47,13 @@
         {data.city}, {data.state} {data.zipCode}
       </b>
    </p>
-   <p>
-      <Button on:click={async () => modalOpen = await displayIdFile()}>Display Id file</Button>
-   </p>
+    {#if (data.residentIdDocRequired)}
+      <p>
+        <Button on:click={async () => modalOpen = await displayIdFile()}>Display Id file</Button>
+      </p>
+    {:else}
+      <p>Identifying resident document not required.</p>
+    {/if}
 {:else}
   <p>Not a resident of {gatheredConfigData.state_residence_req.residentOfState.join(', ')}.</p>
 {/if}
