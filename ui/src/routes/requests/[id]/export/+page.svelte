@@ -19,6 +19,7 @@
       loading={false}
       {uiRegistry}
       expandable={false}
+      showTooltipsAsText
     />
   </div>
 

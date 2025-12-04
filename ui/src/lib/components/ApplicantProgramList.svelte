@@ -1,7 +1,7 @@
 <script lang="ts">
   import { TagSet } from '@txstate-mws/carbon-svelte'
   import { Button } from 'carbon-components-svelte'
-  import { Close, InProgress, CheckmarkFilled } from 'carbon-icons-svelte'
+  import { Close, InProgress, CheckmarkFilled, Information } from 'carbon-icons-svelte'
   import { ucfirst } from 'txstate-utils'
   import type { ApplicationForDetails } from './types'
   import { enumApplicationStatus, enumIneligiblePhases, enumRequirementType, getApplicationStatusInfo } from '$lib'
@@ -10,6 +10,7 @@
 
   export let applications: ApplicationForDetails[]
   export let viewMode = false
+  export let showTooltipsAsText = false
 
   $: promptsByApplicationId = applications.reduce((acc, curr) => ({
     ...acc,
@@ -70,6 +71,20 @@
         <ApplicantProgramListTooltip {application} />
       {/if}
     </div>
+    {#if application.warningReasons.length || application.ineligibleReasons.length}
+      <div class="tooltip-text-row" class:visible={showTooltipsAsText}>
+        {#each application.ineligibleReasons as reason (reason)}
+          <div class="tooltip-text-item">
+            <Information size={16} /> {reason}
+          </div>
+        {/each}
+        {#each application.warningReasons as reason (reason)}
+          <div class="tooltip-text-item">
+            <Information size={16} /> {reason}
+          </div>
+        {/each}
+      </div>
+    {/if}
   {/each}
 </section>
 
@@ -137,5 +152,30 @@
   }
   .icon-and-tooltip.wide-icon {
     gap: 4px;
+  }
+
+  .tooltip-text-row {
+    grid-column: span 2;
+    background-color: #FBF1DA;
+    padding: 0.5rem 1rem;
+    display: none;
+  }
+
+  .tooltip-text-row.visible {
+    display: block;
+  }
+
+  .tooltip-text-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.125rem 16px;
+    color: var(--cds-text-01);
+  }
+
+  @media print {
+    .tooltip-text-row {
+      display: block !important;
+    }
   }
 </style>

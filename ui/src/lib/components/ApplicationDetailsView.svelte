@@ -26,6 +26,7 @@
   export let showCorrectionsInline = false
   export let showAppRequestStatus = true
   export let statusDisplay: 'tags' | 'icons' = 'tags'
+  export let showTooltipsAsText = false
 
   const applicantRequirementTypes: RequirementType[] = [enumRequirementType.PREQUAL, enumRequirementType.POSTQUAL, enumRequirementType.QUALIFICATION]
   const reviewerRequirementTypes: RequirementType[] = [enumRequirementType.APPROVAL, enumRequirementType.PREAPPROVAL]
@@ -101,7 +102,7 @@
         {/if}
 
         <!-- Application Status List -->
-        <ApplicantProgramList {applications} viewMode={statusDisplay === 'tags'} />
+        <ApplicantProgramList {applications} viewMode={statusDisplay === 'tags'} {showTooltipsAsText} />
       </div>
     </section>
 
