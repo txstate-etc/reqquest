@@ -14,7 +14,7 @@ export const previous_dogowner_qual_req: RequirementDefinition = {
     if (dogOwnerPromptData?.owned != null) {
       if (dogOwnerPromptData.owned === false) {
         return { status: RequirementStatus.WARNING, reason: 'Previous dog ownership is usually required.  Exceptions on a case by case basis.' }
-      } else { 
+      } else {
         return { status: RequirementStatus.MET }
       }
     }
@@ -34,7 +34,7 @@ export const previous_dog_surrender_qual_req: RequirementDefinition = {
     if (dogSurrenderPromptData?.surrendered != null) {
       if (dogSurrenderPromptData.surrendered === true) {
         return { status: RequirementStatus.WARNING, reason: 'Previously surrending a dog is usually a disqualifier.  Exceptions on a case by case basis.' }
-      } else { 
+      } else {
         return { status: RequirementStatus.MET }
       }
     }
@@ -54,7 +54,7 @@ export const previous_dog_surrender_foster_qual_req: RequirementDefinition = {
     if (dogSurrenderPromptData?.surrendered != null) {
       if (dogSurrenderPromptData.surrendered === true) {
         return { status: RequirementStatus.WARNING, reason: 'Previously surrending a dog is usually a disqualifier.  Exceptions on a case by case basis.' }
-      } else { 
+      } else {
         return { status: RequirementStatus.MET }
       }
     }
@@ -71,14 +71,14 @@ export const current_dogowner_qual_req: RequirementDefinition = {
   promptKeys: ['current_dogowner_prompt'],
   resolve: (data, config) => {
     const dogOwnerPromptData = data.current_dogowner_prompt as CurrentDogOwnerPromptData
-    if (dogOwnerPromptData == null) return { status: RequirementStatus.PENDING }     
-    if (!dogOwnerPromptData.owned) { 
+    if (dogOwnerPromptData == null) return { status: RequirementStatus.PENDING }
+    if (!dogOwnerPromptData.owned) {
       return { status: RequirementStatus.MET }
     } else {
       if (dogOwnerPromptData.count == null) return { status: RequirementStatus.PENDING }
-      if (dogOwnerPromptData.count >= config.maxCount ) return { status: RequirementStatus.WARNING, reason: "Too many dogs currently, waivers available case-by-case" }
+      if (dogOwnerPromptData.count >= config.maxCount) return { status: RequirementStatus.WARNING, reason: 'Too many dogs currently, waivers available case-by-case' }
       return { status: RequirementStatus.MET }
-    }    
+    }
   },
   configuration: {
     schema: CurrentDogOwnerRequirementConfigSchema,
@@ -90,7 +90,7 @@ export const current_dogowner_qual_req: RequirementDefinition = {
       return messages
     },
     default: { maxCount: 5 }
-  } 
+  }
 }
 
 export const owner_dog_allergy_qual_req: RequirementDefinition = {
@@ -105,9 +105,9 @@ export const owner_dog_allergy_qual_req: RequirementDefinition = {
     if (dogOwnerPromptData == null) return { status: RequirementStatus.PENDING }
     if (dogOwnerPromptData.allergic) {
       return { status: RequirementStatus.WARNING, reason: 'We reserve the right to deny applications with known allergies (based on years of consistently high return rates).' }
-    } else { 
+    } else {
       return { status: RequirementStatus.MET }
-    }    
+    }
   }
 }
 
@@ -120,12 +120,12 @@ export const dog_exercise_qual_req: RequirementDefinition = {
   promptKeys: ['dog_exercise_prompt'],
   resolve: (data, config) => {
     const exerciseData = data.dog_exercise_prompt as DogExercisePromptData
-    if (exerciseData == null) return { status: RequirementStatus.PENDING }     
-    if (exerciseData.agreeToExercise) { 
+    if (exerciseData == null) return { status: RequirementStatus.PENDING }
+    if (exerciseData.agreeToExercise) {
       return { status: RequirementStatus.MET }
     } else {
       return { status: RequirementStatus.WARNING, reason: 'Requires consent of regular exercise, exceptions made on case-by-base basis' }
-    }    
+    }
   },
   configuration: {
     schema: DogMinExerciseRequirementConfigSchema,
@@ -149,14 +149,14 @@ export const review_applicant_dog_info_app_req: RequirementDefinition = {
   promptKeys: ['review_applicant_dog_info_prompt'],
   resolve: (data, config) => {
     const revDogInfoData = data.review_applicant_dog_info_prompt as ReviewApplicantDogInfoPromptData
-    if (revDogInfoData == null) return { status: RequirementStatus.PENDING }     
+    if (revDogInfoData == null) return { status: RequirementStatus.PENDING }
     if (revDogInfoData.previousDogAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revDogInfoData.currentDogAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revDogInfoData.yardAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revDogInfoData.allergyAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revDogInfoData.surrenderedAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revDogInfoData.exerciseMinMet === false && revDogInfoData.exerciseException === false) return { status: RequirementStatus.DISQUALIFYING }
-    return { status: RequirementStatus.MET }  
+    return { status: RequirementStatus.MET }
   }
 }
 
@@ -172,9 +172,9 @@ export const approve_reviewer_exercise_exemption_workflow_req: RequirementDefini
     const appExerciseExemptionData = data.approve_reviewer_exercise_exemption_prompt as ApproveReviewerExerciseExemptionPromptData
     const revDogInfoData = data.review_applicant_dog_info_prompt as ReviewApplicantDogInfoPromptData
     if (revDogInfoData.exerciseException === true) {
-      if (appExerciseExemptionData == null) return { status: RequirementStatus.PENDING } 
-      if (appExerciseExemptionData.approve === false) return { status: RequirementStatus.DISQUALIFYING } 
+      if (appExerciseExemptionData == null) return { status: RequirementStatus.PENDING }
+      if (appExerciseExemptionData.approve === false) return { status: RequirementStatus.DISQUALIFYING }
     }
-    return { status: RequirementStatus.MET }  
+    return { status: RequirementStatus.MET }
   }
 }
