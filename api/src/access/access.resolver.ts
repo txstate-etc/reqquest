@@ -121,9 +121,10 @@ export class AccessRoleResolver {
   @Mutation(returns => AccessRoleValidatedResponse)
   async roleCreate (@Ctx() ctx: Context,
     @Arg('role') role: AccessRoleInput,
+    @Arg('copyRoleId', type => ID, { nullable: true }) copyRoleId?: string,
     @Arg('validateOnly', { nullable: true }) validateOnly?: boolean
   ) {
-    return await ctx.svc(AccessRoleService).createAccessRole(role, validateOnly)
+    return await ctx.svc(AccessRoleService).createAccessRole(role, copyRoleId, validateOnly)
   }
 
   @Mutation(returns => AccessRoleValidatedResponse)

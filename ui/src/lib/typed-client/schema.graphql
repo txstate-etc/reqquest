@@ -1067,7 +1067,14 @@ type Mutation {
   """
   reverseWorkflow(applicationId: ID!): ValidatedAppRequestResponse!
   roleAddGrant(grant: AccessRoleGrantCreate!, roleId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!
-  roleCreate(role: AccessRoleInput!, validateOnly: Boolean): AccessRoleValidatedResponse!
+  roleCreate(
+    """
+    When duplicating a role, pass the source role ID to copy its grants (permissions)
+    """
+    copyRoleId: ID
+    role: AccessRoleInput!
+    validateOnly: Boolean
+  ): AccessRoleValidatedResponse!
   roleDelete(roleId: ID!): ValidatedResponse!
   roleDeleteGrant(grantId: ID!): AccessRoleValidatedResponse!
   roleUpdate(role: AccessRoleInput!, roleId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!

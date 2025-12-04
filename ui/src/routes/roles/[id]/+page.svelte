@@ -21,8 +21,28 @@
 
   setContext('controlGroupLookup', () => controlGroupLookup)
   function tagsRender (tags: { categoryLabel: string, label: string }[]) {
+    const THRESHOLD = 5
+    if (!tags.length) return ''
     const categories = groupby(tags, 'categoryLabel')
-    return Object.entries(categories).map(([category, tags]) => `<strong>${tags[0].categoryLabel}</strong><br>${tags.map(t => t.label).join(', ')}`).join('<br>')
+
+    if (tags.length > THRESHOLD) {
+    // UL style for lots of tags
+      return Object.entries(categories)
+        .map(([categoryLabel, ts]) => `
+        <div>
+          <strong>${categoryLabel}</strong>
+          <ul>
+            ${ts.map(t => `<li>${t.label}</li>`).join('')}
+          </ul>
+        </div>
+      `)
+        .join('<br />')
+    }
+
+  // Inline style for small sets
+    return Object.entries(categories)
+      .map(([categoryLabel, ts]) => `<strong>${categoryLabel}</strong>: ${ts.map(t => t.label).join(', ')}`)
+      .join('<br />')
   }
 
   type AccessRoleGrantCreateForm = Omit<AccessRoleGrantCreate, 'tags'> & { tags: Record<string, string[]> }
@@ -68,7 +88,7 @@
       console.error('No control group in form submission')
       return
     }
-    const grantName = controlGroupLookup[controlGroupName]?.title
+    const grantName = controlGroupLookup[controlGroupName].title
     if (!grantName) {
       console.error('Control group not found in lookup')
       return
@@ -115,7 +135,7 @@
         return
       }
       const type = grantToDelete.allow ? 'grant' : 'exception'
-      const grantName = controlGroupLookup[grantToDelete.controlGroup.name]?.title
+      const grantName = controlGroupLookup[grantToDelete.controlGroup.name].title
       if (!grantName) {
         console.error('Control group not found in lookup')
         return
@@ -279,12 +299,14 @@
       </FieldCheckboxList>
 
       {#each controlGroup.tags as category (category.category)}
+      cg tags
         <FieldMultiselect
           path="tags.{category.category}"
           titleText={category.label}
           helperText={category.description}
           label="Restrict to {category.label}"
           items={category.tags}
+          filterable
         />
       {/each}
     {/if}

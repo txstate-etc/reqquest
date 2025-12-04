@@ -133,12 +133,12 @@ export class AccessRoleService extends AuthService<AccessRole> {
     return this.hasControl('Role', 'delete')
   }
 
-  async createAccessRole (roleInput: AccessRoleInput, validateOnly?: boolean) {
+  async createAccessRole (roleInput: AccessRoleInput, copyRoleId?: string, validateOnly?: boolean) {
     if (!this.mayCreate()) throw new Error('Access forbidden')
     const response = await this.validateAccessRole(null, roleInput)
     if (response.hasErrors() || validateOnly) return response
     try {
-      const roleId = await database.createAccessRole(roleInput)
+      const roleId = await database.createAccessRole(roleInput, copyRoleId)
       this.loaders.clear()
       response.accessRole = await this.raw.findAccessRoleById(String(roleId))
     } catch (e: any) {

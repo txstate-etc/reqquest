@@ -1091,6 +1091,9 @@ export default {
             "roleCreate": [
                 13,
                 {
+                    "copyRoleId": [
+                        44
+                    ],
                     "role": [
                         12,
                         "AccessRoleInput!"

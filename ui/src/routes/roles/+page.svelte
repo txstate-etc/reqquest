@@ -30,14 +30,16 @@
   let createDialog = false
   let editingRole: AccessRoleUpdateForm | undefined
   let isDuplicating = false
+  let duplicateSourceId: string | undefined // Source role ID when duplicating (to copy grants)
+  let duplicateSourceName: string | undefined // Source role name for success message
 
   async function validate (role: AccessRoleUpdateForm) {
-    const response = await api.upsertRole(editingRole?.id, role, true)
+    const response = await api.upsertRole(editingRole?.id, role, true, isDuplicating ? duplicateSourceId : undefined)
     return response.messages
   }
 
   async function onSubmit (role: AccessRoleUpdateForm) {
-    const response = await api.upsertRole(editingRole?.id, role, false)
+    const response = await api.upsertRole(editingRole?.id, role, false, isDuplicating ? duplicateSourceId : undefined)
     return {
       ...response,
       data: role
@@ -53,7 +55,7 @@
       message = `The role ${roleName} was successfully edited.`
     } else if (isDuplicating) {
       title = 'Role duplicated'
-      message = `The role ${roleName} was successfully duplicated.`
+      message = `The role ${duplicateSourceName} was successfully duplicated as ${roleName}.`
     } else {
       title = 'New role created'
       message = `The role ${roleName} was successfully created.`
@@ -67,6 +69,7 @@
     createDialog = false
     editingRole = undefined
     isDuplicating = false
+    duplicateSourceId = undefined
   }
 
   let deleteDialog = false
@@ -132,6 +135,8 @@
       { label: 'Duplicate role', icon: Copy, onClick: () => {
         createDialog = true
         isDuplicating = true
+        duplicateSourceId = role.id
+        duplicateSourceName = role.name
         const duplicateRole = transformFromAPI(role)
         let name = duplicateRole.name
         while (rolenames.has(name)) {
@@ -143,7 +148,6 @@
             name = name + '-1'
           }
         }
-          // rolenames.add(name)
         editingRole = { ...omit(duplicateRole, 'name', 'id'), name }
       }
       },

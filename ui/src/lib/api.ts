@@ -1066,7 +1066,7 @@ class API extends APIBase {
     return response.controlGroups
   }
 
-  async upsertRole (roleId: string | undefined, role: AccessRoleInput, validateOnly: boolean) {
+  async upsertRole (roleId: string | undefined, role: AccessRoleInput, validateOnly: boolean, copyRoleId?: string) {
     if (roleId != null) {
       const response = await this.client.mutation({
         __name: 'UpdateRole',
@@ -1085,7 +1085,7 @@ class API extends APIBase {
       const response = await this.client.mutation({
         __name: 'CreateRole',
         roleCreate: {
-          __args: { role, validateOnly },
+          __args: { role, copyRoleId, validateOnly },
           success: true,
           messages: {
             message: true,

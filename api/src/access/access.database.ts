@@ -367,7 +367,7 @@ export namespace AccessDatabase {
     return rows.map(row => new AccessGrantTag(row))
   }
 
-  export async function createAccessRole (role: AccessRoleInput) {
+  export async function createAccessRole (role: AccessRoleInput, copyRoleId?: string) {
     return await db.transaction(async db => {
       const roleId = await db.insert(`
         INSERT INTO accessRoles (name, scope, description)
@@ -381,6 +381,34 @@ export namespace AccessDatabase {
           ON DUPLICATE KEY UPDATE roleId = roleId
         `, binds)
       }
+
+      if (copyRoleId) {
+        // Get all grants from the source role
+        const sourceGrants = await db.getall<{ id: number }>(`
+          SELECT id FROM accessRoleGrants WHERE roleId = ?
+        `, [copyRoleId])
+
+        for (const grant of sourceGrants) {
+          const newGrantId = await db.insert(`
+            INSERT INTO accessRoleGrants (roleId, controlGroup, allow)
+            SELECT ?, controlGroup, allow
+            FROM accessRoleGrants WHERE id = ?
+          `, [roleId, grant.id])
+
+          await db.insert(`
+            INSERT INTO accessRoleGrantControls (grantId, control)
+            SELECT ?, control
+            FROM accessRoleGrantControls WHERE grantId = ?
+          `, [newGrantId, grant.id])
+
+          await db.insert(`
+            INSERT INTO accessRoleGrantTags (grantId, category, tag)
+            SELECT ?, category, tag
+            FROM accessRoleGrantTags WHERE grantId = ?
+          `, [newGrantId, grant.id])
+        }
+      }
+
       return roleId
     })
   }
