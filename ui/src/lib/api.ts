@@ -8,7 +8,7 @@ import { error } from '@sveltejs/kit'
 import type { PhaseChangeMutations } from './components/types.js'
 
 export type CompletionStatus = 'ELIGIBLE' | 'INELIGIBLE' | 'PENDING'
-const showDupePrompts = PUBLIC_SHOW_DUPLICATE_PROMPTS === 'true'
+const showDupePrompts = PUBLIC_SHOW_DUPLICATE_PROMPTS.trim() === 'true'
 
 class API extends APIBase {
   client = createClient({
