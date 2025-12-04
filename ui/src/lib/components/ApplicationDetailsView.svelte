@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { UIRegistry } from '$lib/registry.js'
-  import { getAppRequestStatusInfo } from '$lib/status-utils.js'
+  import { getAppRequestStatusInfo, getApplicationStatusInfo } from '$lib/status-utils.js'
   import type { Scalars } from '$lib/typed-client/schema'
   import { enumRequirementType, type RequirementType } from '$lib/typed-client/index.js'
   import { Panel, TagSet } from '@txstate-mws/carbon-svelte'
@@ -29,6 +29,9 @@
 
   const applicantRequirementTypes: RequirementType[] = [enumRequirementType.PREQUAL, enumRequirementType.POSTQUAL, enumRequirementType.QUALIFICATION]
   const reviewerRequirementTypes: RequirementType[] = [enumRequirementType.APPROVAL, enumRequirementType.PREAPPROVAL]
+  const CORRECTABLE_STATUSES = ['STARTED', 'READY_TO_SUBMIT', 'DISQUALIFIED']
+
+  $: canMakeCorrections = CORRECTABLE_STATUSES.includes(appRequest.status)
 
   // Group prompts by sections, with reviewer prompts nested within application sections
   $: sections = (() => {
@@ -52,7 +55,8 @@
         sections.push({
           title: application.title,
           prompts: applicantPrompts,
-          subsections: reviewerPrompts.length ? [{ title: 'Reviewer Questions', prompts: reviewerPrompts }] : undefined
+          subsections: reviewerPrompts.length ? [{ title: 'Reviewer Questions', prompts: reviewerPrompts }] : undefined,
+          applicationStatus: application.status
         })
       }
     }
@@ -109,6 +113,11 @@
     {:else if sections.length > 0}
       {#each sections as section (section.title)}
         <Panel title={section.title} {expandable} expanded>
+          <svelte:fragment slot="headerLeft">
+            {#if section.applicationStatus}
+              <TagSet tags={[{ label: getApplicationStatusInfo(section.applicationStatus).label, type: getApplicationStatusInfo(section.applicationStatus).color }]} />
+            {/if}
+          </svelte:fragment>
           {#if section.prompts.length}
             <dl class="prompt-list">
               {#each section.prompts as prompt (prompt.id)}
@@ -127,7 +136,7 @@
                       {/each}
                     </Tooltip>
                   {/if}
-                  {#if showCorrectionsInline && needsCorrection(prompt)}
+                  {#if showCorrectionsInline && canMakeCorrections && needsCorrection(prompt)}
                     <Tooltip align="start">
                       <div class="icon" slot="icon">
                         <WarningIconYellow size={16} />
@@ -139,11 +148,11 @@
                 </dt>
                 <dd class="prompt-answer flow" class:large={def?.displayMode === 'large'}>
                   <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appData} prompt={prompt} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
-                  {#if showCorrectionsInline && needsCorrection(prompt)}
+                  {#if showCorrectionsInline && canMakeCorrections && needsCorrection(prompt)}
                     <Button kind="ghost" size="small" icon={Edit} iconDescription="Edit this answer" href={`/requests/${appRequest.id}/apply/${prompt.id}`} class="edit-button" />
                   {/if}
                 </dd>
-                {#if showCorrectionsInline && needsCorrection(prompt)}
+                {#if showCorrectionsInline && canMakeCorrections && needsCorrection(prompt)}
                   <div class="correction-notice">
                     <InlineNotification kind="warning-alt" title="Correction needed" subtitle={prompt.invalidatedReason ?? ''} hideCloseButton lowContrast />
                   </div>
@@ -173,7 +182,7 @@
                           {/each}
                         </Tooltip>
                       {/if}
-                      {#if showCorrectionsInline && needsCorrection(prompt)}
+                      {#if showCorrectionsInline && canMakeCorrections && needsCorrection(prompt)}
                         <Tooltip align="start">
                           <div class="icon" slot="icon">
                             <WarningIconYellow size={16} />
@@ -185,11 +194,11 @@
                     </dt>
                     <dd class="prompt-answer flow" class:large={def?.displayMode === 'large'}>
                       <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appData} prompt={prompt} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
-                      {#if showCorrectionsInline && needsCorrection(prompt)}
+                      {#if showCorrectionsInline && canMakeCorrections && needsCorrection(prompt)}
                         <Button kind="ghost" size="small" icon={Edit} iconDescription="Edit this answer" href={`/requests/${appRequest.id}/apply/${prompt.id}`} class="edit-button" />
                       {/if}
                     </dd>
-                    {#if showCorrectionsInline && needsCorrection(prompt)}
+                    {#if showCorrectionsInline && canMakeCorrections && needsCorrection(prompt)}
                       <div class="correction-notice">
                         <InlineNotification kind="warning-alt" title="Correction needed" subtitle={prompt.invalidatedReason ?? ''} hideCloseButton lowContrast />
                       </div>

@@ -16,11 +16,16 @@
   export let showAcceptanceButtons = true
   export let onAcceptanceNavigate: ((requestId: string) => void) | undefined = undefined
 
+  const CORRECTABLE_STATUSES = ['STARTED', 'READY_TO_SUBMIT', 'DISQUALIFIED']
+
   $: statusInfo = getAppRequestStatusInfo(request.status)
-  $: firstInvalidatedPrompt = request.applications
-    .flatMap(app => app.requirements)
-    .flatMap(req => req.prompts)
-    .find(p => p.invalidated && p.invalidatedReason)
+  $: canMakeCorrections = CORRECTABLE_STATUSES.includes(request.status)
+  $: firstInvalidatedPrompt = canMakeCorrections
+    ? request.applications
+      .flatMap(app => app.requirements)
+      .flatMap(req => req.prompts)
+      .find(p => p.invalidated && p.invalidatedReason)
+    : undefined
   $: navButton = firstInvalidatedPrompt
     ? { label: 'Make corrections', href: `/requests/${request.id}/apply/${firstInvalidatedPrompt.id}` }
     : getNavigationButton(request.status, request.id)
@@ -55,9 +60,11 @@
 
     {#if request.applications.length > 0}
       {#each request.applications as application (application.id)}
-        {@const invalidatedPrompts = application.requirements
-          .flatMap(req => req.prompts)
-          .filter(p => p.invalidated && p.invalidatedReason)}
+        {@const invalidatedPrompts = canMakeCorrections
+          ? application.requirements
+            .flatMap(req => req.prompts)
+            .filter(p => p.invalidated && p.invalidatedReason)
+          : []}
         {@const appStatusTag = invalidatedPrompts.length > 0
           ? { label: 'Needs corrections', color: 'magenta' as const }
           : getApplicationStatusInfo(application.status)}

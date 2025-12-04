@@ -27,6 +27,7 @@ export interface PromptSection {
   title: string
   prompts: AnsweredPrompt[]
   subsections?: PromptSection[]
+  applicationStatus?: ApplicationStatus
 }
 
 // what the ApplicationDetailsView needs
