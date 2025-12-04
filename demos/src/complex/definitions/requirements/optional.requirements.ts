@@ -5,7 +5,7 @@ import { BridgeOfDeathPromptData, ReviewMovieLoverAnswersPromptData } from '../m
 export const movie_lover_qual_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
   key: 'movie_lover_qual_req',
-  title: 'Optional move lover info',
+  title: 'Optional movie lover info',
   navTitle: 'Movie lover',
   description: 'Provide answers to random movie lover questions',
   promptKeys: ['bridge_of_death_prompt'],
