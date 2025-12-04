@@ -3,7 +3,7 @@ import type { FromSchema } from 'json-schema-to-ts'
 
 export const BridgeOfDeathPromptSchema = {
   type: 'object',
-  properties: { 
+  properties: {
     name: { type: 'string' },
     quest: { type: 'string' },
     favoriteColor: { type: 'string' },
@@ -16,10 +16,9 @@ export type BridgeOfDeathPromptData = FromSchema<typeof BridgeOfDeathPromptSchem
 
 export const ReviewMovieLoverAnswersPromptSchema = {
   type: 'object',
-  properties: { 
+  properties: {
     impressed: { type: 'boolean' }
   },
   additionalProperties: false
 } as const satisfies SchemaObject
 export type ReviewMovieLoverAnswersPromptData = FromSchema<typeof ReviewMovieLoverAnswersPromptSchema>
-
