@@ -37,7 +37,8 @@ async function main () {
     su: { groups: ['sudoers'], otherInfo: { email: {} } },
     admin: { groups: ['administrators'], otherInfo: { email: {} } },
     reviewer: { groups: ['reviewers'], otherInfo: { email: {} } },
-    applicant: { groups: ['applicants'], otherInfo: { email: {} } }
+    applicant: { groups: ['applicants'], otherInfo: { email: {} } },
+    tester: { groups: ['testers'], otherInfo: { email: {} } }
   }
   const userTypePrefixes = Object.keys(userTypes)
   await server.start({
@@ -46,7 +47,7 @@ async function main () {
       userLookups: {
         byLogins: async (logins: string[], applicableGroups: string[]) => {
           const pseudoInstitutionalRoles = (login: string) => {
-            if (login.startsWith('su')) return ['STAFF']
+            if (login.startsWith('su') || login.startsWith('tester')) return ['STAFF']
             if (login.startsWith('admin')) return ['STAFF', 'FACULTY']
             if (login.startsWith('review')) return ['FACULTY']
             return ['STUDENT']
