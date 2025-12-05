@@ -301,7 +301,7 @@ export function getApplicationStatusInfo (status: string): ApplicationStatusTagI
       color: 'green'
     },
     ELIGIBLE: {
-      label: 'Approved',
+      label: 'Eligible',
       description: 'All requirements met, acceptance pending.',
       color: 'green'
     },
