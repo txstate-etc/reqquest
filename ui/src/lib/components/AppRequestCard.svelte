@@ -7,6 +7,7 @@
   import { BadgeNumber, Card, TagSet } from '@txstate-mws/carbon-svelte'
   import { Accordion, AccordionItem, Button } from 'carbon-components-svelte'
   import type { PageData } from '../../routes/dashboards/applicant/$types'
+  import WarningIconYellow from './WarningIconYellow.svelte'
 
   // Type for the partial AppRequest data passed from dashboard
   type DashboardAppRequest = PageData['appRequests'][number]
@@ -65,6 +66,7 @@
             .flatMap(req => req.prompts)
             .filter(p => p.invalidated && p.invalidatedReason)
           : []}
+        {@const warningReqs = application.requirements.filter(r => r.status === 'WARNING' && r.statusReason)}
         {@const appStatusTag = invalidatedPrompts.length > 0
           ? { label: 'Needs corrections', color: 'magenta' as const }
           : getApplicationStatusInfo(application.status)}
@@ -74,6 +76,9 @@
             <div class="tagwrap">
               <TagSet tags={[{ label: appStatusTag.label, type: appStatusTag.color }]} />
             </div>
+            {#if (application.status === 'PENDING' || application.status === 'ELIGIBLE') && warningReqs.length > 0}
+              <WarningIconYellow size={20} />
+            {/if}
 
             <!-- Acceptance buttons -->
             {#if showAcceptanceButtons && (request.status === 'ACCEPTANCE' || request.status === 'READY_TO_ACCEPT') && application.status === 'ELIGIBLE'}
@@ -87,6 +92,31 @@
           <!-- Status reason -->
           {#if application.statusReason && application.status !== 'INELIGIBLE' && invalidatedPrompts.length === 0}
             <p class="status-reason mt-2 mb-0 text-sm">{application.statusReason}</p>
+          {/if}
+
+          <!-- Warnings for PENDING/ELIGIBLE applications -->
+          {#if (application.status === 'PENDING' || application.status === 'ELIGIBLE') && warningReqs.length > 0}
+            {#if warningReqs.length === 1}
+              <div class="flex items-center">
+                <BadgeNumber value={1} class="mt-2 mr-2" style="--badge-bg: var(--yellow-01, #F3D690); --badge-text: #6F510C" />
+                <p class="mt-2 mb-0 text-sm">{warningReqs[0].statusReason}</p>
+              </div>
+            {:else}
+              <div class="flex">
+                <BadgeNumber value={warningReqs.length} class="mt-5 mr-2" style="--badge-bg: var(--yellow-01, #F3D690); --badge-text: #6F510C" />
+                <div class="warnings mt-2 w-full">
+                  <Accordion align="start">
+                    <AccordionItem title="Multiple warnings">
+                      <ol class="list-decimal">
+                        {#each warningReqs as req (req.id)}
+                          <li>{req.statusReason}</li>
+                        {/each}
+                      </ol>
+                    </AccordionItem>
+                  </Accordion>
+                </div>
+              </div>
+            {/if}
           {/if}
 
           <!-- Failed requirements for INELIGIBLE applications -->
