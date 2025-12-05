@@ -4,9 +4,10 @@
   import { getApplicationStatusInfo, getAppRequestStatusInfo, getNavigationButton } from '$lib/status-utils.js'
   import { longNumericTime } from '$lib/util.js'
   import type { ActionItem } from '@txstate-mws/carbon-svelte'
-  import { BadgeNumber, Card, TagSet } from '@txstate-mws/carbon-svelte'
-  import { Accordion, AccordionItem, Button } from 'carbon-components-svelte'
+  import { Card, TagSet } from '@txstate-mws/carbon-svelte'
+  import { Button } from 'carbon-components-svelte'
   import type { PageData } from '../../routes/dashboards/applicant/$types'
+  import StatusMessageList from './StatusMessageList.svelte'
   import WarningIconYellow from './WarningIconYellow.svelte'
 
   // Type for the partial AppRequest data passed from dashboard
@@ -96,75 +97,25 @@
 
           <!-- Warnings for PENDING/ELIGIBLE applications -->
           {#if (application.status === 'PENDING' || application.status === 'ELIGIBLE') && warningReqs.length > 0}
-            {#if warningReqs.length === 1}
-              <div class="flex items-center">
-                <BadgeNumber value={1} class="mt-2 mr-2" style="--badge-bg: var(--yellow-01, #F3D690); --badge-text: #6F510C" />
-                <p class="mt-2 mb-0 text-sm">{warningReqs[0].statusReason}</p>
-              </div>
-            {:else}
-              <div class="flex">
-                <BadgeNumber value={warningReqs.length} class="mt-5 mr-2" style="--badge-bg: var(--yellow-01, #F3D690); --badge-text: #6F510C" />
-                <div class="warnings mt-2 w-full">
-                  <Accordion align="start">
-                    <AccordionItem title="Multiple warnings">
-                      <ol class="list-decimal">
-                        {#each warningReqs as req (req.id)}
-                          <li>{req.statusReason}</li>
-                        {/each}
-                      </ol>
-                    </AccordionItem>
-                  </Accordion>
-                </div>
-              </div>
-            {/if}
+            <StatusMessageList
+              items={warningReqs.map(r => ({ id: r.id, message: r.statusReason! }))}
+              variant="warning"
+              accordionTitle="Multiple warnings" />
           {/if}
 
           <!-- Failed requirements for INELIGIBLE applications -->
           {#if application.status === 'INELIGIBLE' && application.requirements}
             {@const failedRequirements = application.requirements.filter(req => req.status === 'DISQUALIFYING' && req.statusReason)}
-            {#if failedRequirements.length === 1}
-              <p class="status-reason mt-2 mb-0 text-sm">{failedRequirements[0].statusReason}</p>
-            {/if}
-            {#if failedRequirements.length > 1}
-            <div class="flex">
-              <BadgeNumber value={failedRequirements.length} class="mt-5 mr-2" style="--badge-bg: #FBE9EA; --badge-text:#a11c25" />
-              <div class="failed-requirements mt-2 w-full">
-                <Accordion align="start">
-                  <AccordionItem title="Multiple eligibility issues">
-                    <ol class="list-decimal">
-                      {#each failedRequirements as requirement (requirement.id)}
-                        <li class="failed-requirement">{requirement.statusReason}</li>
-                      {/each}
-                    </ol>
-                  </AccordionItem>
-                </Accordion>
-              </div>
-            </div>
-            {/if}
+            <StatusMessageList
+              items={failedRequirements.map(r => ({ id: r.id, message: r.statusReason! }))}
+              accordionTitle="Multiple eligibility issues" />
           {/if}
 
           <!-- Corrections needed for non-INELIGIBLE applications -->
-          {#if application.status !== 'INELIGIBLE' && invalidatedPrompts.length === 1}
-            <div class="flex items-center">
-              <BadgeNumber value={1} class="mt-2 mr-2" style="--badge-bg: #FBE9EA; --badge-text:#a11c25" />
-              <p class="mt-2 mb-0 text-sm">{invalidatedPrompts[0].invalidatedReason}</p>
-            </div>
-          {/if}
-          {#if application.status !== 'INELIGIBLE' && invalidatedPrompts.length > 1}
-            <div class="flex">
-              <BadgeNumber value={invalidatedPrompts.length} class="mt-5 mr-2" style="--badge-bg: #FBE9EA; --badge-text:#a11c25" />
-              <div class="corrections-needed mt-2 w-full">
-                <Accordion align="start">
-                  <AccordionItem title="Multiple corrections needed">
-                    <ol class="list-decimal">
-                      {#each invalidatedPrompts as prompt (prompt.id)}
-                        <li>{prompt.invalidatedReason}</li>
-                      {/each}
-                    </ol>
-                  </AccordionItem>
-                </Accordion>
-              </div>
-            </div>
+          {#if application.status !== 'INELIGIBLE' && invalidatedPrompts.length > 0}
+            <StatusMessageList
+              items={invalidatedPrompts.map(p => ({ id: p.id, message: p.invalidatedReason! }))}
+              accordionTitle="Multiple corrections needed" />
           {/if}
         </div>
       {/each}
