@@ -15,7 +15,7 @@ export const yard_qual_req: RequirementDefinition<YardConfigRequirementData> = {
     const CurrentDogOwnerPromptData = data.current_dogowner_prompt as CurrentDogOwnerPromptData
     if (YardPromptData == null || CurrentDogOwnerPromptData == null) return { status: RequirementStatus.PENDING }
     const minFutureDogCount = (CurrentDogOwnerPromptData.count == null) ? 1 : CurrentDogOwnerPromptData.count + 1
-    if ((config!.minSqftPerDog! * minFutureDogCount) >  YardPromptData.sqftYardSize!) return { status: RequirementStatus.WARNING, reason: 'Outdoor space is not sufficient for adopting an additional dog. Waivers available case-by-case.' }
+    if ((config!.minSqftPerDog! * minFutureDogCount) > YardPromptData.sqftYardSize!) return { status: RequirementStatus.WARNING, reason: 'Outdoor space is not sufficient for adopting an additional dog. Waivers available case-by-case.' }
     return { status: RequirementStatus.MET }
   },
   configuration: {
