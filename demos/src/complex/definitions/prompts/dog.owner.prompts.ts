@@ -1,9 +1,7 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { InvalidatedResponse } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { PreviousDogOwnerPromptSchema, CurrentDogOwnerPromptSchema, OwnerDogAllergyPromptSchema, DogExercisePromptSchema, ReviewApplicantDogInfoPromptSchema, ApproveReviewerExerciseExemptionPromptSchema, ApproveReviewerExerciseExemptionConfigSchema, PreviousDogSurrenderedPromptSchema } from '../models/index.js'
-import { dog_exercise_qual_req } from '../requirements/dog.owner.requirements.js'
-
+import { PreviousDogOwnerPromptSchema, CurrentDogOwnerPromptSchema, OwnerDogAllergyPromptSchema, DogExercisePromptSchema, ReviewApplicantDogInfoPromptSchema, ApproveReviewerExerciseExemptionPromptSchema, ApproveReviewerExerciseExemptionConfigSchema, PreviousDogSurrenderedPromptSchema, AcceptDogPromptSchema, AdoptADogList } from '../models/index.js'
 
 export const previous_dogowner_prompt: PromptDefinition = {
   key: 'previous_dogowner_prompt',
@@ -11,16 +9,16 @@ export const previous_dogowner_prompt: PromptDefinition = {
   description: 'Applicant will identify previous dog owner information.',
   schema: PreviousDogOwnerPromptSchema,
   validate: (data, config, allConfig) => {
-    const messages: MutationMessage[] = [] 
+    const messages: MutationMessage[] = []
     if (!data || data.owned == null) messages.push({ type: MutationMessageType.error, message: 'Previous dog ownership input required', arg: 'owned' })
     if (data.owned) {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide details such as breed and age', arg: 'details' })
     } else {
       messages.push({ type: MutationMessageType.warning, message: 'Previous dog ownership is usually required.  Exceptions on a case by case basis.' })
-    }  
+    }
     return messages
   },
-  invalidUponChange: [{promptKey: 'review_applicant_dog_info_prompt'}]
+  invalidUponChange: [{ promptKey: 'review_applicant_dog_info_prompt' }]
 }
 
 export const previous_dog_surrender_prompt: PromptDefinition = {
@@ -30,18 +28,18 @@ export const previous_dog_surrender_prompt: PromptDefinition = {
   schema: PreviousDogSurrenderedPromptSchema,
   preload: (appReq, config, appReqData) => {
     if (appReqData.previous_dog_surrender_foster_prompt?.surrendered != null) {
-      return { surrendered: appReqData.previous_dog_surrender_foster_prompt.surrendered, details:  appReqData.previous_dog_surrender_foster_prompt.details}
-    } 
+      return { surrendered: appReqData.previous_dog_surrender_foster_prompt.surrendered, details: appReqData.previous_dog_surrender_foster_prompt.details }
+    }
   },
   validate: (data, config, allConfig) => {
-    const messages: MutationMessage[] = [] 
+    const messages: MutationMessage[] = []
     if (!data || data.surrendered == null) messages.push({ type: MutationMessageType.error, message: 'Previous dog surrendered input required', arg: 'surrendered' })
     if (data.surrendered) {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide details on why surrender occurred', arg: 'details' })
-    } 
+    }
     return messages
   },
-  invalidUponChange: [{promptKey: 'review_applicant_dog_info_prompt'}]
+  invalidUponChange: [{ promptKey: 'review_applicant_dog_info_prompt' }]
 }
 
 export const previous_dog_surrender_foster_prompt: PromptDefinition = {
@@ -55,14 +53,14 @@ export const previous_dog_surrender_foster_prompt: PromptDefinition = {
     }
   },
   validate: (data, config, allConfig) => {
-    const messages: MutationMessage[] = [] 
+    const messages: MutationMessage[] = []
     if (!data || data.surrendered == null) messages.push({ type: MutationMessageType.error, message: 'Previous dog surrendered input required', arg: 'surrendered' })
     if (data.surrendered) {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide details on why surrender occurred', arg: 'details' })
-    } 
+    }
     return messages
   },
-  invalidUponChange: [{promptKey: 'review_applicant_dog_info_prompt'}]
+  invalidUponChange: [{ promptKey: 'review_applicant_dog_info_prompt' }]
 }
 
 export const current_dogowner_prompt: PromptDefinition = {
@@ -71,31 +69,31 @@ export const current_dogowner_prompt: PromptDefinition = {
   description: 'Applicant will identify current dog owner information.',
   schema: CurrentDogOwnerPromptSchema,
   validate: (data, config, allConfig) => {
-    const messages: MutationMessage[] = [] 
+    const messages: MutationMessage[] = []
     if (!data || data.owned == null) messages.push({ type: MutationMessageType.error, message: 'Current dog ownership input required', arg: 'owned' })
     if (data.owned) {
       if (data.count == null || data.count < 1) messages.push({ type: MutationMessageType.error, message: 'Please provide current dog count', arg: 'count' })
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
-    }   
+    }
     return messages
   },
-  invalidUponChange: [{promptKey: 'review_applicant_dog_info_prompt'}]
+  invalidUponChange: [{ promptKey: 'review_applicant_dog_info_prompt' }]
 }
 
 export const owner_dog_allergy_prompt: PromptDefinition = {
-   key: 'owner_dog_allergy_prompt',
+  key: 'owner_dog_allergy_prompt',
   title: 'Owner dog allergies',
   description: 'Applicant will identify any current dog allergies',
   schema: OwnerDogAllergyPromptSchema,
   validate: (data, config, allConfig) => {
-    const messages: MutationMessage[] = [] 
+    const messages: MutationMessage[] = []
     if (!data || data.allergic == null) messages.push({ type: MutationMessageType.error, message: 'Owner allergy information required', arg: 'allergic' })
     if (data.allergic) {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
     }
     return messages
   },
-  invalidUponChange: [{promptKey: 'review_applicant_dog_info_prompt'}]
+  invalidUponChange: [{ promptKey: 'review_applicant_dog_info_prompt' }]
 }
 
 export const dog_min_exercise_prompt: PromptDefinition = {
@@ -104,17 +102,17 @@ export const dog_min_exercise_prompt: PromptDefinition = {
   description: 'Applicant will identify expected exercise hours for dog.',
   schema: DogExercisePromptSchema,
   validate: (data, config, allConfig) => {
-    const messages: MutationMessage[] = [] 
+    const messages: MutationMessage[] = []
     if (!data || data.agreeToExercise == null) messages.push({ type: MutationMessageType.error, message: 'Dog exericse consent requirement', arg: 'agreeToExercise' })
     if (!data.agreeToExercise) {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
-    }  
+    }
     return messages
   },
-  gatherConfig: (allPeriodConfig) => {
-    return {'dog_exercise_qual_req': {'minExerciseHoursWeekly': allPeriodConfig.dog_exercise_qual_req.minExerciseHoursWeekly}}
+  gatherConfig: allPeriodConfig => {
+    return { dog_exercise_qual_req: { minExerciseHoursWeekly: allPeriodConfig.dog_exercise_qual_req.minExerciseHoursWeekly } }
   },
-  invalidUponChange: [{promptKey: 'review_applicant_dog_info_prompt'}]
+  invalidUponChange: [{ promptKey: 'review_applicant_dog_info_prompt' }]
 }
 
 export const review_applicant_dog_info_prompt: PromptDefinition = {
@@ -123,7 +121,7 @@ export const review_applicant_dog_info_prompt: PromptDefinition = {
   description: 'Reviewer will evaluate appicant dog info for discrepancies.',
   schema: ReviewApplicantDogInfoPromptSchema,
   validate: (data, config, allConfig) => {
-    const messages: MutationMessage[] = [] 
+    const messages: MutationMessage[] = []
     if (!data) {
       messages.push({ type: MutationMessageType.error, message: 'Review applicant dog info required' })
     } else {
@@ -148,14 +146,14 @@ export const approve_reviewer_exercise_exemption_prompt: PromptDefinition = {
   description: '2nd level approver confirms exercise exemption allowance',
   schema: ApproveReviewerExerciseExemptionPromptSchema,
   validate: (data, config, allConfig) => {
-    const messages: MutationMessage[] = [] 
+    const messages: MutationMessage[] = []
     if (!data) {
       messages.push({ type: MutationMessageType.error, message: 'Approve exercise exemption' })
     } else {
       if (data.approve == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'previousDogAcceptable' })
     }
     return messages
-  },  
+  },
   configuration: {
     schema: ApproveReviewerExerciseExemptionConfigSchema,
     validate: (config: { text: null }) => {
@@ -167,8 +165,33 @@ export const approve_reviewer_exercise_exemption_prompt: PromptDefinition = {
     },
     default: { text: 'Approve exercise exemption as requested by reviewer?' }
   },
-  gatherConfig: (allPeriodConfig) => {
-    return {'approve_reviewer_exercise_exemption_prompt': {'text': allPeriodConfig.approve_reviewer_exercise_exemption_prompt.text}}
-  } 
+  gatherConfig: allPeriodConfig => {
+    return { approve_reviewer_exercise_exemption_prompt: { text: allPeriodConfig.approve_reviewer_exercise_exemption_prompt.text } }
+  }
 }
 
+export const accept_dog_prompt: PromptDefinition = {
+  key: 'accept_dog_prompt',
+  title: 'Accept a dog for adoption',
+  description: 'Applicant will decided if and which dog to adopt.',
+  schema: AcceptDogPromptSchema,
+  fetch: (appRequest, config, appRequestData, allPeriodConfig, ctx) => {
+    return AdoptADogList
+  },
+  validate: (data, config, allConfig) => {
+    const messages: MutationMessage[] = []
+    if (!data) {
+      messages.push({ type: MutationMessageType.error, message: 'Acceptance info required' })
+    } else {
+      if (data.accept == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'accept' })
+      if (data.accept) {
+        // for complex demo / simulation we are trusting that data is consistent, normally sending id would be all required and we'd look up related detail
+        if (data.id == null) messages.push({ type: MutationMessageType.error, message: 'Dog id required', arg: 'id' })
+        if (data.name == null) messages.push({ type: MutationMessageType.error, message: 'Dog name required', arg: 'name' })
+        if (data.age == null) messages.push({ type: MutationMessageType.error, message: 'Dog age required', arg: 'age' })
+        if (data.picUrl == null) messages.push({ type: MutationMessageType.error, message: 'Dog age required', arg: 'picUrl' })
+      }
+    }
+    return messages
+  }
+}

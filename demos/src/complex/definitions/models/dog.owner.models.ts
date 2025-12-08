@@ -3,7 +3,7 @@ import type { FromSchema } from 'json-schema-to-ts'
 
 export const PreviousDogOwnerPromptSchema = {
   type: 'object',
-  properties: { 
+  properties: {
     owned: { type: 'boolean' },
     details: { type: 'string' }
   },
@@ -13,7 +13,7 @@ export type PreviousDogOwnerPromptData = FromSchema<typeof PreviousDogOwnerPromp
 
 export const PreviousDogSurrenderedPromptSchema = {
   type: 'object',
-  properties: { 
+  properties: {
     surrendered: { type: 'boolean' },
     details: { type: 'string' }
   },
@@ -23,7 +23,7 @@ export type PreviousDogSurrenderedPromptData = FromSchema<typeof PreviousDogSurr
 
 export const CurrentDogOwnerRequirementConfigSchema = {
   type: 'object',
-  properties: { 
+  properties: {
     maxCount: { type: 'number' }
   },
   additionalProperties: false
@@ -32,9 +32,9 @@ export type CurrentDogOwnerRequirementConfigData = FromSchema<typeof CurrentDogO
 
 export const CurrentDogOwnerPromptSchema = {
   type: 'object',
-  properties: { 
+  properties: {
     owned: { type: 'boolean' },
-    count: { type: 'number'},
+    count: { type: 'number' },
     details: { type: 'string' }
   },
   additionalProperties: false
@@ -43,7 +43,7 @@ export type CurrentDogOwnerPromptData = FromSchema<typeof CurrentDogOwnerPromptS
 
 export const OwnerDogAllergyPromptSchema = {
   type: 'object',
-  properties: { 
+  properties: {
     allergic: { type: 'boolean' },
     details: { type: 'string' }
   },
@@ -53,7 +53,7 @@ export type OwnerDogAllergyPromptData = FromSchema<typeof OwnerDogAllergyPromptS
 
 export const DogMinExerciseRequirementConfigSchema = {
   type: 'object',
-  properties: { 
+  properties: {
     minExerciseHoursWeekly: { type: 'number' }
   },
   additionalProperties: false
@@ -62,8 +62,8 @@ export type DogMinExerciseRequirementConfigData = FromSchema<typeof DogMinExerci
 
 export const DogExercisePromptSchema = {
   type: 'object',
-  properties: { 
-    agreeToExercise: { type: 'boolean'},
+  properties: {
+    agreeToExercise: { type: 'boolean' },
     details: { type: 'string' }
   },
   additionalProperties: false
@@ -72,7 +72,7 @@ export type DogExercisePromptData = FromSchema<typeof DogExercisePromptSchema>
 
 export const ReviewApplicantDogInfoPromptSchema = {
   type: 'object',
-  properties: { 
+  properties: {
     previousDogAcceptable: { type: 'boolean' },
     currentDogAcceptable: { type: 'boolean' },
     yardAcceptable: { type: 'boolean' },
@@ -87,7 +87,7 @@ export type ReviewApplicantDogInfoPromptData = FromSchema<typeof ReviewApplicant
 
 export const ApproveReviewerExerciseExemptionConfigSchema = {
   type: 'object',
-  properties: { 
+  properties: {
     text: { type: 'string' }
   },
   additionalProperties: false
@@ -96,9 +96,31 @@ export type ApproveReviewerExerciseExemptionConfigData = FromSchema<typeof Appro
 
 export const ApproveReviewerExerciseExemptionPromptSchema = {
   type: 'object',
-  properties: { 
+  properties: {
     approve: { type: 'boolean' }
   },
   additionalProperties: false
 } as const satisfies SchemaObject
 export type ApproveReviewerExerciseExemptionPromptData = FromSchema<typeof ApproveReviewerExerciseExemptionPromptSchema>
+
+export const AcceptDogPromptSchema = {
+  type: 'object',
+  properties: {
+    accept: { type: 'boolean' },
+    id: { type: 'number' },
+    name: { type: 'string' },
+    age: { type: 'number' },
+    picUrl: { type: 'string' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type AcceptDogPromptData = FromSchema<typeof AcceptDogPromptSchema>
+
+export const AdoptADogList: AcceptDogPromptData[] = [
+  { id: 101, name: 'Temple of the Dog', age: 55, picUrl: 'https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg' },
+  { id: 102, name: 'Ringo', age: 6, picUrl: 'https://images.pexels.com/photos/2253275/pexels-photo-2253275.jpeg' },
+  { id: 103, name: 'Bono', age: 2, picUrl: 'https://images.pexels.com/photos/825947/pexels-photo-825947.jpeg' },
+  { id: 104, name: 'Three Dog Night', age: 1, picUrl: 'https://images.pexels.com/photos/160846/french-bulldog-summer-smile-joy-160846.jpeg' },
+  { id: 105, name: 'Django', age: 6, picUrl: 'https://images.pexels.com/photos/4681107/pexels-photo-4681107.jpeg' },
+  { id: 106, name: 'Kujo', age: 8, picUrl: 'https://images.pexels.com/photos/128817/pexels-photo-128817.jpeg' }
+]
