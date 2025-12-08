@@ -28,8 +28,8 @@
   export let statusDisplay: 'tags' | 'icons' = 'tags'
   export let showTooltipsAsText = false
 
-  const applicantRequirementTypes: RequirementType[] = [enumRequirementType.PREQUAL, enumRequirementType.POSTQUAL, enumRequirementType.QUALIFICATION]
-  const reviewerRequirementTypes: RequirementType[] = [enumRequirementType.APPROVAL, enumRequirementType.PREAPPROVAL]
+  const applicantRequirementTypes = new Set<RequirementType>([enumRequirementType.PREQUAL, enumRequirementType.POSTQUAL, enumRequirementType.QUALIFICATION, enumRequirementType.ACCEPTANCE])
+  const reviewerRequirementTypes = new Set<RequirementType>([enumRequirementType.APPROVAL, enumRequirementType.PREAPPROVAL])
   const CORRECTABLE_STATUSES = ['STARTED', 'READY_TO_SUBMIT', 'DISQUALIFIED']
 
   $: canMakeCorrections = CORRECTABLE_STATUSES.includes(appRequest.status)
@@ -46,17 +46,23 @@
     // Application-Specific Questions with nested Reviewer Questions
     for (const application of applications) {
       const applicantPrompts = application.requirements
-        .filter(r => applicantRequirementTypes.includes(r.type))
+        .filter(r => applicantRequirementTypes.has(r.type))
         .flatMap(r => r.prompts)
       const reviewerPrompts = application.requirements
-        .filter(r => reviewerRequirementTypes.includes(r.type))
+        .filter(r => reviewerRequirementTypes.has(r.type))
+        .flatMap(r => r.prompts)
+      const workflowPrompts = application.requirements
+        .filter(r => r.type === enumRequirementType.WORKFLOW)
         .flatMap(r => r.prompts)
 
-      if (applicantPrompts.length || reviewerPrompts.length) {
+      if (applicantPrompts.length || reviewerPrompts.length || workflowPrompts.length) {
+        const subsections: PromptSection[] = []
+        if (reviewerPrompts.length) subsections.push({ title: 'Reviewer Questions', prompts: reviewerPrompts })
+        if (workflowPrompts.length) subsections.push({ title: 'Workflow Questions', prompts: workflowPrompts })
         sections.push({
           title: application.title,
           prompts: applicantPrompts,
-          subsections: reviewerPrompts.length ? [{ title: 'Reviewer Questions', prompts: reviewerPrompts }] : undefined,
+          subsections,
           applicationStatus: application.status
         })
       }

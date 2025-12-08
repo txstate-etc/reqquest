@@ -276,24 +276,32 @@ class API extends APIBase {
     const applicationsReviewNoDupes: ReturnApplication[] = []
     const applicationsForNavWithDupes: ReturnApplication[] = []
     const applicationsForNavNoDupes: ReturnApplication[] = []
+    const applicationsAcceptWithDupes: ReturnApplication[] = []
+    const applicationsAcceptNoDupes: ReturnApplication[] = []
     const promptsById: Record<string, ReturnPrompt> = {}
     const promptsByKey: Record<string, ReturnPrompt[]> = {}
 
     const seenForReview = new Set<string>()
     const seenForNav = new Set<string>()
+    const seenForAccept = new Set<string>()
 
     const visibilitiesToShow = new Set<PromptVisibility>([enumPromptVisibility.AVAILABLE, enumPromptVisibility.REQUEST_DUPE])
     const requirementTypesForNavigation = new Set<RequirementType>([enumRequirementType.PREQUAL, enumRequirementType.POSTQUAL, enumRequirementType.QUALIFICATION])
+    const requirementTypesForReview = new Set<RequirementType>([enumRequirementType.QUALIFICATION, enumRequirementType.PREAPPROVAL, enumRequirementType.APPROVAL, enumRequirementType.WORKFLOW])
     for (const application of applications) {
       const requirementsReviewWithDupes: ReturnRequirement[] = []
       const requirementsReviewNoDupes: ReturnRequirement[] = []
       const requirementsForNavWithDupes: ReturnRequirement[] = []
       const requirementsForNavNoDupes: ReturnRequirement[] = []
+      const requirementsAcceptWithDupes: ReturnRequirement[] = []
+      const requirementsAcceptNoDupes: ReturnRequirement[] = []
       for (const requirement of application.requirements) {
         const promptsForNavWithDupes: ReturnPrompt[] = []
         const promptsForNavNoDupes: ReturnPrompt[] = []
         const promptsReviewNoDupes: ReturnPrompt[] = []
         const promptsReviewWithDupes: ReturnPrompt[] = []
+        const promptsAcceptWithDupes: ReturnPrompt[] = []
+        const promptsAcceptNoDupes: ReturnPrompt[] = []
         for (const prompt of requirement.prompts) {
           const retPrompt = { ...prompt, statusReasons: [{ ...pick(requirement, 'status', 'statusReason'), programName: application.title }] }
           const withDupesPrompt = { ...retPrompt }
@@ -304,16 +312,21 @@ class API extends APIBase {
           if (!visibilitiesToShow.has(prompt.visibility)) continue
           promptsReviewWithDupes.push(withDupesPrompt)
           if (requirementTypesForNavigation.has(requirement.type)) promptsForNavWithDupes.push(withDupesPrompt)
+          if (requirement.type === enumRequirementType.ACCEPTANCE) promptsAcceptWithDupes.push(withDupesPrompt)
           if (!seenForReview.has(prompt.key)) promptsReviewNoDupes.push(retPrompt)
           seenForReview.add(prompt.key)
           if (requirementTypesForNavigation.has(requirement.type)) {
             if (!seenForNav.has(prompt.key)) promptsForNavNoDupes.push(retPrompt)
             seenForNav.add(prompt.key)
           }
+          if (requirement.type === enumRequirementType.ACCEPTANCE) {
+            if (!seenForAccept.has(prompt.key)) promptsAcceptNoDupes.push(retPrompt)
+            seenForAccept.add(prompt.key)
+          }
         }
         if (requirement.type === enumRequirementType.PREQUAL) prequalPrompts.push(...promptsForNavNoDupes)
         else if (requirement.type === enumRequirementType.POSTQUAL) postqualPrompts.push(...promptsForNavNoDupes)
-        else {
+        else if (requirementTypesForReview.has(requirement.type)) {
           requirementsReviewWithDupes.push({ ...requirement, prompts: promptsReviewWithDupes })
           requirementsReviewNoDupes.push({ ...requirement, prompts: promptsReviewNoDupes })
           if (requirement.type === enumRequirementType.QUALIFICATION) {
@@ -321,6 +334,9 @@ class API extends APIBase {
             requirementsForNavWithDupes.push({ ...requirement, prompts: promptsForNavWithDupes })
             requirementsForNavNoDupes.push({ ...requirement, prompts: promptsForNavNoDupes })
           }
+        } else if (requirement.type === enumRequirementType.ACCEPTANCE) {
+          requirementsAcceptWithDupes.push({ ...requirement, prompts: promptsAcceptWithDupes })
+          requirementsAcceptNoDupes.push({ ...requirement, prompts: promptsAcceptNoDupes })
         }
       }
       const reqsForCompletion = application.requirements.filter(r => r.type !== enumRequirementType.POSTQUAL)
@@ -357,12 +373,14 @@ class API extends APIBase {
       applicationsReviewNoDupes.push({ ...application, requirements: requirementsReviewNoDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, hasWarning })
       applicationsForNavWithDupes.push({ ...application, requirements: requirementsForNavWithDupes, completionStatus: completionStatusForNav, warningReasons, ineligibleReasons, hasWarning: hasWarningForNav })
       applicationsForNavNoDupes.push({ ...application, requirements: requirementsForNavNoDupes, completionStatus: completionStatusForNav, warningReasons, ineligibleReasons, hasWarning: hasWarningForNav })
+      applicationsAcceptWithDupes.push({ ...application, requirements: requirementsAcceptWithDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, hasWarning })
+      applicationsAcceptNoDupes.push({ ...application, requirements: requirementsAcceptNoDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, hasWarning })
     }
     for (const prompts of Object.values(promptsByKey)) {
       const statusReasons = prompts.map(p => p.statusReasons[0])
       for (const prompt of prompts) prompt.statusReasons = statusReasons
     }
-    return { prequalPrompts, postqualPrompts, qualPrompts, applicationsReviewWithDupes, applicationsReviewNoDupes, applicationsForNavWithDupes, applicationsForNavNoDupes, promptsByKey, promptsById }
+    return { prequalPrompts, postqualPrompts, qualPrompts, applicationsReviewWithDupes, applicationsReviewNoDupes, applicationsForNavWithDupes, applicationsForNavNoDupes, applicationsAcceptWithDupes, applicationsAcceptNoDupes, promptsByKey, promptsById }
   }
 
   async getAppRequestForExport (appRequestId: string) {
@@ -417,7 +435,9 @@ class API extends APIBase {
       ...omit(splitInfo, 'applicationsForNavNoDupes', 'applicationsForNavWithDupes', 'applicationsReviewNoDupes', 'applicationsReviewWithDupes'),
       applicationsForNav: showDupePrompts ? splitInfo.applicationsForNavWithDupes : splitInfo.applicationsForNavNoDupes,
       applicationsReview: showDupePrompts ? splitInfo.applicationsReviewWithDupes : splitInfo.applicationsReviewNoDupes,
-      appRequest: response.appRequests[0] }
+      applicationsAccept: showDupePrompts ? splitInfo.applicationsAcceptWithDupes : splitInfo.applicationsAcceptNoDupes,
+      appRequest: response.appRequests[0]
+    }
   }
 
   async createAppRequest (periodId?: string, login?: string, validateOnly?: boolean) {

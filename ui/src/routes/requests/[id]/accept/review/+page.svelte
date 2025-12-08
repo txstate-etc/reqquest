@@ -17,7 +17,7 @@
    * allows them to submit the app request.
    */
   export let data: PageData
-  $: ({ appRequestForExport, prequalPrompts, postqualPrompts, applicationsForNav } = data)
+  $: ({ appRequestForExport, applicationsAccept } = data)
 
   const nextHref = getContext<Writable<{ nextHref?: ResolvedPathname, prevHref?: ResolvedPathname }>>('nextHref')
   $: hasPreviousPrompt = !!$nextHref.prevHref
@@ -46,10 +46,8 @@
 
 <ApplicationDetailsView
   appRequest={appRequestForExport}
-  applications={applicationsForNav}
+  applications={applicationsAccept}
   appData={appRequestForExport.data}
-  {prequalPrompts}
-  {postqualPrompts}
   {uiRegistry}
   title="Review Your Submission"
   subtitle="Please review all information before submitting."
@@ -61,7 +59,7 @@
   <svelte:fragment slot="footer">
     <footer class="[ mt-6 ] flow">
       {#if uiRegistry.config.supportUrl}
-        <p class="text-center">If you think this was a mistake please review your answers or reach out through the support page.</p>
+        <p class="text-center">If you think there was a mistake please review your answers or reach out through the support page.</p>
       {/if}
       <div class="footer-actions">
         {#if hasPreviousPrompt}
@@ -70,8 +68,8 @@
         {#if uiRegistry.config.supportUrl}
             <Button kind="ghost" href={uiRegistry.config.supportUrl}>Support</Button>
         {/if}
-        {#if appRequestForExport.status === enumAppRequestStatus.READY_TO_SUBMIT}
-          <Button icon={Touch_1} on:click={onSubmit}>Submit For Review</Button>
+        {#if appRequestForExport.status === enumAppRequestStatus.READY_TO_ACCEPT}
+          <Button icon={Touch_1} on:click={onSubmit}>Submit</Button>
         {/if}
       </div>
     </footer>

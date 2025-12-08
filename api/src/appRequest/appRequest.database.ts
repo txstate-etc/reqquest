@@ -530,10 +530,10 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
         : phase === 'applicant'
           ? presubmitRequirements
           : phase === 'acceptance'
-            ? acceptanceRequirements
+            ? [...presubmitRequirements, ...reviewRequirements, ...blockingWorkflowRequirements, ...acceptanceRequirements]
             : phase === 'blocking' || phase === 'nonblocking'
               ? currentWorkflowRequirements
-              : reviewRequirements
+              : [...presubmitRequirements, ...reviewRequirements]
 
       const promptsSeenInApplication = new Set<string>()
       let applicationIsIneligible = false
