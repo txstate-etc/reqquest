@@ -8,16 +8,16 @@ export const children_prompt: PromptDefinition = {
   description: 'Applicant will identify if young children live in the homw.',
   schema: ChildrenPromptSchema,
   validate: (data, config, allConfig) => {
-    const messages: MutationMessage[] = [] 
+    const messages: MutationMessage[] = []
     if (!data || data.underMinAge == null) messages.push({ type: MutationMessageType.error, message: 'Children information required', arg: 'underMinAge' })
     if (data.underMinAge) {
       if (data.count == null || data.count < 1) messages.push({ type: MutationMessageType.error, message: 'Number of young children is required', arg: 'count' })
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide details such as ages, comfort with animals', arg: 'details' })
-    } 
+    }
     return messages
   },
-  gatherConfig: (allPeriodConfig => {
-    return {'children_qual_req': {'minAge': allPeriodConfig.children_qual_req.minAge}}
-  }),
-  invalidUponChange: [{promptKey: 'review_applicant_foster_a_pet_info_prompt'}]
+  gatherConfig: allPeriodConfig => {
+    return { children_qual_req: { minAge: allPeriodConfig.children_qual_req.minAge } }
+  },
+  invalidUponChange: [{ promptKey: 'review_applicant_foster_a_pet_info_prompt' }]
 }

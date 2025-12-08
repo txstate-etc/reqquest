@@ -27,8 +27,5 @@ export const yard_qual_req: RequirementDefinition<YardConfigRequirementData> = {
       return messages
     },
     default: { minSqftPerDog: 500 }
-  }  
+  }
 }
-
-
-

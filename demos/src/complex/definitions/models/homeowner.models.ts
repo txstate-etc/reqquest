@@ -4,14 +4,14 @@ import { stateNames } from './residence.models.js'
 
 export const HomeownerPromptSchema = {
   type: 'object',
-  properties: { 
+  properties: {
     firstName: { type: 'string' },
     lastName: { type: 'string' },
     streetAddress: { type: 'string' },
     emailAddress: { type: 'string' },
     phoneNumber: { type: 'string' },
     city: { type: 'string' },
-    state: { type: 'string', enum: stateNames},
+    state: { type: 'string', enum: stateNames },
     zipCode: { type: 'string' }
   },
   additionalProperties: false

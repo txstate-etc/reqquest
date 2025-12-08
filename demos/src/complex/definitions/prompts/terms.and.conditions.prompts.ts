@@ -8,11 +8,11 @@ export const terms_and_conditions_prompt: PromptDefinition = {
   description: 'Applicant must agree to terms and conditions.',
   schema: TermsAndConditionsPromptSchema,
   validate: (data, config, allConfig) => {
-    const messages: MutationMessage[] = [] 
+    const messages: MutationMessage[] = []
     if (!data || data.agree == null) messages.push({ type: MutationMessageType.error, message: 'Terms and conditions input required', arg: 'agree' })
     if (data) {
       if (data.agree === false) messages.push({ type: MutationMessageType.error, message: 'Must agree with terms and conditions to continue submission', arg: 'agree' })
-    } 
+    }
     return messages
   },
   configuration: {
@@ -26,7 +26,7 @@ export const terms_and_conditions_prompt: PromptDefinition = {
     },
     default: { text: 'You consent to surrending your first child as collateral for being approved for one of the programs.  Collateral will be returned after 1 year of adequate pet care.' }
   },
-  gatherConfig: (allPeriodConfig) => {
-    return {'terms_and_conditions_prompt': {'text': allPeriodConfig.terms_and_conditions_prompt.text}}
-  }  
+  gatherConfig: allPeriodConfig => {
+    return { terms_and_conditions_prompt: { text: allPeriodConfig.terms_and_conditions_prompt.text } }
+  }
 }

@@ -15,7 +15,7 @@ export const living_space_qual_req: RequirementDefinition<LivingSpaceConfigRequi
     const CurrentCatOwnerPromptData = data.current_catowner_prompt as CurrentCatOwnerPromptData
     if (LivingSpacePromptData == null || CurrentCatOwnerPromptData == null) return { status: RequirementStatus.PENDING }
     const minFutureCatCount = (CurrentCatOwnerPromptData.count == null) ? 1 : CurrentCatOwnerPromptData.count + 1
-    if ((config!.minSqftPerCat! * minFutureCatCount) >  LivingSpacePromptData.sqftLivingSpace!) return { status: RequirementStatus.WARNING, reason: 'Living space is not sufficient for adopting an additional cat. Waivers available case-by-case.' }
+    if ((config!.minSqftPerCat! * minFutureCatCount) > LivingSpacePromptData.sqftLivingSpace!) return { status: RequirementStatus.WARNING, reason: 'Living space is not sufficient for adopting an additional cat. Waivers available case-by-case.' }
     return { status: RequirementStatus.MET }
   },
   configuration: {
@@ -28,8 +28,5 @@ export const living_space_qual_req: RequirementDefinition<LivingSpaceConfigRequi
       return messages
     },
     default: { minSqftPerCat: 100 }
-  }  
+  }
 }
-
-
-

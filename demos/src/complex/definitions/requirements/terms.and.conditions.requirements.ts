@@ -16,6 +16,3 @@ export const terms_and_conditions_post_qual_req: RequirementDefinition<TermsAndC
     return { status: RequirementStatus.MET }
   }
 }
-
-
-

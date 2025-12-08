@@ -14,14 +14,13 @@ export const previous_catowner_qual_req: RequirementDefinition = {
     if (catOwnerPromptData?.owned != null) {
       if (catOwnerPromptData.owned === false) {
         return { status: RequirementStatus.WARNING, reason: 'Previous cat ownership is usually required.  Exceptions on a case by case basis.' }
-      } else { 
+      } else {
         return { status: RequirementStatus.MET }
       }
     }
     return { status: RequirementStatus.PENDING }
   }
 }
-
 
 export const current_catowner_qual_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
@@ -32,14 +31,14 @@ export const current_catowner_qual_req: RequirementDefinition = {
   promptKeys: ['current_catowner_prompt'],
   resolve: (data, config) => {
     const catOwnerPromptData = data.current_catowner_prompt as CurrentCatOwnerPromptData
-    if (catOwnerPromptData == null) return { status: RequirementStatus.PENDING }     
-    if (!catOwnerPromptData.owned) { 
+    if (catOwnerPromptData == null) return { status: RequirementStatus.PENDING }
+    if (!catOwnerPromptData.owned) {
       return { status: RequirementStatus.MET }
     } else {
       if (catOwnerPromptData.count == null) return { status: RequirementStatus.PENDING }
-      if (catOwnerPromptData.count >= config.maxCount ) return { status: RequirementStatus.WARNING, reason: "Too many cats currently, waivers available case-by-case" }
+      if (catOwnerPromptData.count >= config.maxCount) return { status: RequirementStatus.WARNING, reason: 'Too many cats currently, waivers available case-by-case' }
       return { status: RequirementStatus.MET }
-    }    
+    }
   },
   configuration: {
     schema: CurrentCatOwnerRequirementConfigSchema,
@@ -51,7 +50,7 @@ export const current_catowner_qual_req: RequirementDefinition = {
       return messages
     },
     default: { maxCount: 3 }
-  } 
+  }
 }
 
 export const owner_cat_allergy_qual_req: RequirementDefinition = {
@@ -66,9 +65,9 @@ export const owner_cat_allergy_qual_req: RequirementDefinition = {
     if (catOwnerPromptData == null) return { status: RequirementStatus.PENDING }
     if (catOwnerPromptData.allergic) {
       return { status: RequirementStatus.WARNING, reason: 'We reserve the right to deny applications with known allergies (based on years of consistently high return rates).' }
-    } else { 
+    } else {
       return { status: RequirementStatus.MET }
-    }    
+    }
   }
 }
 
@@ -84,9 +83,9 @@ export const owner_cat_microchip_service_qual_req: RequirementDefinition = {
     if (catOwnerPromptData == null) return { status: RequirementStatus.PENDING }
     if (!catOwnerPromptData.agreeToPay) {
       return { status: RequirementStatus.WARNING, reason: 'We reserve the right to deny applications who do not agree to cover microchipping costs.' }
-    } else { 
+    } else {
       return { status: RequirementStatus.MET }
-    }    
+    }
   }
 }
 
@@ -99,12 +98,12 @@ export const review_applicant_cat_info_app_req: RequirementDefinition = {
   promptKeys: ['review_applicant_cat_info_prompt'],
   resolve: (data, config) => {
     const revCatInfoData = data.review_applicant_cat_info_prompt as ReviewApplicantCatInfoPromptData
-    if (revCatInfoData == null) return { status: RequirementStatus.PENDING }     
+    if (revCatInfoData == null) return { status: RequirementStatus.PENDING }
     if (revCatInfoData.previousCatAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revCatInfoData.currentCatAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revCatInfoData.livingSpaceAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revCatInfoData.allergyAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revCatInfoData.microchipAgree === false) return { status: RequirementStatus.DISQUALIFYING }
-    return { status: RequirementStatus.MET }  
+    return { status: RequirementStatus.MET }
   }
 }

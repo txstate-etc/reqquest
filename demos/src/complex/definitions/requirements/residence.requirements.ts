@@ -17,7 +17,7 @@ export const state_residence_prequal_req: RequirementDefinition<StateResidenceCo
     return { status: RequirementStatus.MET }
   },
   configuration: {
-    fetch: async (periodId) => {
+    fetch: async periodId => {
       return { states: stateList }
     },
     validate: config => {
@@ -28,8 +28,5 @@ export const state_residence_prequal_req: RequirementDefinition<StateResidenceCo
       return messages
     },
     default: { residentOfState: ['Texas', 'Oklahoma', 'Louisiana'] }
-  }  
+  }
 }
-
-
-

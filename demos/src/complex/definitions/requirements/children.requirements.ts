@@ -11,13 +11,13 @@ export const children_qual_req: RequirementDefinition = {
   promptKeys: ['children_prompt'],
   resolve: (data, config) => {
     const childrenPromptData = data.children_prompt as ChildrenPromptData
-    if (childrenPromptData == null) return { status: RequirementStatus.PENDING }     
-    if (!childrenPromptData.underMinAge) { 
+    if (childrenPromptData == null) return { status: RequirementStatus.PENDING }
+    if (!childrenPromptData.underMinAge) {
       return { status: RequirementStatus.MET }
     } else {
       if (childrenPromptData.count == null) return { status: RequirementStatus.PENDING }
       return { status: RequirementStatus.MET }
-    }    
+    }
   },
   configuration: {
     schema: ChildrenRequirementConfigSchema,
@@ -29,5 +29,5 @@ export const children_qual_req: RequirementDefinition = {
       return messages
     },
     default: { minAge: 6 }
-  } 
+  }
 }

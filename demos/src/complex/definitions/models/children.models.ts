@@ -3,9 +3,9 @@ import type { FromSchema } from 'json-schema-to-ts'
 
 export const ChildrenPromptSchema = {
   type: 'object',
-  properties: { 
+  properties: {
     underMinAge: { type: 'boolean' },
-    count: { type: 'number'},
+    count: { type: 'number' },
     details: { type: 'string' }
   },
   additionalProperties: false
@@ -14,7 +14,7 @@ export type ChildrenPromptData = FromSchema<typeof ChildrenPromptSchema>
 
 export const ChildrenRequirementConfigSchema = {
   type: 'object',
-  properties: { 
+  properties: {
     minAge: { type: 'number' }
   },
   additionalProperties: false
