@@ -34,10 +34,9 @@ export const ReviewApplicantFosterAPetPromptSchema = {
 } as const satisfies SchemaObject
 export type ReviewApplicantFosterAPetPromptData = FromSchema<typeof ReviewApplicantFosterAPetPromptSchema>
 
-export const AcceptFosterPetPromptSchema = {
+export const AcceptFosterPetDetailsPromptSchema = {
   type: 'object',
   properties: {
-    accept: { type: 'boolean' },
     id: { type: 'number' },
     name: { type: 'string' },
     age: { type: 'number' },
@@ -45,6 +44,16 @@ export const AcceptFosterPetPromptSchema = {
   },
   additionalProperties: false
 } as const satisfies SchemaObject
+export type AcceptFosterPetDetailsPromptData = FromSchema<typeof AcceptFosterPetDetailsPromptSchema>
+
+export const AcceptFosterPetPromptSchema = {
+  type: 'object',
+  properties: {
+    accept: { type: 'boolean' },
+    id: { type: 'number' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
 export type AcceptFosterPetPromptData = FromSchema<typeof AcceptFosterPetPromptSchema>
 
-export const FosterAPetList: AcceptFosterPetPromptData[] = [...AdoptADogList, ...AdoptACatList]
+export const FosterAPetList: AcceptFosterPetDetailsPromptData[] = [...AdoptADogList, ...AdoptACatList]

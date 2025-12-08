@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { PreviousDogOwnerPromptData, CurrentDogOwnerPromptData, OwnerDogAllergyPromptData, DogExercisePromptData, CurrentDogOwnerRequirementConfigSchema, DogMinExerciseRequirementConfigSchema, ReviewApplicantDogInfoPromptData, ApproveReviewerExerciseExemptionPromptData, PreviousDogSurrenderedPromptData } from '../models/index.js'
+import { PreviousDogOwnerPromptData, CurrentDogOwnerPromptData, OwnerDogAllergyPromptData, DogExercisePromptData, CurrentDogOwnerRequirementConfigSchema, DogMinExerciseRequirementConfigSchema, ReviewApplicantDogInfoPromptData, ApproveReviewerExerciseExemptionPromptData, PreviousDogSurrenderedPromptData, AcceptDogPromptData } from '../models/index.js'
 
 export const previous_dogowner_qual_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
@@ -175,6 +175,20 @@ export const approve_reviewer_exercise_exemption_workflow_req: RequirementDefini
       if (appExerciseExemptionData == null) return { status: RequirementStatus.PENDING }
       if (appExerciseExemptionData.approve === false) return { status: RequirementStatus.DISQUALIFYING }
     }
+    return { status: RequirementStatus.MET }
+  }
+}
+
+export const accept_adopt_dog_req: RequirementDefinition = {
+  type: RequirementType.ACCEPTANCE,
+  key: 'accept_adopt_dog_req',
+  title: 'Select an available dog',
+  navTitle: 'Select available dog',
+  description: 'An applicant can select one of the available dogs for adoption.',
+  promptKeys: ['accept_dog_prompt'],
+  resolve: (data, config) => {
+    const acceptDogPrompt = data.accept_dog_prompt as AcceptDogPromptData
+    if (acceptDogPrompt == null) return { status: RequirementStatus.PENDING }
     return { status: RequirementStatus.MET }
   }
 }

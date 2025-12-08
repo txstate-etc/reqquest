@@ -187,10 +187,7 @@ export const accept_dog_prompt: PromptDefinition = {
       if (data.accept == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'accept' })
       if (data.accept) {
         // for complex demo / simulation we are trusting that data is consistent, normally sending id would be all required and we'd look up related detail
-        if (data.id == null) messages.push({ type: MutationMessageType.error, message: 'Dog id required', arg: 'id' })
-        if (data.name == null) messages.push({ type: MutationMessageType.error, message: 'Dog name required', arg: 'name' })
-        if (data.age == null) messages.push({ type: MutationMessageType.error, message: 'Dog age required', arg: 'age' })
-        if (data.picUrl == null) messages.push({ type: MutationMessageType.error, message: 'Dog age required', arg: 'picUrl' })
+        if (data.id == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance dog id required', arg: 'id' })
       }
     }
     return messages

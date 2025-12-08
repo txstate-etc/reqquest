@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { ChildrenPromptData, PetOwnerOwnerRequirementConfigData, PetOwnerPromptData, ReviewApplicantFosterAPetPromptData } from '../models/index.js'
+import { AcceptFosterPetPromptData, ChildrenPromptData, PetOwnerOwnerRequirementConfigData, PetOwnerPromptData, ReviewApplicantFosterAPetPromptData } from '../models/index.js'
 
 export const petowner_prequal_req: RequirementDefinition<PetOwnerOwnerRequirementConfigData> = {
   type: RequirementType.PREQUAL,
@@ -43,6 +43,20 @@ export const review_applicant_foster_a_pet_info_app_req: RequirementDefinition =
     if (childData?.underMinAge && revFosterInfoData == null) return { status: RequirementStatus.PENDING }
     const underAgeKidCount = (childData.count) ?? 0
     if (underAgeKidCount > 0 && revFosterInfoData.underAgeChildrenAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
+    return { status: RequirementStatus.MET }
+  }
+}
+
+export const accept_fost_pet_req: RequirementDefinition = {
+  type: RequirementType.ACCEPTANCE,
+  key: 'accept_fost_pet_req',
+  title: 'Select a pet to foster',
+  navTitle: 'Select a pet to foster',
+  description: 'An applicant can select one of the pets for fostering.',
+  promptKeys: ['accept_foster_pet_prompt'],
+  resolve: (data, config) => {
+    const acceptFosterPetPrompt = data.accept_foster_pet_prompt as AcceptFosterPetPromptData
+    if (acceptFosterPetPrompt == null) return { status: RequirementStatus.PENDING }
     return { status: RequirementStatus.MET }
   }
 }

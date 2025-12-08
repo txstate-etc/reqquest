@@ -103,10 +103,9 @@ export const ApproveReviewerExerciseExemptionPromptSchema = {
 } as const satisfies SchemaObject
 export type ApproveReviewerExerciseExemptionPromptData = FromSchema<typeof ApproveReviewerExerciseExemptionPromptSchema>
 
-export const AcceptDogPromptSchema = {
+export const AcceptDogDetailsPromptSchema = {
   type: 'object',
   properties: {
-    accept: { type: 'boolean' },
     id: { type: 'number' },
     name: { type: 'string' },
     age: { type: 'number' },
@@ -114,9 +113,19 @@ export const AcceptDogPromptSchema = {
   },
   additionalProperties: false
 } as const satisfies SchemaObject
+export type AcceptDogDetailsPromptData = FromSchema<typeof AcceptDogDetailsPromptSchema>
+
+export const AcceptDogPromptSchema = {
+  type: 'object',
+  properties: {
+    accept: { type: 'boolean' },
+    id: { type: 'number' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
 export type AcceptDogPromptData = FromSchema<typeof AcceptDogPromptSchema>
 
-export const AdoptADogList: AcceptDogPromptData[] = [
+export const AdoptADogList: AcceptDogDetailsPromptData[] = [
   { id: 101, name: 'Temple of the Dog', age: 55, picUrl: 'https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg' },
   { id: 102, name: 'Ringo', age: 6, picUrl: 'https://images.pexels.com/photos/2253275/pexels-photo-2253275.jpeg' },
   { id: 103, name: 'Bono', age: 2, picUrl: 'https://images.pexels.com/photos/825947/pexels-photo-825947.jpeg' },

@@ -64,10 +64,9 @@ export const ReviewApplicantCatInfoPromptSchema = {
 } as const satisfies SchemaObject
 export type ReviewApplicantCatInfoPromptData = FromSchema<typeof ReviewApplicantCatInfoPromptSchema>
 
-export const AcceptCatPromptSchema = {
+export const AcceptCatDetailsPromptSchema = {
   type: 'object',
   properties: {
-    accept: { type: 'boolean' },
     id: { type: 'number' },
     name: { type: 'string' },
     age: { type: 'number' },
@@ -75,9 +74,19 @@ export const AcceptCatPromptSchema = {
   },
   additionalProperties: false
 } as const satisfies SchemaObject
+export type AcceptCatDetailsPromptData = FromSchema<typeof AcceptCatDetailsPromptSchema>
+
+export const AcceptCatPromptSchema = {
+  type: 'object',
+  properties: {
+    accept: { type: 'boolean' },
+    id: { type: 'number' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
 export type AcceptCatPromptData = FromSchema<typeof AcceptCatPromptSchema>
 
-export const AdoptACatList: AcceptCatPromptData[] = [
+export const AdoptACatList: AcceptCatDetailsPromptData[] = [
   { id: 1, name: 'Doja Cat', age: 30, picUrl: 'https://media.gettyimages.com/id/1486972012/photo/new-york-new-york-doja-cat-attends-the-2023-met-gala-celebrating-karl-lagerfeld-a-line-of.jpg?s=612x612&w=0&k=20&c=nLr8u3jqXmePR7n3xwxn3XPe-DV6xQgR_uleBxLXjWg=' },
   { id: 2, name: 'Miss Puffs a Lot', age: 5, picUrl: 'https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg' },
   { id: 3, name: 'Siam', age: 2, picUrl: 'https://images.pexels.com/photos/208984/pexels-photo-208984.jpeg' },

@@ -90,8 +90,8 @@ export const review_applicant_cat_info_prompt: PromptDefinition = {
   }
 }
 
-export const accept_cat_promt: PromptDefinition = {
-  key: 'accept_cat_promt',
+export const accept_cat_prompt: PromptDefinition = {
+  key: 'accept_cat_prompt',
   title: 'Accept a cat for adoption',
   description: 'Applicant will decided if and which cat to adopt.',
   schema: AcceptCatPromptSchema,
@@ -106,10 +106,7 @@ export const accept_cat_promt: PromptDefinition = {
       if (data.accept == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'accept' })
       if (data.accept) {
         // for complex demo / simulation we are trusting that data is consistent, normally sending id would be all required and we'd look up related detail
-        if (data.id == null) messages.push({ type: MutationMessageType.error, message: 'Cat id required', arg: 'id' })
-        if (data.name == null) messages.push({ type: MutationMessageType.error, message: 'Cat name required', arg: 'name' })
-        if (data.age == null) messages.push({ type: MutationMessageType.error, message: 'Cat age required', arg: 'age' })
-        if (data.picUrl == null) messages.push({ type: MutationMessageType.error, message: 'Cat pic required', arg: 'picUrl' })
+        if (data.id == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance cat id required', arg: 'id' })
       }
     }
     return messages

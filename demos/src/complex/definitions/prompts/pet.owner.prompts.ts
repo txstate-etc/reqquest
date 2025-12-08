@@ -40,8 +40,8 @@ export const review_applicant_foster_a_pet_info_prompt: PromptDefinition = {
 
 export const accept_foster_pet_prompt: PromptDefinition = {
   key: 'accept_foster_pet_prompt',
-  title: 'Accept a dog for adoption',
-  description: 'Applicant will decided if and which pet to foster.',
+  title: 'Select pet for fostering',
+  description: 'Applicant will decided if and which pet to fpster.',
   schema: AcceptFosterPetPromptSchema,
   fetch: (appRequest, config, appRequestData, allPeriodConfig, ctx) => {
     return getRandomUniqueElements(FosterAPetList)
@@ -54,10 +54,7 @@ export const accept_foster_pet_prompt: PromptDefinition = {
       if (data.accept == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'accept' })
       if (data.accept) {
         // for complex demo / simulation we are trusting that data is consistent, normally sending id would be all required and we'd look up related detail
-        if (data.id == null) messages.push({ type: MutationMessageType.error, message: 'Dog id required', arg: 'id' })
-        if (data.name == null) messages.push({ type: MutationMessageType.error, message: 'Dog name required', arg: 'name' })
-        if (data.age == null) messages.push({ type: MutationMessageType.error, message: 'Dog age required', arg: 'age' })
-        if (data.picUrl == null) messages.push({ type: MutationMessageType.error, message: 'Dog age required', arg: 'picUrl' })
+        if (data.id == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance pet id required', arg: 'id' })
       }
     }
     return messages

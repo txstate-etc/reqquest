@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { CurrentCatOwnerPromptData, CurrentCatOwnerRequirementConfigSchema, OwnerCatAllergyPromptData, OwnerCatMicrochipServiceData, PreviousCatOwnerPromptData, ReviewApplicantCatInfoPromptData } from '../models/index.js'
+import { AcceptCatPromptData, CurrentCatOwnerPromptData, CurrentCatOwnerRequirementConfigSchema, OwnerCatAllergyPromptData, OwnerCatMicrochipServiceData, PreviousCatOwnerPromptData, ReviewApplicantCatInfoPromptData } from '../models/index.js'
 
 export const previous_catowner_qual_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
@@ -104,6 +104,20 @@ export const review_applicant_cat_info_app_req: RequirementDefinition = {
     if (revCatInfoData.livingSpaceAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revCatInfoData.allergyAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
     if (revCatInfoData.microchipAgree === false) return { status: RequirementStatus.DISQUALIFYING }
+    return { status: RequirementStatus.MET }
+  }
+}
+
+export const accept_adopt_cat_req: RequirementDefinition = {
+  type: RequirementType.ACCEPTANCE,
+  key: 'accept_adopt_cat_req',
+  title: 'Select an available cat',
+  navTitle: 'Select available cat',
+  description: 'An applicant can select one of the available cats for adoption.',
+  promptKeys: ['accept_cat_prompt'],
+  resolve: (data, config) => {
+    const acceptCatPrompt = data.accept_cat_prompt as AcceptCatPromptData
+    if (acceptCatPrompt == null) return { status: RequirementStatus.PENDING }
     return { status: RequirementStatus.MET }
   }
 }
