@@ -1,6 +1,7 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
 import { AcceptFosterPetPromptSchema, ChildrenPromptData, FosterAPetList, PetOwnerPromptSchema, ReviewApplicantFosterAPetPromptSchema } from '../models/index.js'
+import { getRandomUniqueElements } from '../util.js'
 
 export const petowner_prompt: PromptDefinition = {
   key: 'petowner_prompt',
@@ -43,7 +44,7 @@ export const accept_foster_pet_prompt: PromptDefinition = {
   description: 'Applicant will decided if and which pet to foster.',
   schema: AcceptFosterPetPromptSchema,
   fetch: (appRequest, config, appRequestData, allPeriodConfig, ctx) => {
-    return FosterAPetList
+    return getRandomUniqueElements(FosterAPetList)
   },
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = []

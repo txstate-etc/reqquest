@@ -1,6 +1,7 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
 import { AcceptCatPromptSchema, AdoptACatList, CurrentCatOwnerPromptSchema, OwnerCatAllergyPromptSchema, OwnerCatMicrochipServicePrompt, PreviousCatOwnerPromptSchema, ReviewApplicantCatInfoPromptSchema } from '../models/cat.owner.models.js'
+import { getRandomUniqueElements } from '../util.js'
 
 export const previous_catowner_prompt: PromptDefinition = {
   key: 'previous_catowner_prompt',
@@ -95,7 +96,7 @@ export const accept_cat_promt: PromptDefinition = {
   description: 'Applicant will decided if and which cat to adopt.',
   schema: AcceptCatPromptSchema,
   fetch: (appRequest, config, appRequestData, allPeriodConfig, ctx) => {
-    return AdoptACatList
+    return getRandomUniqueElements(AdoptACatList)
   },
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = []

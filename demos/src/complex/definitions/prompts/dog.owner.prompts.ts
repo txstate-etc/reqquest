@@ -2,6 +2,7 @@ import { type PromptDefinition } from '@reqquest/api'
 import { InvalidatedResponse } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
 import { PreviousDogOwnerPromptSchema, CurrentDogOwnerPromptSchema, OwnerDogAllergyPromptSchema, DogExercisePromptSchema, ReviewApplicantDogInfoPromptSchema, ApproveReviewerExerciseExemptionPromptSchema, ApproveReviewerExerciseExemptionConfigSchema, PreviousDogSurrenderedPromptSchema, AcceptDogPromptSchema, AdoptADogList } from '../models/index.js'
+import { getRandomUniqueElements } from '../util.js'
 
 export const previous_dogowner_prompt: PromptDefinition = {
   key: 'previous_dogowner_prompt',
@@ -176,7 +177,7 @@ export const accept_dog_prompt: PromptDefinition = {
   description: 'Applicant will decided if and which dog to adopt.',
   schema: AcceptDogPromptSchema,
   fetch: (appRequest, config, appRequestData, allPeriodConfig, ctx) => {
-    return AdoptADogList
+    return getRandomUniqueElements(AdoptADogList)
   },
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = []
