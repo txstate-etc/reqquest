@@ -89,6 +89,7 @@ export class ProgramRegistry {
 
   public finalize () {
     for (const program of this.programList) {
+      program.navTitle ??= program.title
       for (const stage of program.workflowStages ?? []) {
         this.workflowStagesByKey[stage.key] = stage
         for (const requirementKey of stage.requirementKeys) {

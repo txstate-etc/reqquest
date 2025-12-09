@@ -9,7 +9,7 @@ import {
   getAppRequests, getAppRequestData, appRequestTransaction,
   recordAppRequestActivity, appConfig, AppRequestData, AppRequestStatus, ApplicationPhase,
   ApplicationService, setRequirementPromptsInvalid, AppRequestServiceInternal,
-  AppRequestPhase, RequirementType, periodConfigCache
+  AppRequestPhase, RequirementType, periodConfigCache, programRegistry
 } from '../internal.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
@@ -231,7 +231,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
         await setRequirementPromptsInvalid(promptsToInvalidate, db)
         await setRequirementPromptValid(prompt, db)
         previousAppPhases = (await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion, db))!
-        recordAppRequestActivity(appRequest.internalId, this.user!.internalId, 'Prompt Updated', { data, description: prompt.title }, db)
+        recordAppRequestActivity(appRequest.internalId, this.user!.internalId, `${programRegistry.get(prompt.programKey)?.navTitle ?? 'Prompt'} Updated`, { data, description: prompt.title }, db)
       }
     })
     this.loaders.clear()
