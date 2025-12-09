@@ -75,9 +75,9 @@ export async function updateApplicationsComputed (applications: Application[], d
 }
 
 export async function advanceWorkflow (applicationId: string, tdb: Queryable = db) {
-  const application = await tdb.getrow<ApplicationRow>('SELECT * FROM applications WHERE id = ?', [applicationId])
+  const [application] = await getApplications({ ids: [applicationId] }, tdb)
   if (!application) throw new Error(`Application not found: ${applicationId}`)
-  if (application.computedPhase !== ApplicationPhase.READY_FOR_WORKFLOW) throw new Error('Application is not ready to advance workflow.')
+  if (application.phase !== ApplicationPhase.READY_FOR_WORKFLOW) throw new Error('Application is not ready to advance workflow.')
 
   const stages = await tdb.getall<PeriodWorkflowRow>(`
     SELECT DISTINCT w.* FROM period_workflow_stages w
@@ -88,10 +88,10 @@ export async function advanceWorkflow (applicationId: string, tdb: Queryable = d
   `, [application.programKey, application.periodId])
   const blocking = stages.filter(stage => !!stage.blocking)
   const nonblocking = stages.filter(stage => !stage.blocking)
-  const current = stages.find(stage => stage.stageKey === application.workflowStage)
+  const current = stages.find(stage => stage.stageKey === application.workflowStageKey)
 
   let toStage: PeriodWorkflowRow | undefined
-  let toPhase: ApplicationPhase = application.computedPhase
+  let toPhase: ApplicationPhase = application.phase
   if (!current) {
     toStage = blocking[0]
     if (!toStage) toPhase = ApplicationPhase.REVIEW_COMPLETE
@@ -112,11 +112,11 @@ export async function advanceWorkflow (applicationId: string, tdb: Queryable = d
     } else toPhase = ApplicationPhase.COMPLETE
   }
 
-  await tdb.update('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [toPhase, toStage, applicationId])
+  await tdb.update('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [toPhase, toStage?.stageKey, applicationId])
 }
 
 export async function reverseWorkflow (applicationId: string, tdb: Queryable = db) {
-  const application = await tdb.getrow<ApplicationRow>('SELECT * FROM applications WHERE id = ?', [applicationId])
+  const [application] = await getApplications({ ids: [applicationId] }, tdb)
   if (!application) throw new Error(`Application not found: ${applicationId}`)
 
   const stages = await tdb.getall<PeriodWorkflowRow>(`
@@ -130,7 +130,7 @@ export async function reverseWorkflow (applicationId: string, tdb: Queryable = d
   const nonblocking = stages.filter(stage => !stage.blocking)
   const currentlyBlocking = application.appRequestPhase === AppRequestPhase.WORKFLOW_NONBLOCKING ? false : true
   const activeStages = currentlyBlocking ? blocking : nonblocking
-  const fromStage = activeStages.find(stage => stage.stageKey === application.workflowStage)
+  const fromStage = activeStages.find(stage => stage.stageKey === application.workflowStageKey)
   const currIdx = findIndex(activeStages, stage => stage.stageKey === fromStage?.stageKey)
   let toStage: PeriodWorkflowRow | undefined = activeStages[(currIdx ?? 0) - 1]
   let toPhase: ApplicationPhase | undefined

@@ -522,6 +522,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       const currentWorkflowRequirements = requirements.filter(req => req.workflowStageKey === application.workflowStageKey)
       const presubmitRequirements = [...prequalRequirements, ...qualificationRequirements, ...postqualRequirements]
       const reviewRequirements = [...presubmitRequirements, ...preapprovalRequirements, ...approvalRequirements]
+      const acceptRequirements = [...reviewRequirements, ...blockingWorkflowRequirements, ...acceptanceRequirements]
 
       // if we are in applicant phase, we only need to evaluate prequal, postqual, and qualification requirements
       // acceptance requirements if we are in acceptance phase, etc
@@ -530,10 +531,10 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
         : phase === 'applicant'
           ? presubmitRequirements
           : phase === 'acceptance'
-            ? [...presubmitRequirements, ...reviewRequirements, ...blockingWorkflowRequirements, ...acceptanceRequirements]
+            ? acceptRequirements
             : phase === 'blocking' || phase === 'nonblocking'
               ? currentWorkflowRequirements
-              : [...presubmitRequirements, ...reviewRequirements]
+              : reviewRequirements
 
       const promptsSeenInApplication = new Set<string>()
       let applicationIsIneligible = false
@@ -563,7 +564,6 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
         }
         if (!hasUnanswered && anyOrderAllAnswered && anyOrderPrompts.length) resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
         hasUnanswered ||= !anyOrderAllAnswered
-
         for (const prompt of regularPrompts) {
           prompt.moot = applicationIsIneligible && requirement.type !== RequirementType.WORKFLOW
           if (hasUnanswered || resolveInfo.status !== RequirementStatus.PENDING) prompt.visibility = PromptVisibility.UNREACHABLE

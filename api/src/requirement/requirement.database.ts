@@ -52,27 +52,25 @@ export async function getApplicationRequirements (filter: ApplicationRequirement
 export async function syncRequirementRecords (application: Application, enabledKeys: Set<string>, db: Queryable) {
   const existingRequirements = await db.getall<ApplicationRequirementRow>('SELECT * FROM application_requirements WHERE applicationId = ?', [application.internalId])
   const existingRequirementKeys = new Set(existingRequirements.map(row => row.requirementKey))
-  // TODO: this needs to be using the period to see what's disalbled/enabled!
   const activeRequirementKeys = application.program.requirementKeys.filter(requirementKey => enabledKeys.has(requirementKey))
-  const activeRequirementKeysSet = new Set(activeRequirementKeys)
-  const workflowRequirementKeys: string[] = []
-  const workflowRequirementKeyStage = new Map<string, number>()
+  const workflowRequirementKeyStage = new Map<string, string>()
   for (let i = 0; i < (application.program.workflowStages?.length ?? 0); i++) {
     const stage = application.program.workflowStages![i]
     for (const requirementKey of stage.requirementKeys) {
       if (enabledKeys.has(requirementKey)) {
-        workflowRequirementKeys.push(requirementKey)
-        workflowRequirementKeyStage.set(requirementKey, i)
+        activeRequirementKeys.push(requirementKey)
+        workflowRequirementKeyStage.set(requirementKey, stage.key)
       }
     }
   }
+  const activeRequirementKeysSet = new Set(activeRequirementKeys)
   const requirementsToInsert = activeRequirementKeys.filter(requirementKey => !existingRequirementKeys.has(requirementKey))
   const requirementsToDelete = existingRequirements.filter(row => !activeRequirementKeysSet.has(row.requirementKey))
   if (requirementsToInsert.length) {
     const binds: any[] = []
     await db.insert(`
       INSERT INTO application_requirements (type, applicationId, appRequestId, requirementKey, workflowStage)
-      VALUES ${db.in(binds, requirementsToInsert.map(requirementKey => [requirementRegistry.get(requirementKey)?.type ?? RequirementType.QUALIFICATION, application.internalId, application.appRequestId, requirementKey, workflowRequirementKeyStage.get(requirementKey) ?? 0]))}
+      VALUES ${db.in(binds, requirementsToInsert.map(requirementKey => [requirementRegistry.get(requirementKey)?.type ?? RequirementType.QUALIFICATION, application.internalId, application.appRequestId, requirementKey, workflowRequirementKeyStage.get(requirementKey)]))}
     `, binds)
   }
   if (requirementsToDelete.length) {
