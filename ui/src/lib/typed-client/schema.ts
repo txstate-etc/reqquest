@@ -449,6 +449,7 @@ export interface Mutation {
     createAppRequest: ValidatedAppRequestResponse
     createPeriod: ValidatedPeriodResponse
     deletePeriod: ValidatedResponse
+    markPeriodReviewed: ValidatedPeriodResponse
     /** Reopen the app request. This is only available if the app request is in a state that allows reopening. */
     reopenAppRequest: ValidatedAppRequestResponse
     /** Return the app request to the applicant phase. This is only available if the app request is in a state that allows returning. */
@@ -471,7 +472,6 @@ export interface Mutation {
     submitAppRequest: ValidatedAppRequestResponse
     updateConfiguration: ValidatedConfigurationResponse
     updatePeriod: ValidatedPeriodResponse
-    markPeriodReviewed: ValidatedPeriodResponse
     updatePeriodRequirement: ValidatedResponse
     /** Update the data for a prompt in this app request. */
     updatePrompt: ValidatedAppRequestResponse
@@ -1262,6 +1262,7 @@ export interface MutationGenqlSelection{
     createAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {login: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     createPeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {copyPeriodId?: (Scalars['String'] | null), period: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
     deletePeriod?: (ValidatedResponseGenqlSelection & { __args: {periodId: Scalars['ID']} })
+    markPeriodReviewed?: (ValidatedPeriodResponseGenqlSelection & { __args: {periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     /** Reopen the app request. This is only available if the app request is in a state that allows reopening. */
     reopenAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Return the app request to the applicant phase. This is only available if the app request is in a state that allows returning. */
@@ -1275,9 +1276,7 @@ export interface MutationGenqlSelection{
     /** Moves the application back to the previous workflow stage. If on the first blocking workflow stage, moves back to APPROVAL. If on the first non-blocking workflow, throws an error. */
     reverseWorkflow?: (ValidatedAppRequestResponseGenqlSelection & { __args: {applicationId: Scalars['ID']} })
     roleAddGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grant: AccessRoleGrantCreate, roleId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
-    roleCreate?: (AccessRoleValidatedResponseGenqlSelection & { __args: {
-    /** When duplicating a role, pass the source role ID to copy its grants (permissions) */
-    copyRoleId?: (Scalars['ID'] | null), role: AccessRoleInput, validateOnly?: (Scalars['Boolean'] | null)} })
+    roleCreate?: (AccessRoleValidatedResponseGenqlSelection & { __args: {copyRoleId?: (Scalars['ID'] | null), role: AccessRoleInput, validateOnly?: (Scalars['Boolean'] | null)} })
     roleDelete?: (ValidatedResponseGenqlSelection & { __args: {roleId: Scalars['ID']} })
     roleDeleteGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grantId: Scalars['ID']} })
     roleUpdate?: (AccessRoleValidatedResponseGenqlSelection & { __args: {role: AccessRoleInput, roleId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
@@ -1286,7 +1285,6 @@ export interface MutationGenqlSelection{
     submitAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     updateConfiguration?: (ValidatedConfigurationResponseGenqlSelection & { __args: {data: Scalars['JsonData'], key: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     updatePeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {periodId: Scalars['ID'], update: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
-    markPeriodReviewed?: (ValidatedPeriodResponseGenqlSelection & { __args: {periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     updatePeriodRequirement?: (ValidatedResponseGenqlSelection & { __args: {disabled: Scalars['Boolean'], periodId: Scalars['String'], requirementKey: Scalars['String']} })
     /** Update the data for a prompt in this app request. */
     updatePrompt?: (ValidatedAppRequestResponseGenqlSelection & { __args: {data: Scalars['JsonData'], 
@@ -1441,7 +1439,7 @@ export interface PeriodPromptGenqlSelection{
     __scalar?: boolean | number
 }
 
-export interface PeriodUpdate {archiveDate?: (Scalars['DateTime'] | null),closeDate?: (Scalars['DateTime'] | null),code?: (Scalars['String'] | null),name: Scalars['String'],openDate: Scalars['DateTime'],reviewed?: (Scalars['Boolean'] | null)}
+export interface PeriodUpdate {archiveDate?: (Scalars['DateTime'] | null),closeDate?: (Scalars['DateTime'] | null),code?: (Scalars['String'] | null),name: Scalars['String'],openDate: Scalars['DateTime']}
 
 export interface PeriodWorkflowStageGenqlSelection{
     /** Whether this stage is blocking. If true, the application cannot be completed and shown to the applicant until all requirements in this stage are satisfied. */

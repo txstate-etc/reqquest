@@ -5,33 +5,33 @@ import { GenqlError } from './error'
 type Variables = Record<string, any>
 
 type QueryError = Error & {
-  message: string
+    message: string
 
-  locations?: {
-    line: number
-    column: number
-  }[]
-  path?: any
-  rid: string
-  details?: Record<string, any>
+    locations?: Array<{
+        line: number
+        column: number
+    }>
+    path?: any
+    rid: string
+    details?: Record<string, any>
 }
-interface Result {
-  data: Record<string, any>
-  errors: QueryError[]
+type Result = {
+    data: Record<string, any>
+    errors: Array<QueryError>
 }
 type Fetcher = (
-  batchedQuery: GraphqlOperation | GraphqlOperation[],
-) => Promise<Result[]>
-interface Options {
-  batchInterval?: number
-  shouldBatch?: boolean
-  maxBatchSize?: number
+    batchedQuery: GraphqlOperation | Array<GraphqlOperation>,
+) => Promise<Array<Result>>
+type Options = {
+    batchInterval?: number
+    shouldBatch?: boolean
+    maxBatchSize?: number
 }
-type Queue = {
-  request: GraphqlOperation
-  resolve: (...args: any[]) => any
-  reject: (...args: any[]) => any
-}[]
+type Queue = Array<{
+    request: GraphqlOperation
+    resolve: (...args: Array<any>) => any
+    reject: (...args: Array<any>) => any
+}>
 
 /**
  * takes a list of requests (queue) and batches them into a single server request.
@@ -40,48 +40,48 @@ type Queue = {
  * @param {QueryBatcher}   client - the client to use
  * @param {Queue} queue  - the list of requests to batch
  */
-function dispatchQueueBatch (client: QueryBatcher, queue: Queue): void {
-  let batchedQuery: any = queue.map(item => item.request)
+function dispatchQueueBatch(client: QueryBatcher, queue: Queue): void {
+    let batchedQuery: any = queue.map((item) => item.request)
 
-  if (batchedQuery.length === 1) {
-    batchedQuery = batchedQuery[0]
-  }
-  (async () => {
-    try {
-      return client.fetcher(batchedQuery)
-    } catch (e) {
-      return await Promise.reject(e)
+    if (batchedQuery.length === 1) {
+        batchedQuery = batchedQuery[0]
     }
-  })().then((responses: any) => {
-    if (queue.length === 1 && !Array.isArray(responses)) {
-      if (responses.errors?.length) {
-        queue[0].reject(
-          new GenqlError(responses.errors, responses.data)
-        )
-        return
-      }
+    (() => {
+        try {
+            return client.fetcher(batchedQuery);
+        } catch(e) {
+            return Promise.reject(e);
+        }
+    })().then((responses: any) => {
+        if (queue.length === 1 && !Array.isArray(responses)) {
+            if (responses.errors && responses.errors.length) {
+                queue[0].reject(
+                    new GenqlError(responses.errors, responses.data),
+                )
+                return
+            }
 
-      queue[0].resolve(responses)
-      return
-    } else if (responses.length !== queue.length) {
-      throw new Error('response length did not match query length')
-    }
+            queue[0].resolve(responses)
+            return
+        } else if (responses.length !== queue.length) {
+            throw new Error('response length did not match query length')
+        }
 
-    for (let i = 0; i < queue.length; i++) {
-      if (responses[i].errors?.length) {
-        queue[i].reject(
-          new GenqlError(responses[i].errors, responses[i].data)
-        )
-      } else {
-        queue[i].resolve(responses[i])
-      }
-    }
-  })
-    .catch(e => {
-      for (let i = 0; i < queue.length; i++) {
-        queue[i].reject(e)
-      }
+        for (let i = 0; i < queue.length; i++) {
+            if (responses[i].errors && responses[i].errors.length) {
+                queue[i].reject(
+                    new GenqlError(responses[i].errors, responses[i].data),
+                )
+            } else {
+                queue[i].resolve(responses[i])
+            }
+        }
     })
+    .catch((e) => {
+        for (let i = 0; i < queue.length; i++) {
+            queue[i].reject(e)
+        }
+    });
 }
 
 /**
@@ -90,21 +90,21 @@ function dispatchQueueBatch (client: QueryBatcher, queue: Queue): void {
  * @param {QueryBatcher} client - the client to create list of requests from from
  * @param {Options} options - the options for the batch
  */
-function dispatchQueue (client: QueryBatcher, options: Options): void {
-  const queue = client._queue
-  const maxBatchSize = options.maxBatchSize || 0
-  client._queue = []
+function dispatchQueue(client: QueryBatcher, options: Options): void {
+    const queue = client._queue
+    const maxBatchSize = options.maxBatchSize || 0
+    client._queue = []
 
-  if (maxBatchSize > 0 && maxBatchSize < queue.length) {
-    for (let i = 0; i < queue.length / maxBatchSize; i++) {
-      dispatchQueueBatch(
-        client,
-        queue.slice(i * maxBatchSize, (i + 1) * maxBatchSize)
-      )
+    if (maxBatchSize > 0 && maxBatchSize < queue.length) {
+        for (let i = 0; i < queue.length / maxBatchSize; i++) {
+            dispatchQueueBatch(
+                client,
+                queue.slice(i * maxBatchSize, (i + 1) * maxBatchSize),
+            )
+        }
+    } else {
+        dispatchQueueBatch(client, queue)
     }
-  } else {
-    dispatchQueueBatch(client, queue)
-  }
 }
 /**
  * Create a batcher client.
@@ -131,26 +131,26 @@ function dispatchQueue (client: QueryBatcher, options: Options): void {
  */
 
 export class QueryBatcher {
-  fetcher: Fetcher
-  _options: Options
-  _queue: Queue
+    fetcher: Fetcher
+    _options: Options
+    _queue: Queue
 
-  constructor (
-    fetcher: Fetcher,
-    {
-      batchInterval = 6,
-      shouldBatch = true,
-      maxBatchSize = 0
-    }: Options = {}
-  ) {
-    this.fetcher = fetcher
-    this._options = {
-      batchInterval,
-      shouldBatch,
-      maxBatchSize
+    constructor(
+        fetcher: Fetcher,
+        {
+            batchInterval = 6,
+            shouldBatch = true,
+            maxBatchSize = 0,
+        }: Options = {},
+    ) {
+        this.fetcher = fetcher
+        this._options = {
+            batchInterval,
+            shouldBatch,
+            maxBatchSize,
+        }
+        this._queue = []
     }
-    this._queue = []
-  }
 
     /**
      * Fetch will send a graphql request and return the parsed json.
@@ -175,45 +175,45 @@ export class QueryBatcher {
      *      console.log(human);
      *    });
      */
-  async fetch (
-    query: string,
-    variables?: Variables,
-    operationName?: string,
-    overrides: Options = {}
-  ): Promise<Result> {
-    const request: GraphqlOperation = {
-      query
-    }
-    const options = Object.assign({}, this._options, overrides)
-
-    if (variables) {
-      request.variables = variables
-    }
-
-    if (operationName) {
-      request.operationName = operationName
-    }
-
-    const promise = new Promise<Result>((resolve, reject) => {
-      this._queue.push({
-        request,
-        resolve,
-        reject
-      })
-
-      if (this._queue.length === 1) {
-        if (options.shouldBatch) {
-          setTimeout(
-            () => dispatchQueue(this, options),
-            options.batchInterval
-          )
-        } else {
-          dispatchQueue(this, options)
+    fetch(
+        query: string,
+        variables?: Variables,
+        operationName?: string,
+        overrides: Options = {},
+    ): Promise<Result> {
+        const request: GraphqlOperation = {
+            query,
         }
-      }
-    })
-    return await promise
-  }
+        const options = Object.assign({}, this._options, overrides)
+
+        if (variables) {
+            request.variables = variables
+        }
+
+        if (operationName) {
+            request.operationName = operationName
+        }
+
+        const promise = new Promise<Result>((resolve, reject) => {
+            this._queue.push({
+                request,
+                resolve,
+                reject,
+            })
+
+            if (this._queue.length === 1) {
+                if (options.shouldBatch) {
+                    setTimeout(
+                        () => dispatchQueue(this, options),
+                        options.batchInterval,
+                    )
+                } else {
+                    dispatchQueue(this, options)
+                }
+            }
+        })
+        return promise
+    }
 
     /**
      * Fetch will send a graphql request and return the parsed json.
@@ -238,38 +238,38 @@ export class QueryBatcher {
      *      console.log(human);
      *    });
      */
-  async forceFetch (
-    query: string,
-    variables?: Variables,
-    operationName?: string,
-    overrides: Options = {}
-  ): Promise<Result> {
-    const request: GraphqlOperation = {
-      query
-    }
-    const options = Object.assign({}, this._options, overrides, {
-      shouldBatch: false
-    })
-
-    if (variables) {
-      request.variables = variables
-    }
-
-    if (operationName) {
-      request.operationName = operationName
-    }
-
-    const promise = new Promise<Result>((resolve, reject) => {
-      const client = new QueryBatcher(this.fetcher, this._options)
-      client._queue = [
-        {
-          request,
-          resolve,
-          reject
+    forceFetch(
+        query: string,
+        variables?: Variables,
+        operationName?: string,
+        overrides: Options = {},
+    ): Promise<Result> {
+        const request: GraphqlOperation = {
+            query,
         }
-      ]
-      dispatchQueue(client, options)
-    })
-    return await promise
-  }
+        const options = Object.assign({}, this._options, overrides, {
+            shouldBatch: false,
+        })
+
+        if (variables) {
+            request.variables = variables
+        }
+
+        if (operationName) {
+            request.operationName = operationName
+        }
+
+        const promise = new Promise<Result>((resolve, reject) => {
+            const client = new QueryBatcher(this.fetcher, this._options)
+            client._queue = [
+                {
+                    request,
+                    resolve,
+                    reject,
+                },
+            ]
+            dispatchQueue(client, options)
+        })
+        return promise
+    }
 }

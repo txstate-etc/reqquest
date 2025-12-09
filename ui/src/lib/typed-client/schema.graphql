@@ -1038,6 +1038,7 @@ type Mutation {
   createAppRequest(login: String!, periodId: ID!, validateOnly: Boolean): ValidatedAppRequestResponse!
   createPeriod(copyPeriodId: String, period: PeriodUpdate!, validateOnly: Boolean): ValidatedPeriodResponse!
   deletePeriod(periodId: ID!): ValidatedResponse!
+  markPeriodReviewed(periodId: ID!, validateOnly: Boolean): ValidatedPeriodResponse!
 
   """
   Reopen the app request. This is only available if the app request is in a state that allows reopening.
@@ -1067,14 +1068,7 @@ type Mutation {
   """
   reverseWorkflow(applicationId: ID!): ValidatedAppRequestResponse!
   roleAddGrant(grant: AccessRoleGrantCreate!, roleId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!
-  roleCreate(
-    """
-    When duplicating a role, pass the source role ID to copy its grants (permissions)
-    """
-    copyRoleId: ID
-    role: AccessRoleInput!
-    validateOnly: Boolean
-  ): AccessRoleValidatedResponse!
+  roleCreate(copyRoleId: ID, role: AccessRoleInput!, validateOnly: Boolean): AccessRoleValidatedResponse!
   roleDelete(roleId: ID!): ValidatedResponse!
   roleDeleteGrant(grantId: ID!): AccessRoleValidatedResponse!
   roleUpdate(role: AccessRoleInput!, roleId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!
@@ -1084,7 +1078,6 @@ type Mutation {
   submitAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
   updateConfiguration(data: JsonData!, key: String!, periodId: ID!, validateOnly: Boolean): ValidatedConfigurationResponse!
   updatePeriod(periodId: ID!, update: PeriodUpdate!, validateOnly: Boolean): ValidatedPeriodResponse!
-  markPeriodReviewed(periodId: ID!, validateOnly: Boolean): ValidatedPeriodResponse!
   updatePeriodRequirement(disabled: Boolean!, periodId: String!, requirementKey: String!): ValidatedResponse!
 
   """Update the data for a prompt in this app request."""
@@ -1333,7 +1326,6 @@ input PeriodUpdate {
   code: String
   name: String!
   openDate: DateTime!
-  reviewed: Boolean
 }
 
 type PeriodWorkflowStage {
