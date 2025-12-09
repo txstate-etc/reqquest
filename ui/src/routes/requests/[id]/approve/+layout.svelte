@@ -144,7 +144,7 @@
       <Select bind:selected={appRequestAction} labelText="Application action" size="sm">
         <SelectItem value="" text="Choose one" />
         {#if basicRequestData.actions.completeReview}
-          <SelectItem value="completeReview" text="Complete Review" />
+          <SelectItem value="completeAppRequestReview" text="Complete Review" />
         {/if}
         {#if basicRequestData.actions.completeRequest}
           <SelectItem value="completeRequest" text="Complete Request" />
