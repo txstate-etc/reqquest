@@ -1,69 +1,53 @@
 // @ts-nocheck
 
-export interface ExecutionResult<TData = { [key: string]: any }> {
-    errors?: Array<Error>
-    data?: TData | null
+export interface ExecutionResult<TData = Record<string, any>> {
+  errors?: Error[]
+  data?: TData | null
 }
 
-export interface ArgMap<keyType = number> {
-    [arg: string]: [keyType, string] | [keyType] | undefined
-}
+export type ArgMap<keyType = number> = Record<string, [keyType, string] | [keyType] | undefined>
 
 export type CompressedField<keyType = number> = [
     type: keyType,
-    args?: ArgMap<keyType>,
+    args?: ArgMap<keyType>
 ]
 
-export interface CompressedFieldMap<keyType = number> {
-    [field: string]: CompressedField<keyType> | undefined
-}
+export type CompressedFieldMap<keyType = number> = Record<string, CompressedField<keyType> | undefined>
 
 export type CompressedType<keyType = number> = CompressedFieldMap<keyType>
 
 export interface CompressedTypeMap<keyType = number> {
-    scalars: Array<keyType>
-    types: {
-        [type: string]: CompressedType<keyType> | undefined
-    }
+  scalars: keyType[]
+  types: Record<string, CompressedType<keyType> | undefined>
 }
 
 // normal types
-export type Field<keyType = number> = {
-    type: keyType
-    args?: ArgMap<keyType>
+export interface Field<keyType = number> {
+  type: keyType
+  args?: ArgMap<keyType>
 }
 
-export interface FieldMap<keyType = number> {
-    [field: string]: Field<keyType> | undefined
-}
+export type FieldMap<keyType = number> = Record<string, Field<keyType> | undefined>
 
 export type Type<keyType = number> = FieldMap<keyType>
 
 export interface TypeMap<keyType = number> {
-    scalars: Array<keyType>
-    types: {
-        [type: string]: Type<keyType> | undefined
-    }
+  scalars: keyType[]
+  types: Record<string, Type<keyType> | undefined>
 }
 
-export interface LinkedArgMap {
-    [arg: string]: [LinkedType, string] | undefined
-}
+export type LinkedArgMap = Record<string, [LinkedType, string] | undefined>
 export interface LinkedField {
-    type: LinkedType
-    args?: LinkedArgMap
+  type: LinkedType
+  args?: LinkedArgMap
 }
 
-export interface LinkedFieldMap {
-    [field: string]: LinkedField | undefined
-}
+export type LinkedFieldMap = Record<string, LinkedField | undefined>
 
 export interface LinkedType {
-    name: string
-    fields?: LinkedFieldMap
-    scalar?: string[]
+  name: string
+  fields?: LinkedFieldMap
+  scalar?: string[]
 }
 
-export interface LinkedTypeMap {
-    [type: string]: LinkedType | undefined
-}
+export type LinkedTypeMap = Record<string, LinkedType | undefined>

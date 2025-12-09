@@ -471,6 +471,7 @@ export interface Mutation {
     submitAppRequest: ValidatedAppRequestResponse
     updateConfiguration: ValidatedConfigurationResponse
     updatePeriod: ValidatedPeriodResponse
+    markPeriodReviewed: ValidatedPeriodResponse
     updatePeriodRequirement: ValidatedResponse
     /** Update the data for a prompt in this app request. */
     updatePrompt: ValidatedAppRequestResponse
@@ -1285,6 +1286,7 @@ export interface MutationGenqlSelection{
     submitAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     updateConfiguration?: (ValidatedConfigurationResponseGenqlSelection & { __args: {data: Scalars['JsonData'], key: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     updatePeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {periodId: Scalars['ID'], update: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
+    markPeriodReviewed?: (ValidatedPeriodResponseGenqlSelection & { __args: {periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     updatePeriodRequirement?: (ValidatedResponseGenqlSelection & { __args: {disabled: Scalars['Boolean'], periodId: Scalars['String'], requirementKey: Scalars['String']} })
     /** Update the data for a prompt in this app request. */
     updatePrompt?: (ValidatedAppRequestResponseGenqlSelection & { __args: {data: Scalars['JsonData'], 

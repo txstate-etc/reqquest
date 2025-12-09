@@ -42,6 +42,11 @@ export class PeriodResolver {
     return await ctx.svc(PeriodService).update(periodId, update, validateOnly)
   }
 
+  @Mutation(returns => ValidatedPeriodResponse)
+  async markPeriodReviewed (@Ctx() ctx: RQContext, @Arg('periodId', type => ID) periodId: string, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
+    return await ctx.svc(PeriodService).markReviewed(periodId, validateOnly)
+  }
+
   @Mutation(returns => ValidatedResponse)
   async deletePeriod (@Ctx() ctx: RQContext, @Arg('periodId', type => ID) periodId: string) {
     return await ctx.svc(PeriodService).delete(periodId)

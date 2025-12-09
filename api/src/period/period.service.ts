@@ -1,7 +1,7 @@
 import { BaseService, ValidatedResponse } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { intersect, isBlank, keyby, pick } from 'txstate-utils'
-import { AuthService, Configuration, ConfigurationFilters, createPeriod, deletePeriod, getConfigurationData, getConfigurations, getPeriods, getPeriodsEmpty, Period, PeriodFilters, PeriodUpdate, promptRegistry, requirementRegistry, updatePeriod, upsertConfiguration, ValidatedConfigurationResponse, ValidatedPeriodResponse } from '../internal.js'
+import { AuthService, Configuration, ConfigurationFilters, createPeriod, deletePeriod, getConfigurationData, getConfigurations, getPeriods, getPeriodsEmpty, markPeriodReviewed, Period, PeriodFilters, PeriodUpdate, promptRegistry, requirementRegistry, updatePeriod, upsertConfiguration, ValidatedConfigurationResponse, ValidatedPeriodResponse } from '../internal.js'
 import { DateTime } from 'luxon'
 
 const periodByIdLoader = new PrimaryKeyLoader({
@@ -108,6 +108,19 @@ export class PeriodService extends AuthService<Period> {
     const response = await this.validate(update, id)
     if (validateOnly || response.hasErrors()) return response
     await updatePeriod(id, update)
+    this.loaders.clear()
+    response.period = await this.findById(id)
+    return response
+  }
+
+  async markReviewed (id: string, validateOnly?: boolean) {
+    const period = await this.findById(id)
+    if (!period) throw new Error('Period not found')
+    if (!this.mayUpdate(period)) throw new Error('You are not allowed to update this period.')
+    const response = new ValidatedPeriodResponse({ success: true })
+    if (period.reviewed) response.addMessage('Period has already been reviewed.')
+    if (validateOnly || response.hasErrors()) return response
+    await markPeriodReviewed(id)
     this.loaders.clear()
     response.period = await this.findById(id)
     return response

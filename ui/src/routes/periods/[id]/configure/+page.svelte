@@ -72,10 +72,7 @@
   }
 
   async function confirmReview () {
-    const periodUpdate: any = { ...period }
-    delete periodUpdate.id
-    delete periodUpdate.programs
-    await api.updatePeriod(period.id, { ...periodUpdate, reviewed: true }, false)
+    await api.markPeriodReviewed(period.id, false)
     await invalidate('api:getPeriodConfigurations')
   }
 

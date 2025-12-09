@@ -9,8 +9,8 @@ export const simpleTestMigrations: DatabaseMigration[] = [
       await AccessDatabase.upsertAccessUser({ login: 'applicant', fullname: 'Test Applicant 1', groups: ['applicants'] })
       const applicant = await db.getrow<{ id: number, login: string }>('SELECT * FROM accessUsers WHERE login = ?', ['applicant'])
       if (!applicant) return
-      const periodId = await createPeriod({ name: '2025', code: '2025 Sem 1', openDate: DateTime.fromFormat('20250101080000', 'yyyyMMddHHmmss'), reviewed: true })
-      // await markPeriodReviewed(periodId)
+      const periodId = await createPeriod({ name: '2025', code: '2025 Sem 1', openDate: DateTime.fromFormat('20250101080000', 'yyyyMMddHHmmss') })
+      await markPeriodReviewed(periodId)
     }
   },
   {

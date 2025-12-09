@@ -894,6 +894,22 @@ class API extends APIBase {
     return this.mutationForDialog(response.updatePeriod, { prefix: 'period' })
   }
 
+  async markPeriodReviewed (periodId: string, validateOnly: boolean) {
+    const response = await this.client.mutation({
+      __name: 'MarkPeriodReviewed',
+      markPeriodReviewed: {
+        __args: { periodId, validateOnly },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.markPeriodReviewed, { prefix: 'period' })
+  }
+
   async deletePeriod (periodId: string) {
     const response = await this.client.mutation({
       __name: 'DeletePeriod',

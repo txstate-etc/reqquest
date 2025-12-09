@@ -210,30 +210,30 @@ export async function copyConfigurations (fromPeriodId: number | string | undefi
 }
 
 export async function createPeriod (period: PeriodUpdate, copyPeriodId?: string) {
-  const { code, name, openDate, closeDate, archiveDate, reviewed } = period
+  const { code, name, openDate, closeDate, archiveDate } = period
   const prevId = await db.getval<number>('SELECT id FROM periods ORDER BY id DESC LIMIT 1')
   return await db.transaction(async db => {
     const periodId = await db.insert(`
-      INSERT INTO periods (code, name, openDate, closeDate, archiveDate, reviewed)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `, [code, name, openDate?.toJSDate(), closeDate?.toJSDate(), archiveDate?.toJSDate(), !!reviewed])
+      INSERT INTO periods (code, name, openDate, closeDate, archiveDate)
+      VALUES (?, ?, ?, ?, ?)
+    `, [code, name, openDate?.toJSDate(), closeDate?.toJSDate(), archiveDate?.toJSDate()])
     await copyConfigurations(copyPeriodId ?? prevId, periodId, db)
     await ensureConfigurationRecords([periodId], db)
     return periodId
   })
 }
 
-export async function markPeriodReviewed (periodId: number | string) {
-  await db.update('UPDATE periods SET reviewed = 1 WHERE id = ?', [periodId])
-}
-
 export async function updatePeriod (id: string, period: PeriodUpdate) {
-  const { code, name, openDate, closeDate, archiveDate, reviewed } = period
+  const { code, name, openDate, closeDate, archiveDate } = period
   await db.update(`
     UPDATE periods
-    SET code = ?, name = ?, openDate = ?, closeDate = ?, archiveDate = ?, reviewed = ?
+    SET code = ?, name = ?, openDate = ?, closeDate = ?, archiveDate = ?
     WHERE id = ?
-  `, [code, name, openDate.toJSDate(), closeDate?.toJSDate(), archiveDate?.toJSDate(), !!reviewed, id])
+  `, [code, name, openDate.toJSDate(), closeDate?.toJSDate(), archiveDate?.toJSDate(), id])
+}
+
+export async function markPeriodReviewed (periodId: number | string) {
+  await db.update('UPDATE periods SET reviewed = 1 WHERE id = ?', [periodId])
 }
 
 export async function deletePeriod (id: string) {
