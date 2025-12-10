@@ -171,6 +171,7 @@ export const approve_reviewer_exercise_exemption_workflow_req: RequirementDefini
   resolve: (data, config) => {
     const appExerciseExemptionData = data.approve_reviewer_exercise_exemption_prompt as ApproveReviewerExerciseExemptionPromptData
     const revDogInfoData = data.review_applicant_dog_info_prompt as ReviewApplicantDogInfoPromptData
+    if (revDogInfoData == null) return { status: RequirementStatus.PENDING }
     if (revDogInfoData.exerciseException === true) {
       if (appExerciseExemptionData == null) return { status: RequirementStatus.PENDING }
       if (appExerciseExemptionData.approve === false) return { status: RequirementStatus.DISQUALIFYING }

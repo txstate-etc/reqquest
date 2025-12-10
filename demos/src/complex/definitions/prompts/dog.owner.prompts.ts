@@ -151,7 +151,7 @@ export const approve_reviewer_exercise_exemption_prompt: PromptDefinition = {
     if (!data) {
       messages.push({ type: MutationMessageType.error, message: 'Approve exercise exemption' })
     } else {
-      if (data.approve == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance designation required', arg: 'previousDogAcceptable' })
+      if (data.approve == null) messages.push({ type: MutationMessageType.error, message: 'Approval designation required', arg: 'approve' })
     }
     return messages
   },
