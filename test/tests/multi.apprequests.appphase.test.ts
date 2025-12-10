@@ -40,8 +40,8 @@ test.describe.serial('App Request - App Phase - workflows', { tag: '@multi' }, (
   })
   test('Admin - set app request period to reviewed with future close date', async ({ adminRequest }) => {
     const query = `
-      mutation UpdatePeriod($periodId: ID!, $name: String!, $code: String, $openDate:DateTime!, $closeDate:DateTime!, $reviewed:Boolean){
-        updatePeriod(periodId: $periodId, update:{ name: $name, code: $code, openDate: $openDate, closeDate: $closeDate, reviewed:$reviewed }, validateOnly: false) {
+      mutation UpdatePeriod($periodId: ID!, $name: String!, $code: String, $openDate:DateTime!, $closeDate:DateTime!){
+        updatePeriod(periodId: $periodId, update:{ name: $name, code: $code, openDate: $openDate, closeDate: $closeDate }, validateOnly: false) {
           period {
             id
             name
@@ -60,8 +60,30 @@ test.describe.serial('App Request - App Phase - workflows', { tag: '@multi' }, (
     const variables = { periodId, name, code, openDate, closeDate, reviewed: true }
     const { updatePeriod } = await adminRequest.graphql<{ updatePeriod: { period: { id: number, name: string, code: string, closeDate: string, openDate: string, archiveDate: string, reviewed: boolean }, messages: { message: string }[] } }>(query, variables)
     expect(updatePeriod.period.id).toEqual(periodId)
-    expect(updatePeriod.period.reviewed).toEqual(true)
     expect(updatePeriod.period.closeDate).toEqual(closeDate)
+  })
+  test('Admin - mark request period reviewed', async ({ adminRequest }) => {
+    const query = `
+      mutation MarkPeriodReviewed($periodId: ID!){
+        markPeriodReviewed(periodId: $periodId) {
+          period {
+            id
+            name
+            code
+            openDate
+            closeDate
+            reviewed
+          }
+          messages {
+            message
+          }
+        }
+      }
+    `
+    const variables = { periodId }
+    const { markPeriodReviewed } = await adminRequest.graphql<{ markPeriodReviewed: { period: { id: number, name: string, code: string, closeDate: string, openDate: string, archiveDate: string, reviewed: boolean }, messages: { message: string }[] } }>(query, variables)
+    expect(markPeriodReviewed.period.id).toEqual(periodId)
+    expect(markPeriodReviewed.period.reviewed).toEqual(true)
   })
   let appRequestId = 0
   test('Applicant - create app request in reviewed period', async ({ applicantRequest }) => {

@@ -1,7 +1,7 @@
 import { expect, test } from './fixtures.js'
 import { DateTime } from 'luxon'
 
-test.describe.serial('Manage period configurations',  { tag: '@default' }, () => {
+test.describe.serial('Manage period configurations', { tag: '@default' }, () => {
   const name = '2025 Config'
   const code = '2025-config'
   const timeZone = 'America/Chicago'
@@ -10,8 +10,8 @@ test.describe.serial('Manage period configurations',  { tag: '@default' }, () =>
   let periodId = 0
   test('Admin - Create new unreviewed period for prompt configuration testing', async ({ adminRequest }) => {
     const query = `
-      mutation CreatePeriod($name: String!, $code: String!, $openDate:DateTime!, $closeDate:DateTime!, $reviewed:Boolean){
-        createPeriod(period:{ name: $name, code: $code, openDate: $openDate, closeDate: $closeDate, reviewed:$reviewed}, validateOnly: false) {
+      mutation CreatePeriod($name: String!, $code: String!, $openDate:DateTime!, $closeDate:DateTime!){
+        createPeriod(period:{ name: $name, code: $code, openDate: $openDate, closeDate: $closeDate}, validateOnly: false) {
           period {
             id
             name
@@ -26,14 +26,13 @@ test.describe.serial('Manage period configurations',  { tag: '@default' }, () =>
         }
       }
     `
-    const variables = { name, code, openDate, closeDate, reviewed: false }
+    const variables = { name, code, openDate, closeDate }
     const response = await adminRequest.graphql<{ createPeriod: { period: { id: number, name: string, code: string, openDate: string, closeDate: string, reviewed: boolean }, messages: { message: string }[] } }>(query, variables)
     periodId = response.createPeriod.period.id
     expect(response.createPeriod.period.name).toEqual(name)
     expect(response.createPeriod.period.code).toEqual(code)
     expect(response.createPeriod.period.openDate).toEqual(openDate)
     expect(response.createPeriod.period.closeDate).toEqual(closeDate)
-    expect(response.createPeriod.period.reviewed).toEqual(false)
   })
   test('Admin - Get prompt configuration for period details with view and update access', async ({ adminRequest }) => {
     const query = `
@@ -84,17 +83,16 @@ test.describe.serial('Manage period configurations',  { tag: '@default' }, () =>
     expect(response.updateConfiguration.success).toEqual(true)
     expect(response.updateConfiguration.configuration.data.minExerciseHours).toEqual(data.minExerciseHours)
   })
-  test('Admin - Set period reviewed for prompt configuration update blocks', async ({ adminRequest }) => {
+  test('Admin - mark request period reviewed for prompt configuration update blocks', async ({ adminRequest }) => {
     const query = `
-      mutation UpdatePeriod($periodId: ID!, $name: String!, $code: String, $openDate:DateTime!, $closeDate:DateTime!, $reviewed:Boolean){
-        updatePeriod(periodId: $periodId, update:{ name: $name, code: $code, openDate: $openDate, closeDate: $closeDate, reviewed:$reviewed }, validateOnly: false) {
+      mutation MarkPeriodReviewed($periodId: ID!){
+        markPeriodReviewed(periodId: $periodId) {
           period {
             id
             name
             code
             openDate
             closeDate
-            archiveDate
             reviewed
           }
           messages {
@@ -103,11 +101,10 @@ test.describe.serial('Manage period configurations',  { tag: '@default' }, () =>
         }
       }
     `
-    const variables = { periodId, name, code, openDate, closeDate, reviewed: true }
-    const { updatePeriod } = await adminRequest.graphql<{ updatePeriod: { period: { id: number, name: string, code: string, closeDate: string, openDate: string, archiveDate: string, reviewed: boolean }, messages: { message: string }[] } }>(query, variables)
-    expect(updatePeriod.period.id).toEqual(periodId)
-    expect(updatePeriod.period.reviewed).toEqual(true)
-    expect(updatePeriod.period.closeDate).toEqual(closeDate)
+    const variables = { periodId }
+    const { markPeriodReviewed } = await adminRequest.graphql<{ markPeriodReviewed: { period: { id: number, name: string, code: string, closeDate: string, openDate: string, archiveDate: string, reviewed: boolean }, messages: { message: string }[] } }>(query, variables)
+    expect(markPeriodReviewed.period.id).toEqual(periodId)
+    expect(markPeriodReviewed.period.reviewed).toEqual(true)
   })
   test('Admin - Make exercise hours config changes in reviewed period', async ({ adminRequest }) => {
     const query = `

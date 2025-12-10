@@ -1,6 +1,6 @@
 import { expect, test } from './fixtures.js'
 
-test.describe('Manage roles',  { tag: '@all' }, () => {
+test.describe('Manage roles', { tag: '@all' }, () => {
   let name = 'Applicant Parent 1'
   let description = 'Applicant parent group.  Reduced scope applicant group'
   let scope = 'Parental'

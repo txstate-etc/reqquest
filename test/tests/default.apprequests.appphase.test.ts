@@ -58,10 +58,10 @@ test.describe('App Request - App Phase - workflows', { tag: '@default' }, () => 
     const { createAppRequest } = await applicantRequest.graphql<{ createAppRequest: { appRequest: { id: number, applicant: { login: string } }, messages: { message: string }[] } }>(query, variables)
     expect(createAppRequest.messages[0].message.includes('is not currently accepting requests.')).toEqual(true)
   })
-  test('Admin - set app request period to reviewed and past close date', async ({ adminRequest }) => {
+  test('Admin - set app request period to past close date', async ({ adminRequest }) => {
     const query = `
-      mutation UpdatePeriod($periodId: ID!, $name: String!, $code: String, $openDate:DateTime!, $closeDate:DateTime!, $reviewed:Boolean){
-        updatePeriod(periodId: $periodId, update:{ name: $name, code: $code, openDate: $openDate, closeDate: $closeDate, reviewed:$reviewed }, validateOnly: false) {
+      mutation UpdatePeriod($periodId: ID!, $name: String!, $code: String, $openDate:DateTime!, $closeDate:DateTime!){
+        updatePeriod(periodId: $periodId, update:{ name: $name, code: $code, openDate: $openDate, closeDate: $closeDate }, validateOnly: false) {
           period {
             id
             name
@@ -78,12 +78,35 @@ test.describe('App Request - App Phase - workflows', { tag: '@default' }, () => 
       }
     `
     const pastCloseDate = '2025-08-01T00:00:00.000-05:00'
-    const variables = { periodId, name, code, openDate, closeDate: pastCloseDate, reviewed: true }
+    const variables = { periodId, name, code, openDate, closeDate: pastCloseDate }
     const { updatePeriod } = await adminRequest.graphql<{ updatePeriod: { period: { id: number, name: string, code: string, closeDate: string, openDate: string, archiveDate: string, reviewed: boolean }, messages: { message: string }[] } }>(query, variables)
     expect(updatePeriod.period.id).toEqual(periodId)
-    expect(updatePeriod.period.reviewed).toEqual(true)
     expect(updatePeriod.period.closeDate).toEqual(pastCloseDate)
   })
+  test('Admin - mark request period reviewed when past close date', async ({ adminRequest }) => {
+    const query = `
+      mutation MarkPeriodReviewed($periodId: ID!){
+        markPeriodReviewed(periodId: $periodId) {
+          period {
+            id
+            name
+            code
+            openDate
+            closeDate
+            reviewed
+          }
+          messages {
+            message
+          }
+        }
+      }
+    `
+    const variables = { periodId }
+    const { markPeriodReviewed } = await adminRequest.graphql<{ markPeriodReviewed: { period: { id: number, name: string, code: string, closeDate: string, openDate: string, archiveDate: string, reviewed: boolean }, messages: { message: string }[] } }>(query, variables)
+    expect(markPeriodReviewed.period.id).toEqual(periodId)
+    expect(markPeriodReviewed.period.reviewed).toEqual(true)
+  })
+
   test('Applicant - create app request in reviewed but closed period', async ({ applicantRequest }) => {
     const query = `
       mutation CreateAppRequest($login:String!, $periodId: ID!, $validateOnly: Boolean) {
@@ -106,8 +129,8 @@ test.describe('App Request - App Phase - workflows', { tag: '@default' }, () => 
   })
   test('Admin - set app request period close date in future', async ({ adminRequest }) => {
     const query = `
-      mutation UpdatePeriod($periodId: ID!, $name: String!, $code: String, $openDate:DateTime!, $closeDate:DateTime!, $reviewed:Boolean){
-        updatePeriod(periodId: $periodId, update:{ name: $name, code: $code, openDate: $openDate, closeDate: $closeDate, reviewed:$reviewed }, validateOnly: false) {
+      mutation UpdatePeriod($periodId: ID!, $name: String!, $code: String, $openDate:DateTime!, $closeDate:DateTime!){
+        updatePeriod(periodId: $periodId, update:{ name: $name, code: $code, openDate: $openDate, closeDate: $closeDate }, validateOnly: false) {
           period {
             id
             name
@@ -124,7 +147,7 @@ test.describe('App Request - App Phase - workflows', { tag: '@default' }, () => 
       }
     `
     const beforeCloseDate = closeDate // DateTime.fromISO('2025-12-01T01:00:00.000-05:00').setZone(timeZone).toISO()
-    const variables = { periodId, name, code, openDate, closeDate: beforeCloseDate, reviewed: true }
+    const variables = { periodId, name, code, openDate, closeDate: beforeCloseDate }
     const { updatePeriod } = await adminRequest.graphql<{ updatePeriod: { period: { id: number, name: string, code: string, closeDate: string, openDate: string, archiveDate: string, reviewed: boolean }, messages: { message: string }[] } }>(query, variables)
     expect(updatePeriod.period.id).toEqual(periodId)
     expect(updatePeriod.period.reviewed).toEqual(true)
@@ -149,7 +172,6 @@ test.describe('App Request - App Phase - workflows', { tag: '@default' }, () => 
     `
     const variables = { login: applicantLogin, periodId, validateOnly: false }
     const response = await applicantRequest.graphql<{ createAppRequest: { appRequest: { id: number, applicant: { login: string } }, messages: { message: string }[] } }>(query, variables)
-    console.log(`****Response: ${JSON.stringify(response)}`)
     appRequestId = response.createAppRequest.appRequest.id
     expect(response.createAppRequest.appRequest.applicant.login).toEqual(applicantLogin)
   })

@@ -15,8 +15,8 @@ test.describe.serial('App Request - Review Phase - workflows', { tag: '@default'
   let periodId = 0
   test('Admin - Create new period for review phase appRequests', async ({ adminRequest }) => {
     const query = `
-      mutation CreatePeriod($name: String!, $code: String!, $openDate:DateTime!, $closeDate:DateTime!, $reviewed:Boolean){
-        createPeriod(period:{ name: $name, code: $code, openDate: $openDate, closeDate: $closeDate, reviewed: $reviewed}, validateOnly: false) {
+      mutation CreatePeriod($name: String!, $code: String!, $openDate:DateTime!, $closeDate:DateTime!){
+        createPeriod(period:{ name: $name, code: $code, openDate: $openDate, closeDate: $closeDate}, validateOnly: false) {
           period {
             id
             name
@@ -31,14 +31,36 @@ test.describe.serial('App Request - Review Phase - workflows', { tag: '@default'
         }
       }
     `
-    const variables = { name, code, openDate, closeDate, reviewed: true }
+    const variables = { name, code, openDate, closeDate }
     const response = await adminRequest.graphql<{ createPeriod: { period: { id: number, name: string, code: string, openDate: string, closeDate: string, reviewed: boolean }, messages: { message: string }[] } }>(query, variables)
     periodId = response.createPeriod.period.id
     expect(response.createPeriod.period.name).toEqual(name)
     expect(response.createPeriod.period.code).toEqual(code)
     expect(response.createPeriod.period.openDate).toEqual(openDate)
     expect(response.createPeriod.period.closeDate).toEqual(closeDate)
-    expect(response.createPeriod.period.reviewed).toEqual(true)
+  })
+  test('Admin - mark request period reviewed', async ({ adminRequest }) => {
+    const query = `
+      mutation MarkPeriodReviewed($periodId: ID!){
+        markPeriodReviewed(periodId: $periodId) {
+          period {
+            id
+            name
+            code
+            openDate
+            closeDate
+            reviewed
+          }
+          messages {
+            message
+          }
+        }
+      }
+    `
+    const variables = { periodId }
+    const { markPeriodReviewed } = await adminRequest.graphql<{ markPeriodReviewed: { period: { id: number, name: string, code: string, closeDate: string, openDate: string, archiveDate: string, reviewed: boolean }, messages: { message: string }[] } }>(query, variables)
+    expect(markPeriodReviewed.period.id).toEqual(periodId)
+    expect(markPeriodReviewed.period.reviewed).toEqual(true)
   })
   let appRequestId = 0
   test('Applicant - create app request in reviewed period', async ({ applicantRequest }) => {
