@@ -425,9 +425,9 @@ export namespace AccessDatabase {
         `, ibinds)
         const dbinds: any[] = [id]
         await db.delete(`
-          DELETE FROM accessRoleGroups arg
-          WHERE arg.roleId = ?
-          AND arg.groupName NOT IN (${db.in(dbinds, role.groups)})
+          DELETE FROM accessRoleGroups
+          WHERE roleId = ?
+          AND groupName NOT IN (${db.in(dbinds, role.groups)})
         `, dbinds)
       } else {
         await db.delete('DELETE FROM accessRoleGroups WHERE roleId = ?', [id])
@@ -504,6 +504,6 @@ export namespace AccessDatabase {
 
   export async function deleteAccessRoleGrant (grantId: string) {
     // controls, control groups, and tags will be deleted due to foreign key constraint ON DELETE CASCADE
-    await db.delete('DELETE FROM accessRoleGrants g WHERE id = ?', [grantId])
+    await db.delete('DELETE FROM accessRoleGrants WHERE id = ?', [grantId])
   }
 }
