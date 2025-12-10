@@ -83,6 +83,8 @@ import ComplexBridgeOfDeathPrompt from './complex/optional/BridgeOfDeathPrompt.s
 import ComplexBridgeOfDeathDisplayPrompt from './complex/optional/BridgeOfDeathDisplayPrompt.svelte'
 import ComplexReviewMovieLoverPrompt from './complex/optional/ReviewMovieLoverPrompt.svelte'
 import ComplexReviewMovieLoverDisplayPrompt from './complex/optional/ReviewMovieLoverDisplayPrompt.svelte'
+import ComplexAcceptCatPrompt from './complex/catOwner/AcceptCatPrompt.svelte'
+import ComplexAcceptCatDisplayPrompt from './complex/catOwner/AcceptCatDisplayPrompt.svelte'
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts } = configureDemoInstanceParams()
 
@@ -228,7 +230,8 @@ function configureDemoInstanceParams () {
         { key: 'review_movie_lover_app_req' },
         { key: 'previous_dog_surrender_qual_req' },
         { key: 'previous_dog_surrender_foster_qual_req' },
-        { key: 'approve_reviewer_exercise_exemption_workflow_req', configureComponent: ComplexApproveReviewerExerciseExemptionConfig }
+        { key: 'approve_reviewer_exercise_exemption_workflow_req', configureComponent: ComplexApproveReviewerExerciseExemptionConfig },
+        { key: 'accept_adopt_cat_req' }
       ],
       prompts: [
         { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
@@ -252,7 +255,8 @@ function configureDemoInstanceParams () {
         { key: 'terms_and_conditions_prompt', configureComponent: ComplexTermsAndConditionsConfig, formComponent: ComplexTermsAndConditionsPrompt, displayComponent: ComplexTermsAndConditionsPromptDisplay },
         { key: 'previous_dog_surrender_prompt', formComponent: ComplexPreviousDogSurrenderPrompt, displayComponent: ComplexPreviousDogSurrenderDisplayPrompt },
         { key: 'previous_dog_surrender_foster_prompt', formComponent: ComplexPreviousDogSurrenderPrompt, displayComponent: ComplexPreviousDogSurrenderDisplayPrompt },
-        { key: 'approve_reviewer_exercise_exemption_prompt', formComponent: ComplexApproveReviewerExerciseExemptionPrompt, displayComponent: ComplexApproveReviewerExerciseExemptionPromptDisplay }
+        { key: 'approve_reviewer_exercise_exemption_prompt', formComponent: ComplexApproveReviewerExerciseExemptionPrompt, displayComponent: ComplexApproveReviewerExerciseExemptionPromptDisplay },
+        { key: 'accept_cat_prompt', formComponent: ComplexAcceptCatPrompt, displayComponent: ComplexAcceptCatDisplayPrompt }
       ]
     }
   }
