@@ -41,7 +41,7 @@ export const review_applicant_foster_a_pet_info_prompt: PromptDefinition = {
 export const accept_foster_pet_prompt: PromptDefinition = {
   key: 'accept_foster_pet_prompt',
   title: 'Select pet for fostering',
-  description: 'Applicant will decided if and which pet to fpster.',
+  description: 'Applicant will decided if and which pet to foster.',
   schema: AcceptFosterPetPromptSchema,
   fetch: (appRequest, config, appRequestData, allPeriodConfig, ctx) => {
     return getRandomUniqueElements(FosterAPetList)
