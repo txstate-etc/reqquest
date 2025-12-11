@@ -5,7 +5,7 @@ import { TermsAndConditionsPromptData } from '../models'
 export const terms_and_conditions_post_qual_req: RequirementDefinition<TermsAndConditionsPromptData> = {
   type: RequirementType.POSTQUAL,
   key: 'terms_and_conditions_post_qual_req',
-  title: 'Provide yard information',
+  title: 'Terms and conditions',
   navTitle: 'Terms and conditions',
   description: 'Agree to terms and conditions to continue submission',
   promptKeys: ['terms_and_conditions_prompt'],
