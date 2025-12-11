@@ -4,25 +4,25 @@
   export let data
   export let fetched
   let selected
-  $: cats = fetched.sort((a, b) => a.age - b.age)
+  $: dogs = fetched.sort((a, b) => a.age - b.age)
   $: selectedId = selected?.value
 </script>
-<FieldRadio boolean path="accept" legendText="You have been approved for cat adoption!  At this time, do you still wish to adopt a cat, or have circumstances changed?" items={[{ label: 'Adopt please!', value: true }, { label: 'Something has changed :(', value: false }]} />
+<FieldRadio boolean path="accept" legendText="You have been approved for dog adoption!  At this time, do you still wish to adopt a dog, or have circumstances changed?" items={[{ label: 'Adopt please!', value: true }, { label: 'Something has changed :(', value: false }]} />
 {#if data.accept}
-  <RadioButtonGroup legendText="Select a cat" bind:selected>
+  <RadioButtonGroup legendText="Select a dog" bind:selected>
     <div class="card-radio-grid">
-      {#each cats as cat}
+      {#each dogs as dog}
         <div class="card-radio-item">          
           <Card
-            title={cat.name}
-            subhead={cat.age}
-            image={cat.picUrl}
-            tags={cat.tags ?? []}
+            title={dog.name}
+            subhead={dog.age}
+            image={dog.picUrl}
+            tags={dog.tags ?? []}
           >
-            <p>{cat.description}</p>
+            <p>{dog.description}</p>
           </Card>
           <div class="radio-wrapper">
-            <RadioButton value={cat.id} labelText={`Adopt ${cat.name}`} />
+            <RadioButton value={dog.id} labelText={`Adopt ${dog.name}`} />
           </div>
         </div>
       {/each}
