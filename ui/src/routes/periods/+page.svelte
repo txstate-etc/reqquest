@@ -114,8 +114,8 @@
   ]}
   rows={periods}
   actions={p => [
-    { label: 'Configure', icon: SettingsEdit, href: `${base}/periods/${p.id}/configure` },
-    { label: 'Edit', icon: Edit, onClick: () => { creatingPeriod = false; editingPeriod = p } },
+    { label: 'Configure', icon: SettingsEdit, href: `${base}/periods/${p.id}/configure`, disabled: !p.actions.update },
+    { label: 'Edit', icon: Edit, onClick: () => { creatingPeriod = false; editingPeriod = p }, disabled: !p.actions.update },
     { label: 'Delete', icon: TrashCan, disabled: !p.actions.delete, onClick: () => openPeriodDeleteDialog(p) }
   ]}
   actionsMaxButtons={1}
