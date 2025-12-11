@@ -37,7 +37,7 @@
             {@const reqDef = uiRegistry.getRequirement(requirement.key)}
             <Panel title={requirement.title} expandable noPrimaryAction actions={[{ label: 'Configure requirement', onClick: onClick('requirement', requirement), disabled: reqDef?.configureComponent == null || !requirement.configuration.actions.update }, { label: 'Disable Requirement', onClick: disablePeriodProgram(requirement.key) }]}>
               <div style="display: content" slot="headerLeft">
-                <TagSet tags={[{ label: 'Requirement', type: 'yellow' }]} />
+                <TagSet tags={[{ label: 'Requirement', type: 'yellow' }, { label: `Applicant: ${requirement.type}`, type: 'purple' }]} />
               </div>
               <!-- <Button on:click={onClick('requirement', requirement)} type="primary" size="small" icon={SettingsEdit} iconDescription="Edit Configuration" disabled={reqDef.configureComponent == null || !requirement.configuration.actions.update} />  -->
             <div style="display: content" slot="headerRight">
