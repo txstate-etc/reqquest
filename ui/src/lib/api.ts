@@ -560,7 +560,10 @@ class API extends APIBase {
     return this.mutationForDialog(response.closeAppRequest)
   }
 
-  async getAppRequests (filter?: Omit<AppRequestFilter, 'indexes'> & { indexes?: Record<string, string[]> }, dest = enumAppRequestIndexDestination.APP_REQUEST_LIST) {
+  async getAppRequests (
+    filter?: Omit<AppRequestFilter, 'indexes'> & { indexes?: Record<string, string[]> },
+    paged?: Pagination,
+    dest = enumAppRequestIndexDestination.APP_REQUEST_LIST) {
     const processedFilter = {
       ...filter,
       indexes: filter?.indexes ? Object.entries(filter.indexes).map(([category, tags]) => ({ category, tags })) : undefined
@@ -568,8 +571,14 @@ class API extends APIBase {
     const response = await this.client.query({
       __name: 'GetAppRequests',
       appRequests: {
-        __args: { filter: processedFilter },
+        __args: { filter: processedFilter, paged },
         id: true,
+        createdAt: true,
+        closedAt: true,
+        updatedAt: true,
+        applications: {
+          title: true
+        },
         applicant: {
           login: true,
           fullname: true
@@ -953,6 +962,7 @@ class API extends APIBase {
             title: true,
             description: true,
             enabled: true,
+            type: true,
             configuration: {
               data: true,
               actions: {
