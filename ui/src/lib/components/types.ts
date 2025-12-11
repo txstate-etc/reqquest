@@ -59,5 +59,6 @@ export interface ApplicationForDetails {
   }[]
 }
 
-export const phaseChangeMutations = ['submitAppRequest', 'returnToApplicant', 'completeAppRequestReview', 'returnToReview', 'acceptOffer', 'returnToOffer', 'completeRequest', 'returnToNonBlocking'] as const
+// export const phaseChangeMutations = ['submitAppRequest', 'returnToApplicant', 'completeAppRequestReview', 'returnToReview', 'acceptOffer', 'returnToOffer', 'completeRequest', 'returnToNonBlocking'] as const
+export const phaseChangeMutations = ['submitAppRequest', 'returnToApplicant', 'completeReview', 'returnToReview', 'acceptOffer', 'returnToOffer', 'completeRequest', 'returnToNonBlocking'] as const
 export type PhaseChangeMutations = typeof phaseChangeMutations[number]
