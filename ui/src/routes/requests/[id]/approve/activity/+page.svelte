@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ColumnList, FieldDate, FieldMultiselect, FilterUI } from '@txstate-mws/carbon-svelte'
+  import { ColumnList, FieldDate, FieldMultiselect, FilterUI, Pagination } from '@txstate-mws/carbon-svelte'
   import { htmlEncode, sortby, unique } from 'txstate-utils'
   import { longDateTime } from '$lib'
   import { uiRegistry } from '../../../../../local'
@@ -30,6 +30,12 @@
       { id: 'description', label: 'Detail', get: 'description' }
     ]} noItemsTitle="No activity." noItemsSubtitle="No activity has been recorded for this {uiRegistry.getWord('appRequest').toLocaleLowerCase()}." />
   </div>
+  <Pagination
+    totalItems={activity.length}
+    pageSize={25}
+    chooseSize
+  />
+
 </ApproveLayout>
 
 <style>

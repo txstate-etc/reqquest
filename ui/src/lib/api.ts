@@ -784,11 +784,11 @@ class API extends APIBase {
     return { ...appRequest, applications: appRequest.applications.map(a => ({ ...a, requirements: a.requirements.map(r => ({ ...r, prompts: r.prompts.filter(p => visibilities.includes(p.visibility)) })) })) }
   }
 
-  async getRequestActivity (appRequestId: string, filters?: AppRequestActivityFilters) {
+  async getRequestActivity (appRequestId: string, filters?: AppRequestActivityFilters, paged?: Pagination) {
     const response = await this.client.query({
       __name: 'GetRequestActivity',
       appRequests: {
-        __args: { filter: { ids: [appRequestId] } },
+        __args: { filter: { ids: [appRequestId] }, paged },
         activity: {
           __args: { filters },
           id: true,
