@@ -34,13 +34,25 @@ export const ReviewApplicantFosterAPetPromptSchema = {
 } as const satisfies SchemaObject
 export type ReviewApplicantFosterAPetPromptData = FromSchema<typeof ReviewApplicantFosterAPetPromptSchema>
 
+export const AcceptFosterPetDetailsTagsPromptSchema = {
+  type: 'object',
+  properties: {
+    label: { type: 'string' },
+    type: { type: 'string' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type AcceptFosterPetDetailsTagsPromptData = FromSchema<typeof AcceptFosterPetDetailsTagsPromptSchema>
+
 export const AcceptFosterPetDetailsPromptSchema = {
   type: 'object',
   properties: {
     id: { type: 'number' },
     name: { type: 'string' },
     age: { type: 'number' },
-    picUrl: { type: 'string' }
+    tags: { type: 'array', items: AcceptFosterPetDetailsTagsPromptSchema },
+    picUrl: { type: 'string' },
+    description: { type: 'string' }
   },
   additionalProperties: false
 } as const satisfies SchemaObject

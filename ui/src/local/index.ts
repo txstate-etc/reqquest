@@ -85,6 +85,10 @@ import ComplexReviewMovieLoverPrompt from './complex/optional/ReviewMovieLoverPr
 import ComplexReviewMovieLoverDisplayPrompt from './complex/optional/ReviewMovieLoverDisplayPrompt.svelte'
 import ComplexAcceptCatPrompt from './complex/catOwner/AcceptCatPrompt.svelte'
 import ComplexAcceptCatDisplayPrompt from './complex/catOwner/AcceptCatDisplayPrompt.svelte'
+import ComplexAcceptDogPrompt from './complex/dogOwner/AcceptDogPrompt.svelte'
+import ComplexAcceptDogDisplayPrompt from './complex/dogOwner/AcceptDogDisplayPrompt.svelte'
+import ComplexAcceptFosterPetPrompt from './complex/petOwner/AcceptFosterPetPrompt.svelte'
+import ComplexAcceptFosterPetDisplayPrompt from './complex/petOwner/AcceptFosterPetDisplayPrompt.svelte'
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts } = configureDemoInstanceParams()
 
@@ -231,7 +235,9 @@ function configureDemoInstanceParams () {
         { key: 'previous_dog_surrender_qual_req' },
         { key: 'previous_dog_surrender_foster_qual_req' },
         { key: 'approve_reviewer_exercise_exemption_workflow_req', configureComponent: ComplexApproveReviewerExerciseExemptionConfig },
-        { key: 'accept_adopt_cat_req' }
+        { key: 'accept_adopt_cat_req' },
+        { key: 'accept_adopt_dog_req' },
+        { key: 'accept_fost_pet_req' }
       ],
       prompts: [
         { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
@@ -256,7 +262,9 @@ function configureDemoInstanceParams () {
         { key: 'previous_dog_surrender_prompt', formComponent: ComplexPreviousDogSurrenderPrompt, displayComponent: ComplexPreviousDogSurrenderDisplayPrompt },
         { key: 'previous_dog_surrender_foster_prompt', formComponent: ComplexPreviousDogSurrenderPrompt, displayComponent: ComplexPreviousDogSurrenderDisplayPrompt },
         { key: 'approve_reviewer_exercise_exemption_prompt', formComponent: ComplexApproveReviewerExerciseExemptionPrompt, displayComponent: ComplexApproveReviewerExerciseExemptionPromptDisplay },
-        { key: 'accept_cat_prompt', formComponent: ComplexAcceptCatPrompt, displayComponent: ComplexAcceptCatDisplayPrompt }
+        { key: 'accept_cat_prompt', formComponent: ComplexAcceptCatPrompt, displayComponent: ComplexAcceptCatDisplayPrompt },
+        { key: 'accept_dog_prompt', formComponent: ComplexAcceptDogPrompt, displayComponent: ComplexAcceptDogDisplayPrompt },
+        { key: 'accept_foster_pet_prompt', formComponent: ComplexAcceptFosterPetPrompt, displayComponent: ComplexAcceptFosterPetDisplayPrompt }
       ]
     }
   }
