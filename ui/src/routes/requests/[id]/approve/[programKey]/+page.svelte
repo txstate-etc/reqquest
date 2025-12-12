@@ -203,7 +203,7 @@
             {@const def = uiRegistry.getPrompt(prompt.key)}
             {@const isReviewerQuestion = requirement.type === enumRequirementType.APPROVAL && !def?.automation}
             {@const isAutomation = !!def?.automation}
-            {@const editMode = def != null && isReviewerQuestion && prompt.actions.update && def.formMode !== 'full'}
+            {@const editMode = def != null && isReviewerQuestion && prompt.actions.update && def.formMode !== 'full' && !prompt.invalidated}
             {@const small = editMode && def.formMode !== 'full' ? def.formMode !== 'large' : def!.displayMode !== 'large'}
             {@const large = editMode && def.formMode !== 'full' ? def.formMode === 'large' : def!.displayMode === 'large'}
             {@const dtid = `dt-title-${prompt.id}`}
@@ -239,7 +239,11 @@
               {:else}
                 <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
                 {#if prompt.actions.update}
-                  <Button kind="ghost" size="field" icon={Edit} iconDescription="Edit Prompt" class="prompt-edit" on:click={editPrompt(prompt)} />
+                  {#if prompt.invalidated}
+                    <Button kind="primary" size="field" on:click={editPrompt(prompt)}>Review correction</Button>
+                  {:else}
+                    <Button kind="ghost" size="field" icon={Edit} iconDescription="Edit Prompt" class="prompt-edit" on:click={editPrompt(prompt)} />
+                  {/if}
                 {/if}
               {/if}
             </dd>
@@ -267,7 +271,7 @@
 
 {#if showPromptDialog && promptBeingEdited}
   <PanelFormDialog
-    title="Edit Prompt"
+    title={promptBeingEdited.invalidated ? `Review correction "${promptBeingEdited.title}"` : 'Edit Prompt'}
     bind:open={showPromptDialog}
     on:cancel={closePromptDialog}
     submit={onPromptSubmit(promptBeingEdited.id)}
@@ -314,6 +318,11 @@
     position: absolute;
     top: 0;
     right: 0;
+  }
+  .prompts dd :global(.bx--btn--primary) {
+    position: absolute;
+    top: 5px;
+    right: 5px;
   }
 
   dl.card {
