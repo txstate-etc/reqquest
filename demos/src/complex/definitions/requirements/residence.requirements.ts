@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { stateList, StateResidenceConfigRequirementData } from '../models/index.js'
+import { ReviewStateResidenceInfoPromptData, stateList, StateResidenceConfigRequirementData } from '../models/index.js'
 import { StateResidencePromptData } from '../models/index.js'
 
 export const state_residence_prequal_req: RequirementDefinition<StateResidenceConfigRequirementData> = {
@@ -28,5 +28,21 @@ export const state_residence_prequal_req: RequirementDefinition<StateResidenceCo
       return messages
     },
     default: { residentOfState: ['Texas', 'Oklahoma', 'Louisiana'] }
+  }
+}
+
+export const review_applicant_state_residence_app_req: RequirementDefinition = {
+  type: RequirementType.APPROVAL,
+  key: 'review_applicant_state_residence_app_req',
+  title: 'Review applicant residency info',
+  navTitle: 'Review applicant residency info',
+  description: 'A Reviewer will confirm applicant residency info matches identifying documentation.',
+  promptKeys: ['review_applicant_state_residence_info_prompt'],
+  resolve: (data, config) => {
+    const revResInfoData = data.review_applicant_state_residence_info_prompt as ReviewStateResidenceInfoPromptData
+    if (revResInfoData == null) return { status: RequirementStatus.PENDING }
+    // TODO: Question, should a correction flow leave in pending state for corrections or disqualify before reviewer return??
+    if (!revResInfoData.residencyInfoAcceptable) return { status: RequirementStatus.DISQUALIFYING }
+    return { status: RequirementStatus.MET }
   }
 }

@@ -14,6 +14,7 @@ export const adopt_a_dog_program: ProgramDefinition = {
     'dog_exercise_qual_req',
     'previous_dog_surrender_qual_req',
     'terms_and_conditions_post_qual_req',
+    'review_applicant_state_residence_app_req',
     'review_applicant_dog_info_app_req',
     'review_movie_lover_app_req',
     'accept_adopt_dog_req'
@@ -23,8 +24,7 @@ export const adopt_a_dog_program: ProgramDefinition = {
     nonBlocking: false,
     title: 'Approve reviewer exercise exemption',
     requirementKeys: ['approve_reviewer_exercise_exemption_workflow_req']
-  }
-  ]
+  }]
 }
 
 export const adopt_a_cat_program: ProgramDefinition = {
@@ -40,10 +40,17 @@ export const adopt_a_cat_program: ProgramDefinition = {
     'owner_cat_allergy_qual_req',
     'owner_cat_microchip_service_qual_req',
     'terms_and_conditions_post_qual_req',
+    'review_applicant_state_residence_app_req',
     'review_applicant_cat_info_app_req',
     'review_movie_lover_app_req',
     'accept_adopt_cat_req'
-  ]
+  ],
+  workflowStages: [{
+    key: 'confirm_cat_microchip_service_workflow',
+    nonBlocking: true,
+    title: 'Confirm cat microchip service',
+    requirementKeys: ['confirm_cat_microchip_service_workflow_req']
+  }]
 }
 
 export const foster_a_pet_program: ProgramDefinition = {
@@ -64,6 +71,7 @@ export const foster_a_pet_program: ProgramDefinition = {
     'dog_exercise_qual_req',
     'previous_dog_surrender_foster_qual_req',
     'terms_and_conditions_post_qual_req',
+    'review_applicant_state_residence_app_req',
     'review_applicant_dog_info_app_req',
     'review_applicant_cat_info_app_req',
     'review_applicant_foster_a_pet_info_app_req',
@@ -75,6 +83,5 @@ export const foster_a_pet_program: ProgramDefinition = {
     nonBlocking: false,
     title: 'Approve reviewer exercise exemption',
     requirementKeys: ['approve_reviewer_exercise_exemption_workflow_req']
-  }
-  ]
+  }]
 }

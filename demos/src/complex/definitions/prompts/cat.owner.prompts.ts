@@ -1,6 +1,6 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { AcceptCatPromptSchema, AdoptACatList, CurrentCatOwnerPromptSchema, OwnerCatAllergyPromptSchema, OwnerCatMicrochipServicePrompt, PreviousCatOwnerPromptSchema, ReviewApplicantCatInfoPromptSchema } from '../models/cat.owner.models.js'
+import { AcceptCatPromptSchema, AdoptACatList, ConfirmCatMicrochipServicePromptSchema, CurrentCatOwnerPromptSchema, OwnerCatAllergyPromptSchema, OwnerCatMicrochipServicePrompt, PreviousCatOwnerPromptSchema, ReviewApplicantCatInfoPromptSchema } from '../models/cat.owner.models.js'
 import { getRandomUniqueElements } from '../util.js'
 
 export const previous_catowner_prompt: PromptDefinition = {
@@ -109,6 +109,19 @@ export const accept_cat_prompt: PromptDefinition = {
         if (data.id == null) messages.push({ type: MutationMessageType.error, message: 'Acceptance cat id required', arg: 'id' })
       }
     }
+    return messages
+  }
+}
+
+export const confirm_cat_microchip_service_prompt: PromptDefinition = {
+  key: 'confirm_cat_microchip_service_prompt',
+  title: 'Confirm cat microchip service',
+  description: 'Register the date, time and any details regarding the completion of microchip service',
+  schema: ConfirmCatMicrochipServicePromptSchema,
+  validate: (data, config, allConfig) => {
+    const messages: MutationMessage[] = []
+    if (!data) messages.push({ type: MutationMessageType.error, message: 'Confirmation info required' })
+    if (data.date == null) messages.push({ type: MutationMessageType.error, message: 'Confirmation date required', arg: 'date' })
     return messages
   }
 }

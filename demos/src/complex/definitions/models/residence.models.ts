@@ -101,3 +101,13 @@ export const StateResidencePromptSchema = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type StateResidencePromptData = FromSchema<typeof StateResidencePromptSchema>
+
+export const ReviewStateResidenceInfoPromptSchema = {
+  type: 'object',
+  properties: {
+    residencyInfoAcceptable: { type: 'boolean' },
+    corrections: { type: 'string' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type ReviewStateResidenceInfoPromptData = FromSchema<typeof ReviewStateResidenceInfoPromptSchema>

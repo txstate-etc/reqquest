@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { AcceptCatPromptData, CurrentCatOwnerPromptData, CurrentCatOwnerRequirementConfigSchema, OwnerCatAllergyPromptData, OwnerCatMicrochipServiceData, PreviousCatOwnerPromptData, ReviewApplicantCatInfoPromptData } from '../models/index.js'
+import { AcceptCatPromptData, ConfirmCatMicrochipServicePromptData, CurrentCatOwnerPromptData, CurrentCatOwnerRequirementConfigSchema, OwnerCatAllergyPromptData, OwnerCatMicrochipServiceData, PreviousCatOwnerPromptData, ReviewApplicantCatInfoPromptData } from '../models/index.js'
 
 export const previous_catowner_qual_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
@@ -118,6 +118,21 @@ export const accept_adopt_cat_req: RequirementDefinition = {
   resolve: (data, config) => {
     const acceptCatPrompt = data.accept_cat_prompt as AcceptCatPromptData
     if (acceptCatPrompt == null) return { status: RequirementStatus.PENDING }
+    return { status: RequirementStatus.MET }
+  }
+}
+
+export const confirm_cat_microchip_service_workflow_req: RequirementDefinition = {
+  type: RequirementType.WORKFLOW,
+  key: 'confirm_cat_microchip_service_workflow_req',
+  title: 'Confirm applicant microchip service',
+  navTitle: 'Review Confirm applicant microchip service cat info',
+  description: 'Register date and time the applicant completed the microchip service.',
+  promptKeys: ['confirm_cat_microchip_service_prompt'],
+  resolve: (data, config) => {
+    const confMicroSvcData = data.confirm_cat_microchip_service_prompt as ConfirmCatMicrochipServicePromptData
+    if (confMicroSvcData == null) return { status: RequirementStatus.PENDING }
+    if (confMicroSvcData.date === null) return { status: RequirementStatus.PENDING }
     return { status: RequirementStatus.MET }
   }
 }

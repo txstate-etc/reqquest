@@ -1,7 +1,7 @@
-import { type PromptDefinition } from '@reqquest/api'
+import { InvalidatedResponse, type PromptDefinition } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType, UploadFiles } from '@txstate-mws/graphql-server'
 import { fileHandler } from 'fastify-txstate'
-import { StateResidencePromptSchema } from '../models/index.js'
+import { ReviewStateResidenceInfoPromptSchema, StateResidencePromptSchema } from '../models/index.js'
 
 export const state_residence_prompt: PromptDefinition = {
   key: 'state_residence_prompt',
@@ -48,5 +48,29 @@ export const state_residence_prompt: PromptDefinition = {
   },
   gatherConfig: allPeriodConfig => {
     return { state_residence_prequal_req: { residentOfState: allPeriodConfig.state_residence_prequal_req.residentOfState } }
+  },
+  invalidUponChange: [{ promptKey: 'review_applicant_state_residence_info_prompt' }]
+}
+
+export const review_applicant_state_residence_info_prompt: PromptDefinition = {
+  key: 'review_applicant_state_residence_info_prompt',
+  title: 'Review applicant residence info',
+  description: 'A Reviewer will confirm applicant residency info matches identifying documentation',
+  schema: ReviewStateResidenceInfoPromptSchema,
+  validate: (data, config, appRequestData) => {
+    const messages: MutationMessage[] = []
+    if (!data) messages.push({ type: MutationMessageType.error, message: 'Confirmation info required' })
+    if (data.residencyInfoAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Confirmation of residency required', arg: 'residencyInfoAcceptable' })
+    if (!data.residencyInfoAcceptable) {
+      if (!data.corrections) messages.push({ type: MutationMessageType.error, message: 'Suggested corrections required', arg: 'corrections' })
+    }
+    return messages
+  },
+  invalidUponChange: (data: any, config: any, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) => {
+    const invalidatedResponse: InvalidatedResponse[] = []
+    if (data && !data.residencyInfoAcceptable) {
+      invalidatedResponse.push({ promptKey: 'state_residence_prompt', reason: data.corrections })
+    }
+    return invalidatedResponse
   }
 }

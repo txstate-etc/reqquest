@@ -98,6 +98,16 @@ export const AcceptCatPromptSchema = {
 } as const satisfies SchemaObject
 export type AcceptCatPromptData = FromSchema<typeof AcceptCatPromptSchema>
 
+export const ConfirmCatMicrochipServicePromptSchema = {
+  type: 'object',
+  properties: {
+    date: { type: 'string', format: 'date-time' },
+    details: { type: 'string' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type ConfirmCatMicrochipServicePromptData = FromSchema<typeof ConfirmCatMicrochipServicePromptSchema>
+
 export const AdoptACatList: AcceptCatDetailsPromptData[] = [
   { id: 1, name: 'Doja Cat', age: 30, tags: [{ label: 'moody', type: 'purple' }], description: 'Loves to listen to hip-hop', picUrl: 'https://media.gettyimages.com/id/1486972012/photo/new-york-new-york-doja-cat-attends-the-2023-met-gala-celebrating-karl-lagerfeld-a-line-of.jpg?s=612x612&w=0&k=20&c=nLr8u3jqXmePR7n3xwxn3XPe-DV6xQgR_uleBxLXjWg=' },
   { id: 2, name: 'Miss Puffs a Lot', tags: [{ label: 'reserved', type: 'green' }, { label: 'loyal', type: 'blue' }], description: 'Takes a while to get to trust you, but once she does :)', age: 5, picUrl: 'https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg' },

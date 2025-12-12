@@ -1,6 +1,5 @@
 <script lang="ts">
   import { FieldRadio } from '@txstate-mws/carbon-svelte'
-  export let data
 </script>
 
 <FieldRadio boolean path="previousCatAcceptable" labelText="Is the previous cat history information acceptable?" items={

@@ -1,5 +1,5 @@
 import { PUBLIC_DEMO_INSTANCE } from '$env/static/public'
-import { UIRegistry } from '$lib'
+import { RenderDisplayComponent, UIRegistry } from '$lib'
 /** default */
 import DogWalker from 'carbon-icons-svelte/lib/DogWalker.svelte'
 import Gamification from 'carbon-icons-svelte/lib/Gamification.svelte'
@@ -65,6 +65,8 @@ import ComplexOwnerCatMicrochipServiceDisplayPrompt from './complex/catOwner/Own
 import ComplexChildrenConfig from './complex/children/ChildrenConfig.svelte'
 import ComplexChildrenPrompt from './complex/children/ChildrenPrompt.svelte'
 import ComplexChildrenDisplayPrompt from './complex/children/ChildrenDisplayPrompt.svelte'
+import ComplexReviewApplicantResidenceInfoPrompt from './complex/residence/ReviewApplicantResidenceInfoPrompt.svelte'
+import ComplexReviewApplicantResidenceInfoPromptDisplay from './complex/residence/ReviewApplicantResidenceInfoPromptDisplay.svelte'
 import ComplexReviewApplicantCatInfoPrompt from './complex/catOwner/ReviewApplicantCatInfoPrompt.svelte'
 import ComplexReviewApplicantCatInfoPromptDisplay from './complex/catOwner/ReviewApplicantCatInfoPromptDisplay.svelte'
 import ComplexReviewApplicantDogInfoPrompt from './complex/dogOwner/ReviewApplicantDogInfoPrompt.svelte'
@@ -89,6 +91,8 @@ import ComplexAcceptDogPrompt from './complex/dogOwner/AcceptDogPrompt.svelte'
 import ComplexAcceptDogDisplayPrompt from './complex/dogOwner/AcceptDogDisplayPrompt.svelte'
 import ComplexAcceptFosterPetPrompt from './complex/petOwner/AcceptFosterPetPrompt.svelte'
 import ComplexAcceptFosterPetDisplayPrompt from './complex/petOwner/AcceptFosterPetDisplayPrompt.svelte'
+import ComplexConfirmCatMircochipServicePrompt from './complex/catOwner/ConfirmCatMircochipServicePrompt.svelte'
+import ComplexConfirmCatMircochipServiceDisplayPrompt from './complex/catOwner/ConfirmCatMircochipServiceDisplayPrompt.svelte'
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts } = configureDemoInstanceParams()
 
@@ -228,6 +232,7 @@ function configureDemoInstanceParams () {
         { key: 'children_qual_req', configureComponent: ComplexChildrenConfig },
         { key: 'movie_lover_qual_req' },
         { key: 'terms_and_conditions_post_qual_req' },
+        { key: 'review_applicant_state_residence_app_req' },
         { key: 'review_applicant_cat_info_app_req' },
         { key: 'review_applicant_dog_info_app_req' },
         { key: 'review_application_foster_a_pet_app_req' },
@@ -237,7 +242,8 @@ function configureDemoInstanceParams () {
         { key: 'approve_reviewer_exercise_exemption_workflow_req', configureComponent: ComplexApproveReviewerExerciseExemptionConfig },
         { key: 'accept_adopt_cat_req' },
         { key: 'accept_adopt_dog_req' },
-        { key: 'accept_fost_pet_req' }
+        { key: 'accept_fost_pet_req' },
+        { key: 'confirm_cat_microchip_service_workflow_req' }
       ],
       prompts: [
         { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
@@ -254,6 +260,7 @@ function configureDemoInstanceParams () {
         { key: 'owner_cat_microchip_service_prompt', formComponent: ComplexOwnerCatMicrochipServicePrompt, displayComponent: ComplexOwnerCatMicrochipServiceDisplayPrompt },
         { key: 'children_prompt', formComponent: ComplexChildrenPrompt, displayComponent: ComplexChildrenDisplayPrompt },
         { key: 'bridge_of_death_prompt', formComponent: ComplexBridgeOfDeathPrompt, displayComponent: ComplexBridgeOfDeathDisplayPrompt },
+        { key: 'review_applicant_state_residence_info_prompt', formComponent: ComplexReviewApplicantResidenceInfoPrompt, displayComponent: ComplexReviewApplicantResidenceInfoPromptDisplay },
         { key: 'review_applicant_cat_info_prompt', formComponent: ComplexReviewApplicantCatInfoPrompt, displayComponent: ComplexReviewApplicantCatInfoPromptDisplay },
         { key: 'review_applicant_dog_info_prompt', formComponent: ComplexReviewApplicantDogInfoPrompt, displayComponent: ComplexReviewApplicantDogInfoPromptDisplay },
         { key: 'review_applicant_foster_a_pet_info_prompt', formComponent: ComplexReviewApplicantFosterAPetPrompt, displayComponent: ComplexReviewApplicantFosterAPetPromptDisplay },
@@ -264,7 +271,8 @@ function configureDemoInstanceParams () {
         { key: 'approve_reviewer_exercise_exemption_prompt', formComponent: ComplexApproveReviewerExerciseExemptionPrompt, displayComponent: ComplexApproveReviewerExerciseExemptionPromptDisplay },
         { key: 'accept_cat_prompt', formComponent: ComplexAcceptCatPrompt, displayComponent: ComplexAcceptCatDisplayPrompt },
         { key: 'accept_dog_prompt', formComponent: ComplexAcceptDogPrompt, displayComponent: ComplexAcceptDogDisplayPrompt },
-        { key: 'accept_foster_pet_prompt', formComponent: ComplexAcceptFosterPetPrompt, displayComponent: ComplexAcceptFosterPetDisplayPrompt }
+        { key: 'accept_foster_pet_prompt', formComponent: ComplexAcceptFosterPetPrompt, displayComponent: ComplexAcceptFosterPetDisplayPrompt },
+        { key: 'confirm_cat_microchip_service_prompt', formComponent: ComplexConfirmCatMircochipServicePrompt, displayComponent: ComplexConfirmCatMircochipServiceDisplayPrompt }
       ]
     }
   }
