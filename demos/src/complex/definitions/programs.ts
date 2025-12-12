@@ -19,7 +19,7 @@ export const adopt_a_dog_program: ProgramDefinition = {
     'accept_adopt_dog_req'
   ],
   workflowStages: [{
-    key: 'approve_reviewer_exercise_exemption_workflow',
+    key: 'approve_reviewer_exercise_exemption_adopt_a_dog_workflow',
     nonBlocking: false,
     title: 'Approve reviewer exercise exemption',
     requirementKeys: ['approve_reviewer_exercise_exemption_workflow_req']
@@ -71,7 +71,7 @@ export const foster_a_pet_program: ProgramDefinition = {
     'accept_fost_pet_req'
   ],
   workflowStages: [{
-    key: 'approve_reviewer_exercise_exemption_workflow',
+    key: 'approve_reviewer_exercise_exemption_foster_a_pet_workflow',
     nonBlocking: false,
     title: 'Approve reviewer exercise exemption',
     requirementKeys: ['approve_reviewer_exercise_exemption_workflow_req']
