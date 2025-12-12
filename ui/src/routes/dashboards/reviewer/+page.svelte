@@ -5,7 +5,7 @@
     import { DateTime } from 'luxon'
 
   export let data: PageData
-  console.log(data)
+
   $: ({ appRequests, period } = data)
 
   $: formattedData = appRequests.reduce((acc, curr) => {

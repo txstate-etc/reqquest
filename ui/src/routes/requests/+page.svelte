@@ -5,10 +5,11 @@
   import { htmlEncode, isBlank, isNotBlank, keyby, pluralize, sortby } from 'txstate-utils'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { api } from '$lib'
+  import { api, type AppRequest } from '$lib'
   import { uiRegistry } from '../../local/index.js'
   import type { PageData } from './$types.js'
     import { DateTime } from 'luxon'
+    import { downloadCsv } from '$lib/csv.js'
 
   export let data: PageData
 
@@ -67,15 +68,27 @@
   }
   let showDateFilters = isNotBlank(filters?.closedAfter) || isNotBlank(filters?.closedBefore) || isNotBlank(filters?.updatedAfter) || isNotBlank(filters?.updatedBefore) || isNotBlank(filters?.submittedAfter) || isNotBlank(filters?.submittedBefore)
 
-    const selectedActions = (rows: any): ActionItem[] => [
+  function formatCSVData (d: typeof requests) {
+    return d.map(d => ({
+      Id: d.id,
+      Period: d.period.name,
+      'TXST ID': d.applicant.login,
+      Name: d.applicant.fullname,
+      'Date Submitted': DateTime.fromISO(d.createdAt).toFormat('f').replace(',', ''),
+      Benefit: `"${d.applications.map(a => a.title).join(', ')}"`,
+      Status: d.status,
+      'Last Submitted': DateTime.fromISO(d.updatedAt).toFormat('f').replace(',', '')
+    }))
+  }
+
+  const selectedActions = (rows: any): ActionItem[] => [
     {
       label: `Download ${rows.length} ${pluralize('applications', rows.length)}`,
       // icon: TrashCan,
-      onClick: () => { alert(`Delete ${rows.length} users`) }
+      onClick: () => { downloadCsv(formatCSVData(requests)) }
     }
   ]
 
-  console.log(appRequests)
 </script>
 <FilterUI search>
   <svelte:fragment slot="quickfilters">
@@ -177,7 +190,6 @@
     { id: 'name', label: 'Name', render: r => r.applicant.fullname },
     { id: 'dateSubmitted', label: 'Date Submitted', render: r => DateTime.fromISO(r.createdAt).toFormat('f') },
     { id: 'benefit', label: 'Benefit', render: r => r.applications.map(a => a.title).join(', ') },
-    { id: 'login', label: uiRegistry.getWord('login'), render: r => r.applicant.login },
     { id: 'status', label: 'Status', render: r => r.status },
     { id: 'lastUpdated', label: 'Last Updated', render: r => DateTime.fromISO(r.updatedAt).toFormat('f') },
     ...indexColumns
@@ -186,9 +198,9 @@
     ...(access.createAppRequestOther
       ? [
         { label: 'Create App Request', onClick: openCreateDialog },
-        { label: 'Download', icon: DocExport, onClick: () => { alert('Add Structure') } }
+        { label: 'Download', icon: DocExport, onClick: () => { downloadCsv(formatCSVData(requests)) } }
       ]
-      : [{ label: 'Download', icon: DocExport, onClick: () => { alert('Add Structure') } }]
+      : [{ label: 'Download', icon: DocExport, onClick: () => { downloadCsv(formatCSVData(requests)) } }]
     )
   ]}
   actions={row => [

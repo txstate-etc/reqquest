@@ -1,13 +1,36 @@
 <script lang="ts">
   import { base } from "$app/paths"
-  import { ColumnList, FieldDate, FieldMultiselect, FieldSelect, FilterUI, Pagination } from "@txstate-mws/carbon-svelte"
+  import { ColumnList, FieldDate, FieldMultiselect, Pagination, type ActionItem } from "@txstate-mws/carbon-svelte"
   import { DateTime } from "luxon"
   import View from 'carbon-icons-svelte/lib/View.svelte'
   import DocExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
+    import { downloadCsv } from "$lib/csv"
+    import type { AppRequest } from "$lib/typed-client"
+    import { pluralize } from "txstate-utils"
 
-  export let data: any
+  export let data: AppRequest[]
   export let title: string
   export let subtitle: string
+
+  const selectedActions = (rows: AppRequest[]): ActionItem[] => [
+    {
+      label: `Download ${rows.length} ${pluralize('application', rows.length)}`,
+      // icon: TrashCan,
+      onClick: () => { console.log(rows); downloadCsv(formatCSVData(rows)) }
+    }
+  ]
+
+  function formatCSVData (d: AppRequest[]) {
+    return d.map(d => ({
+      Id: d.id,
+      Period: d.period.name,
+      'TXST ID': d.applicant.otherInfo,
+      Name: d.applicant.fullname,
+      'Date Submitted': DateTime.fromISO(d.createdAt).toFormat('f').replace(',', ''),
+      Benefit: `"${d.applications.map(a => a.title).join(', ')}"`,
+      'Last Submitted': DateTime.fromISO(d.updatedAt).toFormat('f').replace(',', '')
+    }))
+  }
 </script>
 
 <div class="flow [ p-4 bg-gray-100 ]">
@@ -18,8 +41,9 @@
 <ColumnList
   searchable
   filterTitle='Request Filters'
+  {selectedActions}
   listActions={[
-      { label: 'Download', icon: DocExport, onClick: () => { alert('Add Structure') } }
+      { label: 'Download', icon: DocExport, onClick: () => { console.log(data); downloadCsv(formatCSVData(data)) } }
   ]}
   columns={[
     { id: 'request', label: 'Request #', tags: (row) => [{ label: String(row.id), }] },
