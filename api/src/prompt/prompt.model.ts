@@ -52,6 +52,7 @@ export class RequirementPrompt extends Prompt {
     this.requirementId = String(row.requirementId)
     this.requirementKey = row.requirementKey
     this.requirementType = row.requirementType
+    this.promptKey = row.promptKey
     this.programKey = row.programKey
     this.applicationInternalId = row.applicationId
     this.applicationId = String(row.applicationId)
@@ -101,6 +102,7 @@ export class RequirementPrompt extends Prompt {
   requirementId: string
   requirementKey: string
   requirementType: RequirementType
+  promptKey: string
   programKey: string
   periodId: string
   appRequestDbStatus: AppRequestStatusDB
