@@ -203,7 +203,7 @@
             {@const def = uiRegistry.getPrompt(prompt.key)}
             {@const isReviewerQuestion = requirement.type === enumRequirementType.APPROVAL && !def?.automation}
             {@const isAutomation = !!def?.automation}
-            {@const editMode = def != null && isReviewerQuestion && prompt.actions.update && def.formMode !== 'full' && !prompt.invalidated}
+            {@const editMode = def != null && isReviewerQuestion && prompt.actions.update && def.formMode !== 'full' && !(prompt.invalidated && prompt.preloadData)}
             {@const small = editMode && def.formMode !== 'full' ? def.formMode !== 'large' : def!.displayMode !== 'large'}
             {@const large = editMode && def.formMode !== 'full' ? def.formMode === 'large' : def!.displayMode === 'large'}
             {@const dtid = `dt-title-${prompt.id}`}
@@ -239,7 +239,7 @@
               {:else}
                 <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
                 {#if prompt.actions.update}
-                  {#if prompt.invalidated}
+                  {#if prompt.invalidated && prompt.preloadData}
                     <Button kind="primary" size="field" on:click={editPrompt(prompt)}>Review correction</Button>
                   {:else}
                     <Button kind="ghost" size="field" icon={Edit} iconDescription="Edit Prompt" class="prompt-edit" on:click={editPrompt(prompt)} />
@@ -297,7 +297,7 @@
   .prompts dt, .prompts dd {
     position: relative;
     border-bottom: 1px solid var(--cds-border-subtle);
-    padding: 0.8rem 15px;
+    padding: 1rem 15px;
   }
   .prompts dt.small {
     padding-right: 15px;
@@ -321,7 +321,7 @@
   }
   .prompts dd :global(.bx--btn--primary) {
     position: absolute;
-    top: 5px;
+    top: 0;
     right: 5px;
   }
 

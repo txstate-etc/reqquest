@@ -5,7 +5,7 @@
   export let def: PromptDefinition | undefined
   export let appRequestId: string
   export let appData: Record<string, any>
-  export let prompt: { key: string, answered: boolean, moot: boolean | null, invalidated: boolean | null, invalidatedReason: string | null }
+  export let prompt: { key: string, answered: boolean, moot: boolean | null, invalidated: boolean | null, invalidatedReason: string | null, preloadData: Record<string, any> | null }
   export let configData: Record<string, any>
   export let gatheredConfigData: Record<string, any>
   export let showMoot = false
@@ -14,7 +14,7 @@
 <svelte:boundary onerror={e => console.error(e)}>
   {#if showMoot && prompt.moot}
     <em>Already disqualified.</em>
-  {:else if !prompt.answered && !prompt.invalidated}
+  {:else if !prompt.answered && !(prompt.invalidated && prompt.preloadData)}
     <em>Incomplete</em>
   {:else if !def?.displayComponent}
     <em>No display component registered.</em>
