@@ -73,8 +73,8 @@ export async function setRequirementPromptValid (prompt: RequirementPrompt, tdb:
 export async function setRequirementPromptsInvalid (invalidateResponses: InvalidatedResponse[], tdb: Queryable = db) {
   if (!invalidateResponses?.length) return
   const answeredPromptsToInvalidate = (await getRequirementPrompts({ promptKeys: invalidateResponses.map(ir => ir.promptKey) })).filter(rp => rp.answered === true)
-  const invalidateResponsesWithData = invalidateResponses.filter(ir => answeredPromptsToInvalidate.find(ap => ir.promptKey === ap.promptKey))
-  for (const r of invalidateResponsesWithData) {
+  const invalidateAnsweredResponses = invalidateResponses.filter(ir => answeredPromptsToInvalidate.find(ap => ir.promptKey === ap.promptKey))
+  for (const r of invalidateAnsweredResponses) {
     await tdb.update('UPDATE requirement_prompts SET invalidated = 1, invalidatedReason = ? WHERE promptKey = ?', [r.reason, r.promptKey])
   }
 }
