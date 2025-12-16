@@ -133,8 +133,11 @@ export class RequirementPromptFilter {
   @Field(type => [String], { nullable: true })
   promptKeys?: string[]
 
-  @Field({ nullable: true, description: 'When true, only returns reachable prompts.' })
+  @Field({ nullable: true, description: 'When true only returns reachable prompts.' })
   reachable?: boolean
+
+  @Field({ nullable: true, description: 'When true only returns answered prompts.' })
+  answered?: boolean
 }
 
 @ObjectType()
