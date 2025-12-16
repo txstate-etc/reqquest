@@ -946,7 +946,7 @@ export interface AppRequestGenqlSelection{
     /** The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order. */
     activity?: (AppRequestActivityGenqlSelection & { __args?: {
     /** Filters to apply to the activity log. This can be used to filter by action type, date range, etc. */
-    filters?: (AppRequestActivityFilters | null)} })
+    filters?: (AppRequestActivityFilters | null), paged?: (Pagination | null)} })
     applicant?: AccessUserGenqlSelection
     applications?: ApplicationGenqlSelection
     /** Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date. */

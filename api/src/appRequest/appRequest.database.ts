@@ -4,7 +4,7 @@ import type { GraphQLError } from 'graphql'
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
 import { clone, findIndex, groupby, isNotBlank, keyby, omit, stringify } from 'txstate-utils'
-import { ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter, AppRequestStatus, getAcceptancePeriodIds, getApplications, getPeriodWorkflowStages, IneligiblePhases, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, requirementRegistry, RequirementStatus, RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
+import { ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter, AppRequestStatus, getAcceptancePeriodIds, getApplications, getPeriodWorkflowStages, IneligiblePhases, Pagination, PaginationInfoWithTotalItems, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, requirementRegistry, RequirementStatus, RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
 
 /**
  * This is the status of the whole appRequest as stored in the database. Each application
@@ -723,9 +723,10 @@ export async function recordAppRequestActivity (appRequestId: number, userId: nu
   ])
 }
 
-export async function getAppRequestActivity (filter: AppRequestActivityFilters) {
+export async function getAppRequestActivity (filter: AppRequestActivityFilters, pageInfo?: PaginationInfoWithTotalItems, paged?: Pagination) {
   const where = []
   const binds: any[] = []
+
   if (filter.appRequestIds?.length) {
     where.push(`ara.appRequestId IN (${db.in(binds, filter.appRequestIds)})`)
   }
@@ -760,12 +761,36 @@ export async function getAppRequestActivity (filter: AppRequestActivityFilters) 
     binds.push(filter.happenedBefore.toJSDate())
   }
 
+  if (pageInfo) {
+    pageInfo.totalItems = await db.getval(`
+      SELECT COUNT(DISTINCT ara.id) FROM app_request_activity ara
+      INNER JOIN accessUsers u ON u.id = ara.userId
+      LEFT JOIN accessUsers iu ON iu.id = ara.impersonatedBy
+      WHERE (${where.join(') AND (')})
+      ORDER BY ara.createdAt DESC
+    `, binds)
+
+    console.log(pageInfo.totalItems)
+
+    if (paged?.page || paged?.perPage) {
+      pageInfo.currentPage = paged.page ?? 1
+      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+      pageInfo.perPage = paged?.perPage || 100 // 0 should also be overridden, so || is better than nullish coalescing ??
+      pageInfo.hasNextPage = (pageInfo.totalItems ?? 0) > pageInfo.currentPage * pageInfo.perPage
+    } else {
+      pageInfo.currentPage = 1
+      pageInfo.perPage = undefined
+      pageInfo.hasNextPage = false
+    }
+  }
+
   const rows = await db.getall<AppRequestActivityRow>(`
     SELECT ara.* FROM app_request_activity ara
     INNER JOIN accessUsers u ON u.id = ara.userId
     LEFT JOIN accessUsers iu ON iu.id = ara.impersonatedBy
     WHERE (${where.join(') AND (')})
     ORDER BY ara.createdAt DESC
+    ${pageInfo?.perPage ? `LIMIT ${pageInfo.perPage} OFFSET ${(pageInfo.currentPage - 1) * pageInfo.perPage}` : ''}
   `, binds)
   return rows.map(row => new AppRequestActivity(row))
 }

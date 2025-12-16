@@ -65,8 +65,10 @@ export class AppRequestResolver {
   }
 
   @FieldResolver(type => [AppRequestActivity], { description: 'The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order.' })
-  async activity (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest, @Arg('filters', type => AppRequestActivityFilters, { nullable: true, description: 'Filters to apply to the activity log. This can be used to filter by action type, date range, etc.' }) filters?: AppRequestActivityFilters) {
-    return await ctx.svc(AppRequestService).getActivityForAppRequest(appRequest, filters)
+  async activity (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest, @Arg('filters', type => AppRequestActivityFilters, { nullable: true, description: 'Filters to apply to the activity log. This can be used to filter by action type, date range, etc.' }) filters?: AppRequestActivityFilters, @Arg('paged', { nullable: true }) paged?: Pagination) {
+    return await ctx.executePaginated('appRequestsActivity', paged, new PaginationInfoWithTotalItems(), async pageInfo => {
+      return await ctx.svc(AppRequestService).getActivityForAppRequest(appRequest, pageInfo, filters, paged)
+    })
   }
 
   @FieldResolver(type => AppRequestActions, { description: 'Actions the user can take on this app request.' })

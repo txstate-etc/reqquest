@@ -46,8 +46,8 @@ const appReqTagsLoader = new PrimaryKeyLoader({
 })
 
 const activityByAppReqLoader = new OneToManyLoader({
-  fetch: async (appRequestInternalIds: number[], filters?: AppRequestActivityFilters) => {
-    return await getAppRequestActivity({ ...filters, appRequestInternalIds })
+  fetch: async (appRequestInternalIds: number[], filters?: AppRequestActivityFilters & { pageInfo: PaginationInfoWithTotalItems, paged?: Pagination }) => {
+    return await getAppRequestActivity({ ...filters, appRequestInternalIds }, filters?.pageInfo, filters?.paged)
   },
   extractKey: row => row.appRequestInternalId
 })
@@ -82,8 +82,8 @@ export class AppRequestServiceInternal extends BaseService<AppRequest> {
     return row.data as AppRequestData ?? {}
   }
 
-  async getActivityForAppRequest (appRequestInternalId: number, filters?: AppRequestActivityFilters) {
-    return await this.loaders.get(activityByAppReqLoader, filters).load(appRequestInternalId)
+  async getActivityForAppRequest (appRequestInternalId: number, pageInfo: PaginationInfoWithTotalItems, filters?: AppRequestActivityFilters, paged?: Pagination) {
+    return await this.loaders.get(activityByAppReqLoader, { ...filters, pageInfo, paged }).load(appRequestInternalId)
   }
 
   async updateData (appRequest: AppRequest, data: AppRequestData) {
@@ -169,9 +169,9 @@ export class AppRequestService extends AuthService<AppRequest> {
     await recordAppRequestActivity(appRequest.internalId, this.user!.internalId, action, { ...info, impersonatedBy: this.impersonationUser?.internalId })
   }
 
-  async getActivityForAppRequest (appRequest: AppRequest, filters?: AppRequestActivityFilters) {
+  async getActivityForAppRequest (appRequest: AppRequest, pageInfo: PaginationInfoWithTotalItems, filters?: AppRequestActivityFilters, paged?: Pagination) {
     if (!this.mayViewAsReviewer(appRequest)) return []
-    return await this.svc(AppRequestServiceInternal).getActivityForAppRequest(appRequest.internalId, filters)
+    return await this.svc(AppRequestServiceInternal).getActivityForAppRequest(appRequest.internalId, pageInfo, filters, paged)
   }
 
   isOwn (appRequest: AppRequest) {

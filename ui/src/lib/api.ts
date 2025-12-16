@@ -788,9 +788,9 @@ class API extends APIBase {
     const response = await this.client.query({
       __name: 'GetRequestActivity',
       appRequests: {
-        __args: { filter: { ids: [appRequestId] }, paged },
+        __args: { filter: { ids: [appRequestId] } },
         activity: {
-          __args: { filters },
+          __args: { filters, paged },
           id: true,
           user: {
             login: true,
