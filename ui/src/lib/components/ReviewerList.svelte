@@ -61,7 +61,8 @@
     {
       label: 'View',
       icon: View,
-      href: `${base}/requests/${r.id}/apply`
+     // href: `${base}/requests/${r.id}/apply`
+     href: `${base}/requests/${r.id}/approve`
     }
   ]}
 >
