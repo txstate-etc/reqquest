@@ -1,6 +1,7 @@
 <script lang="ts">
   import { PUBLIC_ENVIRONMENT } from '$env/static/public'
   import { api } from '$lib'
+  import { page } from '$app/state'
   import { UIShell } from '@txstate-mws/carbon-svelte'
   import { unifiedAuth } from '@txstate-mws/sveltekit-utils'
   import Dashboard from 'carbon-icons-svelte/lib/Dashboard.svelte'
@@ -16,7 +17,6 @@
   export let data: LayoutData
   $: ({ access } = data)
 </script>
-
 <UIShell appName={uiRegistry.config.appName} reverseWeights={!!PUBLIC_ENVIRONMENT} companyName={PUBLIC_ENVIRONMENT || 'TXST'} overlayText={PUBLIC_ENVIRONMENT} navRoot={{
   title: uiRegistry.config.appName,
   hideFromSideNav: true,
@@ -40,7 +40,7 @@
           routeId: '/requests/[id]/apply/programs'
         }, {
           routeId: '/requests/[id]/apply/[promptId]',
-          title: $page => $page.data.promptLookup?.[$page.params.promptId!]?.navTitle ?? 'Unknown Prompt'
+          title: page => page.data.promptsById?.[page.data.prompt.id]?.navTitle ?? 'Unknown Prompt'
         }]
       }]
     },
