@@ -1160,6 +1160,7 @@ type PaginationInfoWithTotalItems {
 type PaginationResponse {
   accessUsers: PaginationInfoWithTotalItems
   appRequests: PaginationInfoWithTotalItems
+  appRequestsActivity: PaginationInfoWithTotalItems
 }
 
 type Period {

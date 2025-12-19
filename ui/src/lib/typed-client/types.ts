@@ -1306,6 +1306,9 @@ export default {
             "appRequests": [
                 54
             ],
+            "appRequestsActivity": [
+                54
+            ],
             "__typename": [
                 74
             ]

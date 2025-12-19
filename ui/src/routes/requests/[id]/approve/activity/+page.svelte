@@ -31,7 +31,8 @@
     ]} noItemsTitle="No activity." noItemsSubtitle="No activity has been recorded for this {uiRegistry.getWord('appRequest').toLocaleLowerCase()}." />
   </div>
   <Pagination
-    totalItems={activity.length}
+    page={data.pageInfo?.currentPage}
+    totalItems={data.pageInfo?.totalItems}
     pageSize={25}
     chooseSize
   />

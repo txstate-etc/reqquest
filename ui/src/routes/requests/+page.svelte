@@ -209,7 +209,8 @@
   rows={requests}
 />
 <Pagination
-  totalItems={appRequests.length}
+  totalItems={data.pageInfo.appRequests?.totalItems}
+  page={data.pageInfo.appRequests?.currentPage}
   pageSize={25}
   chooseSize
 />

@@ -806,13 +806,24 @@ class API extends APIBase {
           data: true,
           createdAt: true
         }
+      },
+      pageInfo: {
+        appRequestsActivity: {
+          currentPage: true,
+          totalItems: true,
+          hasNextPage: true,
+          perPage: true
+        }
       }
     })
     if (response.appRequests.length === 0) return undefined
-    return response.appRequests[0].activity.map(activity => ({
-      ...activity,
-      createdAt: DateTime.fromISO(activity.createdAt)
-    }))
+    return {
+      activity: response.appRequests[0].activity.map(activity => ({
+        ...activity,
+        createdAt: DateTime.fromISO(activity.createdAt)
+      })),
+      pageInfo: response.pageInfo.appRequestsActivity
+    }
   }
 
   async getPromptData (appRequestId: string, promptId: string) {

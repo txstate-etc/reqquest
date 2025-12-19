@@ -221,7 +221,7 @@ export function rqContextMixin (Ctx: typeof Context): RQContextClass {
     }
 
     async getPaginationInfo <P extends PaginationInfoShared = PaginationInfoShared> (queryType: string): Promise<P | undefined> {
-      await sleep(1)
+      await sleep(10)
       return (await (this.paginationPromises[queryType] ?? this.allPaginationPromises[queryType])) as P
     }
   }

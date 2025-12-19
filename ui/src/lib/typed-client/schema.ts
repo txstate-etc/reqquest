@@ -507,6 +507,7 @@ export interface PaginationInfoWithTotalItems {
 export interface PaginationResponse {
     accessUsers: (PaginationInfoWithTotalItems | null)
     appRequests: (PaginationInfoWithTotalItems | null)
+    appRequestsActivity: (PaginationInfoWithTotalItems | null)
     __typename: 'PaginationResponse'
 }
 
@@ -1327,6 +1328,7 @@ export interface PaginationInfoWithTotalItemsGenqlSelection{
 export interface PaginationResponseGenqlSelection{
     accessUsers?: PaginationInfoWithTotalItemsGenqlSelection
     appRequests?: PaginationInfoWithTotalItemsGenqlSelection
+    appRequestsActivity?: PaginationInfoWithTotalItemsGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
