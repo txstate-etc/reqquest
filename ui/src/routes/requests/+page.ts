@@ -1,8 +1,11 @@
 import { extractMergedFilters, extractPaginationParams } from '@txstate-mws/carbon-svelte'
 import { api, type AppRequestFilter } from '$lib'
 import type { PageLoad } from './$types'
+import { error } from '@sveltejs/kit'
 
-export const load: PageLoad = async ({ params, url }) => {
+export const load: PageLoad = async ({ url, parent }) => {
+  const { access } = await parent()
+  if (!access.viewAppRequestList) throw error(403)
   const { page, pagesize } = extractPaginationParams(url)
   const filters: Omit<AppRequestFilter, 'indexes'> | undefined = extractMergedFilters(url)
   const [response, allPeriods] = await Promise.all([

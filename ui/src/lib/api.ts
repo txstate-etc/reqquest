@@ -83,7 +83,7 @@ class API extends APIBase {
     return { users: response.accessUsers, pageInfo: response.pageInfo.accessUsers }
   }
 
-  async getApplicantRequests (additionalFilters = {}, paged: Pagination) {
+  async getApplicantRequests (additionalFilters = {}, paged?: Pagination) {
     // const filter = { own: true, ...additionalFilters }
     const filter = { ...additionalFilters }
     const response = await this.client.query({

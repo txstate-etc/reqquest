@@ -3,6 +3,7 @@ import { extractMergedFilters } from '@txstate-mws/carbon-svelte'
 import { uiRegistry } from '../../../local/index.js'
 import type { PageLoad } from './$types'
 import type { AppRequestFilter } from '$lib/typed-client/schema'
+import { error } from '@sveltejs/kit'
 
 function getRecentCutoffDate (daysAgo: number): string {
   const cutoff = new Date()
@@ -35,7 +36,10 @@ function buildApiFilters (
   }
 }
 
-export const load: PageLoad = async ({ url, depends }) => {
+export const load: PageLoad = async ({ url, depends, parent }) => {
+  const { access } = await parent()
+  if (!access.viewApplicantDashboard) throw error(403)
+
   const filters = extractMergedFilters(url)
   const currentTab = filters.t ?? 'recent_applications'
 
@@ -45,10 +49,9 @@ export const load: PageLoad = async ({ url, depends }) => {
 
   const apiFilters = buildApiFilters(currentTab, filters, recentCutoffIso)
 
-  const [appRequests, openPeriods, access] = await Promise.all([
+  const [appRequests, openPeriods] = await Promise.all([
     api.getApplicantRequests(apiFilters),
-    api.getOpenPeriods(),
-    api.getAccess()
+    api.getOpenPeriods()
   ])
 
   // Extract available years for the year filter dropdown (only used on past_applications tab)
