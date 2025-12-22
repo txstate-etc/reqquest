@@ -239,7 +239,7 @@
               {:else}
                 <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
                 {#if prompt.actions.update}
-                  {#if prompt.invalidated && prompt.preloadData}
+                  {#if prompt.invalidated}
                     <Button kind="primary" size="field" on:click={editPrompt(prompt)}>Review correction</Button>
                   {:else}
                     <Button kind="ghost" size="field" icon={Edit} iconDescription="Edit Prompt" class="prompt-edit" on:click={editPrompt(prompt)} />

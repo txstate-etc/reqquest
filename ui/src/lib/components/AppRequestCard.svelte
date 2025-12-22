@@ -26,7 +26,7 @@
     ? request.applications
       .flatMap(app => app.requirements)
       .flatMap(req => req.prompts)
-      .find(p => p.invalidated && p.invalidatedReason)
+      .find(p => p.visibility === 'AVAILABLE' && p.invalidated && p.invalidatedReason)
     : undefined
   $: navButton = firstInvalidatedPrompt
     ? { label: 'Make corrections', href: `/requests/${request.id}/apply/${firstInvalidatedPrompt.id}` }

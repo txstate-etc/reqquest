@@ -31,12 +31,12 @@
         href: resolve(`/requests/${appRequestForExport.id}/apply/${prompt.id}`),
         type: $page.params.promptId === prompt.id
           ? 'current'
-          : prompt.answered ? 'complete' : 'available',
+          : prompt.answered && !prompt.invalidated ? 'complete' : 'available',
         substeps: []
       })
     }
-    if (prequalPrompts.some(p => !p.answered)) {
-      nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${prequalPrompts.find(p => !p.answered)!.id}`)
+    if (prequalPrompts.some(p => !p.answered || p.invalidated)) {
+      nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${prequalPrompts.find(p => !p.answered || p.invalidated)!.id}`)
     } else {
       if (foundCurrent) nextHref = resolve(`/requests/${appRequestForExport.id}/apply/programs`)
       foundCurrent = false
@@ -44,13 +44,13 @@
         const promptsUnderPrograms = applicationsForNav
           .flatMap(app => app.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION))
           .flatMap(r => r.prompts)
-        const qualFinished = promptsUnderPrograms.every(p => p.answered)
-        const postFinished = postqualPrompts.every(p => p.answered)
+        const qualFinished = promptsUnderPrograms.every(p => p.answered && !p.invalidated)
+        const postFinished = postqualPrompts.every(p => p.answered && !p.invalidated)
         if (!qualFinished) {
-          const prompt = promptsUnderPrograms.find(p => !p.answered)
+          const prompt = promptsUnderPrograms.find(p => !p.answered || p.invalidated)
           nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${prompt!.id}`)
         } else if (!postFinished) {
-          const prompt = postqualPrompts.find(p => !p.answered)
+          const prompt = postqualPrompts.find(p => !p.answered || p.invalidated)
           nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${prompt!.id}`)
         } else {
           nextHref = resolve(`/requests/${appRequestForExport.id}/apply/review`)
@@ -91,7 +91,7 @@
               href: resolve(`/requests/${appRequestForExport.id}/apply/${prompt.id}`),
               type: $page.params.promptId === prompt.id
                 ? 'current'
-                : prompt.answered ? 'complete' : 'available'
+                : prompt.answered && !prompt.invalidated ? 'complete' : 'available'
             })
           }
         }
@@ -133,7 +133,7 @@
           href: resolve(`/requests/${appRequestForExport.id}/apply/${prompt.id}`),
           type: $page.params.promptId === prompt.id
             ? 'current'
-            : prompt.answered ? 'complete' : 'available',
+            : prompt.answered && !prompt.invalidated ? 'complete' : 'available',
           substeps: []
         })
       }

@@ -468,7 +468,6 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
          * applicant version of the prompt to be answered=false.
          */
         (data[prompt.key] == null && applicantRequirementTypes.has(prompt.requirementType))
-        || prompt.invalidated
       ) {
         prompt.answered = false
       } else {
@@ -547,12 +546,12 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
         let hasUnanswered = false
         for (const prompt of noDisplayPrompts) {
           prompt.visibility = PromptVisibility.UNREACHABLE
-          if (!prompt.answered) hasUnanswered = true
+          if (!prompt.answered || prompt.invalidated) hasUnanswered = true
           else requiredData[prompt.key] = data[prompt.key]
         }
         let resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
 
-        const anyOrderAllAnswered = anyOrderPrompts.every(p => p.answered)
+        const anyOrderAllAnswered = anyOrderPrompts.every(p => p.answered && !p.invalidated)
         for (const prompt of anyOrderPrompts) {
           prompt.visibility = PromptVisibility.UNREACHABLE
           if (!hasUnanswered && resolveInfo.status === RequirementStatus.PENDING) {
@@ -573,7 +572,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
             else prompt.visibility = PromptVisibility.AVAILABLE
             promptsSeenInApplication.add(prompt.key)
             promptsSeenInRequest.add(prompt.key)
-            if (prompt.answered) {
+            if (prompt.answered && !prompt.invalidated) {
               requiredData[prompt.key] = data[prompt.key]
               resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
             } else hasUnanswered = true

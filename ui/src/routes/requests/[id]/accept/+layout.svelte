@@ -35,7 +35,7 @@
             href: resolve(`/requests/${appRequestForExport.id}/accept/${prompt.id}`),
             type: $page.params.promptId === prompt.id
               ? 'current'
-              : prompt.answered ? 'complete' : 'available'
+              : prompt.answered && !prompt.invalidated ? 'complete' : 'available'
           })
         }
       }

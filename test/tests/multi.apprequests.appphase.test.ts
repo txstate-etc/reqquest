@@ -415,9 +415,9 @@ test.describe.serial('App Request - App Phase - workflows', { tag: '@multi' }, (
       }
     `
     const variables = { appRequestId: appRequest2Id }
-    const response = await applicant2Request.graphql<{ errors: { message: string }[] }>(query, variables)    
+    const response = await applicant2Request.graphql<{ errors: { message: string }[] }>(query, variables)
     expect(response.errors[0].message).toEqual('You may not close this app request.')
-  })  
+  })
 
   let lastAppRequestStatus = ''
   test('Applicant 2 - submit app request with passing data', async ({ applicant2Request }) => {

@@ -8,7 +8,7 @@ import { error } from '@sveltejs/kit'
 import type { PhaseChangeMutations } from './components/types.js'
 
 export type CompletionStatus = 'ELIGIBLE' | 'INELIGIBLE' | 'PENDING'
-const showDupePrompts = PUBLIC_SHOW_DUPLICATE_PROMPTS.trim() === 'true'
+export const showDupePrompts = PUBLIC_SHOW_DUPLICATE_PROMPTS.trim() === 'true'
 
 class API extends APIBase {
   client = createClient({
@@ -117,6 +117,7 @@ class API extends APIBase {
             statusReason: true,
             prompts: {
               id: true,
+              visibility: true,
               invalidated: true,
               invalidatedReason: true
             }
@@ -134,41 +135,6 @@ class API extends APIBase {
     })
 
     return response.appRequests
-  }
-
-  async getNextPrompt (appRequestId: string, currentPromptKey?: string) {
-    const response = await this.client.query({
-      __name: 'GetNextPrompt',
-      appRequests: {
-        __args: { filter: { ids: [appRequestId] } },
-        applications: {
-          requirements: {
-            prompts: {
-              id: true,
-              key: true,
-              answered: true,
-              visibility: true,
-              moot: true
-            }
-          }
-        }
-      }
-    })
-    let currentKeyFound = false
-    for (const applications of response.appRequests[0]?.applications ?? []) {
-      for (const requirement of applications.requirements) {
-        for (const prompt of requirement.prompts) {
-          if (prompt.visibility !== enumPromptVisibility.AVAILABLE) continue
-          if (currentPromptKey == null) {
-            if (!prompt.answered) return prompt
-          } else {
-            if (currentKeyFound) return prompt
-            if (prompt.key === currentPromptKey) currentKeyFound = true
-          }
-        }
-      }
-    }
-    return undefined
   }
 
   async getApplicantPrompt (appRequestId: string, promptId: string) {

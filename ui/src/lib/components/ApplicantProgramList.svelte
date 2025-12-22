@@ -12,7 +12,7 @@
   export let viewMode = false
   export let showTooltipsAsText = false
 
-  $: promptsByApplicationId = applications.reduce((acc, curr) => ({
+  $: promptsByApplicationId = applications.reduce<Record<string, typeof applications[0]['requirements'][0]['prompts'] | undefined>>((acc, curr) => ({
     ...acc,
     [curr.id]: curr.requirements
       .filter(r => r.type === enumRequirementType.QUALIFICATION)
@@ -22,8 +22,8 @@
   $: programButtonStatus = applications.reduce((acc, curr) => ({
     ...acc,
     [curr.id]: curr.completionStatus === enumApplicationStatus.PENDING
-      ? curr.requirements.some(r => r.prompts.some(p => p.answered))
-        ? curr.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION).every(r => r.prompts.every(p => p.answered))
+      ? curr.requirements.some(r => r.prompts.some(p => p.answered && !p.invalidated))
+        ? curr.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION).every(r => r.prompts.every(p => p.answered && !p.invalidated))
           ? 'complete'
           : 'continue'
         : 'start'
@@ -35,7 +35,7 @@
   }), {})
   $: programFirstPromptId = applications.reduce((acc, curr) => ({
     ...acc,
-    [curr.id]: (promptsByApplicationId[curr.id].find(p => !p.answered) ?? promptsByApplicationId[curr.id][0])?.id
+    [curr.id]: (promptsByApplicationId[curr.id]?.find(p => !p.answered || p.invalidated) ?? promptsByApplicationId[curr.id]?.[0])?.id
   }), {})
 </script>
 

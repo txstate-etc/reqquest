@@ -5,7 +5,7 @@ import type { PageLoad } from './$types'
 export const load: PageLoad = async ({ params, parent }) => {
   const { applicationsAccept } = await parent()
   for (const prompt of applicationsAccept.flatMap(a => a.requirements).flatMap(r => r.prompts)) {
-    if (!prompt.answered) {
+    if (!prompt.answered || prompt.invalidated) {
       throw redirect(303, resolve(`/requests/${params.id}/accept/${prompt.id}`))
     }
   }

@@ -23,7 +23,6 @@
   const translateMutations = {
     submitAppRequest: 'submitted request for review.',
     returnToApplicant: 'returned request to applicant',
-    //completeAppRequestReview: 'completed request review',
     completeReview: 'completed request review',
     returnToReview: 'returned request to review',
     acceptOffer: 'accepted offer',
@@ -145,7 +144,6 @@
       <Select bind:selected={appRequestAction} labelText="Application action" size="sm">
         <SelectItem value="" text="Choose one" />
         {#if basicRequestData.actions.completeReview}
-          <!--<SelectItem value="completeAppRequestReview" text="Complete Review" />-->
           <SelectItem value="completeReview" text="Complete Review" />
         {/if}
         {#if basicRequestData.actions.completeRequest}

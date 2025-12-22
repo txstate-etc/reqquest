@@ -76,10 +76,10 @@ export class RequirementPrompt extends Prompt {
   @Field(type => ID)
   id: string
 
-  @Field({ description: 'Whether the prompt has been answered on this request.' })
+  @Field({ description: 'Whether the prompt has been answered on this request. Note that the answer may be marked invalidated, which means that even though it has been answered, the current answer can\'t be used and the user needs to answer it again.' })
   answered: boolean
 
-  @Field({ description: 'When true, this prompt has been invalidated by the answer to another prompt. The `answered` field should remain false until the user specifically answers this prompt again, regardless of the output of the definition\'s `complete` method.' })
+  @Field({ description: 'When true, this prompt has been invalidated by the answer to another prompt. The `answered` field will remain true so be sure to check this field as well when determining whether the prompt is complete.' })
   invalidated: boolean
 
   @Field({ nullable: true, description: 'If the prompt has been invalidated, this may contain a reason why. It should be displayed to the user.' })
