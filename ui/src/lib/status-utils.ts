@@ -78,12 +78,12 @@ export const APP_REQUEST_STATUS_CONFIG: Record<AppRequestStatus, AppStatusConfig
     description: 'Waiting for you to respond to the offer.',
     color: 'teal',
     waitingOn: 'Applicant',
-    buttonText: 'Download Offer',
-    actionType: 'download',
+    buttonText: 'Review Offer',
+    actionType: 'navigate',
     category: 'current',
     navigation: {
-      label: 'Review offer',
-      href: (requestId: string) => `/requests/${requestId}/apply`
+      label: 'Review Offer',
+      href: (requestId: string) => `/requests/${requestId}/accept`
     }
   },
   ACCEPTED: {
@@ -100,13 +100,17 @@ export const APP_REQUEST_STATUS_CONFIG: Record<AppRequestStatus, AppStatusConfig
     description: 'You have been offered and can now accept.',
     color: 'teal',
     waitingOn: 'Applicant',
-    buttonText: 'Download Offer',
-    actionType: 'download',
-    category: 'current'
+    buttonText: 'Review Offer',
+    actionType: 'navigate',
+    category: 'current',
+    navigation: {
+      label: 'Review Offer',
+      href: (requestId: string) => `/requests/${requestId}/accept`
+    }
   },
   REVIEW_COMPLETE: {
     label: 'In review',
-    description: 'Application is being reviewed.',
+    description: 'Your application is being reviewed.',
     color: 'blue',
     waitingOn: 'Reviewer',
     buttonText: 'Export Application',
