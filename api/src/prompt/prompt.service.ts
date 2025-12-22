@@ -9,7 +9,8 @@ import {
   getAppRequests, getAppRequestData, appRequestTransaction,
   recordAppRequestActivity, appConfig, AppRequestData, AppRequestStatus, ApplicationPhase,
   ApplicationService, setRequirementPromptsInvalid, AppRequestServiceInternal,
-  AppRequestPhase, RequirementType, periodConfigCache, programRegistry
+  AppRequestPhase, RequirementType, periodConfigCache, programRegistry,
+  statusVisibleToApplicantPhases, applicantRequirementTypes
 } from '../internal.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
@@ -150,12 +151,14 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     )
   }
 
-  mayViewUnredacted (prompt: RequirementPrompt): boolean {
-    if (this.isOwn(prompt)) {
-      if (promptRegistry.isUserPrompt(prompt.key)) return true
-      if (!this.hasControl('AppRequest', 'review_own', prompt.appRequestTags)) return false
-    }
+  mayViewAsReviewer (prompt: RequirementPrompt) {
+    if (this.isOwn(prompt) && !this.hasControl('AppRequest', 'review_own', prompt.appRequestTags)) return false
     return this.hasControl('PromptAnswer', 'view', { ...prompt.authorizationKeys, ...prompt.appRequestTags })
+  }
+
+  mayViewUnredacted (prompt: RequirementPrompt) {
+    if (this.isOwn(prompt) && promptRegistry.isUserPrompt(prompt.key)) return true
+    return this.mayViewAsReviewer(prompt)
   }
 
   mayViewForApplicant (prompt: RequirementPrompt) {
@@ -194,6 +197,15 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
       }
     }
     return false
+  }
+
+  removeProperties (prompt: RequirementPrompt) {
+    if (this.mayViewAsReviewer(prompt)) return prompt
+    if (statusVisibleToApplicantPhases.has(prompt.applicationPhase) && applicantRequirementTypes.has(prompt.requirementType)) return prompt
+    const newPrompt = RequirementPrompt.clone(prompt)
+    newPrompt.invalidated = false
+    newPrompt.invalidatedReason = undefined
+    return newPrompt
   }
 
   async update (prompt: RequirementPrompt, data: any, validateOnly = false, dataVersion?: number) {

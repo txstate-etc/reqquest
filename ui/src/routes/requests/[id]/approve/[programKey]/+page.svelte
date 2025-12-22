@@ -9,7 +9,7 @@
   import WarningAltFilled from 'carbon-icons-svelte/lib/WarningAltFilled.svelte'
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import { invalidate, invalidateAll } from '$app/navigation'
-  import { api, enumPromptVisibility, enumRequirementStatus, enumRequirementType, RenderDisplayComponent, IntroPanel, enumAppRequestStatus } from '$lib'
+  import { api, enumPromptVisibility, enumRequirementStatus, enumRequirementType, RenderDisplayComponent, applicantRequirementTypes } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../../local'
   import ApproveLayout from '../ApproveLayout.svelte'
@@ -239,8 +239,8 @@
               {:else}
                 <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
                 {#if prompt.actions.update}
-                  {#if prompt.invalidated}
-                    <Button kind="primary" size="field" on:click={editPrompt(prompt)}>Review correction</Button>
+                  {#if prompt.invalidated && !applicantRequirementTypes.has(requirement.type)}
+                    <Button kind="primary" size="field" class="prompt-edit" on:click={editPrompt(prompt)}>Review correction</Button>
                   {:else}
                     <Button kind="ghost" size="field" icon={Edit} iconDescription="Edit Prompt" class="prompt-edit" on:click={editPrompt(prompt)} />
                   {/if}
@@ -319,12 +319,6 @@
     top: 0;
     right: 0;
   }
-  .prompts dd :global(.bx--btn--primary) {
-    position: absolute;
-    top: 0;
-    right: 5px;
-  }
-
   dl.card {
     display: grid;
     grid-template-columns: auto 1fr;

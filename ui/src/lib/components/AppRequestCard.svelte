@@ -9,6 +9,7 @@
   import type { PageData } from '../../routes/dashboards/applicant/$types'
   import StatusMessageList from './StatusMessageList.svelte'
   import WarningIconYellow from './WarningIconYellow.svelte'
+  import { enumPromptVisibility } from '$lib/typed-client'
 
   // Type for the partial AppRequest data passed from dashboard
   type DashboardAppRequest = PageData['appRequests'][number]
@@ -18,16 +19,11 @@
   export let showAcceptanceButtons = true
   export let onAcceptanceNavigate: ((requestId: string) => void) | undefined = undefined
 
-  const CORRECTABLE_STATUSES = ['STARTED', 'READY_TO_SUBMIT', 'DISQUALIFIED']
-
   $: statusInfo = getAppRequestStatusInfo(request.status)
-  $: canMakeCorrections = CORRECTABLE_STATUSES.includes(request.status)
-  $: firstInvalidatedPrompt = canMakeCorrections
-    ? request.applications
-      .flatMap(app => app.requirements)
-      .flatMap(req => req.prompts)
-      .find(p => p.visibility === 'AVAILABLE' && p.invalidated && p.invalidatedReason)
-    : undefined
+  $: firstInvalidatedPrompt = request.applications
+    .flatMap(app => app.requirements)
+    .flatMap(req => req.prompts)
+    .find(p => p.visibility === enumPromptVisibility.AVAILABLE && p.invalidated && p.invalidatedReason)
   $: navButton = firstInvalidatedPrompt
     ? { label: 'Make corrections', href: `/requests/${request.id}/apply/${firstInvalidatedPrompt.id}` }
     : getNavigationButton(request.status, request.id)
@@ -62,11 +58,10 @@
 
     {#if request.applications.length > 0}
       {#each request.applications as application (application.id)}
-        {@const invalidatedPrompts = canMakeCorrections
-          ? application.requirements
-            .flatMap(req => req.prompts)
-            .filter(p => p.invalidated && p.invalidatedReason)
-          : []}
+        {@const invalidatedPrompts = application.requirements
+          .flatMap(req => req.prompts)
+          .filter(p => p.visibility === enumPromptVisibility.AVAILABLE && p.invalidated && p.invalidatedReason)
+        }
         {@const warningReqs = application.requirements.filter(r => r.status === 'WARNING' && r.statusReason)}
         {@const appStatusTag = invalidatedPrompts.length > 0
           ? { label: 'Needs corrections', color: 'magenta' as const }
@@ -112,7 +107,7 @@
           {/if}
 
           <!-- Corrections needed for non-INELIGIBLE applications -->
-          {#if application.status !== 'INELIGIBLE' && invalidatedPrompts.length > 0}
+          {#if invalidatedPrompts.length > 0}
             <StatusMessageList
               items={invalidatedPrompts.map(p => ({ id: p.id, message: p.invalidatedReason! }))}
               accordionTitle="Multiple corrections needed" />

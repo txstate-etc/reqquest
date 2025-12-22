@@ -73,6 +73,31 @@ export class RequirementPrompt extends Prompt {
     this.applicationPhase = row.applicationPhase
   }
 
+  static clone (prompt: RequirementPrompt) {
+    return new RequirementPrompt({
+      id: prompt.internalId,
+      appRequestDbPhase: prompt.appRequestDbPhase,
+      appRequestDbStatus: prompt.appRequestDbStatus,
+      requirementKey: prompt.requirementKey,
+      requirementType: prompt.requirementType,
+      promptKey: prompt.promptKey,
+      requirementId: prompt.requirementInternalId,
+      appRequestId: prompt.appRequestInternalId,
+      applicationId: prompt.applicationInternalId,
+      periodId: Number(prompt.periodId),
+      userId: prompt.userInternalId,
+      programKey: prompt.programKey,
+      answered: prompt.answered ? 1 : 0,
+      moot: prompt.moot ? 1 : 0,
+      locked: prompt.locked ? 1 : 0,
+      invalidated: prompt.invalidated ? 1 : 0,
+      invalidatedReason: prompt.invalidatedReason ?? null,
+      visibility: prompt.visibility,
+      applicationPhase: prompt.applicationPhase,
+      workflowStage: prompt.workflowStage
+    })
+  }
+
   @Field(type => ID)
   id: string
 

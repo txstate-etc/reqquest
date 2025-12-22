@@ -676,9 +676,9 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       prompt.locked = promptKeysLocked.has(prompt.key)
     }
 
-    // determine appRequest status based on the application statuses
     if (applications.every(a => a.status === ApplicationStatus.INELIGIBLE || a.status === ApplicationStatus.REJECTED)) {
-      if (applications.some(a => a.ineligiblePhase === IneligiblePhases.ACCEPTANCE)) appRequest.status = AppRequestStatus.NOT_ACCEPTED
+      if (appRequest.phase === AppRequestPhase.SUBMITTED) appRequest.status = AppRequestStatus.APPROVAL
+      else if (applications.some(a => a.ineligiblePhase === IneligiblePhases.ACCEPTANCE)) appRequest.status = AppRequestStatus.NOT_ACCEPTED
       else if (applications.some(a => a.ineligiblePhase === IneligiblePhases.APPROVAL || a.ineligiblePhase === IneligiblePhases.WORKFLOW)) appRequest.status = AppRequestStatus.NOT_APPROVED
       else appRequest.status = AppRequestStatus.DISQUALIFIED
     } else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_SUBMIT) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.READY_TO_SUBMIT
