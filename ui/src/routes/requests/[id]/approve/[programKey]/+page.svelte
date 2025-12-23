@@ -9,7 +9,7 @@
   import WarningAltFilled from 'carbon-icons-svelte/lib/WarningAltFilled.svelte'
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import { invalidate, invalidateAll } from '$app/navigation'
-  import { api, enumPromptVisibility, enumRequirementStatus, enumRequirementType, RenderDisplayComponent, applicantRequirementTypes } from '$lib'
+  import { api, enumPromptVisibility, enumRequirementStatus, enumRequirementType, RenderDisplayComponent, applicantRequirementTypes, enumApplicationPhase, type ApplicationPhase } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../../local'
   import ApproveLayout from '../ApproveLayout.svelte'
@@ -95,7 +95,7 @@
     { title: 'Acceptance', requirements: acceptanceReqs },
     ...blockingWorkflowStages,
     ...nonBlockingWorkflowStages
-  ].filter(s => s.requirements.length > 0 && s.requirements.some(r => r.prompts.length > 0))
+  ].filter(s => (!!s.requirements[0]?.workflowStage) || (s.requirements.length > 0 && s.requirements.some(r => r.prompts.length > 0)))
 
   type PromptExtraData = Awaited<ReturnType<typeof api.getPromptData>>
   type Prompt = PageData['appRequest']['applications'][0]['requirements'][0]['prompts'][0]
@@ -197,59 +197,65 @@
   </svelte:fragment>
   {#each sections as section (section.title)}
     <Panel title={section.title} expandable expanded>
-      <dl class="prompts">
-        {#each section.requirements as requirement (requirement.id)}
-          {#each requirement.prompts as prompt (prompt.id)}
-            {@const def = uiRegistry.getPrompt(prompt.key)}
-            {@const isReviewerQuestion = requirement.type === enumRequirementType.APPROVAL && !def?.automation}
-            {@const isAutomation = !!def?.automation}
-            {@const editMode = def != null && isReviewerQuestion && prompt.actions.update && def.formMode !== 'full' && !(prompt.invalidated && prompt.preloadData)}
-            {@const small = editMode && def.formMode !== 'full' ? def.formMode !== 'large' : def!.displayMode !== 'large'}
-            {@const large = editMode && def.formMode !== 'full' ? def.formMode === 'large' : def!.displayMode === 'large'}
-            {@const dtid = `dt-title-${prompt.id}`}
-            <dt class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation}>
-              {#if promptIndicator[prompt.key]?.indicator}
-                <div class="indicator-tooltip">
-                  <Tooltip align="start" direction="bottom">
-                    <svelte:fragment slot="icon">
-                      {#if promptIndicator[prompt.key]?.indicator === PromptIndicators.AUTOMATION}
-                        <MachineLearning size={20} />
-                      {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.WARNING}
-                        <WarningAltFilled size={20} class="warning-icon" />
-                      {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.DISQUALIFYING}
-                        <WarningFilled size={20} class="disqualifying-icon" />
-                      {/if}
-                    </svelte:fragment>
-                    {promptIndicator[prompt.key]?.reason}
-                  </Tooltip>
+      {#if section.requirements.some(r => r.prompts.length > 0)}
+        <dl class="prompts">
+          {#each section.requirements as requirement (requirement.id)}
+            {#each requirement.prompts as prompt (prompt.id)}
+              {@const def = uiRegistry.getPrompt(prompt.key)}
+              {@const isReviewerQuestion = requirement.type === enumRequirementType.APPROVAL && !def?.automation}
+              {@const isAutomation = !!def?.automation}
+              {@const editMode = def != null && isReviewerQuestion && prompt.actions.update && def.formMode !== 'full' && !(prompt.invalidated && prompt.preloadData)}
+              {@const small = editMode && def.formMode !== 'full' ? def.formMode !== 'large' : def!.displayMode !== 'large'}
+              {@const large = editMode && def.formMode !== 'full' ? def.formMode === 'large' : def!.displayMode === 'large'}
+              {@const dtid = `dt-title-${prompt.id}`}
+              <dt class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation}>
+                {#if promptIndicator[prompt.key]?.indicator}
+                  <div class="indicator-tooltip">
+                    <Tooltip align="start" direction="bottom">
+                      <svelte:fragment slot="icon">
+                        {#if promptIndicator[prompt.key]?.indicator === PromptIndicators.AUTOMATION}
+                          <MachineLearning size={20} />
+                        {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.WARNING}
+                          <WarningAltFilled size={20} class="warning-icon" />
+                        {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.DISQUALIFYING}
+                          <WarningFilled size={20} class="disqualifying-icon" />
+                        {/if}
+                      </svelte:fragment>
+                      {promptIndicator[prompt.key]?.reason}
+                    </Tooltip>
+                  </div>
+                {/if}
+                <div id={dtid}>
+                  {prompt.title}
                 </div>
-              {/if}
-              <div id={dtid}>
-                {prompt.title}
-              </div>
-            </dt>
-            <dd class="flow" class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
-              {#if editMode}
-                <Form preload={prompt.preloadData} submit={onPromptSubmit(prompt.id)} validate={onPromptValidate(prompt.id)} autoSave on:autosaved={onPromptSaved} let:data let:messages>
-                  <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
-                  {#each messages as message (message.message, message.type)}
-                    <FormInlineNotification {message} />
-                  {/each}
-                </Form>
-              {:else}
-                <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
-                {#if prompt.actions.update}
-                  {#if prompt.invalidated && !applicantRequirementTypes.has(requirement.type)}
-                    <Button kind="primary" size="field" class="prompt-edit" on:click={editPrompt(prompt)}>Review correction</Button>
-                  {:else}
-                    <Button kind="ghost" size="field" icon={Edit} iconDescription="Edit Prompt" class="prompt-edit" on:click={editPrompt(prompt)} />
+              </dt>
+              <dd class="flow" class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
+                {#if editMode}
+                  <Form preload={prompt.preloadData} submit={onPromptSubmit(prompt.id)} validate={onPromptValidate(prompt.id)} autoSave on:autosaved={onPromptSaved} let:data let:messages>
+                    <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
+                    {#each messages as message (message.message, message.type)}
+                      <FormInlineNotification {message} />
+                    {/each}
+                  </Form>
+                {:else}
+                  <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
+                  {#if prompt.actions.update}
+                    {#if prompt.invalidated && !applicantRequirementTypes.has(requirement.type)}
+                      <Button kind="primary" size="field" class="prompt-edit" on:click={editPrompt(prompt)}>Review correction</Button>
+                    {:else}
+                      <Button kind="ghost" size="field" icon={Edit} iconDescription="Edit Prompt" class="prompt-edit" on:click={editPrompt(prompt)} />
+                    {/if}
                   {/if}
                 {/if}
-              {/if}
-            </dd>
+              </dd>
+            {/each}
           {/each}
-        {/each}
-      </dl>
+        </dl>
+      {:else if section.requirements[0]?.workflowStage && section.requirements[0]?.workflowStage.key === application.workflowStage?.key}
+        No questions need to be answered in this section. You may advance to the next step.
+      {:else}
+        No questions in this section.
+      {/if}
     </Panel>
   {/each}
   <div class="app-actions [ flex items-end ]">

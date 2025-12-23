@@ -3,10 +3,9 @@
   export let appRequest
   export let configData
   $: approveQuestion = configData.text
-  console.log(`AppRequest data: ${JSON.stringify(appRequest)}`) // TODO:  Check app request data return
+  $: hasAnException = appRequest?.review_applicant_dog_info_prompt?.exerciseException === true
 </script>
-{#if (appRequest?.review_applicant_dog_info_prompt?.exerciseException === true)}
-  <FieldRadio boolean path="approve" legendText={approveQuestion} items={[{ label: 'Yes', value: true }, { label: 'No', value: false }]} />
-{:else}
-  <p>Exercise exemption was <b>not</b> issued</p>
+<FieldRadio boolean path="approve" legendText={approveQuestion} conditional={hasAnException} items={[{ label: 'Yes', value: true }, { label: 'No', value: false }]} />
+{#if !hasAnException}
+  <p>Exercise exemption was <b>not</b> issued.</p>
 {/if}

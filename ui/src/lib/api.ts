@@ -680,12 +680,14 @@ class API extends APIBase {
         data: true,
         applications: {
           id: true,
+          phase: true,
           status: true,
           statusReason: true,
           title: true,
           navTitle: true,
           programKey: true,
           workflowStage: {
+            key: true,
             blocking: true
           },
           nextWorkflowStage: {

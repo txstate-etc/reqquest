@@ -107,7 +107,9 @@ export class ApplicationService extends AuthService<Application> {
 
   async mayReverseWorkflow (application: Application) {
     if (application.closed) return false
-    if (![ApplicationPhase.WORKFLOW_BLOCKING, ApplicationPhase.REVIEW_COMPLETE, ApplicationPhase.COMPLETE, ApplicationPhase.WORKFLOW_NONBLOCKING].includes(application.phase)) return false
+    if (![ApplicationPhase.WORKFLOW_BLOCKING, ApplicationPhase.REVIEW_COMPLETE, ApplicationPhase.COMPLETE, ApplicationPhase.WORKFLOW_NONBLOCKING, ApplicationPhase.READY_FOR_WORKFLOW].includes(application.phase)) return false
+    // READY_FOR_WORKFLOW could mean we are at the end of a workflow or at the end of review, if end of review we can't reverse
+    if (application.phase === ApplicationPhase.READY_FOR_WORKFLOW && !application.workflowStageKey) return false
     if (this.isOwn(application) && !this.hasControl('AppRequest', 'review_own')) return false
     if (!this.hasControl('AppRequest', 'review', application.appRequestTags)) return false
     if (application.appRequestPhase === AppRequestPhase.SUBMITTED) return true
