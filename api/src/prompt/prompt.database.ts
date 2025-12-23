@@ -80,6 +80,11 @@ export async function setRequirementPromptsInvalid (invalidateResponses: Invalid
   }
 }
 
+export async function setRequirementPromptsValid (promptKeys: string[], tdb: Queryable = db) {
+  if (promptKeys.length === 0) return
+  await tdb.update(`UPDATE requirement_prompts SET invalidated = 0, invalidatedReason = NULL WHERE promptKey IN (${tdb.in([], promptKeys)})`, promptKeys)
+}
+
 export async function syncPromptRecords (requirement: ApplicationRequirement, db: Queryable) {
   const existingPrompts = await db.getall<PromptRow>('SELECT * FROM requirement_prompts WHERE requirementId = ?', [requirement.internalId])
   const existingPromptKeys = new Set(existingPrompts.map(row => row.promptKey))

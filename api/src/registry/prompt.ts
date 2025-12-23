@@ -350,7 +350,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * which will win. It's probably best not to have two review prompts that
    * could potentially invalidate the same applicant prompt.
    */
-  validUponChange?: (data: DataType) => string[]
+  validUponChange?: RevalidatorFunction
   /**
    * An array of migrations to perform on the request data to make it compatible with the latest
    * version of the software. Takes the full request data object instead of the data
@@ -406,6 +406,7 @@ export interface InvalidatedResponse {
 }
 
 export type InvalidatorFunction = (data: any, config: any, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) => InvalidatedResponse[]
+export type RevalidatorFunction = (data: any, config: any, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) => string[]
 
 const labelLookupCache = new Cache(async (tag: { category: string, value: string }) => {
   return await (promptRegistry as any).indexLookups[tag.category]?.(tag.value) ?? tag.value
@@ -567,6 +568,12 @@ class PromptRegistry {
     const prompt = this.prompts[key]
     if (!prompt) throw new Error(`Prompt ${key} not found.`)
     return this.promptInvalidators[key](appRequestData[key], allPeriodConfig[key], appRequestData, allPeriodConfig) ?? []
+  }
+
+  getRevalidatedPrompts (key: string, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) {
+    const prompt = this.prompts[key]
+    if (!prompt) throw new Error(`Prompt ${key} not found.`)
+    return prompt.validUponChange?.(appRequestData[key], allPeriodConfig[key], appRequestData, allPeriodConfig) ?? []
   }
 
   migrations () {

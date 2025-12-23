@@ -72,5 +72,11 @@ export const review_applicant_state_residence_info_prompt: PromptDefinition = {
       invalidatedResponse.push({ promptKey: 'state_residence_prompt', reason: data.corrections })
     }
     return invalidatedResponse
+  },
+  validUponChange: (data: any, config: any, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) => {
+    if (data && data.residencyInfoAcceptable) {
+      return ['state_residence_prompt']
+    }
+    return []
   }
 }

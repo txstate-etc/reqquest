@@ -2,15 +2,13 @@ import { BaseService } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { equal } from 'txstate-utils'
 import {
-  AppRequestService, ApplicationRequirement, AuthService, Prompt, RequirementPrompt,
-  promptRegistry, getRequirementPrompts, ValidatedAppRequestResponse,
-  getPeriodPrompts, PeriodPrompt, requirementRegistry,
-  AppRequestStatusDB, AppRequest, setRequirementPromptValid, updateAppRequestData,
-  getAppRequests, getAppRequestData, appRequestTransaction,
-  recordAppRequestActivity, appConfig, AppRequestData, AppRequestStatus, ApplicationPhase,
-  ApplicationService, setRequirementPromptsInvalid, AppRequestServiceInternal,
-  AppRequestPhase, RequirementType, periodConfigCache, programRegistry,
-  statusVisibleToApplicantPhases, applicantRequirementTypes
+  AppRequestService, ApplicationRequirement, AuthService, Prompt, RequirementPrompt, promptRegistry,
+  getRequirementPrompts, ValidatedAppRequestResponse, getPeriodPrompts, PeriodPrompt,
+  requirementRegistry, AppRequestStatusDB, AppRequest, updateAppRequestData, getAppRequests,
+  getAppRequestData, appRequestTransaction, recordAppRequestActivity, appConfig, AppRequestData,
+  AppRequestStatus, ApplicationPhase, ApplicationService, setRequirementPromptsInvalid,
+  AppRequestServiceInternal, AppRequestPhase, RequirementType, periodConfigCache, programRegistry,
+  statusVisibleToApplicantPhases, applicantRequirementTypes, setRequirementPromptsValid
 } from '../internal.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
@@ -241,7 +239,8 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
         appRequestData[prompt.key] = processedData
         const promptsToInvalidate = promptRegistry.getInvalidatedPrompts(prompt.key, appRequestData, allConfigData)
         await setRequirementPromptsInvalid(promptsToInvalidate, db)
-        await setRequirementPromptValid(prompt, db)
+        const promptsToRevalidate = promptRegistry.getRevalidatedPrompts(prompt.key, appRequestData, allConfigData)
+        await setRequirementPromptsValid(promptsToRevalidate.concat([prompt.key]), db)
         previousAppPhases = (await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion, db))!
         recordAppRequestActivity(appRequest.internalId, this.user!.internalId, `${programRegistry.get(prompt.programKey)?.navTitle ?? 'Prompt'} Updated`, { data, description: prompt.title }, db)
       }
