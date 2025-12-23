@@ -335,6 +335,7 @@ export class AppRequestService extends AuthService<AppRequest> {
 
   mayCompleteRequest (appRequest: AppRequest) {
     if (this.isClosed(appRequest)) return false
+    if (appRequest.phase === AppRequestPhase.COMPLETE) return false
     // appRequest.readyToComplete is computed for us by evaluateAppRequest and includes non-blocking workflow check and applications are all ready to complete
     if (!appRequest.readyToComplete) return false
     if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false

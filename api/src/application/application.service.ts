@@ -68,6 +68,7 @@ export class ApplicationService extends AuthService<Application> {
     if (!await this.mayReverseWorkflow(application)) return null
     const blocking = application.appRequestPhase !== AppRequestPhase.WORKFLOW_NONBLOCKING
     const stages = await this.svc(ProgramService).findWorkflowStagesByPeriodIdAndProgramKey(application.periodId, application.programKey, { hasEnabledRequirements: true, blocking })
+    if (application.phase === ApplicationPhase.COMPLETE) return stages[stages.length - 1]
     if (!application.workflowStageKey) return null
     const currentIndex = stages.findIndex(s => s.key === application.workflowStageKey)
     if (currentIndex > 0) {
@@ -106,7 +107,7 @@ export class ApplicationService extends AuthService<Application> {
   }
 
   async mayReverseWorkflow (application: Application) {
-    if (application.closed) return false
+    if (application.closed || application.appRequestPhase === AppRequestPhase.COMPLETE) return false
     if (![ApplicationPhase.WORKFLOW_BLOCKING, ApplicationPhase.REVIEW_COMPLETE, ApplicationPhase.COMPLETE, ApplicationPhase.WORKFLOW_NONBLOCKING, ApplicationPhase.READY_FOR_WORKFLOW].includes(application.phase)) return false
     // READY_FOR_WORKFLOW could mean we are at the end of a workflow or at the end of review, if end of review we can't reverse
     if (application.phase === ApplicationPhase.READY_FOR_WORKFLOW && !application.workflowStageKey) return false

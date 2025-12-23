@@ -131,9 +131,10 @@ export async function reverseWorkflow (applicationId: string, tdb: Queryable = d
   const currentlyBlocking = application.appRequestPhase === AppRequestPhase.WORKFLOW_NONBLOCKING ? false : true
   const activeStages = currentlyBlocking ? blocking : nonblocking
   const fromStage = activeStages.find(stage => stage.stageKey === application.workflowStageKey)
-  const currIdx = findIndex(activeStages, stage => stage.stageKey === fromStage?.stageKey)
-  let toStage: PeriodWorkflowRow | undefined = activeStages[(currIdx ?? 0) - 1]
+  const currIdx = application.phase === ApplicationPhase.COMPLETE ? activeStages.length : activeStages.findIndex(stage => stage.stageKey === fromStage?.stageKey)
+  let toStage: PeriodWorkflowRow | undefined = activeStages[currIdx - 1]
   let toPhase: ApplicationPhase | undefined
+
   if (currentlyBlocking) {
     toPhase = toStage ? ApplicationPhase.WORKFLOW_BLOCKING : ApplicationPhase.APPROVAL
   } else if (toStage != null) {

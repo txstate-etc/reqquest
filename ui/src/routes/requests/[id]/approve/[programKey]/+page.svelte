@@ -9,7 +9,7 @@
   import WarningAltFilled from 'carbon-icons-svelte/lib/WarningAltFilled.svelte'
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import { invalidate, invalidateAll } from '$app/navigation'
-  import { api, enumPromptVisibility, enumRequirementStatus, enumRequirementType, RenderDisplayComponent, applicantRequirementTypes, enumApplicationPhase, type ApplicationPhase } from '$lib'
+  import { api, enumPromptVisibility, enumRequirementStatus, enumRequirementType, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../../local'
   import ApproveLayout from '../ApproveLayout.svelte'
@@ -202,7 +202,7 @@
           {#each section.requirements as requirement (requirement.id)}
             {#each requirement.prompts as prompt (prompt.id)}
               {@const def = uiRegistry.getPrompt(prompt.key)}
-              {@const isReviewerQuestion = requirement.type === enumRequirementType.APPROVAL && !def?.automation}
+              {@const isReviewerQuestion = reviewerRequirementTypes.has(requirement.type) && !def?.automation}
               {@const isAutomation = !!def?.automation}
               {@const editMode = def != null && isReviewerQuestion && prompt.actions.update && def.formMode !== 'full' && !(prompt.invalidated && prompt.preloadData)}
               {@const small = editMode && def.formMode !== 'full' ? def.formMode !== 'large' : def!.displayMode !== 'large'}

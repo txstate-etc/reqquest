@@ -170,7 +170,7 @@ function processFilters (filter?: AppRequestFilter) {
 export async function getAppRequests (filter?: AppRequestFilter, tdb: Queryable = db) {
   const { joins, where, binds } = processFilters(filter)
   const rows = await tdb.getall<AppRequestRow>(`
-    SELECT DISTINCT ar.id, ar.periodId, ar.userId, ar.status, ar.phase, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt, ar.dataVersion,
+    SELECT DISTINCT ar.id, ar.periodId, ar.userId, ar.status, ar.phase, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt, ar.dataVersion, ar.computedReadyToComplete,
       p.code AS periodCode, p.closeDate AS periodClosesAt, p.archiveDate AS periodArchivesAt, p.openDate AS periodOpensAt
     FROM app_requests ar
     INNER JOIN periods p ON p.id = ar.periodId
@@ -334,7 +334,7 @@ export async function appRequestReturnToNonBlocking (appRequestId: number) {
     const applications = await getApplications({ appRequestIds: [String(appRequestId)] }, db)
     const workflowStages = await getPeriodWorkflowStages({ periodIds: [applications[0]?.periodId], hasEnabledRequirements: true, blocking: false }, db)
     for (const app of applications) {
-      await db.execute('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE appRequestId = ?', [ApplicationPhase.WORKFLOW_NONBLOCKING, workflowStages.toReversed().find(s => s.programKey === app.programKey), appRequestId])
+      await db.execute('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [ApplicationPhase.WORKFLOW_NONBLOCKING, workflowStages.toReversed().find(s => s.programKey === app.programKey)?.key, app.internalId])
     }
     await evaluateAppRequest(appRequestId, db)
   })
@@ -690,10 +690,10 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
     else if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_BLOCKING)) appRequest.status = AppRequestStatus.APPROVAL
     else if (applications.some(a => a.phase === ApplicationPhase.APPROVAL)) appRequest.status = AppRequestStatus.APPROVAL
     else if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_NONBLOCKING)) appRequest.status = applications.some(a => a.status === ApplicationStatus.ACCEPTED) ? AppRequestStatus.ACCEPTED : AppRequestStatus.APPROVED
-    else if (applications.every(a => a.phase === ApplicationPhase.COMPLETE)) appRequest.status = applications.some(a => a.status === ApplicationStatus.ACCEPTED) ? AppRequestStatus.ACCEPTED : AppRequestStatus.APPROVED
+    else if (applications.every(a => a.phase === ApplicationPhase.COMPLETE || a.phase === ApplicationPhase.READY_TO_COMPLETE)) appRequest.status = applications.some(a => a.status === ApplicationStatus.ACCEPTED) ? AppRequestStatus.ACCEPTED : AppRequestStatus.APPROVED
     else appRequest.status = AppRequestStatus.STARTED
 
-    appRequest.readyToComplete = appRequest.phase === AppRequestPhase.WORKFLOW_NONBLOCKING && applications.every(a => a.phase === ApplicationPhase.READY_TO_COMPLETE)
+    appRequest.readyToComplete = appRequest.phase === AppRequestPhase.WORKFLOW_NONBLOCKING && applications.every(a => a.phase === ApplicationPhase.READY_TO_COMPLETE || a.phase === ApplicationPhase.COMPLETE)
 
     // save the results of the evaluation to the database
     await updateAppRequestComputed(appRequest, db)

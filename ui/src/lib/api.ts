@@ -6,6 +6,7 @@ import { DateTime } from 'luxon'
 import { omit, pick } from 'txstate-utils'
 import { error } from '@sveltejs/kit'
 import type { PhaseChangeMutations } from './components/types.js'
+import { applicantRequirementTypes } from './status-utils.js'
 
 export type CompletionStatus = 'ELIGIBLE' | 'INELIGIBLE' | 'PENDING'
 export const showDupePrompts = PUBLIC_SHOW_DUPLICATE_PROMPTS.trim() === 'true'
@@ -170,7 +171,7 @@ class API extends APIBase {
     if (response.appRequests.length === 0) return {}
     const appRequest = response.appRequests[0]
     for (const application of appRequest.applications) {
-      for (const requirement of application.requirements.filter(r => r.type === enumRequirementType.PREQUAL || r.type === enumRequirementType.QUALIFICATION || r.type === enumRequirementType.POSTQUAL)) {
+      for (const requirement of application.requirements.filter(r => applicantRequirementTypes.has(r.type))) {
         for (const prompt of requirement.prompts) {
           if (prompt.id === promptId) return { prompt }
         }

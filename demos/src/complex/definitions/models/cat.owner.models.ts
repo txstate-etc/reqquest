@@ -101,7 +101,7 @@ export type AcceptCatPromptData = FromSchema<typeof AcceptCatPromptSchema>
 export const ConfirmCatMicrochipServicePromptSchema = {
   type: 'object',
   properties: {
-    date: { type: 'string', format: 'date-time' },
+    serviceDate: { type: 'string', format: 'date-time' },
     details: { type: 'string' }
   },
   additionalProperties: false

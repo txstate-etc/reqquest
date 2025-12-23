@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { UIRegistry } from '$lib/registry.js'
-  import { getAppRequestStatusInfo, getApplicationStatusInfo } from '$lib/status-utils.js'
+  import { getAppRequestStatusInfo, getApplicationStatusInfo, applicantRequirementTypes, reviewRequirementTypes } from '$lib/status-utils.js'
   import type { Scalars } from '$lib/typed-client/schema'
   import { enumRequirementType, type RequirementType } from '$lib/typed-client/index.js'
   import { Panel, TagSet } from '@txstate-mws/carbon-svelte'
@@ -28,8 +28,6 @@
   export let statusDisplay: 'tags' | 'icons' = 'tags'
   export let showTooltipsAsText = false
 
-  const applicantRequirementTypes = new Set<RequirementType>([enumRequirementType.PREQUAL, enumRequirementType.POSTQUAL, enumRequirementType.QUALIFICATION, enumRequirementType.ACCEPTANCE])
-  const reviewerRequirementTypes = new Set<RequirementType>([enumRequirementType.APPROVAL, enumRequirementType.PREAPPROVAL])
   const CORRECTABLE_STATUSES = ['STARTED', 'READY_TO_SUBMIT', 'DISQUALIFIED']
 
   $: canMakeCorrections = CORRECTABLE_STATUSES.includes(appRequest.status)
@@ -49,7 +47,7 @@
         .filter(r => applicantRequirementTypes.has(r.type))
         .flatMap(r => r.prompts)
       const reviewerPrompts = application.requirements
-        .filter(r => reviewerRequirementTypes.has(r.type))
+        .filter(r => reviewRequirementTypes.has(r.type))
         .flatMap(r => r.prompts)
       const workflowPrompts = application.requirements
         .filter(r => r.type === enumRequirementType.WORKFLOW)

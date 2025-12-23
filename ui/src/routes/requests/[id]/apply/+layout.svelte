@@ -4,7 +4,7 @@
   import { writable } from 'svelte/store'
   import { resolve } from '$app/paths'
   import { page } from '$app/stores'
-  import { applicantRequirementTypes, enumPromptVisibility, enumRequirementType } from '$lib'
+  import { enumRequirementType, submissionRequirementTypes } from '$lib'
   import type { LayoutData } from './$types'
 
   export let data: LayoutData
@@ -72,7 +72,7 @@
         const substeps: StepItem[] = []
         lastprompt = undefined
         for (const requirement of application.requirements) {
-          if (!applicantRequirementTypes.has(requirement.type)) continue
+          if (!submissionRequirementTypes.has(requirement.type)) continue
           for (const prompt of requirement.prompts) {
             if (foundCurrent) {
               nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${prompt.id}`)

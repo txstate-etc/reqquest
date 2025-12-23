@@ -30,7 +30,7 @@
   }
 
   async function onSubmit () {
-    const resp = await api.appRequestPhaseChange(appRequestForExport.id, 'submitAppRequest')
+    const resp = await api.appRequestPhaseChange(appRequestForExport.id, 'acceptOffer')
     if (resp.success) await goto(resolve('/dashboards/applicant'))
     else toasts.add({ type: 'error', title: 'Submission Failed', message: resp.messages.map(m => m.message).join('\n') || 'There was an error submitting your application. Please try again later.' })
   }

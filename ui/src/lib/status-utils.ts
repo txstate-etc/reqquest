@@ -333,10 +333,28 @@ export const applicantStatuses = new Set<AppRequestStatus>([
   enumAppRequestStatus.READY_TO_SUBMIT
 ])
 
+export const submissionRequirementTypes = new Set<RequirementType>([
+  enumRequirementType.PREQUAL,
+  enumRequirementType.QUALIFICATION,
+  enumRequirementType.POSTQUAL
+])
+
 export const applicantRequirementTypes = new Set<RequirementType>([
   enumRequirementType.PREQUAL,
   enumRequirementType.POSTQUAL,
-  enumRequirementType.QUALIFICATION
+  enumRequirementType.QUALIFICATION,
+  enumRequirementType.ACCEPTANCE
+])
+
+export const reviewRequirementTypes = new Set<RequirementType>([
+  enumRequirementType.APPROVAL,
+  enumRequirementType.PREAPPROVAL
+])
+
+export const reviewerRequirementTypes = new Set<RequirementType>([
+  enumRequirementType.APPROVAL,
+  enumRequirementType.PREAPPROVAL,
+  enumRequirementType.WORKFLOW
 ])
 
 // ========================================

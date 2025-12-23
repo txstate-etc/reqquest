@@ -132,7 +132,7 @@ export const confirm_cat_microchip_service_workflow_req: RequirementDefinition =
   resolve: (data, config) => {
     const confMicroSvcData = data.confirm_cat_microchip_service_prompt as ConfirmCatMicrochipServicePromptData
     if (confMicroSvcData == null) return { status: RequirementStatus.PENDING }
-    if (confMicroSvcData.date === null) return { status: RequirementStatus.PENDING }
+    if (confMicroSvcData.serviceDate === null) return { status: RequirementStatus.PENDING }
     return { status: RequirementStatus.MET }
   }
 }
