@@ -210,7 +210,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     data ??= {}
     if (!this.mayUpdate(prompt)) throw new Error('You are not allowed to update this prompt.')
     if (!promptRegistry.validate(prompt.key, data)) throw new Error('Invalid prompt data.')
-    const response = new ValidatedAppRequestResponse({ success: true })
+    const response = new ValidatedAppRequestResponse()
     const allConfigData = await periodConfigCache.get(prompt.periodId)
     let updated = false
     let savedData: any
@@ -232,6 +232,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
         throw new Error('Someone else is working on the same request and made changes since you loaded. Copy any unsaved work into another document and reload the page to see what has changed.')
       }
       if (validateOnly) return
+      response.success = true // if we got this far, it's saving the data, so that's a success even if the data isn't quite valid yet
       if (!equal(appRequestData[prompt.key], processedData)) {
         updated = true
         previousAppRequestStatus = appRequest.status
@@ -242,7 +243,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
         const promptsToRevalidate = promptRegistry.getRevalidatedPrompts(prompt.key, appRequestData, allConfigData)
         await setRequirementPromptsValid(promptsToRevalidate.concat([prompt.key]), db)
         previousAppPhases = (await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion, db))!
-        recordAppRequestActivity(appRequest.internalId, this.user!.internalId, `${programRegistry.get(prompt.programKey)?.navTitle ?? 'Prompt'} Updated`, { data, description: prompt.title }, db)
+        recordAppRequestActivity(appRequest.internalId, this.user!.internalId, `${programRegistry.get(prompt.programKey)?.navTitle ?? 'Prompt'} Updated`, { data, description: prompt.title, impersonatedBy: this.impersonationUser?.internalId }, db)
       }
     })
     this.loaders.clear()
@@ -266,7 +267,6 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
       console.error(err)
     }
 
-    response.success = true
     response.appRequest = updatedAppRequest
     return response
   }
