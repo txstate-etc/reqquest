@@ -708,7 +708,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
   return await appRequestTransaction(appRequestInternalId, action)
 }
 
-export async function recordAppRequestActivity (appRequestId: number, userId: number, action: string, info?: { description?: string, data?: any, impersonatedBy?: number }, tdb: Queryable = db) {
+export async function recordAppRequestActivity (appRequestId: number | string, userId: number, action: string, info?: { description?: string, data?: any, impersonatedBy?: number }, tdb: Queryable = db) {
   await tdb.insert(`
     INSERT INTO app_request_activity (appRequestId, userId, impersonatedBy, action, description, data)
     VALUES (?, ?, ?, ?, ?, ?)
@@ -769,8 +769,6 @@ export async function getAppRequestActivity (filter: AppRequestActivityFilters, 
       ORDER BY ara.createdAt DESC
     `, binds)
 
-    console.log(pageInfo.totalItems)
-
     if (paged?.page || paged?.perPage) {
       pageInfo.currentPage = paged.page ?? 1
       // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
@@ -792,13 +790,6 @@ export async function getAppRequestActivity (filter: AppRequestActivityFilters, 
     ${pageInfo?.perPage ? `LIMIT ${pageInfo.perPage} OFFSET ${(pageInfo.currentPage - 1) * pageInfo.perPage}` : ''}
   `, binds)
   return rows.map(row => new AppRequestActivity(row))
-}
-
-export async function addAppRequestNote (appRequestId: number, authorId: number, note: string, internal: boolean) {
-  await db.insert(`
-    INSERT INTO app_request_notes (appRequestId, userId, content, internal)
-    VALUES (?, ?, ?, ?)
-  `, [appRequestId, authorId, note, internal])
 }
 
 export async function logMutation (queryTime: number, operationName: string, query: string, auth: FastifyTxStateAuthInfo, variables: any, data: any, errors: GraphQLError[] | undefined, context: Context) {

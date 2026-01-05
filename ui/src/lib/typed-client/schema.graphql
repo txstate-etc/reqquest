@@ -325,6 +325,16 @@ type AppRequest {
     for: AppRequestIndexDestination
   ): [AppRequestIndexCategory!]!
 
+  """
+  Notes attached to this app request. Notes are internal only and only visible to reviewers. They are not visible to applicants.
+  """
+  notes(filter: AppRequestNoteFilters): [Note!]!
+
+  """
+  Notes attached to other app requests from this same applicant. Useful for providing context information from previous applications.
+  """
+  otherNotes(filter: AppRequestNoteFilters): [Note!]!
+
   """The period this appRequest is associated with."""
   period: Period!
 
@@ -568,6 +578,19 @@ enum AppRequestIndexDestination {
 input AppRequestIndexFilter {
   category: String!
   tags: [String!]!
+}
+
+input AppRequestNoteFilters {
+  """Filter notes to those attached to the specified application requests."""
+  appRequestIds: [ID!]
+
+  """
+  Filter notes to those attached to application requests from the specified applicants (by login name).
+  """
+  applicants: [String!]
+
+  """Filter to the specified note IDs."""
+  ids: [ID!]
 }
 
 "\n    The status of an appRequest. This status is computed based on the \"dbStatus\" recorded in\n    the database and the status of each application.\n  "
@@ -995,12 +1018,8 @@ type Mutation {
 
   """Add a note to the app request."""
   addNote(
+    """The content of the note. HTML is expected."""
     content: String!
-
-    """
-    If true, the note will be marked as internal and only visible to reviewers.
-    """
-    internal: Boolean!
   ): ValidatedAppRequestResponse!
 
   """
@@ -1122,6 +1141,29 @@ enum MutationMessageType {
   The mutation can and/or did complete, but the user should receive the warning anyway (e.g. "Your password sucks but I'll allow it.").
   """
   warning
+}
+
+"""
+An internal note attached to an application request. Notes are always written by reviewers and never visible to applicants. "Messages" are for reviewers and applicants communicating with one another.
+"""
+type Note {
+  actions: NoteActions!
+
+  """The app request this note is attached to."""
+  appRequest: AppRequest!
+
+  """The author of the note."""
+  author: AccessUser!
+
+  """The content of the note in HTML."""
+  content: String!
+  createdAt: DateTime!
+  id: ID!
+}
+
+"""Actions that can be performed on a note."""
+type NoteActions {
+  update: Boolean!
 }
 
 input Pagination {
@@ -1416,7 +1458,9 @@ type RequirementPrompt {
   """Actions that the user can take on this prompt."""
   actions: RequirementPromptActions!
 
-  """Whether the prompt has been answered on this request."""
+  """
+  Whether the prompt has been answered on this request. Note that the answer may be marked invalidated, which means that even though it has been answered, the current answer can't be used and the user needs to answer it again.
+  """
   answered: Boolean!
 
   """The configuration data for this prompt in the app request's period."""
@@ -1454,7 +1498,7 @@ type RequirementPrompt {
   id: ID!
 
   """
-  When true, this prompt has been invalidated by the answer to another prompt. The `answered` field should remain false until the user specifically answers this prompt again, regardless of the output of the definition's `complete` method.
+  When true, this prompt has been invalidated by the answer to another prompt. The `answered` field will remain true so be sure to check this field as well when determining whether the prompt is complete.
   """
   invalidated: Boolean!
 

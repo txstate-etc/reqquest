@@ -223,6 +223,11 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * the `validate` function has to run during the app request evaluation routine, so it must operate
    * on post-processed data. Be aware of the potential transformations when you set the `arg` for each
    * MutationMessage you return.
+   *
+   * NOTE: keep in mind that your applicants are probably not trusted users. Do not accept rich text
+   * input without validating or sanitizing it first to prevent XSS attacks. CKEditor may not allow extra
+   * tags but the API has to do its own check. Two functions `cleanHTML` and `validateHTML` are exported
+   * from ReqQuest core to assist you.
    */
   validate?: (data: Partial<DataType>, config: ConfigurationDataType, appRequestData: Record<string, any>, relatedConfig: Record<string, any>, db: Queryable) => MutationMessage[]
   /**

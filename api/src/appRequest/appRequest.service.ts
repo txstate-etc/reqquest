@@ -6,18 +6,11 @@ import {
   AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData,
   submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse,
   AppRequestStatus, appRequestMakeOffer, getAppRequestTags, ApplicationRequirementService,
-  recordAppRequestActivity, addAppRequestNote, closeAppRequest, getAppRequestActivity,
-  AppRequestActivityFilters, PeriodService, createAppRequest, Period, appConfig, AccessUser, ReqquestUser,
-  AccessDatabase, cancelAppRequest, reopenAppRequest, appRequestReturnToApplicant, acceptOffer, ApplicationPhase,
-  ApplicationService, RequirementPromptService,
-  AppRequestPhase,
-  appRequestReturnToOffer,
-  appRequestReturnToReview,
-  promptRegistry,
-  PaginationInfoWithTotalItems,
-  Pagination,
-  appRequestComplete,
-  appRequestReturnToNonBlocking
+  recordAppRequestActivity, closeAppRequest, getAppRequestActivity, AppRequestActivityFilters, PeriodService,
+  createAppRequest, Period, appConfig, AccessUser, ReqquestUser, AccessDatabase, cancelAppRequest,
+  reopenAppRequest, appRequestReturnToApplicant, acceptOffer, ApplicationService, RequirementPromptService,
+  AppRequestPhase, appRequestReturnToOffer, appRequestReturnToReview, promptRegistry,
+  PaginationInfoWithTotalItems, Pagination, appRequestComplete, appRequestReturnToNonBlocking
 } from '../internal.js'
 
 const phaseNames = {
@@ -74,6 +67,16 @@ export class AppRequestServiceInternal extends BaseService<AppRequest> {
 
   async findByInternalId (internalId: number) {
     return await this.findById(String(internalId))
+  }
+
+  async findByIds (ids: string[]) {
+    const appRequests = await this.loaders.loadMany(appReqByIdLoader, ids)
+    for (const appRequest of appRequests) this.loaders.get(appReqTagsLoader).prime(appRequest.id, { id: appRequest.id, tags: appRequest.tags! })
+    return appRequests
+  }
+
+  async findByInternalIds (internalIds: number[]) {
+    return await this.findByIds(internalIds.map(id => String(id)))
   }
 
   async getData (appRequestInternalId: number) {
@@ -135,6 +138,14 @@ export class AppRequestService extends AuthService<AppRequest> {
     return await this.findById(String(internalId))
   }
 
+  async findByIds (ids: string[]) {
+    return this.removeUnauthorized(await this.raw.findByIds(ids))
+  }
+
+  async findByInternalIds (internalIds: number[]) {
+    return await this.findByIds(internalIds.map(id => String(id)))
+  }
+
   async getTags (appRequestId: string) {
     const { tags } = (await this.loaders.get(appReqTagsLoader).load(appRequestId))!
     return tags
@@ -165,8 +176,8 @@ export class AppRequestService extends AuthService<AppRequest> {
     return requirements.find(req => req.statusReason)?.statusReason
   }
 
-  async recordActivity (appRequest: AppRequest, action: string, info?: { data?: any, description?: string }) {
-    await recordAppRequestActivity(appRequest.internalId, this.user!.internalId, action, { ...info, impersonatedBy: this.impersonationUser?.internalId })
+  async recordActivity (appRequestId: number | string, action: string, info?: { data?: any, description?: string }) {
+    await recordAppRequestActivity(appRequestId, this.user!.internalId, action, { ...info, impersonatedBy: this.impersonationUser?.internalId })
   }
 
   async getActivityForAppRequest (appRequest: AppRequest, pageInfo: PaginationInfoWithTotalItems, filters?: AppRequestActivityFilters, paged?: Pagination) {
@@ -203,10 +214,6 @@ export class AppRequestService extends AuthService<AppRequest> {
 
   mayViewApplicantDashboard () {
     return this.hasControl('AppRequestOwn', 'create')
-  }
-
-  mayAddNote (appRequest: AppRequest) {
-    return this.mayViewAsReviewer(appRequest)
   }
 
   mayCreate () {
@@ -423,7 +430,7 @@ export class AppRequestService extends AuthService<AppRequest> {
     const beforeAppsByProgramKey = keyby(beforeApps, app => app.programKey)
     await action(response)
     if (response.hasErrors()) return response
-    await this.recordActivity(appRequest, activity)
+    await this.recordActivity(appRequest.internalId, activity)
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
     try {
@@ -549,7 +556,7 @@ export class AppRequestService extends AuthService<AppRequest> {
     const response = new ValidatedAppRequestResponse()
     if (response.hasErrors()) return response
     await closeAppRequest(appRequest.internalId)
-    await this.recordActivity(appRequest, 'Closed')
+    await this.recordActivity(appRequest.internalId, 'Closed')
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
     try {
@@ -583,17 +590,5 @@ export class AppRequestService extends AuthService<AppRequest> {
       },
       'Reopened'
     )
-  }
-
-  async addNote (appRequest: AppRequest, note: string, internal: boolean) {
-    if (!this.mayAddNote(appRequest)) throw new Error('You may not add a note to this app request.')
-    const response = new ValidatedAppRequestResponse()
-    if (isBlank(note)) response.addMessage('Message is required.', 'note', MutationMessageType.error)
-    if (response.hasErrors()) return response
-    await addAppRequestNote(appRequest.internalId, this.user!.internalId, note, internal)
-    await this.recordActivity(appRequest, 'Added Note', { description: note })
-    this.loaders.clear()
-    response.appRequest = (await this.findById(appRequest.id))!
-    return response
   }
 }

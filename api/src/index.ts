@@ -17,8 +17,7 @@ import {
   PeriodRequirementResolver, PeriodPromptResolver, initAccess, AppRequestIndexCategoryResolver,
   AccessRoleGroupResolver, AccessRoleGrantResolver, AccessGrantTagResolver, IndexCategoryResolver,
   AccessRoleGrantActionsResolver, AccessTagCategoryResolver, logMutation,
-  AppRequestActivityResolver,
-  PaginationResolver
+  AppRequestActivityResolver, PaginationResolver, noteMigrations, NoteResolver, NoteActionsResolver
 } from './internal.js'
 import { scheduler, schedulerMigration } from './util/scheduler.js'
 import { installDownloadRoutes } from './download/download.routes.js'
@@ -86,6 +85,8 @@ export class RQServer extends GQLServer {
       RequirementPromptResolver,
       RequirementPromptActionsResolver,
       RoleActionsResolver,
+      NoteResolver,
+      NoteActionsResolver,
       ...(options?.resolvers ?? [])
     ].map(resolver => options?.overrideResolvers?.get(resolver) ?? resolver) as NonEmptyArray<Function>
 
@@ -114,7 +115,7 @@ export class RQServer extends GQLServer {
     for (const program of options.programs) programRegistry.register(program, true)
     for (const program of options.pastPrograms ?? []) programRegistry.register(program, false)
     programRegistry.finalize()
-    await initializeDb([...periodMigrations, ...promptMigrations, ...requirementMigrations, ...accessMigrations, ...appRequestMigrations, ...applicationMigrations, schedulerMigration, ...(options?.migrations ?? [])])
+    await initializeDb([...periodMigrations, ...promptMigrations, ...requirementMigrations, ...accessMigrations, ...appRequestMigrations, ...applicationMigrations, ...noteMigrations, schedulerMigration, ...(options?.migrations ?? [])])
     await initAccess()
     await installDownloadRoutes(this.app)
     await ensureConfigurationRecords()

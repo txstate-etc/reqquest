@@ -193,6 +193,10 @@ export interface AppRequest {
     id: Scalars['ID']
     /** Indexes associated with the App Request. These are pieces of data extracted from the App Request by individual prompts in the ReqQuest project. They have several uses such as filtering App Requests and enriching list views. */
     indexCategories: AppRequestIndexCategory[]
+    /** Notes attached to this app request. Notes are internal only and only visible to reviewers. They are not visible to applicants. */
+    notes: Note[]
+    /** Notes attached to other app requests from this same applicant. Useful for providing context information from previous applications. */
+    otherNotes: Note[]
     /** The period this appRequest is associated with. */
     period: Period
     /** Retrieve a specific prompt by its ID. This is useful for the UI to get the full prompt data and configuration when trying to edit an individual prompt. We don't want to be downloading all the config data for everything up front. */
@@ -490,6 +494,28 @@ export interface MutationMessage {
 
 export type MutationMessageType = 'error' | 'success' | 'warning'
 
+
+/** An internal note attached to an application request. Notes are always written by reviewers and never visible to applicants. "Messages" are for reviewers and applicants communicating with one another. */
+export interface Note {
+    actions: NoteActions
+    /** The app request this note is attached to. */
+    appRequest: AppRequest
+    /** The author of the note. */
+    author: AccessUser
+    /** The content of the note in HTML. */
+    content: Scalars['String']
+    createdAt: Scalars['DateTime']
+    id: Scalars['ID']
+    __typename: 'Note'
+}
+
+
+/** Actions that can be performed on a note. */
+export interface NoteActions {
+    update: Scalars['Boolean']
+    __typename: 'NoteActions'
+}
+
 export interface PaginationInfoWithTotalItems {
     /** List of indexed category data related to items within a page. Often used for filtering items. */
     categories: (Category[] | null)
@@ -639,7 +665,7 @@ export interface Query {
 export interface RequirementPrompt {
     /** Actions that the user can take on this prompt. */
     actions: RequirementPromptActions
-    /** Whether the prompt has been answered on this request. */
+    /** Whether the prompt has been answered on this request. Note that the answer may be marked invalidated, which means that even though it has been answered, the current answer can't be used and the user needs to answer it again. */
     answered: Scalars['Boolean']
     /** The configuration data for this prompt in the app request's period. */
     configurationData: Scalars['JsonData']
@@ -652,7 +678,7 @@ export interface RequirementPrompt {
     /** Extra configuration data that is relevant for this prompt. This configuration is explicitly gathered from related requirements and prompts by the gatherConfig function in the prompt definition. */
     gatheredConfigData: Scalars['JsonData']
     id: Scalars['ID']
-    /** When true, this prompt has been invalidated by the answer to another prompt. The `answered` field should remain false until the user specifically answers this prompt again, regardless of the output of the definition's `complete` method. */
+    /** When true, this prompt has been invalidated by the answer to another prompt. The `answered` field will remain true so be sure to check this field as well when determining whether the prompt is complete. */
     invalidated: Scalars['Boolean']
     /** If the prompt has been invalidated, this may contain a reason why. It should be displayed to the user. */
     invalidatedReason: (Scalars['String'] | null)
@@ -965,6 +991,10 @@ export interface AppRequestGenqlSelection{
     indexCategories?: (AppRequestIndexCategoryGenqlSelection & { __args?: {
     /** Returns indexes that are flagged to appear in this destination. Also sorts for this destination. */
     for?: (AppRequestIndexDestination | null)} })
+    /** Notes attached to this app request. Notes are internal only and only visible to reviewers. They are not visible to applicants. */
+    notes?: (NoteGenqlSelection & { __args?: {filter?: (AppRequestNoteFilters | null)} })
+    /** Notes attached to other app requests from this same applicant. Useful for providing context information from previous applications. */
+    otherNotes?: (NoteGenqlSelection & { __args?: {filter?: (AppRequestNoteFilters | null)} })
     /** The period this appRequest is associated with. */
     period?: PeriodGenqlSelection
     /** Retrieve a specific prompt by its ID. This is useful for the UI to get the full prompt data and configuration when trying to edit an individual prompt. We don't want to be downloading all the config data for everything up front. */
@@ -1091,6 +1121,14 @@ export interface AppRequestIndexCategoryGenqlSelection{
 }
 
 export interface AppRequestIndexFilter {category: Scalars['String'],tags: Scalars['String'][]}
+
+export interface AppRequestNoteFilters {
+/** Filter notes to those attached to the specified application requests. */
+appRequestIds?: (Scalars['ID'][] | null),
+/** Filter notes to those attached to application requests from the specified applicants (by login name). */
+applicants?: (Scalars['String'][] | null),
+/** Filter to the specified note IDs. */
+ids?: (Scalars['ID'][] | null)}
 
 
 /** An application represents the applicant applying to a specific program. Each appRequest has multiple applications - one per program defined in the system. Some applications are mutually exclusive and/or will be eliminated early based on PREQUAL requirements, but they all technically exist in the data model - there is no concept of picking one application over another, just two applications where one dies and the other survives. */
@@ -1244,9 +1282,9 @@ export interface MutationGenqlSelection{
     /** This is for the applicant to accept or reject the offer that was made based on their app request. The difference between accept and reject is determined by the status of the acceptance requirements. They will still "accept offer" after they answer that they do not want the offer. If there is non-blocking workflow on any applications, the first one in each will begin. Applications without non-blocking workflow will be advanced to the COMPLETE phase. If all applications are complete, the app request will be closed. */
     acceptOffer?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Add a note to the app request. */
-    addNote?: (ValidatedAppRequestResponseGenqlSelection & { __args: {content: Scalars['String'], 
-    /** If true, the note will be marked as internal and only visible to reviewers. */
-    internal: Scalars['Boolean']} })
+    addNote?: (ValidatedAppRequestResponseGenqlSelection & { __args: {
+    /** The content of the note. HTML is expected. */
+    content: Scalars['String']} })
     /** Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation. */
     advanceWorkflow?: (ValidatedAppRequestResponseGenqlSelection & { __args: {applicationId: Scalars['ID']} })
     /** Cancel or withdraw the app request, depending on its current phase. This is only available if the app request is in a cancellable state. */
@@ -1302,6 +1340,30 @@ export interface MutationMessageGenqlSelection{
     message?: boolean | number
     /** The type of error message. See the enum descriptions for more detail. */
     type?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** An internal note attached to an application request. Notes are always written by reviewers and never visible to applicants. "Messages" are for reviewers and applicants communicating with one another. */
+export interface NoteGenqlSelection{
+    actions?: NoteActionsGenqlSelection
+    /** The app request this note is attached to. */
+    appRequest?: AppRequestGenqlSelection
+    /** The author of the note. */
+    author?: AccessUserGenqlSelection
+    /** The content of the note in HTML. */
+    content?: boolean | number
+    createdAt?: boolean | number
+    id?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Actions that can be performed on a note. */
+export interface NoteActionsGenqlSelection{
+    update?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -1494,7 +1556,7 @@ export interface QueryGenqlSelection{
 export interface RequirementPromptGenqlSelection{
     /** Actions that the user can take on this prompt. */
     actions?: RequirementPromptActionsGenqlSelection
-    /** Whether the prompt has been answered on this request. */
+    /** Whether the prompt has been answered on this request. Note that the answer may be marked invalidated, which means that even though it has been answered, the current answer can't be used and the user needs to answer it again. */
     answered?: boolean | number
     /** The configuration data for this prompt in the app request's period. */
     configurationData?: boolean | number
@@ -1511,7 +1573,7 @@ export interface RequirementPromptGenqlSelection{
     /** Extra configuration data that is relevant for this prompt. This configuration is explicitly gathered from related requirements and prompts by the gatherConfig function in the prompt definition. */
     gatheredConfigData?: boolean | number
     id?: boolean | number
-    /** When true, this prompt has been invalidated by the answer to another prompt. The `answered` field should remain false until the user specifically answers this prompt again, regardless of the output of the definition's `complete` method. */
+    /** When true, this prompt has been invalidated by the answer to another prompt. The `answered` field will remain true so be sure to check this field as well when determining whether the prompt is complete. */
     invalidated?: boolean | number
     /** If the prompt has been invalidated, this may contain a reason why. It should be displayed to the user. */
     invalidatedReason?: boolean | number
@@ -1812,6 +1874,22 @@ export interface ValidatedResponseGenqlSelection{
     export const isMutationMessage = (obj?: { __typename?: any } | null): obj is MutationMessage => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isMutationMessage"')
       return MutationMessage_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const Note_possibleTypes: string[] = ['Note']
+    export const isNote = (obj?: { __typename?: any } | null): obj is Note => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isNote"')
+      return Note_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const NoteActions_possibleTypes: string[] = ['NoteActions']
+    export const isNoteActions = (obj?: { __typename?: any } | null): obj is NoteActions => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isNoteActions"')
+      return NoteActions_possibleTypes.includes(obj.__typename)
     }
     
 

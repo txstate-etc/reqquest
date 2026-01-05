@@ -1,6 +1,6 @@
 import { sortby } from 'txstate-utils'
 import { Arg, Ctx, FieldResolver, ID, Int, Mutation, Query, Resolver, Root } from 'type-graphql'
-import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse, AppRequestIndexCategory, IndexValue, AppRequestIndexDestination, IndexCategory, RequirementPrompt, AccessUser, AccessUserService, AppRequestActivity, AppRequestActivityFilters, Pagination, PaginationInfoWithTotalItems } from '../internal.js'
+import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse, AppRequestIndexCategory, IndexValue, AppRequestIndexDestination, IndexCategory, RequirementPrompt, AccessUser, AccessUserService, AppRequestActivity, AppRequestActivityFilters, Pagination, PaginationInfoWithTotalItems, Note, NoteService, AppRequestNoteFilters } from '../internal.js'
 
 @Resolver(of => AppRequest)
 export class AppRequestResolver {
@@ -69,6 +69,16 @@ export class AppRequestResolver {
     return await ctx.executePaginated('appRequestsActivity', paged, new PaginationInfoWithTotalItems(), async pageInfo => {
       return await ctx.svc(AppRequestService).getActivityForAppRequest(appRequest, pageInfo, filters, paged)
     })
+  }
+
+  @FieldResolver(type => [Note], { description: 'Notes attached to this app request. Notes are internal only and only visible to reviewers. They are not visible to applicants.' })
+  async notes (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest, @Arg('filter', { nullable: true }) filter?: AppRequestNoteFilters) {
+    return await ctx.svc(NoteService).findByAppRequestId(appRequest.id, filter)
+  }
+
+  @FieldResolver(type => [Note], { description: 'Notes attached to other app requests from this same applicant. Useful for providing context information from previous applications.' })
+  async otherNotes (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest, @Arg('filter', { nullable: true }) filter?: AppRequestNoteFilters) {
+    return (await ctx.svc(NoteService).findByApplicantInternalId(appRequest.userInternalId, filter)).filter(note => note.appRequestId !== appRequest.id)
   }
 
   @FieldResolver(type => AppRequestActions, { description: 'Actions the user can take on this app request.' })
@@ -163,11 +173,6 @@ export class AppRequestResolver {
     const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
     if (!appRequest) throw new Error('App request not found.')
     return await ctx.svc(AppRequestService).reopen(appRequest)
-  }
-
-  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Add a note to the app request.' })
-  addNote (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest, @Arg('content', type => String) content: string, @Arg('internal', { description: 'If true, the note will be marked as internal and only visible to reviewers.' }) internal: boolean) {
-    return ctx.svc(AppRequestService).addNote(appRequest, content, internal)
   }
 }
 

@@ -60,16 +60,6 @@ export const appRequestMigrations: DatabaseMigration[] = [
         FOREIGN KEY (userId) REFERENCES accessUsers (id),
         FOREIGN KEY (impersonatedBy) REFERENCES accessUsers (id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
-      await db.execute(`CREATE TABLE IF NOT EXISTS app_request_notes (
-        id INT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
-        appRequestId INT UNSIGNED NOT NULL,
-        authorId INT UNSIGNED NOT NULL,
-        internal TINYINT(1) NOT NULL,
-        content TEXT NOT NULL,
-        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (appRequestId) REFERENCES app_requests (id) ON DELETE CASCADE,
-        FOREIGN KEY (authorId) REFERENCES accessUsers (id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
       await db.execute(`CREATE TABLE IF NOT EXISTS mutationlog (
         id INT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
         userId INT UNSIGNED NOT NULL,
