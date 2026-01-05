@@ -5,7 +5,8 @@
   export let fetched
   let selected
   $: cats = fetched.sort((a, b) => a.age - b.age)
- $: selectedId = selected?.value ?? null
+ $: selectedId = selected ?? null
+
 </script>
 <FieldRadio boolean path="accept" legendText="You have been approved for cat adoption!  At this time, do you still wish to adopt a cat, or have circumstances changed?" items={[{ label: 'Adopt please!', value: true }, { label: 'Something has changed :(', value: false }]} />
 {#if data.accept}
