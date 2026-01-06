@@ -47,7 +47,7 @@ export interface SearchUsersFilter {
  * The filter should also exclude the category as that would just return an empty set if
  * any role was used as a filter value.
  */
-export interface UserIndexDefinition<DataType = any> {
+export interface OtherIdentifierDefinition {
   /**
    * A unique key used to namespace categories.
    */
@@ -69,6 +69,19 @@ export interface UserIndexDefinition<DataType = any> {
    * should there be more then one value to filter on. default is false.
    */
   useInFilters?: boolean
+  /**
+   * Set this to true to indicate that this index should be displayed in the table on the
+   * App Request list view.
+   */
+  useInAppRequestList?: boolean
+  /**
+   * Set this to true to indicate that this index should be available as a filter on the
+   * App Request list view.
+   */
+  useInAppRequestFilters?: boolean
+}
+
+export interface UserIndexDefinition<DataType = any> extends OtherIdentifierDefinition {
   /**
    * Convert all existing distinct DataTypes associate with the category
    * into an array of tags with associated labels. The tags will be used
@@ -113,6 +126,8 @@ export interface AppDefinition {
      * to save the remote data within the otherInfo field.
      */
     indexes?: UserIndexDefinition[]
+
+    otherIdentifiers?: OtherIdentifierDefinition[]
   }
   /**
    * Provide a function that will return a list of group properties, given a list of group names.

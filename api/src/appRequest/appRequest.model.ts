@@ -156,13 +156,13 @@ export class IndexCategory {
     this.listFiltersPriority = this[AppRequestIndexDestination.LIST_FILTERS]
   }
 
-  @Field()
+  @Field({ description: 'The internal category name for this index. Use this with any GraphQL filters.' })
   category: string
 
-  @Field()
+  @Field({ description: 'A human-friendly label for this category that can be shown in the UI.' })
   categoryLabel: string
 
-  @Field()
+  @Field({ description: 'If true, this category has few enough values that it is reasonable to list them all in a dropdown or similar UI control. If false, the list of values is likely to get very long and it would be better to use an autofill combobox or something.' })
   listable: boolean
 
   @Field({ nullable: true, description: 'If this is > 0, the index values should be shown on the applicant dashboard, sorted by this priority in descending order.' })

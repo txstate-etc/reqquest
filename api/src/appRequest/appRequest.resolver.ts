@@ -11,14 +11,6 @@ export class AppRequestResolver {
     })
   }
 
-  @Query(returns => [IndexCategory])
-  async appRequestIndexes (@Ctx() ctx: RQContext, @Arg('categories', type => [String], { nullable: true }) categories?: string[], @Arg('for', type => AppRequestIndexDestination, { nullable: true, description: 'Returns indexes that are flagged to appear in this destination. Also sorts for this destination.' }) forDestination: AppRequestIndexDestination = AppRequestIndexDestination.LIST_FILTERS) {
-    const cats = (categories?.length ? categories.map(c => promptRegistry.indexCategoryMap[c]) : promptRegistry.indexCategories).map(category => new IndexCategory(category))
-    return forDestination
-      ? sortby(cats.filter(cat => cat[forDestination] > 0), forDestination, true)
-      : cats
-  }
-
   @FieldResolver(type => AccessUser)
   async applicant (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
     const user = await ctx.svc(AccessUserService).findByInternalId(appRequest.userInternalId)
@@ -178,6 +170,19 @@ export class AppRequestResolver {
 
 @Resolver(of => AppRequestIndexCategory)
 export class AppRequestIndexCategoryResolver {
+  @Query(returns => [IndexCategory])
+  async appRequestIndexes (@Ctx() ctx: RQContext, @Arg('categories', type => [String], { nullable: true }) categories?: string[], @Arg('for', type => AppRequestIndexDestination, { nullable: true, description: 'Returns indexes that are flagged to appear in this destination. Also sorts for this destination.' }) forDestination: AppRequestIndexDestination = AppRequestIndexDestination.LIST_FILTERS) {
+    const cats = (categories?.length ? categories.map(c => promptRegistry.indexCategoryMap[c]) : promptRegistry.indexCategories).map(category => new IndexCategory(category))
+    return forDestination
+      ? sortby(cats.filter(cat => cat[forDestination] > 0), forDestination, true)
+      : cats
+  }
+
+  @Query(returns => [IndexCategory])
+  async userIndexes (@Arg('for', type => AppRequestIndexDestination, { nullable: true, description: 'Returns indexes that are flagged to appear in this destination. Also sorts for this destination.' }) forDestination: AppRequestIndexDestination = AppRequestIndexDestination.LIST_FILTERS) {
+    // TODO KEVIN: report about all the indexes and otherIdentifiers the downstream has registered in the user indexes
+  }
+
   @FieldResolver(type => [IndexValue])
   async values (@Ctx() ctx: RQContext, @Root() tagCategory: AppRequestIndexCategory) {
     return await Promise.all(tagCategory.tagStrings.map(async tag => new IndexValue(tag, await promptRegistry.getTagLabel(tagCategory.category, tag))))
