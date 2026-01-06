@@ -14,7 +14,7 @@ export const previous_catowner_prompt: PromptDefinition = {
     if (data.owned) {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide details such as breed and age', arg: 'details' })
     } else {
-      messages.push({ type: MutationMessageType.warning, message: 'Previous cat ownership is usually required.  Exceptions on a case by case basis.' })
+      messages.push({ type: MutationMessageType.warning, message: 'Previous cat ownership is usually required.  Exceptions on a case by case basis.', arg: 'owned' })
     }
     return messages
   },
@@ -61,7 +61,7 @@ export const owner_cat_microchip_service_prompt: PromptDefinition = {
   schema: OwnerCatMicrochipServicePrompt,
   validate: (data, config, allConfig) => {
     const messages: MutationMessage[] = []
-    if (!data || data.agreeToPay == null) messages.push({ type: MutationMessageType.error, message: 'Owner microship service information required', arg: 'agreeToPat' })
+    if (!data || data.agreeToPay == null) messages.push({ type: MutationMessageType.error, message: 'Owner microship service information required', arg: 'agreeToPay' })
     if (!data.agreeToPay) {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide additional details', arg: 'details' })
     }

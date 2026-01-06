@@ -15,7 +15,7 @@ export const previous_dogowner_prompt: PromptDefinition = {
     if (data.owned) {
       if (data.details == null) messages.push({ type: MutationMessageType.error, message: 'Please provide details such as breed and age', arg: 'details' })
     } else {
-      messages.push({ type: MutationMessageType.warning, message: 'Previous dog ownership is usually required.  Exceptions on a case by case basis.' })
+      messages.push({ type: MutationMessageType.warning, message: 'Previous dog ownership is usually required.  Exceptions on a case by case basis.', arg: 'owned' })
     }
     return messages
   },
