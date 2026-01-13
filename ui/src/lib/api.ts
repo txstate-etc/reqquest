@@ -1,5 +1,5 @@
 import { PUBLIC_API_BASE, PUBLIC_AUTH_REDIRECT, PUBLIC_SHOW_DUPLICATE_PROMPTS } from '$env/static/public'
-import { APIBase } from '@txstate-mws/sveltekit-utils'
+import { APIBase, type MutationResponseFromAPI } from '@txstate-mws/sveltekit-utils'
 import type { Feedback } from '@txstate-mws/svelte-forms'
 import { createClient, enumAppRequestIndexDestination, enumIneligiblePhases, enumPromptVisibility, enumRequirementStatus, enumRequirementType, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleGroup, type AccessRoleInput, type AccessUserFilter, type AppRequestActivityFilters, type AppRequestFilter, type IneligiblePhases, type Pagination, type PeriodUpdate, type PromptVisibility, type RequirementStatus, type RequirementType } from './typed-client/index.js'
 import { DateTime } from 'luxon'
@@ -181,7 +181,7 @@ class API extends APIBase {
   }
 
   async updatePrompt (promptId: string, data: any, validateOnly: boolean, dataVersion?: number) {
-    const response = await this.graphqlWithUploads(`
+    const response = await this.graphqlWithUploads<{ updatePrompt: MutationResponseFromAPI }>(`
       mutation UpdatePrompt($promptId: ID!, $data: JsonData!, $validateOnly: Boolean!, $dataVersion: Int) {
         updatePrompt(promptId: $promptId, data: $data, validateOnly: $validateOnly, dataVersion: $dataVersion) {
           success
