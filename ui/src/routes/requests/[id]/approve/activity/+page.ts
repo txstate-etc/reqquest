@@ -9,6 +9,5 @@ export const load: PageLoad = async ({ params, url, depends }) => {
   console.log(params.id)
   const { activity, pageInfo } = await api.getRequestActivity(params.id, filters, { page, perPage: pagesize })
   depends('request:approve:activity')
-  if (!activity.length) throw error(404, 'App Request not found. It may have been deleted or you do not have permission to view it.')
   return { activity, pageInfo }
 }
