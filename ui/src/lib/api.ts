@@ -762,24 +762,21 @@ class API extends APIBase {
   async getRequestActivity (appRequestId: string, filters?: AppRequestActivityFilters, paged?: Pagination) {
     const response = await this.client.query({
       __name: 'GetRequestActivity',
-      appRequests: {
-        __args: { filter: { ids: [appRequestId] } },
-        activity: {
-          __args: { filters, paged },
-          id: true,
-          user: {
-            login: true,
-            fullname: true
-          },
-          impersonatedBy: {
-            login: true,
-            fullname: true
-          },
-          action: true,
-          description: true,
-          data: true,
-          createdAt: true
-        }
+      appRequestActivity: {
+        __args: { id: appRequestId, filters, paged },
+        id: true,
+        user: {
+          login: true,
+          fullname: true
+        },
+        impersonatedBy: {
+          login: true,
+          fullname: true
+        },
+        action: true,
+        description: true,
+        data: true,
+        createdAt: true
       },
       pageInfo: {
         appRequestsActivity: {
@@ -790,12 +787,8 @@ class API extends APIBase {
         }
       }
     })
-    if (response.appRequests.length === 0) return undefined
     return {
-      activity: response.appRequests[0].activity.map(activity => ({
-        ...activity,
-        createdAt: DateTime.fromISO(activity.createdAt)
-      })),
+      activity: response.appRequestActivity,
       pageInfo: response.pageInfo.appRequestsActivity
     }
   }

@@ -56,13 +56,6 @@ export class AppRequestResolver {
     return await ctx.svc(AppRequestService).getStatusReason(appRequest)
   }
 
-  @FieldResolver(type => [AppRequestActivity], { description: 'The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order.' })
-  async activity (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest, @Arg('filters', type => AppRequestActivityFilters, { nullable: true, description: 'Filters to apply to the activity log. This can be used to filter by action type, date range, etc.' }) filters?: AppRequestActivityFilters, @Arg('paged', { nullable: true }) paged?: Pagination) {
-    return await ctx.executePaginated('appRequestsActivity', paged, new PaginationInfoWithTotalItems(), async pageInfo => {
-      return await ctx.svc(AppRequestService).getActivityForAppRequest(appRequest, pageInfo, filters, paged)
-    })
-  }
-
   @FieldResolver(type => [Note], { description: 'Notes attached to this app request. Notes are internal only and only visible to reviewers. They are not visible to applicants.' })
   async notes (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest, @Arg('filter', { nullable: true }) filter?: AppRequestNoteFilters) {
     return await ctx.svc(NoteService).findByAppRequestId(appRequest.id, filter)
@@ -272,6 +265,18 @@ export class AppRequestAccessResolver {
 
 @Resolver(of => AppRequestActivity)
 export class AppRequestActivityResolver {
+  @Query(type => [AppRequestActivity], { description: 'The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order.' })
+  async appRequestActivity (
+    @Ctx() ctx: RQContext,
+    @Arg('id') id: string,
+    @Arg('filters', type => AppRequestActivityFilters, { nullable: true, description: 'Filters to apply to the activity log. This can be used to filter by action type, date range, etc.' }) filters?: AppRequestActivityFilters,
+    @Arg('paged', { nullable: true }) paged?: Pagination
+  ) {
+    return await ctx.executePaginated('appRequestsActivity', paged, new PaginationInfoWithTotalItems(), async pageInfo => {
+      return await ctx.svc(AppRequestService).getActivityForAppRequest(id, pageInfo, filters, paged)
+    })
+  }
+
   @FieldResolver(type => AccessUser, { description: 'The user that performed the activity.' })
   async user (@Ctx() ctx: RQContext, @Root() activity: AppRequestActivity) {
     const user = await ctx.svc(AccessUserService).findByInternalId(activity.userInternalId)

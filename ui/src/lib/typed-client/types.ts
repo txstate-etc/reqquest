@@ -405,17 +405,6 @@ export default {
             "actions": [
                 23
             ],
-            "activity": [
-                24,
-                {
-                    "filters": [
-                        25
-                    ],
-                    "paged": [
-                        56
-                    ]
-                }
-            ],
             "applicant": [
                 17
             ],
@@ -1651,6 +1640,21 @@ export default {
                 {
                     "filter": [
                         19
+                    ],
+                    "paged": [
+                        56
+                    ]
+                }
+            ],
+            "appRequestActivity": [
+                24,
+                {
+                    "filters": [
+                        25
+                    ],
+                    "id": [
+                        77,
+                        "String!"
                     ],
                     "paged": [
                         56

@@ -278,17 +278,6 @@ Represents a group of applications all being applied for at the same time. As pa
 type AppRequest {
   """Actions the user can take on this app request."""
   actions: AppRequestActions!
-
-  """
-  The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order.
-  """
-  activity(
-    """
-    Filters to apply to the activity log. This can be used to filter by action type, date range, etc.
-    """
-    filters: AppRequestActivityFilters
-    paged: Pagination
-  ): [AppRequestActivity!]!
   applicant: AccessUser!
   applications: [Application!]!
 
@@ -1464,6 +1453,18 @@ type Query {
   "\n    This is the global access object. Each field represents a global permission\n    like the ability to view the role management interface.\n  "
   access: Access!
   accessUsers(filter: AccessUserFilter, paged: Pagination): [AccessUser!]!
+
+  """
+  The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order.
+  """
+  appRequestActivity(
+    """
+    Filters to apply to the activity log. This can be used to filter by action type, date range, etc.
+    """
+    filters: AppRequestActivityFilters
+    id: String!
+    paged: Pagination
+  ): [AppRequestActivity!]!
   appRequestIndexes(
     categories: [String!]
 

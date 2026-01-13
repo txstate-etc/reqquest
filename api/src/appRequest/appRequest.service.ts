@@ -180,8 +180,9 @@ export class AppRequestService extends AuthService<AppRequest> {
     await recordAppRequestActivity(appRequestId, this.user!.internalId, action, { ...info, impersonatedBy: this.impersonationUser?.internalId })
   }
 
-  async getActivityForAppRequest (appRequest: AppRequest, pageInfo: PaginationInfoWithTotalItems, filters?: AppRequestActivityFilters, paged?: Pagination) {
-    if (!this.mayViewAsReviewer(appRequest)) return []
+  async getActivityForAppRequest (appRequestId: string, pageInfo: PaginationInfoWithTotalItems, filters?: AppRequestActivityFilters, paged?: Pagination) {
+    const appRequest = await this.findById(appRequestId)
+    if (!appRequest || !this.mayViewAsReviewer(appRequest)) return []
     return await this.svc(AppRequestServiceInternal).getActivityForAppRequest(appRequest.internalId, pageInfo, filters, paged)
   }
 

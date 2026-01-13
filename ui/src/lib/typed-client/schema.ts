@@ -178,8 +178,6 @@ export interface AccessUserIdentifier {
 export interface AppRequest {
     /** Actions the user can take on this app request. */
     actions: AppRequestActions
-    /** The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order. */
-    activity: AppRequestActivity[]
     applicant: AccessUser
     applications: Application[]
     /** Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date. */
@@ -663,6 +661,8 @@ export interface Query {
      */
     access: Access
     accessUsers: AccessUser[]
+    /** The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order. */
+    appRequestActivity: AppRequestActivity[]
     appRequestIndexes: IndexCategory[]
     appRequests: AppRequest[]
     /** This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant. */
@@ -987,10 +987,6 @@ export interface AccessUserIdentifierInput {id: Scalars['ID'],label: Scalars['St
 export interface AppRequestGenqlSelection{
     /** Actions the user can take on this app request. */
     actions?: AppRequestActionsGenqlSelection
-    /** The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order. */
-    activity?: (AppRequestActivityGenqlSelection & { __args?: {
-    /** Filters to apply to the activity log. This can be used to filter by action type, date range, etc. */
-    filters?: (AppRequestActivityFilters | null), paged?: (Pagination | null)} })
     applicant?: AccessUserGenqlSelection
     applications?: ApplicationGenqlSelection
     /** Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date. */
@@ -1568,6 +1564,10 @@ export interface QueryGenqlSelection{
      */
     access?: AccessGenqlSelection
     accessUsers?: (AccessUserGenqlSelection & { __args?: {filter?: (AccessUserFilter | null), paged?: (Pagination | null)} })
+    /** The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order. */
+    appRequestActivity?: (AppRequestActivityGenqlSelection & { __args: {
+    /** Filters to apply to the activity log. This can be used to filter by action type, date range, etc. */
+    filters?: (AppRequestActivityFilters | null), id: Scalars['String'], paged?: (Pagination | null)} })
     appRequestIndexes?: (IndexCategoryGenqlSelection & { __args?: {categories?: (Scalars['String'][] | null), 
     /** Returns indexes that are flagged to appear in this destination. Also sorts for this destination. */
     for?: (AppRequestIndexDestination | null)} })
