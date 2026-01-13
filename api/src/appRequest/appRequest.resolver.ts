@@ -258,6 +258,16 @@ export class AppRequestAccessResolver {
   returnToNonBlocking (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
     return ctx.svc(AppRequestService).mayReturnToNonBlocking(appRequest)
   }
+
+  @FieldResolver(returns => Boolean, { description: 'User is able to see the applicant UI. i.e. they are the applicant and the request is in the appropriate phase.' })
+  viewApplyUI (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    return ctx.svc(AppRequestService).mayViewApply(appRequest)
+  }
+
+  @FieldResolver(returns => Boolean, { description: 'User is able to see the acceptance UI. i.e. they are the applicant and the request is in the appropriate phase.' })
+  viewAcceptUI (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    return ctx.svc(AppRequestService).mayViewAccept(appRequest)
+  }
 }
 
 @Resolver(of => AppRequestActivity)

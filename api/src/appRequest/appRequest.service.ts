@@ -216,6 +216,14 @@ export class AppRequestService extends AuthService<AppRequest> {
     return this.hasControl('AppRequestOwn', 'create')
   }
 
+  mayViewApply (appRequest: AppRequest) {
+    return this.isOwn(appRequest) && !this.isClosed(appRequest) && appRequest.phase === AppRequestPhase.STARTED
+  }
+
+  mayViewAccept (appRequest: AppRequest) {
+    return this.isOwn(appRequest) && !this.isClosed(appRequest) && appRequest.phase === AppRequestPhase.ACCEPTANCE
+  }
+
   mayCreate () {
     return this.hasAnyControl('AppRequestOwn', 'create')
   }

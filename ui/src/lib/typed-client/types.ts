@@ -531,6 +531,12 @@ export default {
             "submit": [
                 37
             ],
+            "viewAcceptUI": [
+                37
+            ],
+            "viewApplyUI": [
+                37
+            ],
             "__typename": [
                 77
             ]
@@ -1038,6 +1044,15 @@ export default {
                     ]
                 }
             ],
+            "deleteNote": [
+                37,
+                {
+                    "noteId": [
+                        77,
+                        "String!"
+                    ]
+                }
+            ],
             "deletePeriod": [
                 81,
                 {
@@ -1223,6 +1238,19 @@ export default {
                     ]
                 }
             ],
+            "updateNote": [
+                54,
+                {
+                    "content": [
+                        77,
+                        "String!"
+                    ],
+                    "noteId": [
+                        77,
+                        "String!"
+                    ]
+                }
+            ],
             "updatePeriod": [
                 80,
                 {
@@ -1313,11 +1341,17 @@ export default {
             "id": [
                 45
             ],
+            "updatedAt": [
+                43
+            ],
             "__typename": [
                 77
             ]
         },
         "NoteActions": {
+            "delete": [
+                37
+            ],
             "update": [
                 37
             ],
@@ -1678,6 +1712,14 @@ export default {
             ],
             "scopes": [
                 77
+            ],
+            "userIndexes": [
+                46,
+                {
+                    "for": [
+                        28
+                    ]
+                }
             ],
             "__typename": [
                 77

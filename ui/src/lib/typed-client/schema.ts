@@ -233,6 +233,10 @@ export interface AppRequestActions {
     review: Scalars['Boolean']
     /** User may submit this app request either as or on behalf of the owner. */
     submit: Scalars['Boolean']
+    /** User is able to see the acceptance UI. i.e. they are the applicant and the request is in the appropriate phase. */
+    viewAcceptUI: Scalars['Boolean']
+    /** User is able to see the applicant UI. i.e. they are the applicant and the request is in the appropriate phase. */
+    viewApplyUI: Scalars['Boolean']
     __typename: 'AppRequestActions'
 }
 
@@ -261,10 +265,13 @@ export interface AppRequestIndexCategory {
     appRequestListPriority: (Scalars['Float'] | null)
     /** If this is > 0, the index values should be shown on the applicant dashboard, sorted by this priority in descending order. */
     applicantDashboardPriority: (Scalars['Float'] | null)
+    /** The internal category name for this index. Use this with any GraphQL filters. */
     category: Scalars['String']
+    /** A human-friendly label for this category that can be shown in the UI. */
     categoryLabel: Scalars['String']
     /** If this is > 0, the index values should be shown on the list filters, sorted by this priority in descending order. */
     listFiltersPriority: (Scalars['Float'] | null)
+    /** If true, this category has few enough values that it is reasonable to list them all in a dropdown or similar UI control. If false, the list of values is likely to get very long and it would be better to use an autofill combobox or something. */
     listable: Scalars['Boolean']
     /** If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order. */
     reviewerDashboardPriority: (Scalars['Float'] | null)
@@ -415,10 +422,13 @@ export interface IndexCategory {
     appRequestListPriority: (Scalars['Float'] | null)
     /** If this is > 0, the index values should be shown on the applicant dashboard, sorted by this priority in descending order. */
     applicantDashboardPriority: (Scalars['Float'] | null)
+    /** The internal category name for this index. Use this with any GraphQL filters. */
     category: Scalars['String']
+    /** A human-friendly label for this category that can be shown in the UI. */
     categoryLabel: Scalars['String']
     /** If this is > 0, the index values should be shown on the list filters, sorted by this priority in descending order. */
     listFiltersPriority: (Scalars['Float'] | null)
+    /** If true, this category has few enough values that it is reasonable to list them all in a dropdown or similar UI control. If false, the list of values is likely to get very long and it would be better to use an autofill combobox or something. */
     listable: Scalars['Boolean']
     /** If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order. */
     reviewerDashboardPriority: (Scalars['Float'] | null)
@@ -452,6 +462,8 @@ export interface Mutation {
     /** Create a new app request. */
     createAppRequest: ValidatedAppRequestResponse
     createPeriod: ValidatedPeriodResponse
+    /** Delete an existing note. */
+    deleteNote: Scalars['Boolean']
     deletePeriod: ValidatedResponse
     markPeriodReviewed: ValidatedPeriodResponse
     /** Reopen the app request. This is only available if the app request is in a state that allows reopening. */
@@ -475,6 +487,8 @@ export interface Mutation {
     /** Submit the app request. */
     submitAppRequest: ValidatedAppRequestResponse
     updateConfiguration: ValidatedConfigurationResponse
+    /** Update the content of an existing note. */
+    updateNote: Note
     updatePeriod: ValidatedPeriodResponse
     updatePeriodRequirement: ValidatedResponse
     /** Update the data for a prompt in this app request. */
@@ -506,12 +520,14 @@ export interface Note {
     content: Scalars['String']
     createdAt: Scalars['DateTime']
     id: Scalars['ID']
+    updatedAt: Scalars['DateTime']
     __typename: 'Note'
 }
 
 
 /** Actions that can be performed on a note. */
 export interface NoteActions {
+    delete: Scalars['Boolean']
     update: Scalars['Boolean']
     __typename: 'NoteActions'
 }
@@ -657,6 +673,7 @@ export interface Query {
     roles: AccessRole[]
     /** A list of all possible scopes. Scopes are used to limit users when they are accessing the system through an alternate UI or login method. For instance, if you generate an authentication token to give to a third party, it may have a scope identifying that third party and limiting their access even though they are acting as you. Roles must match the token scope in order to apply permissions. */
     scopes: Scalars['String'][]
+    userIndexes: IndexCategory[]
     __typename: 'Query'
 }
 
@@ -1032,6 +1049,10 @@ export interface AppRequestActionsGenqlSelection{
     review?: boolean | number
     /** User may submit this app request either as or on behalf of the owner. */
     submit?: boolean | number
+    /** User is able to see the acceptance UI. i.e. they are the applicant and the request is in the appropriate phase. */
+    viewAcceptUI?: boolean | number
+    /** User is able to see the applicant UI. i.e. they are the applicant and the request is in the appropriate phase. */
+    viewApplyUI?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -1108,10 +1129,13 @@ export interface AppRequestIndexCategoryGenqlSelection{
     appRequestListPriority?: boolean | number
     /** If this is > 0, the index values should be shown on the applicant dashboard, sorted by this priority in descending order. */
     applicantDashboardPriority?: boolean | number
+    /** The internal category name for this index. Use this with any GraphQL filters. */
     category?: boolean | number
+    /** A human-friendly label for this category that can be shown in the UI. */
     categoryLabel?: boolean | number
     /** If this is > 0, the index values should be shown on the list filters, sorted by this priority in descending order. */
     listFiltersPriority?: boolean | number
+    /** If true, this category has few enough values that it is reasonable to list them all in a dropdown or similar UI control. If false, the list of values is likely to get very long and it would be better to use an autofill combobox or something. */
     listable?: boolean | number
     /** If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order. */
     reviewerDashboardPriority?: boolean | number
@@ -1257,10 +1281,13 @@ export interface IndexCategoryGenqlSelection{
     appRequestListPriority?: boolean | number
     /** If this is > 0, the index values should be shown on the applicant dashboard, sorted by this priority in descending order. */
     applicantDashboardPriority?: boolean | number
+    /** The internal category name for this index. Use this with any GraphQL filters. */
     category?: boolean | number
+    /** A human-friendly label for this category that can be shown in the UI. */
     categoryLabel?: boolean | number
     /** If this is > 0, the index values should be shown on the list filters, sorted by this priority in descending order. */
     listFiltersPriority?: boolean | number
+    /** If true, this category has few enough values that it is reasonable to list them all in a dropdown or similar UI control. If false, the list of values is likely to get very long and it would be better to use an autofill combobox or something. */
     listable?: boolean | number
     /** If this is > 0, the index values should be shown on the reviewer dashboard, sorted by this priority in descending order. */
     reviewerDashboardPriority?: boolean | number
@@ -1300,6 +1327,8 @@ export interface MutationGenqlSelection{
     /** Create a new app request. */
     createAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {login: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     createPeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {copyPeriodId?: (Scalars['String'] | null), period: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
+    /** Delete an existing note. */
+    deleteNote?: { __args: {noteId: Scalars['String']} }
     deletePeriod?: (ValidatedResponseGenqlSelection & { __args: {periodId: Scalars['ID']} })
     markPeriodReviewed?: (ValidatedPeriodResponseGenqlSelection & { __args: {periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     /** Reopen the app request. This is only available if the app request is in a state that allows reopening. */
@@ -1323,6 +1352,8 @@ export interface MutationGenqlSelection{
     /** Submit the app request. */
     submitAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     updateConfiguration?: (ValidatedConfigurationResponseGenqlSelection & { __args: {data: Scalars['JsonData'], key: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
+    /** Update the content of an existing note. */
+    updateNote?: (NoteGenqlSelection & { __args: {content: Scalars['String'], noteId: Scalars['String']} })
     updatePeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {periodId: Scalars['ID'], update: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
     updatePeriodRequirement?: (ValidatedResponseGenqlSelection & { __args: {disabled: Scalars['Boolean'], periodId: Scalars['String'], requirementKey: Scalars['String']} })
     /** Update the data for a prompt in this app request. */
@@ -1356,6 +1387,7 @@ export interface NoteGenqlSelection{
     content?: boolean | number
     createdAt?: boolean | number
     id?: boolean | number
+    updatedAt?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -1363,6 +1395,7 @@ export interface NoteGenqlSelection{
 
 /** Actions that can be performed on a note. */
 export interface NoteActionsGenqlSelection{
+    delete?: boolean | number
     update?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
@@ -1547,6 +1580,9 @@ export interface QueryGenqlSelection{
     roles?: (AccessRoleGenqlSelection & { __args?: {filter?: (AccessRoleFilter | null)} })
     /** A list of all possible scopes. Scopes are used to limit users when they are accessing the system through an alternate UI or login method. For instance, if you generate an authentication token to give to a third party, it may have a scope identifying that third party and limiting their access even though they are acting as you. Roles must match the token scope in order to apply permissions. */
     scopes?: boolean | number
+    userIndexes?: (IndexCategoryGenqlSelection & { __args?: {
+    /** Returns indexes that are flagged to appear in this destination. Also sorts for this destination. */
+    for?: (AppRequestIndexDestination | null)} })
     __typename?: boolean | number
     __scalar?: boolean | number
 }

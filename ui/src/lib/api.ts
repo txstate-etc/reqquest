@@ -390,6 +390,10 @@ class API extends APIBase {
               gatheredConfigData: true
             }
           }
+        },
+        actions: {
+          viewApplyUI: true,
+          viewAcceptUI: true
         }
       }
     })
