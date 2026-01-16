@@ -72,7 +72,7 @@
         target[req.workflowStage.key].requirements.push(req)
       } else if (req.type === enumRequirementType.APPROVAL || req.type === enumRequirementType.PREAPPROVAL) reviewerReqs.push(req)
       else if (req.type === enumRequirementType.QUALIFICATION || req.type === enumRequirementType.POSTQUAL) {
-        if (applicantReqs.length > 0) {
+        if (applicantReqs.length === 0) {
           applicantReqs.push(req)
           generalReqs.push(...reviewerReqs)
           reviewerReqs = []
