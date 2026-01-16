@@ -38,7 +38,7 @@ export const OtherCatsPromptSchema = {
 } as const satisfies SchemaObject
 export type OtherCatsPromptData = FromSchema<typeof OtherCatsPromptSchema>
 
-export const UploadInfoWithSumSchema = {
+export const UploadInfoSchema = {
   type: 'object',
   properties: {
     _type: { type: 'string' },
@@ -48,18 +48,23 @@ export const UploadInfoWithSumSchema = {
     size: { type: 'number' },
     shasum: { type: 'string' }
   },
-  required: ['_type', 'multipartIndex', 'name', 'mime', 'size', 'shasum'],
+  required: ['_type', 'multipartIndex', 'name', 'mime', 'size'],
   additionalProperties: false
+} as const satisfies SchemaObject
+
+export const UploadInfoWithSumSchema = {
+  ...UploadInfoSchema,
+  required: ['_type', 'multipartIndex', 'name', 'mime', 'size', 'shasum']
 } as const satisfies SchemaObject
 export type UploadInfoWithSumData = FromSchema<typeof UploadInfoWithSumSchema>
 
 export const VaccinePromptSchema = {
   type: 'object',
   properties: {
-    distemperDoc: UploadInfoWithSumSchema,
-    rabiesDoc: UploadInfoWithSumSchema,
-    felineLeukemiaDoc: UploadInfoWithSumSchema,
-    felineHIVDoc: UploadInfoWithSumSchema
+    distemperDoc: UploadInfoSchema,
+    rabiesDoc: UploadInfoSchema,
+    felineLeukemiaDoc: UploadInfoSchema,
+    felineHIVDoc: UploadInfoSchema
   },
   additionalProperties: false
 } as const satisfies SchemaObject

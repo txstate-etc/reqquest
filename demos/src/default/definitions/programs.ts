@@ -18,9 +18,9 @@ export const adopt_a_cat_program: ProgramDefinition = {
   requirementKeys: [
     'which_state_req',
     'have_a_cat_tower_req',
-    'not_allergic_to_tuna_req',
     'other_cats_applicant_req',
-    'applicant_seems_nice_req',
-    other_cats_reviewer_req.key
+    other_cats_reviewer_req.key,
+    'not_allergic_to_tuna_req',
+    'applicant_seems_nice_req'
   ]
 }

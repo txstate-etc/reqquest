@@ -2,7 +2,6 @@ import { type PromptDefinition } from '@reqquest/api'
 import { CatTowerPromptData, CatTowerPromptSchema, NicePromptData, NicePromptSchema, OtherCatsPromptData, OtherCatsPromptSchema, TunaAllergyPromptData, TunaAllergyPromptSchema, VaccinePromptData, VaccinePromptSchema, VaccineReviewPromptData, VaccineReviewPromptSchema } from '../models/index.js'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
 import { createHash } from 'node:crypto'
-import { isEmpty } from 'txstate-utils'
 
 export const have_a_cat_tower_prompt: PromptDefinition<CatTowerPromptData> = {
   key: 'have_a_cat_tower_prompt',
