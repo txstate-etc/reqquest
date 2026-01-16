@@ -558,7 +558,15 @@ class PromptRegistry {
   validate (key: string, data: any) {
     const validate = this.validators[key]
     if (!validate) return true
-    return validate(data)
+    const valid = validate(data)
+    if (!valid) console.error(validate.errors)
+    return valid
+  }
+
+  validationMessages (key: string) {
+    const validate = this.validators[key]
+    if (!validate) return []
+    return validate.errors ?? []
   }
 
   validateConfig (key: string, data: any) {
