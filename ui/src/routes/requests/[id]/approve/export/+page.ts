@@ -1,4 +1,4 @@
-import { api } from '$lib'
+import { api } from '$internal'
 import type { PageLoad } from './$types'
 
 export const load: PageLoad = async ({ params, depends }) => {

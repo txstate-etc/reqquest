@@ -49,7 +49,7 @@ export interface PromptDefinition {
    * Control the size of the area the formComponent will be rendered in.
    * - 'small' will render the form in a small area (about 8 lines or less at 320px width).
    * - 'large' will render the form in a large area (about 32 lines or less at 800px width) (still has to be responsive down to 320px).
-   * - 'full' will render the form in a modal that takes up the full screen (still has to be responsive down to 320px).
+   * - 'full' will render the form in a modal that takes up the full screen (still has to be responsive down to 320px). This also disables autosaving in the reviewer UI.
    * Defaults to 'small'.
    */
   formMode?: 'small' | 'large' | 'full'

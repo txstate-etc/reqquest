@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ApplicationDetailsView } from '$lib/components'
+  import { ApplicationDetailsView } from '$internal'
   import { uiRegistry } from '../../../../../local'
   import type { PageData } from './$types'
 

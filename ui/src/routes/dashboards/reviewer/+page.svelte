@@ -1,15 +1,14 @@
 <script lang="ts">
-  import type { PageData } from './$types'
   import { Tab, TabContent, Tabs, Tile } from 'carbon-components-svelte'
-  import ReviewerList from '$lib/components/ReviewerList.svelte'
-    import { DateTime } from 'luxon'
+  import { DateTime } from 'luxon'
+  import { ReviewerList } from '$internal'
+  import type { PageData } from './$types'
 
   export let data: PageData
 
   $: ({ appRequests, period } = data)
 
   $: formattedData = appRequests.reduce((acc, curr) => {
-
     if (curr.complete) acc.completed.push(curr)
     if (!curr.complete) acc.awaitingReview.push(curr)
 
@@ -42,7 +41,7 @@
         </span>
       </Tile>
     </div>
-    
+
     <Tile class='[ flex flex-col gap-4 ]'>
       <span class='[ text-lg ]'>
         {formattedData.awaitingReview.length}

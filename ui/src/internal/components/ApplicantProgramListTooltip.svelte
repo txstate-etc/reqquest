@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Tooltip } from 'carbon-components-svelte'
-  import type { ApplicationForDetails } from './types'
+  import type { ApplicationForDetails } from '$lib'
 
   export let application: ApplicationForDetails
 </script>

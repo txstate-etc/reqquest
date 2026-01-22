@@ -17,6 +17,9 @@ const config = {
 		},
 		paths: {
 			base: ''
+		},
+		alias: {
+			$internal: 'src/internal',
 		}
 	}
 };

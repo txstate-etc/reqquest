@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit'
 import { resolve } from '$app/paths'
-import { api, enumPromptVisibility } from '$lib'
+import { enumPromptVisibility } from '$lib'
 import type { PageLoad } from './$types'
 
 export const load: PageLoad = async ({ params, parent }) => {

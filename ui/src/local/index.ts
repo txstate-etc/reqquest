@@ -1,5 +1,5 @@
 import { PUBLIC_DEMO_INSTANCE } from '$env/static/public'
-import { RenderDisplayComponent, UIRegistry } from '$lib'
+import { UIRegistry } from '$lib'
 /** default */
 import DogWalker from 'carbon-icons-svelte/lib/DogWalker.svelte'
 import Gamification from 'carbon-icons-svelte/lib/Gamification.svelte'

@@ -5,7 +5,8 @@
   import { afterNavigate } from '$app/navigation'
   import type { PageData } from './$types'
   import ProgressNavContainer from '../ProgressNavContainer.svelte'
-  import { ApplicantProgramList, enumApplicationStatus } from '$lib'
+  import { ApplicantProgramList } from '$internal'
+  import { enumApplicationStatus } from '$lib'
 
   export let data: PageData
   $: ({ applicationsForNav } = data)

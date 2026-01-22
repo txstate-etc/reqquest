@@ -1,16 +1,17 @@
 <script lang="ts">
-  import { ColumnList, FieldDateTime, FieldSelect, FieldTextInput, Panel, PanelFormDialog, TagSet } from '@txstate-mws/carbon-svelte'
-  import { InlineNotification, Modal, Tag } from 'carbon-components-svelte'
+  import { ColumnList, FieldDateTime, FieldSelect, FieldTextInput, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
+  import { InlineNotification, Modal } from 'carbon-components-svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import SettingsEdit from 'carbon-icons-svelte/lib/SettingsEdit.svelte'
   import Add from 'carbon-icons-svelte/lib/Add.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
+  import { DateTime } from 'luxon'
   import { isBlank } from 'txstate-utils'
   import { invalidate } from '$app/navigation'
   import { base } from '$app/paths'
-  import { api, type PeriodUpdate } from '$lib'
+  import { api } from '$internal'
+  import type { PeriodUpdate } from '$lib'
   import type { PageData } from './$types'
-    import { DateTime } from 'luxon'
 
   type Period = PageData['periods'][number] & { copyPeriodId?: string }
 
@@ -65,7 +66,7 @@
       else if (now > closeDate) return [{ label: 'CLOSED' }]
       else if (aDate && now > DateTime.fromISO(aDate).toMillis()) return [{ label: 'ARCHIVED' }]
     }
-    
+
     return []
   }
 

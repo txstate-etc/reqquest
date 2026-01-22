@@ -1,4 +1,4 @@
-import { api } from '$lib'
+import { api } from '$internal'
 import type { LayoutLoad } from './$types'
 import { unifiedAuth } from '@txstate-mws/sveltekit-utils'
 

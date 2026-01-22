@@ -1,6 +1,6 @@
 <script lang="ts">
   import { InlineNotification } from 'carbon-components-svelte'
-  import type { PromptDefinition } from '$lib/registry'
+  import type { PromptDefinition } from '../../lib/registry.js'
 
   export let def: PromptDefinition | undefined
   export let appRequestId: string

@@ -1,5 +1,5 @@
 import type { LayoutLoad } from './$types'
-// import { api } from '$lib'
+// import { api } from '$internal'
 // import { unifiedAuth } from '@txstate-mws/sveltekit-utils'
 
 export const load: LayoutLoad = async input => {

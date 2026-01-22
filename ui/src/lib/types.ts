@@ -1,8 +1,6 @@
-import type { api, ApplicationStatus, AppRequestStatus, CompletionStatus, IneligiblePhases, RequirementType } from '$lib'
+import type { ApplicationStatus, AppRequestStatus, IneligiblePhases, RequirementType } from '$lib'
 
-export type DashboardAppRequest = Awaited<ReturnType<typeof api.getApplicantRequests>>[number]
-
-export type AppRequestForExportResponse = Awaited<ReturnType<typeof api.getAppRequestForExport>>
+export type CompletionStatus = 'ELIGIBLE' | 'INELIGIBLE' | 'PENDING'
 
 export interface AnsweredPrompt {
   id: string

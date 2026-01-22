@@ -7,7 +7,8 @@
   import { afterNavigate, goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import type { ResolvedPathname } from '$app/types'
-  import { api, ApplicationDetailsView, enumAppRequestStatus } from '$lib'
+  import { api, ApplicationDetailsView } from '$internal'
+  import { enumAppRequestStatus } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../../local'
 

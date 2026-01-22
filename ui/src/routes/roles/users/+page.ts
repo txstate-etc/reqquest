@@ -1,4 +1,4 @@
-import { api } from '$lib'
+import { api } from '$internal'
 import { extractMergedFilters, extractPaginationParams, type ColumnDefinition, type ComboMenuItem } from '@txstate-mws/carbon-svelte'
 import type { PageLoad } from './$types'
 import type { AccessUserFilter, Pagination } from '$lib'

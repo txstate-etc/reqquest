@@ -1,4 +1,4 @@
-import { api } from '$lib'
+import { api } from '$internal'
 import { extractMergedFilters, type ComboMenuItem } from '@txstate-mws/carbon-svelte'
 import type { LayoutLoad } from '../$types'
 

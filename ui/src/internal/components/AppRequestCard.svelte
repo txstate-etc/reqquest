@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { goto } from '$app/navigation'
-  import { resolve } from '$app/paths'
-  import { getApplicationStatusInfo, getAppRequestStatusInfo, getNavigationButton } from '$lib/status-utils.js'
-  import { longNumericTime } from '$lib/util.js'
   import type { ActionItem } from '@txstate-mws/carbon-svelte'
   import { Card, TagSet } from '@txstate-mws/carbon-svelte'
   import { Button } from 'carbon-components-svelte'
+  import { goto } from '$app/navigation'
+  import { resolve } from '$app/paths'
+  import { enumPromptVisibility } from '$lib'
+  import { getApplicationStatusInfo, getAppRequestStatusInfo, getNavigationButton } from '../status-utils.js'
+  import { longNumericTime } from '../util.js'
   import type { PageData } from '../../routes/dashboards/applicant/$types'
   import StatusMessageList from './StatusMessageList.svelte'
   import WarningIconYellow from './WarningIconYellow.svelte'
-  import { enumPromptVisibility } from '$lib/typed-client'
 
   // Type for the partial AppRequest data passed from dashboard
   type DashboardAppRequest = PageData['appRequests'][number]

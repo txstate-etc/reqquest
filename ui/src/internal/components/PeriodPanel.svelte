@@ -1,12 +1,12 @@
 <script lang="ts">
   import { ActionSet, Panel, TagSet } from '@txstate-mws/carbon-svelte'
   import { Tab, TabContent, Tabs, Tag } from 'carbon-components-svelte'
-  import { SettingsEdit, View } from 'carbon-icons-svelte'
+  import { SettingsEdit } from 'carbon-icons-svelte'
+  import { groupby, pluralize } from 'txstate-utils'
   import { invalidate } from '$app/navigation'
-  import { api } from '$lib/api'
   import { page } from '$app/stores'
-  import type { UIRegistry } from '$lib/registry'
-    import { groupby, pluralize } from 'txstate-utils'
+  import { api } from '../api.js'
+  import type { UIRegistry } from '../../lib/registry.js'
 
   export let program: any
   export let sharedProgramRequirements: any
@@ -29,7 +29,7 @@
 
 </script>
   <Panel title={program.title} expandable expanded>
-    {#each enabledRequirements as requrementEntries}
+    {#each enabledRequirements as requrementEntries, i (i)}
     {@const type = requrementEntries[0]}
     {@const requirements = requrementEntries[1]}
     <Panel title='' expandable expanded>

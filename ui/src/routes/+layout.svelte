@@ -1,7 +1,6 @@
 <script lang="ts">
   import { PUBLIC_ENVIRONMENT } from '$env/static/public'
-  import { api } from '$lib'
-  import { page } from '$app/state'
+  import { api } from '$internal'
   import { UIShell } from '@txstate-mws/carbon-svelte'
   import { unifiedAuth } from '@txstate-mws/sveltekit-utils'
   import Dashboard from 'carbon-icons-svelte/lib/Dashboard.svelte'

@@ -5,7 +5,8 @@
   import { invalidateAll } from '$app/navigation'
   import { resolve } from '$app/paths'
   import type { LayoutData } from './$types.js'
-  import { api, IntroPanel, applicantStatuses, REVIEWER_STATUS_CONFIG, longNumericTime, phaseChangeMutations, type PhaseChangeMutations } from '$lib'
+  import { api, IntroPanel, applicantStatuses, REVIEWER_STATUS_CONFIG, longNumericTime } from '$internal'
+  import { phaseChangeMutations, type PhaseChangeMutations } from '$lib'
 
   export let data: LayoutData
   $: ({ basicRequestData, requestId } = data)

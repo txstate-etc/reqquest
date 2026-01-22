@@ -1,5 +1,5 @@
 import type { TagItem } from '@txstate-mws/carbon-svelte'
-import { enumAppRequestStatus, enumRequirementType, type AppRequestStatus, type RequirementType } from './typed-client/schema.js'
+import { enumAppRequestStatus, enumRequirementType, type AppRequestStatus, type RequirementType } from '$lib'
 import { longNumericTime } from './util.js'
 
 interface AppStatusConfig {

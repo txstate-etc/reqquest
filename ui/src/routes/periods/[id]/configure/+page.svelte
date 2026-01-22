@@ -4,10 +4,9 @@
   import { keyby } from 'txstate-utils'
   import { invalidate } from '$app/navigation'
   import { page } from '$app/stores'
-  import { api } from '$lib'
+  import { api, PeriodPanel } from '$internal'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../local'
-  import PeriodPanel from '$lib/components/PeriodPanel.svelte'
 
   export let data: PageData
   $: ({ programs, period } = data)

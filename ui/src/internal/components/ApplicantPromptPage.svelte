@@ -13,9 +13,10 @@
   import type { Writable } from 'svelte/store'
   import { afterNavigate, beforeNavigate, goto, invalidate } from '$app/navigation'
   import type { ResolvedPathname } from '$app/types'
-  import { api, ButtonLoadingIcon } from '$lib'
   import { uiRegistry } from '../../local/index.js'
+  import { api } from '../api.js'
   import type { PageData } from '../../routes/requests/[id]/apply/[promptId]/$types.js'
+  import ButtonLoadingIcon from './ButtonLoadingIcon.svelte'
 
   export let data: PageData
   $: ({ prompt, appRequestForExport } = data)

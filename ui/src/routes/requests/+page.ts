@@ -1,5 +1,6 @@
 import { extractMergedFilters, extractPaginationParams } from '@txstate-mws/carbon-svelte'
-import { api, type AppRequestFilter } from '$lib'
+import { api } from '$internal'
+import type { AppRequestFilter } from '$lib'
 import type { PageLoad } from './$types'
 import { error } from '@sveltejs/kit'
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { FieldNumber, FieldRadio } from '@txstate-mws/carbon-svelte'
   import type { YardData } from './types.js'
-  import { QuestionnairePrompt } from '$lib/components'
+  import { QuestionnairePrompt } from '$lib'
   export let data: YardData
 </script>
 

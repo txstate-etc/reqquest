@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { base } from "$app/paths"
-  import { ColumnList, FieldDate, FieldMultiselect, Pagination, type ActionItem } from "@txstate-mws/carbon-svelte"
-  import { DateTime } from "luxon"
+  import { ColumnList, FieldDate, FieldMultiselect, Pagination, type ActionItem } from '@txstate-mws/carbon-svelte'
+  import { DateTime } from 'luxon'
   import View from 'carbon-icons-svelte/lib/View.svelte'
   import DocExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
-    import { downloadCsv } from "$lib/csv"
-    import type { AppRequest } from "$lib/typed-client"
-    import { pluralize } from "txstate-utils"
+  import { pluralize } from 'txstate-utils'
+  import { base } from '$app/paths'
+  import type { AppRequest } from '$lib'
+  import { downloadCsv } from '../csv.js'
 
   export let data: AppRequest[]
   export let title: string
@@ -43,16 +43,16 @@
   filterTitle='Request Filters'
   {selectedActions}
   listActions={[
-      { label: 'Download', icon: DocExport, onClick: () => { console.log(data); downloadCsv(formatCSVData(data)) } }
+    { label: 'Download', icon: DocExport, onClick: () => { console.log(data); downloadCsv(formatCSVData(data)) } }
   ]}
   columns={[
-    { id: 'request', label: 'Request #', tags: (row) => [{ label: String(row.id), }] },
+    { id: 'request', label: 'Request #', tags: row => [{ label: String(row.id) }] },
     { id: 'period', label: 'Period', render: r => r.period.name },
     { id: 'aNumber', label: 'TXST ID' },
     { id: 'name', label: 'Name', get: 'applicant.fullname' },
     { id: 'dateSubmitted', label: 'Date Submitted', render: r => DateTime.fromISO(r.createdAt).toFormat('f') },
     { id: 'benefit', label: 'Benefit', render: r => r.applications.map(a => a.title).join(', ') },
-    { id: 'lastUpdated', label: 'Last Updated', render: r => DateTime.fromISO(r.updatedAt).toFormat('f') },
+    { id: 'lastUpdated', label: 'Last Updated', render: r => DateTime.fromISO(r.updatedAt).toFormat('f') }
   ]}
   rows={data}
   title="App Requests"
@@ -62,7 +62,7 @@
       label: 'View',
       icon: View,
      // href: `${base}/requests/${r.id}/apply`
-     href: `${base}/requests/${r.id}/approve`
+      href: `${base}/requests/${r.id}/approve`
     }
   ]}
 >

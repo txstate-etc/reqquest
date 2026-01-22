@@ -5,7 +5,8 @@
   import Add from 'carbon-icons-svelte/lib/Add.svelte'
   import SettingsEdit from 'carbon-icons-svelte/lib/SettingsEdit.svelte'
   import { invalidate } from '$app/navigation'
-  import { api, type AccessRoleInput } from '$lib'
+  import { api } from '$internal'
+  import type { AccessRoleInput } from '$lib'
   import Copy from 'carbon-icons-svelte/lib/Copy.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
   import View from 'carbon-icons-svelte/lib/View.svelte'
@@ -14,9 +15,12 @@
   import type { PageData } from './$types'
 
   export let data: PageData
-  export let rolenames = new Set()
+  const rolenames = new Set<string>()
   $: ({ roles, access } = data)
-  $: for (const role of roles ?? []) rolenames.add(role.name)
+  $: {
+    rolenames.clear()
+    for (const role of roles ?? []) rolenames.add(role.name)
+  }
 
   // Group updates to Roles accept only the group name and not a group object.
   type AccessRoleUpdateForm = Omit<AccessRoleInput, 'groups'> & { groups: string[], id?: string }

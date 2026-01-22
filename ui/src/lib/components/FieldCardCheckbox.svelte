@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { CardSelectItem } from '$lib/components/FieldCardRadio.svelte'
+  import type { CardSelectItem } from '../components/FieldCardRadio.svelte'
   import { Card, CardGrid, FormInlineNotification } from '@txstate-mws/carbon-svelte'
   import { FORM_CONTEXT, FORM_INHERITED_PATH, Field, type FormStore } from '@txstate-mws/svelte-forms'
   import { Store } from '@txstate-mws/svelte-store'

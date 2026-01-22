@@ -1,9 +1,9 @@
-import { api } from '$lib'
+import { api } from '$internal'
+import type { AppRequestFilter } from '$lib'
+import { error } from '@sveltejs/kit'
 import { extractMergedFilters } from '@txstate-mws/carbon-svelte'
 import { uiRegistry } from '../../../local/index.js'
 import type { PageLoad } from './$types'
-import type { AppRequestFilter } from '$lib/typed-client/schema'
-import { error } from '@sveltejs/kit'
 
 function getRecentCutoffDate (daysAgo: number): string {
   const cutoff = new Date()

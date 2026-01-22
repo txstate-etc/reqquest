@@ -1,4 +1,4 @@
-import { api, enumAppRequestStatus } from '$lib'
+import { api } from '$internal'
 import { error } from '@sveltejs/kit'
 import type { LayoutLoad } from './$types'
 

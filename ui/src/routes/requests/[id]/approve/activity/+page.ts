@@ -1,4 +1,4 @@
-import { api } from '$lib'
+import { api } from '$internal'
 import { error } from '@sveltejs/kit'
 import type { PageLoad } from './$types'
 import { extractMergedFilters, extractPaginationParams } from '@txstate-mws/carbon-svelte'

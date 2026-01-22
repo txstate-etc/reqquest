@@ -3,8 +3,8 @@
   import { Button } from 'carbon-components-svelte'
   import { Close, InProgress, CheckmarkFilled, Information } from 'carbon-icons-svelte'
   import { ucfirst } from 'txstate-utils'
-  import type { ApplicationForDetails } from './types'
-  import { enumApplicationStatus, enumIneligiblePhases, enumRequirementType, getApplicationStatusInfo } from '$lib'
+  import { type ApplicationForDetails, enumApplicationStatus, enumIneligiblePhases, enumRequirementType } from '$lib'
+  import { getApplicationStatusInfo } from '../status-utils.js'
   import ApplicantProgramListTooltip from './ApplicantProgramListTooltip.svelte'
   import WarningIconYellow from './WarningIconYellow.svelte'
 

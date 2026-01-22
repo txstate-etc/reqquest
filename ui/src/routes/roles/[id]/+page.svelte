@@ -8,10 +8,10 @@
   import { setContext } from 'svelte'
   import { groupby, pick, ucfirst } from 'txstate-utils'
   import { invalidate } from '$app/navigation'
-  import { api, type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessTagInput } from '$lib'
+  import { api, IntroPanel } from '$internal'
+  import type { AccessRoleGrantCreate, AccessRoleGrantUpdate, AccessTagInput } from '$lib'
   import type { PageData } from './$types'
   import ControlWithTooltip from './ControlWithTooltip.svelte'
-  import IntroPanel from '$lib/components/IntroPanel.svelte'
 
   export let data: PageData
   $: ({ role, controlGroups, controlGroupLookup } = data)
