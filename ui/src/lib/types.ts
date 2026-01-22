@@ -1,4 +1,4 @@
-import type { ApplicationStatus, AppRequestStatus, IneligiblePhases, RequirementType } from '$lib'
+import type { ApplicationStatus, AppRequestStatus, IneligiblePhases, RequirementType } from './typed-client/index.js'
 
 export type CompletionStatus = 'ELIGIBLE' | 'INELIGIBLE' | 'PENDING'
 
