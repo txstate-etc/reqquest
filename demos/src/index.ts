@@ -1,7 +1,6 @@
 import { RQServer } from '@reqquest/api'
 import { analyticsPlugin, unifiedAuthenticate } from 'fastify-txstate'
 import { DateTime } from 'luxon'
-import { StringifyOptions } from 'node:querystring'
 
 import { defaultTestMigrations } from './default/testdata.js'
 import * as defaultPrograms from './default/definitions/programs.js'
@@ -23,6 +22,14 @@ import * as complexPrograms from './complex/definitions/programs.js'
 import * as complexRequirements from './complex/definitions/requirements/index.js'
 import * as complexPrompts from './complex/definitions/prompts/index.js'
 
+interface UserOtherInfo {
+  email: string
+  indexes: {
+    institutionalRoles: string[]
+    lastLogin: DateTime
+  }
+}
+
 async function main () {
   const server = new RQServer({
     authenticate: unifiedAuthenticate,
@@ -33,12 +40,12 @@ async function main () {
 
   const { programs, requirements, prompts, migrations, multipleRequestsPerPeriod } = configureDemoInstanceParams()
 
-  const userTypes: Record<string, { groups: string[], otherInfo: { email: {} } }> = {
-    su: { groups: ['sudoers'], otherInfo: { email: {} } },
-    admin: { groups: ['administrators'], otherInfo: { email: {} } },
-    reviewer: { groups: ['reviewers'], otherInfo: { email: {} } },
-    applicant: { groups: ['applicants'], otherInfo: { email: {} } },
-    tester: { groups: ['testers'], otherInfo: { email: {} } }
+  const userTypes: Record<string, { groups: string[] }> = {
+    su: { groups: ['sudoers'] },
+    admin: { groups: ['administrators'] },
+    reviewer: { groups: ['reviewers'] },
+    applicant: { groups: ['applicants'] },
+    tester: { groups: ['testers'] }
   }
   const userTypePrefixes = Object.keys(userTypes)
   await server.start({
@@ -73,7 +80,7 @@ async function main () {
           useInFilters: true,
           useInList: true,
           // Example of reformatting so tag may be used both for index and display.
-          dataToCategoryTags: (data: string[]) => data.map(role => ({ tag: role.charAt(0).toLocaleUpperCase() + role.slice(1).toLocaleLowerCase() }))
+          dataToCategoryTags: (data: UserOtherInfo) => data.indexes.institutionalRoles.map(role => ({ tag: role.charAt(0).toLocaleUpperCase() + role.slice(1).toLocaleLowerCase() }))
         }, {
           category: 'lastLogin',
           label: 'Last Login',
@@ -81,7 +88,7 @@ async function main () {
           useInList: true,
           // Example of tag turning date data into epoch index for sortable timestamp.
           // and label simplifying date for display format.
-          dataToCategoryTags: (data: DateTime) => [{ tag: data.toSeconds().toString(), label: data.toFormat('MM/dd/yyyy') }]
+          dataToCategoryTags: (data: UserOtherInfo) => [{ tag: data.indexes.lastLogin.toSeconds().toString(), label: data.indexes.lastLogin.toFormat('MM/dd/yyyy') }]
         }]
       },
       groups: async (groupnames: string[]) => {

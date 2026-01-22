@@ -9,8 +9,6 @@ import {
   Pagination
 } from '../internal.js'
 
-const AccessUserLabelApplicationRole = 'applicationRole'
-
 export interface AccessUserRow {
   id: number
   login: string
@@ -130,7 +128,7 @@ export namespace AccessDatabase {
         if (labels.includes(oGroup.category) && oGroup.tags.length) {
           joins.set('accessUserCategories', 'INNER JOIN accessUserCategories ON accessUsers.id = accessUserCategories.userId')
           joinbinds.push(oGroup.category)
-          where.push(`accessUserCategories.category = ? AND accessUserCategories.tag IN (${db.in(joinbinds, oGroup.tags)})`)
+          where.push(`accessUserCategories.category = ? AND accessUserCategories.tag IN (${db.in(params, oGroup.tags)})`)
         }
       }
     }
@@ -158,21 +156,12 @@ export namespace AccessDatabase {
     return rows.map(row => new AccessUser(row))
   }
 
-  function updateOtherInfoIndexes (info: any | undefined): any {
-    if (info?.indexes == null) return info
-    info.categories ??= {}
-    for (const idx of appConfig.userLookups.indexes ?? []) {
-      if (info.indexes[idx.category]) info.categories[idx.category] = idx.dataToCategoryTags(info.indexes[idx.category])
-    }
-    return info
-  }
-
   export async function upsertAccessUser (user: ReqquestUser): Promise<AccessUser> {
     await db.insert(`
       INSERT INTO accessUsers (login, fullname, otherInfo)
       VALUES (?, ?, ?)
       ON DUPLICATE KEY UPDATE fullname = VALUES(fullname), otherInfo = VALUES(otherInfo)
-    `, [user.login, user.fullname, JSON.stringify(updateOtherInfoIndexes(user.otherInfo))])
+    `, [user.login, user.fullname, JSON.stringify(user.otherInfo)])
     await db.transaction(async db => {
       const userId = await db.getval('SELECT id FROM accessUsers WHERE login = ? FOR UPDATE', [user.login])
 
@@ -180,21 +169,16 @@ export namespace AccessDatabase {
         const ibinds: any[] = []
         await db.insert(`
           INSERT INTO accessUserIdentifiers (userId, label, id)
-          VALUES ${db.in(ibinds, user.otherIdentifiers.map((r: any) => [userId, r.label, r.identifier]))}
+          VALUES ${db.in(ibinds, user.otherIdentifiers.map(r => [userId, r.label, r.value]))}
           ON DUPLICATE KEY UPDATE userId = userId
         `, ibinds)
         const dbinds: any[] = [userId]
         await db.delete(`
           DELETE FROM accessUserIdentifiers
-          WHERE userId = ? AND (label, id) NOT IN (${db.in(dbinds, user.otherIdentifiers.map((r: any) => [r.label, r.id]))})
+          WHERE userId = ? AND (label, id) NOT IN (${db.in(dbinds, user.otherIdentifiers.map(r => [r.label, r.value]))})
         `, dbinds)
       } else {
         await db.delete('DELETE FROM accessUserIdentifiers WHERE userId = ?', [userId])
-      }
-
-      if (appConfig.userLookups?.indexes?.length) {
-        // TODO: execute the extract function and store the result in the database
-        // appRequest.database.ts line 354 has an example bit of code for synchronizing tags
       }
 
       if (user.groups?.length) {
@@ -214,24 +198,19 @@ export namespace AccessDatabase {
       }
 
       for (const idx of (appConfig.userLookups.indexes ?? [])) {
-        if (user.otherInfo?.indexes && user.otherInfo.indexes[idx.category] != null) {
-          const ibinds: any[] = []
-          const cts = idx.dataToCategoryTags(user.otherInfo.indexes[idx.category])
-          // NOTE: DataType may not be an array, so save method should exist to convert into string[]
-          // But if save method is not implemented for incompatible DataType skipe saving as
-          // we do not wish to break transaction.
-          if (Array.isArray(cts)) {
-            await db.insert(`
-              INSERT INTO accessUserCategories (userId, category, tag, label)
-              VALUES ${db.in(ibinds, cts.map(ct => [userId, idx.category, ct.tag, ct.label]))}
-              ON DUPLICATE KEY UPDATE userId = userId
-            `, ibinds)
-            const dbinds: any[] = [userId, idx.category]
-            await db.delete(`
-              DELETE FROM accessUserCategories
-              WHERE userId = ? AND category = ? AND tag NOT IN (${db.in(dbinds, cts.map(ct => ct.tag))})
-            `, dbinds)
-          }
+        const ibinds: any[] = []
+        const cts = idx.dataToCategoryTags(user.otherInfo)
+        if (cts.length) {
+          await db.insert(`
+            INSERT INTO accessUserCategories (userId, category, tag, label)
+            VALUES ${db.in(ibinds, cts.map(ct => [userId, idx.category, ct.tag, ct.label]))}
+            ON DUPLICATE KEY UPDATE userId = userId
+          `, ibinds)
+          const dbinds: any[] = [userId, idx.category]
+          await db.delete(`
+            DELETE FROM accessUserCategories
+            WHERE userId = ? AND category = ? AND tag NOT IN (${db.in(dbinds, cts.map(ct => ct.tag))})
+          `, dbinds)
         } else {
           await db.delete('DELETE FROM accessUserCategories WHERE userId = ? AND category = ?', [userId, idx.category])
         }
