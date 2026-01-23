@@ -174,18 +174,25 @@ export interface UIConfig {
    */
   slots?: {
     /**
-     * This will be placed inside the card on the reviewer sidebar.
+     * This will be placed inside the top card on the reviewer sidebar that displays applicant information.
      *
-     * It will be given the `basicRequestData` prop, which contains the basic information about the
-     * request, such as the name of the applicant and the period. Any custom user information returned
-     * by the userLookup function you provide will also be included at `basicRequestData.applicant.otherInfo`.
+     * It will receive receive the following props:
+     * - `appRequest` with lots of app request details, import the ReviewerCardRequest type from `@reqquest/ui`
+     * - `applicant` with applicant details, import the ReviewerCardApplicant type from `@reqquest/ui`. Notably
+     *   this includes `otherInfo`, which contains any custom user information returned by the userLookup function you provided.
+     * - `api` which is an instance of the API client, import the ReqquestAPI type from `@reqquest/ui`. This allows you to make
+     * additional API calls if you need information not included in the other props.
      */
     reviewerSidebarCard?: Component
     /**
      * This will be placed below the request details in the sidebar.
      *
-     * It will only receive the `basicRequestData` prop, but you may use the `api` object from
-     * @reqquest/ui to fetch additional data.
+     * It will receive receive the following props:
+     * - `appRequest` with lots of app request details, import the ReviewerCardRequest type from `@reqquest/ui`
+     * - `applicant` with applicant details, import the ReviewerCardApplicant type from `@reqquest/ui`. Notably
+     *   this includes `otherInfo`, which contains any custom user information returned by the userLookup function you provided.
+     * - `api` which is an instance of the API client, import the ReqquestAPI type from `@reqquest/ui`. This allows you to make
+     * additional API calls if you need information not included in the other props.
      */
     reviewerSidebar?: Component
   }

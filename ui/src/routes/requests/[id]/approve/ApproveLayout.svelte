@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Card } from '@txstate-mws/carbon-svelte'
+  import { api } from '$internal'
   import type { LayoutData } from '../$types.js'
   import { uiRegistry } from '../../../../local/index.js'
 
@@ -20,12 +21,12 @@
         {/each}
       </dl>
       {#if uiRegistry.config.slots?.reviewerSidebarCard}
-        <svelte:component this={uiRegistry.config.slots.reviewerSidebarCard} {basicRequestData} />
+        <svelte:component this={uiRegistry.config.slots.reviewerSidebarCard} appRequest={basicRequestData} applicant={basicRequestData.applicant} {api} />
       {/if}
     </Card>
     <slot name="sidebar" />
     {#if uiRegistry.config.slots?.reviewerSidebar}
-      <svelte:component this={uiRegistry.config.slots.reviewerSidebar} {basicRequestData} />
+      <svelte:component this={uiRegistry.config.slots.reviewerSidebar} appRequest={basicRequestData} applicant={basicRequestData.applicant} {api} />
     {/if}
   </div>
   <div class="review-content">
