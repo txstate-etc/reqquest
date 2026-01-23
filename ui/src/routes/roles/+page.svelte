@@ -161,7 +161,7 @@
     noItemsSubtitle=''
     columns={[
       { id: 'group', label: 'Group', get: 'groupName' },
-      { id: 'manager', label: 'Manager', render: row => (Array.isArray(row.managers) && row.managers.length > 0) ? row.managers[0].fullname + '<br/>' + row.managers[0].email : 'no manager information' },
+      { id: 'manager', label: 'Manager', render: row => (row.managers.length > 0) ? row.managers[0].fullname + '<br/>' + row.managers[0].email : 'no manager information' },
       { id: 'added', label: 'Added Date', render: row => (row.dateAdded) ? (row.dateAdded as DateTime).toFormat('MM/dd/yyyy') : '--/--/----' }
     ]}
     rows={role.groups.map(g => ({ ...g, id: g.roleId + g.groupName }))}/>

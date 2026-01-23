@@ -141,7 +141,7 @@ input AccessRoleGrantUpdate {
 type AccessRoleGroup {
   """The date the group was added to a role."""
   dateAdded: DateTime!
-  dateCreated: DateTime!
+  dateCreated: DateTime
 
   """The name of the group. This should be unique even among all roleIds."""
   groupName: String!

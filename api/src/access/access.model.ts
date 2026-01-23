@@ -169,15 +169,6 @@ export class AccessRoleGroup {
 
   @Field({ description: 'The date the group was added to a role.' })
   dateAdded: DateTime
-
-  // @Field({ nullable: true, description: 'List of managers or entities that manage members of group.' })
-  // managers?: AccessRoleGroupManager[]
-
-  // async load (ctx: Context) {
-  //   if (this.loadedGrants) return
-  //   this.loadedGrants = await ctx.svc(AccessRoleService).getGrantsByRoleId(this.id)
-  //   await Promise.all(this.loadedGrants.map(grant => grant.load(ctx)))
-  // }
 }
 
 @ObjectType()

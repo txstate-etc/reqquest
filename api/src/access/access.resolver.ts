@@ -81,10 +81,10 @@ export class AccessRoleGroupResolver {
   @FieldResolver(returns => [AccessRoleGroupManager])
   async managers (@Ctx() ctx: Context, @Root() accessRoleGroup: AccessRoleGroup) {
     const remoteGroup = await ctx.svc(AccessRoleService).getRemoteGroupByGroupName(accessRoleGroup.groupName)
-    return remoteGroup?.managers
+    return remoteGroup?.managers ?? []
   }
 
-  @FieldResolver(returns => DateTime)
+  @FieldResolver(returns => DateTime, { nullable: true })
   async dateCreated (@Ctx() ctx: Context, @Root() accessRoleGroup: AccessRoleGroup) {
     const remoteGroup = await ctx.svc(AccessRoleService).getRemoteGroupByGroupName(accessRoleGroup.groupName)
     return remoteGroup?.dateCreated

@@ -1,4 +1,4 @@
-import { RQServer } from '@reqquest/api'
+import { CategoryTag, RQServer } from '@reqquest/api'
 import { analyticsPlugin, unifiedAuthenticate } from 'fastify-txstate'
 import { DateTime } from 'luxon'
 
@@ -80,7 +80,7 @@ async function main () {
           useInFilters: true,
           useInList: true,
           // Example of reformatting so tag may be used both for index and display.
-          dataToCategoryTags: (data: UserOtherInfo) => data.indexes.institutionalRoles.map(role => ({ tag: role.charAt(0).toLocaleUpperCase() + role.slice(1).toLocaleLowerCase() }))
+          dataToCategoryTags: (data: UserOtherInfo | undefined) => data?.indexes.institutionalRoles.map(role => ({ tag: role.charAt(0).toLocaleUpperCase() + role.slice(1).toLocaleLowerCase() })) ?? []
         }, {
           category: 'lastLogin',
           label: 'Last Login',
@@ -88,7 +88,7 @@ async function main () {
           useInList: true,
           // Example of tag turning date data into epoch index for sortable timestamp.
           // and label simplifying date for display format.
-          dataToCategoryTags: (data: UserOtherInfo) => [{ tag: data.indexes.lastLogin.toSeconds().toString(), label: data.indexes.lastLogin.toFormat('MM/dd/yyyy') }]
+          dataToCategoryTags: (data: UserOtherInfo | undefined) => [{ tag: data?.indexes.lastLogin.toSeconds().toString(), label: data?.indexes.lastLogin.toFormat('MM/dd/yyyy') }].filter(t => t.tag != null) as CategoryTag[]
         }]
       },
       groups: async (groupnames: string[]) => {

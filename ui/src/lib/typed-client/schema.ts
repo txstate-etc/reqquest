@@ -108,7 +108,7 @@ export interface AccessRoleGrantActions {
 export interface AccessRoleGroup {
     /** The date the group was added to a role. */
     dateAdded: Scalars['DateTime']
-    dateCreated: Scalars['DateTime']
+    dateCreated: (Scalars['DateTime'] | null)
     /** The name of the group. This should be unique even among all roleIds. */
     groupName: Scalars['String']
     managers: AccessRoleGroupManager[]

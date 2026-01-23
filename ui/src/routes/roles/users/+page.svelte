@@ -23,7 +23,7 @@
 </script>
 <IntroPanel
   title="Manage Users"
-  subtitle={roleUsersAttributeDescription ?? 'This is where you should describe what kind of attributes app users will be able to search users by'}
+  subtitle={roleUsersAttributeDescription}
 />
 <FilterUI
   search
