@@ -1,8 +1,6 @@
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { advanceWorkflow, appConfig, Application, ApplicationPhase, AppRequest, AppRequestPhase, AppRequestService, AppRequestStatusDB, appRequestTransaction, AuthService, evaluateAppRequest, getApplications, PeriodWorkflowStage, programRegistry, ProgramService, reverseWorkflow, ValidatedAppRequestResponse, WorkflowStage } from '../internal.js'
+import { advanceWorkflow, appConfig, Application, ApplicationPhase, AppRequest, AppRequestPhase, AppRequestService, AppRequestStatus, AppRequestStatusDB, appRequestTransaction, AuthService, evaluateAppRequest, getApplications, PeriodWorkflowStage, programRegistry, ProgramService, reverseWorkflow, ValidatedAppRequestResponse, WorkflowStage } from '../internal.js'
 import { BaseService } from '@txstate-mws/graphql-server'
-import db from 'mysql2-async/db'
-import { get } from 'http'
 
 const appByInternalIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -102,6 +100,7 @@ export class ApplicationService extends AuthService<Application> {
     // the advancement
     if (application.closed) return false
     if (application.phase !== ApplicationPhase.READY_FOR_WORKFLOW) return false
+    if (application.appRequestComputedStatus === AppRequestStatus.REVIEW_COMPLETE) return false
     if (this.isOwn(application) && !this.hasControl('AppRequest', 'review_own')) return false
     return this.hasControl('AppRequest', 'review', application.appRequestTags)
   }

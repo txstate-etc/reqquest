@@ -229,7 +229,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * tags but the API has to do its own check. Two functions `cleanHTML` and `validateHTML` are exported
    * from ReqQuest core to assist you.
    */
-  validate?: (data: Partial<DataType>, config: ConfigurationDataType, appRequestData: Record<string, any>, relatedConfig: Record<string, any>, db: Queryable) => MutationMessage[]
+  validate?: (data: Partial<DataType>, config: ConfigurationDataType, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, db: Queryable) => MutationMessage[]
   /**
    * In some cases you may want to provide MutationMessages that actually prevent saving, for instance
    * when a prompt has file uploads, and you want to create a file type or file size restriction. In this

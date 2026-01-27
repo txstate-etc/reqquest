@@ -324,8 +324,15 @@ export async function appRequestReturnToOffer (appRequestId: number) {
 }
 
 export async function appRequestReturnToReview (appRequestId: number) {
-  await db.execute('UPDATE app_requests SET phase = ? WHERE id = ?', [AppRequestPhase.SUBMITTED, appRequestId])
-  await evaluateAppRequest(appRequestId)
+  return await appRequestTransaction(appRequestId, async db => {
+    await db.execute('UPDATE app_requests SET phase = ? WHERE id = ?', [AppRequestPhase.SUBMITTED, appRequestId])
+    const applications = await getApplications({ appRequestIds: [String(appRequestId)] }, db)
+    const workflowStages = await getPeriodWorkflowStages({ periodIds: [applications[0]?.periodId], hasEnabledRequirements: true, blocking: true }, db)
+    for (const app of applications) {
+      await db.execute('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [ApplicationPhase.READY_FOR_WORKFLOW, workflowStages.toReversed().find(s => s.programKey === app.programKey)?.key, app.internalId])
+    }
+    await evaluateAppRequest(appRequestId, db)
+  })
 }
 
 export async function appRequestReturnToNonBlocking (appRequestId: number) {
@@ -334,7 +341,8 @@ export async function appRequestReturnToNonBlocking (appRequestId: number) {
     const applications = await getApplications({ appRequestIds: [String(appRequestId)] }, db)
     const workflowStages = await getPeriodWorkflowStages({ periodIds: [applications[0]?.periodId], hasEnabledRequirements: true, blocking: false }, db)
     for (const app of applications) {
-      await db.execute('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [ApplicationPhase.WORKFLOW_NONBLOCKING, workflowStages.toReversed().find(s => s.programKey === app.programKey)?.key, app.internalId])
+      const workflowStage = workflowStages.toReversed().find(s => s.programKey === app.programKey)
+      await db.execute('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [workflowStage == null ? ApplicationPhase.READY_TO_COMPLETE : ApplicationPhase.WORKFLOW_NONBLOCKING, workflowStage?.key, app.internalId])
     }
     await evaluateAppRequest(appRequestId, db)
   })
@@ -641,9 +649,6 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
                     : ApplicationPhase.READY_FOR_WORKFLOW
                   : ApplicationPhase.WORKFLOW_BLOCKING
 
-      if (application.phase === ApplicationPhase.READY_FOR_WORKFLOW && applications.length === 1 && (!workflowStages.length || workflowStages[workflowStages.length - 1].key === application.workflowStageKey)) {
-        application.phase = ApplicationPhase.REVIEW_COMPLETE
-      }
       if (requirementsResolution === 'fail') {
         if (phase === 'acceptance') application.ineligiblePhase = IneligiblePhases.ACCEPTANCE
         else if (phase === 'applicant') application.ineligiblePhase = firstFailingRequirement?.type === RequirementType.PREQUAL ? IneligiblePhases.PREQUAL : IneligiblePhases.QUALIFICATION
@@ -682,6 +687,9 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       else if (applications.some(a => a.ineligiblePhase === IneligiblePhases.APPROVAL || a.ineligiblePhase === IneligiblePhases.WORKFLOW)) appRequest.status = AppRequestStatus.NOT_APPROVED
       else appRequest.status = AppRequestStatus.DISQUALIFIED
     } else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_SUBMIT) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.READY_TO_SUBMIT
+    // special case for single-program systems with no blocking workflow stages - we set the appRequest to REVIEW_COMPLETE so
+    // the reviewers can do the appRequest-level "Complete Review" right away instead of having to advance the application first
+    else if (applications.length === 1 && !workflowStages.filter(s => s.blocking).length && (applications[0].phase === ApplicationPhase.READY_FOR_WORKFLOW || applications[0].phase === ApplicationPhase.REVIEW_COMPLETE)) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
     else if (applications.some(a => a.phase === ApplicationPhase.READY_FOR_WORKFLOW)) appRequest.status = AppRequestStatus.APPROVAL
     else if (applications.some(a => a.phase === ApplicationPhase.REVIEW_COMPLETE) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
     else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_ACCEPT) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.READY_TO_ACCEPT
