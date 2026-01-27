@@ -3,7 +3,7 @@
   import type { StateResidencePromptData } from './types.js'
   export let gatheredConfigData
   export let data: Partial<StateResidencePromptData>
-  $: legendText = `Are you a resident of ${gatheredConfigData.state_residence_req.residentOfState}?`
+  $: legendText = `Are you a resident of ${gatheredConfigData.residentOfState}?`
 </script>
 <FieldRadio boolean path="residentOfRequiredState" legendText="{legendText}" items={[{ label: 'Yes', value: true }, { label: 'No', value: false }]} />
 {#if !!data.residentOfRequiredState}

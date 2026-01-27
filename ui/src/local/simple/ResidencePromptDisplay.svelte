@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { toasts } from '@txstate-mws/svelte-components';
-  import { PUBLIC_API_BASE } from '$env/static/public';
+  import { toasts } from '@txstate-mws/svelte-components'
+  import { PUBLIC_API_BASE } from '$env/static/public'
   import { Button, Modal, ToastNotification } from 'carbon-components-svelte'
   import type { StateResidencePromptData } from './types.js'
   export let data: Partial<StateResidencePromptData>
@@ -12,8 +12,7 @@
   let objURL: string | null = null
   let displayIdFileErr: string | null
   let modalOpen = false
-  $: residentOfState = (gatheredConfigData?.state_residence_req) ? `${gatheredConfigData.state_residence_req.residentOfState}` : 'NO state_residence_req related'
-  async function displayIdFile(): Promise<boolean> {
+  async function displayIdFile (): Promise<boolean> {
     if (objURL) { // id file already downloaded
       displayIdFileErr = null
       return true
@@ -23,13 +22,12 @@
       const res = await fetch(ep, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`
         }
       })
       const imgBlob: Blob = await res.blob()
-      objURL = URL.createObjectURL(imgBlob);
-    }
-    catch (err) {
+      objURL = URL.createObjectURL(imgBlob)
+    } catch (err) {
       displayIdFileErr = err
       return false
     }
@@ -38,21 +36,21 @@
   }
 </script>
 {#if data.residentOfRequiredState}
-   <p>Resident of {residentOfState} </p><!-- Config data does not seem to be available for display prompt {resultText}. -->
+   <p>Resident of {gatheredConfigData.residentOfState} </p><!-- Config data does not seem to be available for display prompt {resultText}. -->
    <br>
    <p>
       <b>
         {data.firstName} {data.lastName} <br/>
         {data.streetAddress} <br/>
-        {data.city}, {residentOfState} {data.zipCode}
+        {data.city}, {gatheredConfigData.residentOfState} {data.zipCode}
       </b>
    </p>
    <br/>
    <p>
-      <Button on:click={async () => modalOpen = await displayIdFile()}>Display Id file</Button>
+      <Button on:click={async () => { modalOpen = await displayIdFile() }}>Display Id file</Button>
    </p>
 {:else}
-  <p>Not a resident of {residentOfState}.</p>
+  <p>Not a resident of {gatheredConfigData.residentOfState}.</p>
 {/if}
 
 <Modal
@@ -65,10 +63,9 @@
    <img src={objURL} alt="Identifying file" />
 </Modal>
 
-
 {#if !objURL && displayIdFileErr}
   <ToastNotification
     title="Error"
     subtitle={displayIdFileErr}
-    timeout={5000}  />
+    timeout={5000} />
 {/if}
