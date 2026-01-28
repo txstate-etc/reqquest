@@ -8,7 +8,7 @@
   import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
   import WarningAltFilled from 'carbon-icons-svelte/lib/WarningAltFilled.svelte'
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
-  import { invalidate, invalidateAll } from '$app/navigation'
+  import { invalidateAll } from '$app/navigation'
   import { api, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes } from '$internal'
   import { enumPromptVisibility, enumRequirementStatus, enumRequirementType } from '$lib'
   import type { PageData } from './$types'
@@ -139,7 +139,7 @@
   }
 
   async function onPromptSaved (data: any) {
-    await invalidate('request:approve')
+    await invalidateAll()
     closePromptDialog()
   }
 
