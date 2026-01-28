@@ -169,7 +169,7 @@
           <SelectItem value="returnToNonBlocking" text="Return To Final Workflow Tasks" />
         {/if}
         {#if basicRequestData.actions.submit}
-          <SelectItem value="submit" text="Submit On Behalf Of Applicant" />
+          <SelectItem value="submitAppRequest" text="Submit On Behalf Of Applicant" />
         {/if}
         {#if basicRequestData.actions.acceptOffer}
           <SelectItem value="acceptOffer" text="Accept Offer On Behalf Of Applicant" />
