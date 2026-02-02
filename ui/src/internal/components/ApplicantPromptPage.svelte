@@ -62,6 +62,7 @@
   let hideForm = false
   beforeNavigate(() => {
     hideForm = true
+    store = undefined // also clear out our bound store reference
   })
   afterNavigate(() => {
     hideForm = false
