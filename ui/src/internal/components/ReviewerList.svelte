@@ -24,7 +24,7 @@
     return d.map(d => ({
       Id: d.id,
       Period: d.period.name,
-      'TXST ID': d.applicant.otherInfo,
+      'TXST ID': d.applicant.login,
       Name: d.applicant.fullname,
       'Date Submitted': DateTime.fromISO(d.createdAt).toFormat('f').replace(',', ''),
       Benefit: `"${d.applications.map(a => a.title).join(', ')}"`,
@@ -48,7 +48,7 @@
   columns={[
     { id: 'request', label: 'Request #', tags: row => [{ label: String(row.id) }] },
     { id: 'period', label: 'Period', render: r => r.period.name },
-    { id: 'aNumber', label: 'TXST ID' },
+    { id: 'txstID', label: 'TXST ID', tags: r => [{ label: r.applicant.login, type: 'green' } ] },
     { id: 'name', label: 'Name', get: 'applicant.fullname' },
     { id: 'dateSubmitted', label: 'Date Submitted', render: r => DateTime.fromISO(r.createdAt).toFormat('f') },
     { id: 'benefit', label: 'Benefit', render: r => r.applications.map(a => a.title).join(', ') },

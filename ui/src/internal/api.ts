@@ -102,6 +102,7 @@ class API extends APIBase {
         updatedAt: true,
         complete: true,
         applicant: {
+          login: true,
           fullname: true,
           otherIdentifiers: {
             id: true
