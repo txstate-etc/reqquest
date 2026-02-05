@@ -71,7 +71,7 @@
     return d.map(d => ({
       Id: d.id,
       Period: d.period.name,
-      'TXST ID': d.applicant.login,
+      [uiRegistry.getWord('login')]: d.applicant.login,
       Name: d.applicant.fullname,
       'Date Submitted': DateTime.fromISO(d.createdAt).toFormat('f').replace(',', ''),
       Benefit: `"${d.applications.map(a => a.title).join(', ')}"`,
@@ -183,9 +183,9 @@
   title={uiRegistry.getPlural('appRequest')}
   {selectedActions}
   columns={[
-    { id: 'id', label: 'Id', tags: r => [{ label: r.id } ] },
+    { id: 'id', label: 'Id', tags: r => [{ label: r.id }] },
     { id: 'period', label: uiRegistry.getWord('period'), render: r => htmlEncode(r.period.name) },
-    { id: 'txstID', label: 'TXST ID', tags: r => [{ label: r.applicant.login, type: 'green' } ] },
+    { id: 'login', label: uiRegistry.getWord('login'), tags: r => [{ label: r.applicant.login, type: 'green' }] },
     { id: 'name', label: 'Name', render: r => r.applicant.fullname },
     { id: 'dateSubmitted', label: 'Date Submitted', render: r => DateTime.fromISO(r.createdAt).toFormat('f') },
     { id: 'benefit', label: 'Benefit', render: r => r.applications.map(a => a.title).join(', ') },
@@ -213,7 +213,6 @@
   pageSize={25}
   chooseSize
 />
-
 
 <PanelFormDialog open={createDialog} title="Create App Request" validate={validateAppRequest} submit={submitAppRequest} on:cancel={closeCreateDialog} on:saved={onCreateSaved}>
   <FieldSelect
