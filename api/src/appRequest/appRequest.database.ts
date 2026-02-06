@@ -263,8 +263,22 @@ export async function restoreAppRequest (appRequestId: number) {
 }
 
 export async function closeAppRequest (appRequestId: number) {
-  await db.update('UPDATE app_requests SET status = CASE WHEN phase=? THEN ? ELSE ? END, closedAt = NOW() WHERE id = ?', [
-    AppRequestPhase.STARTED, AppRequestStatusDB.CANCELLED, AppRequestStatusDB.CLOSED, appRequestId
+  await db.update(`UPDATE app_requests
+    SET
+      closedAt = NOW(),
+      status = CASE WHEN phase=? THEN ? ELSE ? END,
+      computedStatus = CASE
+        WHEN phase=? THEN ?
+        WHEN phase=? THEN ?
+        WHEN phase=? THEN ?
+        ELSE computedStatus
+      END
+    WHERE id = ?`, [
+    AppRequestPhase.STARTED, AppRequestStatusDB.CANCELLED, AppRequestStatusDB.CLOSED,
+    AppRequestPhase.STARTED, AppRequestStatus.CANCELLED,
+    AppRequestPhase.SUBMITTED, AppRequestStatus.NOT_APPROVED,
+    AppRequestPhase.ACCEPTANCE, AppRequestStatus.NOT_ACCEPTED,
+    appRequestId
   ])
 }
 

@@ -482,7 +482,7 @@ test.describe('App Request - App Phase - workflows', { tag: '@default' }, () => 
     const variables = { appRequestId: appRequest2Id }
     const response = await reviewerRequest.graphql<{ closeAppRequest: { success: boolean, appRequest: { status: string, statusReason: string, closedAt: string } } }>(query, variables)
     expect(response.closeAppRequest.success).toEqual(true)
-    expect(response.closeAppRequest.appRequest.status).toEqual('READY_TO_SUBMIT')
+    expect(response.closeAppRequest.appRequest.status).toEqual('CANCELLED')
   })
   test('Applicant 2 - Cancel / withdraw previously canceled prior to submit', async ({ applicant2Request }) => {
     const query = `
