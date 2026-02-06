@@ -295,8 +295,8 @@
   <FilterUI
     search={hasPastApps}
     tabs={[
-      { label: 'Recent applications', value: 'recent_applications' },
-      { label: 'Past applications', value: 'past_applications' }
+      { label: 'Recent Applications', value: 'recent_applications' },
+      { label: 'Past Applications', value: 'past_applications' }
     ]}
     on:apply={e => { filterDataSearch = e.detail }}
     on:mount={e => { filterDataSearch = e.detail }}>
@@ -384,7 +384,7 @@
     </IntroPanel>
   {/if}
   <!-- Application Cards -->
-  <Panel title="All recent Applications">
+  <Panel title={filterDataSearch?.tab === 'past_applications' ? 'All past applications' : 'All recent applications'}>
     {#if appRequests.length === 0}
       {#if filterDataSearch?.tab === 'past_applications'}
         <InlineNotification
@@ -392,6 +392,7 @@
           title="No results found."
           subtitle={hasPastApps ? 'You may need to refine your searched terms, filters or try again.' : undefined}
           lowContrast
+          hideCloseButton
         />
       {:else}
         <InlineNotification
@@ -399,6 +400,7 @@
           title="No recent applications found."
           subtitle="You have no applications created or modified in the last {recentDays} days. Check under Past applications tab."
           lowContrast
+          hideCloseButton
         />
       {/if}
     {:else}
