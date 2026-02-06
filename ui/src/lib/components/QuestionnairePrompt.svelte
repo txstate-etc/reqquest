@@ -7,7 +7,7 @@
      * There can be up to 3 external links to help applicants if there are things they need to do externally to the app request.
      * @type {{ url: string, label: string }[]}
      */
-    export let externalLinks: { url: string, label: string, target?: string, rel?: string}[] = []
+    export let externalLinks: { url: string, label: string, target?: string, rel?: string }[] = []
 
     /**
      * If true, the form will take the full width of its container. If false, it will be constrained to max-w-screen-md.
@@ -25,7 +25,7 @@
     <div class="prompt-intro-links flow max-w-screen-md mx-auto px-6">
         <ul class="flex gap-4 flex-wrap mb-4 justify-center">
         {#each externalLinks.slice(0, 3) as link (link.url)}
-            <li><Button kind="ghost" icon={Launch} href={link.url} target={link.target ?? '_blank'} rel={link.rel ?? 'noopener noreferrer'}>{link.label}</Button></li>
+            <li><Button kind="ghost" icon={Launch} href={link.url} target={link.target ?? '_blank'} rel={link.rel ?? 'noopener noreferrer'}>{link.label}{#if (link.target ?? '_blank') === '_blank'}<span class="sr-only"> (opens in a new tab)</span>{/if}</Button></li>
         {/each}
         </ul>
     </div>
