@@ -20,10 +20,23 @@
      * @type {'left' | 'center'}
      */
     export let align: 'left' | 'center' = 'center'
+
+    /**
+     * Text alignment for the intro slot content. Defaults to the value of `align`.
+     * @type {'left' | 'center' | 'right' | undefined}
+     */
+    export let introTextAlignment: 'left' | 'center' | 'right' | undefined = undefined
+
+    $: effectiveIntroAlignment = introTextAlignment ?? align
 </script>
+{#if $$slots.intro}
+    <div class="prompt-intro flow max-w-screen-md px-6" class:mx-auto={align === 'center'} class:text-center={effectiveIntroAlignment === 'center'} class:text-right={effectiveIntroAlignment === 'right'} style:color="var(--cds-text-02)">
+        <slot name="intro" />
+    </div>
+{/if}
 {#if externalLinks.length > 0}
-    <div class="prompt-intro-links flow max-w-screen-md mx-auto px-6">
-        <ul class="flex gap-4 flex-wrap mb-4 justify-center">
+    <div class="prompt-intro-links flow max-w-screen-md px-6" class:mx-auto={align === 'center'}>
+        <ul class="flex gap-4 flex-wrap mb-4" class:justify-center={align === 'center'}>
         {#each externalLinks.slice(0, 3) as link (link.url)}
             <li><Button kind="ghost" icon={Launch} href={link.url} target={link.target ?? '_blank'} rel={link.rel ?? 'noopener noreferrer'}>{link.label}{#if (link.target ?? '_blank') === '_blank'}<span class="sr-only"> (opens in a new tab)</span>{/if}</Button></li>
         {/each}
