@@ -109,6 +109,7 @@ class API extends APIBase {
           }
         },
         period: {
+          id: true,
           name: true,
           openDate: true,
           closeDate: true

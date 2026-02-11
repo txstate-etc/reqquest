@@ -17,11 +17,12 @@
   interface FilterState {
     tab?: 'recent_applications' | 'past_applications'
     search?: string
-    yearSubmitted?: string[]
+    periodIds?: string[]
+    status?: string[]
   }
 
   export let data: PageData
-  $: ({ appRequests, availableYears, access, openPeriods, recentCutoffIso, recentDays } = data)
+  $: ({ appRequests, availablePeriods, availableStatuses, access, openPeriods, recentCutoffIso, recentDays } = data)
 
   let sidePanelOpen = false
   let loading = false
@@ -280,20 +281,18 @@
   // FilterUI Helper Functions
   // ==========================================
 
-  function getAvailableYears (years: number[]) {
-    return years.map(year => ({ value: year.toString(), label: year.toString() }))
-  }
-
   // Reactive statements for filter options
-  $: yearOptions = getAvailableYears(availableYears)
-  $: showIntroPanel = filterDataSearch?.tab !== 'past_applications'
-  $: hasPastApps = filterDataSearch?.tab === 'past_applications' && yearOptions.length > 0
+  $: periodOptions = availablePeriods.map(p => ({ value: p.id, label: p.name }))
+  $: statusOptions = availableStatuses.map(label => ({ value: label, label }))
+  $: isPastTab = filterDataSearch?.tab === 'past_applications'
+  $: pastFiltersReady = isPastTab && (periodOptions.length > 0 || statusOptions.length > 0)
+  $: showIntroPanel = !isPastTab
 </script>
 
-<div class="flow applicant-dashboard">
+<div class="flow applicant-dashboard" class:past-tab={isPastTab}>
   <!-- Filter UI for recent/past applications -->
   <FilterUI
-    search={hasPastApps}
+    search={isPastTab}
     tabs={[
       { label: 'Recent Applications', value: 'recent_applications' },
       { label: 'Past Applications', value: 'past_applications' }
@@ -301,8 +300,9 @@
     on:apply={e => { filterDataSearch = e.detail }}
     on:mount={e => { filterDataSearch = e.detail }}>
     <svelte:fragment slot="quickfilters">
-      {#if hasPastApps}
-        <FieldMultiselect path="yearSubmitted" label="Year Submitted" items={yearOptions} />
+      {#if pastFiltersReady}
+        <FieldMultiselect path="periodIds" label={uiRegistry.getWord('period')} items={periodOptions} />
+        <FieldMultiselect path="status" label="Status" items={statusOptions} />
       {/if}
     </svelte:fragment>
   </FilterUI>
@@ -390,7 +390,7 @@
         <InlineNotification
           kind="info"
           title="No results found."
-          subtitle={hasPastApps ? 'You may need to refine your searched terms, filters or try again.' : undefined}
+          subtitle={pastFiltersReady ? 'You may need to refine your searched terms, filters or try again.' : undefined}
           lowContrast
           hideCloseButton
         />
@@ -473,5 +473,8 @@
   }
   .intro-actions :global(.bx--list-box__field) {
     background: var(--cds-field-02,#ffffff);
+  }
+  .applicant-dashboard.past-tab :global(.quickfilters-form) {
+    min-height: 2.5rem;
   }
 </style>
