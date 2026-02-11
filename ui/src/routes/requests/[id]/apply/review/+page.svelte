@@ -32,12 +32,12 @@
 
   async function onSubmit () {
     const resp = await api.appRequestPhaseChange(appRequestForExport.id, 'submitAppRequest')
-    if (resp.success) { 
+    if (resp.success) {
       toasts.add({ type: 'success', title: 'Submission Succeeded', message: 'Successfully submitted application for review' })
-      await goto(resolve('/dashboards/applicant'))      
+      await goto(resolve('/dashboards/applicant'))
     } else {
       toasts.add({ type: 'error', title: 'Submission Failed', message: resp.messages.map(m => m.message).join('\n') || 'There was an error submitting your application. Please try again later.' })
-    } 
+    }
   }
 
   afterNavigate(() => {
@@ -48,41 +48,41 @@
     }
   })
 </script>
-
-<ApplicationDetailsView
-  appRequest={appRequestForExport}
-  applications={applicationsForNav}
-  appData={appRequestForExport.data}
-  {prequalPrompts}
-  {postqualPrompts}
-  {uiRegistry}
-  title="Review Your Submission"
-  subtitle="Please review all information before submitting."
-  expandable={false}
-  showWarningsInline={true}
-  showAppRequestStatus={false}
-  statusDisplay="icons"
->
-  <svelte:fragment slot="footer">
-    <footer class="[ mt-6 ] flow">
-      {#if uiRegistry.config.supportUrl}
-        <p class="text-center">If you think this was a mistake please review your answers or reach out through the support page.</p>
-      {/if}
-      <div class="footer-actions">
-        {#if hasPreviousPrompt}
-            <Button kind="ghost" on:click={handleBack}>Back</Button>
-        {/if}
+<div class="max-w-screen-md mx-auto">
+  <ApplicationDetailsView
+    appRequest={appRequestForExport}
+    applications={applicationsForNav}
+    appData={appRequestForExport.data}
+    {prequalPrompts}
+    {postqualPrompts}
+    {uiRegistry}
+    title="Review Your Submission"
+    subtitle="Please review all information before submitting."
+    expandable={false}
+    showWarningsInline={true}
+    showAppRequestStatus={false}
+    statusDisplay="icons"
+  >
+    <svelte:fragment slot="footer">
+      <footer class="[ mt-6 ] flow">
         {#if uiRegistry.config.supportUrl}
-            <Button kind="ghost" href={uiRegistry.config.supportUrl}>Support</Button>
+          <p class="text-center">If you think this was a mistake please review your answers or reach out through the support page.</p>
         {/if}
-        {#if appRequestForExport.status === enumAppRequestStatus.READY_TO_SUBMIT}
-          <Button icon={Touch_1} on:click={onSubmit}>Submit For Review</Button>
-        {/if}
-      </div>
-    </footer>
-  </svelte:fragment>
-</ApplicationDetailsView>
-
+        <div class="footer-actions">
+          {#if hasPreviousPrompt}
+              <Button kind="ghost" on:click={handleBack}>Back</Button>
+          {/if}
+          {#if uiRegistry.config.supportUrl}
+              <Button kind="ghost" href={uiRegistry.config.supportUrl}>Support</Button>
+          {/if}
+          {#if appRequestForExport.status === enumAppRequestStatus.READY_TO_SUBMIT}
+            <Button icon={Touch_1} on:click={onSubmit}>Submit For Review</Button>
+          {/if}
+        </div>
+      </footer>
+    </svelte:fragment>
+  </ApplicationDetailsView>
+</div>
 <style>
   .footer-actions {
     display: flex;

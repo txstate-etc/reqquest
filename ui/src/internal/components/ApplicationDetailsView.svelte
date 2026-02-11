@@ -247,8 +247,12 @@
   .status-content dl {
     padding-block-start:1em;
     display:grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 1fr 1fr;
     row-gap:0.5rem;
+  }
+
+  .status-content :global(.programs-container) {
+    grid-template-columns: 1fr 1fr;
   }
 
   .status-list-item {
