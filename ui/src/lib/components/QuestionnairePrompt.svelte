@@ -30,7 +30,7 @@
     $: effectiveIntroAlignment = introTextAlignment ?? align
 </script>
 {#if $$slots.intro}
-    <div class="prompt-intro flow max-w-screen-md px-6" class:mx-auto={align === 'center'} class:text-center={effectiveIntroAlignment === 'center'} class:text-right={effectiveIntroAlignment === 'right'} style:color="var(--cds-text-02)">
+    <div id="questionnaire-intro" class="prompt-intro flow max-w-screen-md px-6" class:mx-auto={align === 'center'} class:text-center={effectiveIntroAlignment === 'center'} class:text-right={effectiveIntroAlignment === 'right'} style:color="var(--cds-text-02)">
         <slot name="intro" />
     </div>
 {/if}
