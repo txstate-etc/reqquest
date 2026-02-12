@@ -1,5 +1,6 @@
-import { api, APP_REQUEST_STATUS_CONFIG } from '$internal'
-import type { AppRequestFilter, AppRequestStatus } from '$lib'
+import { api, APP_REQUEST_STATUS_CONFIG, getPastStatuses } from '$internal'
+import type { DashboardAppRequest } from '$internal'
+import type { AppRequestStatus } from '$lib'
 import { error } from '@sveltejs/kit'
 import { extractMergedFilters } from '@txstate-mws/carbon-svelte'
 import { sortby, unique } from 'txstate-utils'
@@ -26,48 +27,56 @@ export const load: PageLoad = async ({ url, depends, parent }) => {
   cutoff.setDate(cutoff.getDate() - recentDays)
   const recentCutoffIso = cutoff.toISOString()
 
+  const pastStatuses = new Set(getPastStatuses())
+  // an app is "past" only if it's both older than the cutoff AND in a terminal status;
+  // apps with active statuses (e.g. APPROVAL) always stay on the recent tab regardless of age
+  function isPastApp (r: DashboardAppRequest) {
+    return r.updatedAt < recentCutoffIso && pastStatuses.has(r.status)
+  }
+
+  // fetch for all own apps, then split
+  const [allRequests, openPeriods] = await Promise.all([
+    api.getApplicantRequests({ own: true }),
+    api.getOpenPeriods()
+  ])
+
   if (currentTab === 'past_applications') {
-    const baseFilter: AppRequestFilter = { own: true, updatedBefore: recentCutoffIso }
+    const allPastRequests = allRequests.filter(isPastApp)
+
     const hasActiveFilters = filters.periodIds?.length > 0 || filters.status?.length > 0 || !!filters.search
-    const filteredFilter: AppRequestFilter = {
-      ...baseFilter,
-      ...(filters.periodIds?.length > 0 && { periodIds: filters.periodIds }),
-      ...(filters.status?.length > 0 && { status: statusLabelsToEnums(filters.status) }),
-      ...(filters.search && { search: filters.search })
+
+    let displayRequests: typeof allPastRequests
+    if (hasActiveFilters) {
+      displayRequests = await api.getApplicantRequests({
+        own: true,
+        updatedBefore: recentCutoffIso,
+        status: filters.status?.length > 0 ? statusLabelsToEnums(filters.status) : getPastStatuses(),
+        ...(filters.search && { search: filters.search }),
+        ...(filters.periodIds?.length > 0 && { periodIds: filters.periodIds })
+      })
+    } else {
+      displayRequests = allPastRequests
     }
 
-    // fetch all past requests and, if the user applied filters, a second filtered set
-    const [allPastRequests, openPeriods, filteredRequests] = await Promise.all([
-      api.getApplicantRequests(baseFilter),
-      api.getOpenPeriods(),
-      hasActiveFilters ? api.getApplicantRequests(filteredFilter) : undefined
-    ] as const)
-
-    // derive the period options available for filtering
+    // get the period options available for filtering from the unfiltered past set
     const periods = allPastRequests.filter(r => r.period?.id).map(r => ({ id: r.period!.id, name: r.period!.name }))
     const availablePeriods = sortby(unique(periods, 'id'), 'name')
 
-    // derive the status options available for filtering
+    // get status options available for filtering
     const statusesInData = new Set(allPastRequests.map(r => r.status))
     const configKeys = Object.keys(APP_REQUEST_STATUS_CONFIG) as AppRequestStatus[]
     const availableStatuses = unique(
       configKeys.filter(k => statusesInData.has(k)).map(k => APP_REQUEST_STATUS_CONFIG[k].label)
     )
 
-    // return filtered results when filters are active, otherwise all past requests
     return {
-      appRequests: hasActiveFilters ? (filteredRequests ?? []) : allPastRequests,
+      appRequests: hasActiveFilters ? displayRequests : allPastRequests,
       availablePeriods, availableStatuses, openPeriods, access, recentCutoffIso, recentDays
     }
   } else {
-    // rencent apps
-    const [appRequests, openPeriods] = await Promise.all([
-      api.getApplicantRequests({ own: true, updatedAfter: recentCutoffIso }),
-      api.getOpenPeriods()
-    ])
-
     return {
-      appRequests, openPeriods, access, recentCutoffIso, recentDays,
+      appRequests: allRequests.filter(r => !isPastApp(r)),
+      openPeriods, access, recentCutoffIso, recentDays,
       availablePeriods: [] as { id: string, name: string }[],
       availableStatuses: [] as string[]
     }
