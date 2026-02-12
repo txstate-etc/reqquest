@@ -145,6 +145,11 @@ export interface UIConfig {
    */
   applicantDashboardRecentDays?: number
   /**
+   * Whether to constrain the applicant review/submission page to a medium
+   * screen-width container. Defaults to true.
+   */
+  applicantReviewMaxWidth?: boolean
+  /**
    * URL to the support/help page. If provided, a support link will be shown on applicant review screen.
    */
   supportUrl?: string

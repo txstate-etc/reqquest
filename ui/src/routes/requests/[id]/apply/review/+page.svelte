@@ -48,7 +48,7 @@
     }
   })
 </script>
-<div class="max-w-screen-md mx-auto">
+<div class:max-w-screen-md={uiRegistry.config.applicantReviewMaxWidth !== false} class:mx-auto={uiRegistry.config.applicantReviewMaxWidth !== false}>
   <ApplicationDetailsView
     appRequest={appRequestForExport}
     applications={applicationsForNav}
