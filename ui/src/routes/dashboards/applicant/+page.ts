@@ -59,7 +59,7 @@ export const load: PageLoad = async ({ url, depends, parent }) => {
     }
 
     // get the period options available for filtering from the unfiltered past set
-    const periods = allPastRequests.filter(r => r.period?.id).map(r => ({ id: r.period!.id, name: r.period!.name }))
+    const periods = allPastRequests.filter(r => r.period.id).map(r => ({ id: r.period.id, name: r.period.name }))
     const availablePeriods = sortby(unique(periods, 'id'), 'name')
 
     // get status options available for filtering
