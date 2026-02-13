@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon'
 import { Field, ID, InputType, Int, ObjectType, registerEnumType } from 'type-graphql'
-import { AppRequestActivityRow, AppRequestPhase, AppRequestRow, AppRequestStatusDB, JsonData, PromptTagDefinition } from '../internal.js'
+import { AppRequestActivityRow, AppRequestRow, AppRequestStatusDB, JsonData, PromptTagDefinition } from '../internal.js'
 import { ValidatedResponse } from '@txstate-mws/graphql-server'
 
 export enum AppRequestStatus {
@@ -43,6 +43,34 @@ registerEnumType(AppRequestStatus, {
   }
 })
 
+export enum AppRequestPhase {
+  // The request has been started but not yet submitted.
+  STARTED = 'STARTED',
+  // The request has been submitted for review. Reviewers and blocking-workflow auditors
+  // need to finish their work before an offer is made to the applicant.
+  SUBMITTED = 'SUBMITTED',
+  // At least one application has been approved by the reviewer and the reviewer
+  // moved it to this state where we are waiting for the applicant to accept the offer(s).
+  ACCEPTANCE = 'ACCEPTANCE',
+  // The request has moved past ACCEPTANCE and is ready for each application to begin
+  // its non-blocking workflow. If there is no non-blocking workflow, the applications should
+  // be marked complete and this status should move to CLOSED.
+  WORKFLOW_NONBLOCKING = 'WORKFLOW_NONBLOCKING',
+  COMPLETE = 'COMPLETE'
+}
+
+registerEnumType(AppRequestPhase, {
+  name: 'AppRequestPhase',
+  description: 'The current phase of the app request. The phase generally only changes when control of the app request shifts between the applicant and reviewer.',
+  valuesConfig: {
+    [AppRequestPhase.STARTED]: { description: 'Applicant has begun the process and has not yet submitted.' },
+    [AppRequestPhase.SUBMITTED]: { description: 'Applicant has submitted and we are waiting for reviewers to do their part.' },
+    [AppRequestPhase.ACCEPTANCE]: { description: 'Reviewer has approved an offer and we are waiting for the applicant to accept. This phase is unreachable if the period has no ACCEPTANCE requirements.' },
+    [AppRequestPhase.WORKFLOW_NONBLOCKING]: { description: 'The request has moved past ACCEPTANCE and is ready for each application to begin its non-blocking workflow. This phase is unreachable if the period has no non-blocking workflow stages.' },
+    [AppRequestPhase.COMPLETE]: { description: 'All applications are complete and any non-blocking workflow is complete. The request is not necessarily closed, as that is an additional status, but nothing else needs be done to it.' }
+  }
+})
+
 @ObjectType({ description: 'Represents a group of applications all being applied for at the same time. As part of the request, multiple applications will be created and either eliminated as ineligible or submitted for approval.' })
 export class AppRequest {
   constructor (row: AppRequestRow, tags?: Record<string, string[]>) {
@@ -51,9 +79,9 @@ export class AppRequest {
     this.dbStatus = row.status
     this.status = row.computedStatus
     this.phase = row.phase
-    this.complete = row.phase === AppRequestPhase.COMPLETE
     this.createdAt = DateTime.fromJSDate(row.createdAt)
     this.updatedAt = DateTime.fromJSDate(row.updatedAt)
+    this.submittedAt = row.submittedAt ? DateTime.fromJSDate(row.submittedAt) : undefined
     this.closedAt = row.closedAt ? DateTime.fromJSDate(row.closedAt) : undefined
     this.userInternalId = row.userId
     this.periodId = String(row.periodId)
@@ -69,8 +97,8 @@ export class AppRequest {
   @Field(type => ID)
   id: string
 
-  @Field()
-  complete: boolean
+  @Field(type => AppRequestPhase, { description: 'The current phase of the app request. The phase generally only changes when control of the app request shifts between the applicant and reviewer.' })
+  phase: AppRequestPhase
 
   @Field(type => AppRequestStatus)
   status: AppRequestStatus
@@ -80,6 +108,9 @@ export class AppRequest {
 
   @Field()
   updatedAt: DateTime
+
+  @Field({ nullable: true, description: 'The date that the applicant submitted their request. If the applicant has not yet submitted, this will be null.' })
+  submittedAt?: DateTime
 
   @Field({ nullable: true, description: 'Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date.' })
   closedAt?: DateTime
@@ -91,7 +122,6 @@ export class AppRequest {
   periodArchivesAt?: DateTime
   periodOpensAt: DateTime
   dbStatus: AppRequestStatusDB
-  phase: AppRequestPhase
   internalId: number
   userInternalId: number
   periodId: string
@@ -210,6 +240,9 @@ export class AppRequestFilter {
   @Field({ nullable: true, description: 'Only return appRequests that are owned by the current user.' })
   own?: boolean
 
+  @Field({ nullable: true, description: 'true -> only return appRequests that are complete (i.e. no more work to do, everything including nonblocking workflow is done). false -> only return appRequests that are not complete. null -> return all appRequests. Complete does not necessarily mean closed.' })
+  complete?: boolean
+
   @Field({ nullable: true, description: 'true -> only return appRequests that are closed. false -> only return appRequests that are open. null -> return all appRequests.' })
   closed?: boolean
 
@@ -242,6 +275,9 @@ export class AppRequestFilter {
 
   @Field(type => DateTime, { nullable: true, description: 'Only return appRequests that were closed before this date. Open appRequests will be filtered out.' })
   closedBefore?: DateTime
+
+  @Field({ nullable: true, description: 'Only return appRequests that have had their review started. true -> return review started, false -> return not started. Note that this is NOT mutually exclusive with complete or closed, it very simply means that a non-applicant has taken an action on it.' })
+  reviewStarted?: boolean
 
   internalIds?: number[]
   userInternalIds?: number[]

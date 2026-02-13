@@ -3,6 +3,7 @@ export * from './scalar/index.js'
 
 /** Utils */
 export * from './util/auth.js'
+export * from './util/filters.js'
 export * from './access/access.structure.js'
 export * from './access/access.seed.js'
 
@@ -51,6 +52,10 @@ export * from './period/period.service.js'
 export * from './program/program.service.js'
 export * from './prompt/prompt.service.js'
 export * from './requirement/requirement.service.js'
+
+/** Routes */
+export * from './appRequest/appRequest.routes.js'
+export * from './download/download.routes.js'
 
 /** db migrations */
 export * from './migrations.js'

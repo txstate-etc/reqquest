@@ -10,6 +10,7 @@ export const appRequestMigrations: DatabaseMigration[] = [
           id INT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
           periodId INT UNSIGNED NOT NULL,
           userId INT UNSIGNED NOT NULL,
+          reviewStarted TINYINT(1) NOT NULL DEFAULT 0,
           status VARCHAR(255) NOT NULL DEFAULT '${AppRequestStatusDB.OPEN}',
           phase VARCHAR(255) NOT NULL DEFAULT '${AppRequestPhase.STARTED}',
           computedStatus VARCHAR(255) NOT NULL DEFAULT 'PREQUAL',
@@ -75,6 +76,22 @@ export const appRequestMigrations: DatabaseMigration[] = [
         INDEX (createdAt),
         INDEX (mutation),
         INDEX (clientId, scope)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
+    }
+  }, {
+    id: '20260209190000',
+    async execute (db: Queryable) {
+      const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_NAME = 'app_requests' AND COLUMN_NAME = 'reviewStarted'")
+      if (!exists) await db.execute('ALTER TABLE app_requests ADD COLUMN reviewStarted TINYINT(1) NOT NULL DEFAULT 0')
+    }
+  }, {
+    id: '20260210120000',
+    async execute (db: Queryable) {
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS temp_authorizations (
+          code CHAR(36) NOT NULL PRIMARY KEY,
+          auth TEXT NOT NULL,
+          createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
     }
   }

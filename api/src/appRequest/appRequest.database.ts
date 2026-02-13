@@ -4,7 +4,7 @@ import type { GraphQLError } from 'graphql'
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
 import { clone, findIndex, groupby, isNotBlank, keyby, omit, stringify } from 'txstate-utils'
-import { ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter, AppRequestStatus, getAcceptancePeriodIds, getApplications, getPeriodWorkflowStages, IneligiblePhases, Pagination, PaginationInfoWithTotalItems, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, requirementRegistry, RequirementStatus, RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
+import { ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter, AppRequestPhase, AppRequestStatus, getApplications, getPeriodWorkflowStages, IneligiblePhases, Pagination, PaginationInfoWithTotalItems, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, requirementRegistry, RequirementStatus, RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
 
 /**
  * This is the status of the whole appRequest as stored in the database. Each application
@@ -22,34 +22,20 @@ export enum AppRequestStatusDB {
   WITHDRAWN = 'WITHDRAWN'
 }
 
-export enum AppRequestPhase {
-  // The request has been started but not yet submitted.
-  STARTED = 'STARTED',
-  // The request has been submitted for review. Reviewers and blocking-workflow auditors
-  // need to finish their work before an offer is made to the applicant.
-  SUBMITTED = 'SUBMITTED',
-  // At least one application has been approved by the reviewer and the reviewer
-  // moved it to this state where we are waiting for the applicant to accept the offer(s).
-  ACCEPTANCE = 'ACCEPTANCE',
-  // The request has moved past ACCEPTANCE and is ready for each application to begin
-  // its non-blocking workflow. If there is no non-blocking workflow, the applications should
-  // be marked complete and this status should move to CLOSED.
-  WORKFLOW_NONBLOCKING = 'WORKFLOW_NONBLOCKING',
-  COMPLETE = 'COMPLETE'
-}
-
 export interface AppRequestRow {
   id: number
   periodId: number
   periodCode: string | null
   userId: number
+  reviewStarted: 0 | 1
   status: AppRequestStatusDB
   phase: AppRequestPhase
   computedStatus: AppRequestStatus
   computedReadyToComplete: 0 | 1
   createdAt: Date
   updatedAt: Date
-  closedAt: Date
+  submittedAt: Date | null
+  closedAt: Date | null
   dataVersion: number
   periodClosesAt: Date | null
   periodArchivesAt: Date | null
@@ -164,21 +150,45 @@ function processFilters (filter?: AppRequestFilter) {
     where.push('ar.closedAt <= ?')
     binds.push(filter.closedBefore.toJSDate())
   }
+  if (filter?.reviewStarted != null) {
+    where.push('ar.reviewStarted = ?')
+    binds.push(filter.reviewStarted ? 1 : 0)
+  }
+  if (filter?.complete != null) {
+    if (filter.complete) where.push('ar.phase = ?')
+    else where.push('ar.phase != ?')
+    binds.push(AppRequestPhase.COMPLETE)
+  }
   return { joins, where, binds }
 }
 
-export async function getAppRequests (filter?: AppRequestFilter, tdb: Queryable = db) {
+export async function getAppRequests (filter?: AppRequestFilter & Pagination, tdb: Queryable = db) {
   const { joins, where, binds } = processFilters(filter)
+  const limit = filter?.perPage ? `LIMIT ${filter.perPage} OFFSET ${((filter.page ?? 1) - 1) * filter.perPage}` : ''
   const rows = await tdb.getall<AppRequestRow>(`
-    SELECT DISTINCT ar.id, ar.periodId, ar.userId, ar.status, ar.phase, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt, ar.dataVersion, ar.computedReadyToComplete,
+    SELECT DISTINCT ar.id, ar.periodId, ar.userId, ar.reviewStarted, ar.status, ar.phase, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt, ar.dataVersion, ar.computedReadyToComplete,
       p.code AS periodCode, p.closeDate AS periodClosesAt, p.archiveDate AS periodArchivesAt, p.openDate AS periodOpensAt
     FROM app_requests ar
     INNER JOIN periods p ON p.id = ar.periodId
     ${Array.from(joins.values()).join('\n')}
     ${where.length === 0 ? '' : `WHERE (${where.join(') AND (')})`}
+    ORDER BY ar.id ASC
+    ${limit}
   `, binds)
   const tagLookup = await getAppRequestTags(rows.map(row => String(row.id)), tdb)
   return rows.map(row => new AppRequest(row, tagLookup[row.id]))
+}
+
+export async function countAppRequests (filter?: AppRequestFilter, tdb: Queryable = db) {
+  const { joins, where, binds } = processFilters(filter)
+  const count = await tdb.getval<number>(`
+    SELECT COUNT(DISTINCT ar.id)
+    FROM app_requests ar
+    INNER JOIN periods p ON p.id = ar.periodId
+    ${Array.from(joins.values()).join('\n')}
+    ${where.length === 0 ? '' : `WHERE (${where.join(') AND (')})`}
+  `, binds)
+  return count
 }
 
 export async function getAppRequestTags (appRequestIds: string[], tdb: Queryable = db) {
@@ -745,6 +755,7 @@ export async function recordAppRequestActivity (appRequestId: number | string, u
     info?.description,
     info?.data ? stringify(info.data) : null
   ])
+  await tdb.update('UPDATE app_requests SET reviewStarted = (CASE WHEN userId != ? THEN 1 ELSE reviewStarted END) WHERE id = ?', [userId, appRequestId])
 }
 
 export async function getAppRequestActivity (filter: AppRequestActivityFilters, pageInfo?: PaginationInfoWithTotalItems, paged?: Pagination) {
@@ -841,4 +852,15 @@ export async function appRequestTransaction<T = any> (appRequestInternalId: numb
     await db.getval('SELECT id FROM app_requests WHERE id = ? FOR UPDATE', [appRequestInternalId])
     return await callback(db)
   }, { retries: 2 })
+}
+
+export async function saveTicket (code: string, auth: any) {
+  await db.delete('DELETE FROM temp_authorizations WHERE createdAt < NOW() - INTERVAL 5 MINUTE')
+  await db.insert('INSERT INTO temp_authorizations (code, auth) VALUES (?, ?)', [code, JSON.stringify(auth)])
+}
+
+export async function useTicket (code: string) {
+  const auth = await db.getval<string>('SELECT auth FROM temp_authorizations WHERE code = ? AND createdAt >= NOW() - INTERVAL 5 MINUTE', [code])
+  await db.delete('DELETE FROM temp_authorizations WHERE code = ?', [code])
+  return auth ? JSON.parse(auth) : undefined
 }

@@ -182,7 +182,6 @@ export interface AppRequest {
     applications: Application[]
     /** Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date. */
     closedAt: (Scalars['DateTime'] | null)
-    complete: Scalars['Boolean']
     createdAt: Scalars['DateTime']
     /** All data that has been gathered from the user for this request. It is a Record whose properties are the prompt keys and values are the data gathered by the corresponding prompt dialog. */
     data: Scalars['JsonData']
@@ -197,11 +196,15 @@ export interface AppRequest {
     otherNotes: Note[]
     /** The period this appRequest is associated with. */
     period: Period
+    /** The current phase of the app request. The phase generally only changes when control of the app request shifts between the applicant and reviewer. */
+    phase: AppRequestPhase
     /** Retrieve a specific prompt by its ID. This is useful for the UI to get the full prompt data and configuration when trying to edit an individual prompt. We don't want to be downloading all the config data for everything up front. */
     prompt: RequirementPrompt
     status: AppRequestStatus
     /** The most pertinent status reason for this app request. The logic is complicated and depends on the AppRequest's status. */
     statusReason: (Scalars['String'] | null)
+    /** The date that the applicant submitted their request. If the applicant has not yet submitted, this will be null. */
+    submittedAt: (Scalars['DateTime'] | null)
     updatedAt: Scalars['DateTime']
     __typename: 'AppRequest'
 }
@@ -280,6 +283,10 @@ export interface AppRequestIndexCategory {
 
 /** This is used to indicate where the index values should be displayed. */
 export type AppRequestIndexDestination = 'APPLICANT_DASHBOARD' | 'APP_REQUEST_LIST' | 'LIST_FILTERS' | 'REVIEWER_DASHBOARD'
+
+
+/** The current phase of the app request. The phase generally only changes when control of the app request shifts between the applicant and reviewer. */
+export type AppRequestPhase = 'ACCEPTANCE' | 'COMPLETE' | 'STARTED' | 'SUBMITTED' | 'WORKFLOW_NONBLOCKING'
 
 
 /**
@@ -667,6 +674,7 @@ export interface Query {
     appRequests: AppRequest[]
     /** This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant. */
     controlGroups: AccessControlGroup[]
+    countAppRequests: Scalars['Int']
     pageInfo: PaginationResponse
     periods: Period[]
     programs: Program[]
@@ -991,7 +999,6 @@ export interface AppRequestGenqlSelection{
     applications?: ApplicationGenqlSelection
     /** Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date. */
     closedAt?: boolean | number
-    complete?: boolean | number
     createdAt?: boolean | number
     /** All data that has been gathered from the user for this request. It is a Record whose properties are the prompt keys and values are the data gathered by the corresponding prompt dialog. */
     data?: { __args: {
@@ -1010,11 +1017,15 @@ export interface AppRequestGenqlSelection{
     otherNotes?: (NoteGenqlSelection & { __args?: {filter?: (AppRequestNoteFilters | null)} })
     /** The period this appRequest is associated with. */
     period?: PeriodGenqlSelection
+    /** The current phase of the app request. The phase generally only changes when control of the app request shifts between the applicant and reviewer. */
+    phase?: boolean | number
     /** Retrieve a specific prompt by its ID. This is useful for the UI to get the full prompt data and configuration when trying to edit an individual prompt. We don't want to be downloading all the config data for everything up front. */
     prompt?: (RequirementPromptGenqlSelection & { __args: {promptId: Scalars['ID']} })
     status?: boolean | number
     /** The most pertinent status reason for this app request. The logic is complicated and depends on the AppRequest's status. */
     statusReason?: boolean | number
+    /** The date that the applicant submitted their request. If the applicant has not yet submitted, this will be null. */
+    submittedAt?: boolean | number
     updatedAt?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
@@ -1097,6 +1108,8 @@ closed?: (Scalars['Boolean'] | null),
 closedAfter?: (Scalars['DateTime'] | null),
 /** Only return appRequests that were closed before this date. Open appRequests will be filtered out. */
 closedBefore?: (Scalars['DateTime'] | null),
+/** true -> only return appRequests that are complete (i.e. no more work to do, everything including nonblocking workflow is done). false -> only return appRequests that are not complete. null -> return all appRequests. Complete does not necessarily mean closed. */
+complete?: (Scalars['Boolean'] | null),
 /** Only return appRequests that were created after this date. */
 createdAfter?: (Scalars['DateTime'] | null),
 /** Only return appRequests that were created before this date. */
@@ -1107,6 +1120,8 @@ indexes?: (AppRequestIndexFilter[] | null),
 logins?: (Scalars['ID'][] | null),
 /** Only return appRequests that are owned by the current user. */
 own?: (Scalars['Boolean'] | null),periodIds?: (Scalars['ID'][] | null),
+/** Only return appRequests that have had their review started. true -> return review started, false -> return not started. Note that this is NOT mutually exclusive with complete or closed, it very simply means that a non-applicant has taken an action on it. */
+reviewStarted?: (Scalars['Boolean'] | null),
 /** Search for appRequests that match this search term. This will do a prefix search across all fields that are indexed. */
 search?: (Scalars['String'] | null),status?: (AppRequestStatus[] | null),
 /** Only return appRequests that were submitted after this date. App Requests that have not been submitted will be filtered out. */
@@ -1574,6 +1589,7 @@ export interface QueryGenqlSelection{
     appRequests?: (AppRequestGenqlSelection & { __args?: {filter?: (AppRequestFilter | null), paged?: (Pagination | null)} })
     /** This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant. */
     controlGroups?: AccessControlGroupGenqlSelection
+    countAppRequests?: { __args: {filter?: (AppRequestFilter | null)} } | boolean | number
     pageInfo?: PaginationResponseGenqlSelection
     periods?: (PeriodGenqlSelection & { __args?: {filter?: (PeriodFilters | null)} })
     programs?: (ProgramGenqlSelection & { __args?: {filter?: (ProgramFilters | null)} })
@@ -2078,6 +2094,14 @@ export const enumAppRequestIndexDestination = {
    APP_REQUEST_LIST: 'APP_REQUEST_LIST' as const,
    LIST_FILTERS: 'LIST_FILTERS' as const,
    REVIEWER_DASHBOARD: 'REVIEWER_DASHBOARD' as const
+}
+
+export const enumAppRequestPhase = {
+   ACCEPTANCE: 'ACCEPTANCE' as const,
+   COMPLETE: 'COMPLETE' as const,
+   STARTED: 'STARTED' as const,
+   SUBMITTED: 'SUBMITTED' as const,
+   WORKFLOW_NONBLOCKING: 'WORKFLOW_NONBLOCKING' as const
 }
 
 export const enumAppRequestStatus = {

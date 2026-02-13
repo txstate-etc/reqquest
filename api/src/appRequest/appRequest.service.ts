@@ -1,7 +1,7 @@
 import { BaseService, MutationMessageType } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { DateTime } from 'luxon'
-import { isBlank, keyby, someAsync } from 'txstate-utils'
+import { keyby, someAsync } from 'txstate-utils'
 import {
   AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData,
   submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse,
@@ -10,7 +10,8 @@ import {
   createAppRequest, Period, appConfig, AccessUser, ReqquestUser, AccessDatabase, cancelAppRequest,
   reopenAppRequest, appRequestReturnToApplicant, acceptOffer, ApplicationService, RequirementPromptService,
   AppRequestPhase, appRequestReturnToOffer, appRequestReturnToReview, promptRegistry,
-  PaginationInfoWithTotalItems, Pagination, appRequestComplete, appRequestReturnToNonBlocking
+  PaginationInfoWithTotalItems, Pagination, appRequestComplete, appRequestReturnToNonBlocking,
+  countAppRequests
 } from '../internal.js'
 
 const phaseNames = {
@@ -46,8 +47,13 @@ const activityByAppReqLoader = new OneToManyLoader({
 })
 
 export class AppRequestServiceInternal extends BaseService<AppRequest> {
-  async find (filter?: AppRequestFilter) {
-    const appRequests = await getAppRequests(filter)
+  async find (filter?: AppRequestFilter, paged?: Pagination, pageInfo?: PaginationInfoWithTotalItems) {
+    const countPromise = paged && pageInfo ? countAppRequests(filter) : 0
+    const appRequests = await getAppRequests({ ...filter, ...paged })
+    if (paged && pageInfo) {
+      pageInfo.totalItems = await countPromise
+      pageInfo.hasNextPage = paged?.perPage ? pageInfo.totalItems! > pageInfo.currentPage * paged.perPage : false
+    }
     const reqLoader = this.loaders.get(appReqByIdLoader)
     const tagLoader = this.loaders.get(appReqTagsLoader)
     for (const appRequest of appRequests) {
@@ -107,27 +113,14 @@ export class AppRequestService extends AuthService<AppRequest> {
     return filter
   }
 
-  async find (pageInfo: PaginationInfoWithTotalItems, filter?: AppRequestFilter, paged?: Pagination) {
+  async find (filter?: AppRequestFilter, paged?: Pagination, pageInfo?: PaginationInfoWithTotalItems) {
     filter = this.preprocessFilter(filter)
-    const appRequests = this.removeUnauthorized(await this.raw.find(filter))
-    pageInfo.totalItems = appRequests.length
-    // NOTE The categories for appRequests requests page would be populated here
-    // pageInfo.categories = []
-    if (paged?.page || paged?.perPage) {
-      pageInfo.currentPage = paged.page ?? 1
-      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-      pageInfo.perPage = paged?.perPage || 100 // 0 should also be overridden, so || is better than nullish coalescing ??
-      pageInfo.hasNextPage = (pageInfo.totalItems ?? 0) > pageInfo.currentPage * pageInfo.perPage
-      // mysql: `OFFSET ${(pageInfo.currentPage - 1) * pageInfo.perPage} LIMIT ${pageInfo.perPage}`
-      const start = (pageInfo.currentPage - 1) * pageInfo.perPage
-      const end = start + pageInfo.perPage
-      return appRequests.slice(start, end)
-    } else {
-      pageInfo.currentPage = 1
-      pageInfo.perPage = undefined
-      pageInfo.hasNextPage = false
-      return appRequests
-    }
+    return this.removeUnauthorized(await this.raw.find(filter, paged, pageInfo))
+  }
+
+  async count (filter?: AppRequestFilter) {
+    filter = this.preprocessFilter(filter)
+    return await countAppRequests(filter)
   }
 
   async findById (id: string) {

@@ -180,12 +180,12 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, Pick<AppStatusConf
     color: 'green'
   },
   READY_TO_SUBMIT: {
-    label: 'In progress',
+    label: 'Ready to submit',
     description: 'Application is complete and ready to submit.',
     color: 'green'
   },
   PREAPPROVAL: {
-    label: 'Review pending',
+    label: 'Pre-Review',
     description: 'Application submitted and waiting for pre-approval requirements.',
     color: 'blue'
   },
@@ -205,7 +205,7 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, Pick<AppStatusConf
     color: 'green'
   },
   READY_TO_ACCEPT: {
-    label: 'Offer pending',
+    label: 'Almost accepted',
     description: 'You have been offered and can now accept.',
     color: 'teal'
   },
@@ -240,7 +240,7 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, Pick<AppStatusConf
     color: 'gray'
   },
   DISQUALIFIED: {
-    label: 'Ineligible',
+    label: 'Not qualified',
     description: 'All applications have been disqualified.',
     color: 'red'
   }

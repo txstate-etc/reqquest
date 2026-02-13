@@ -8,7 +8,8 @@ import {
   createClient, enumAppRequestIndexDestination, enumIneligiblePhases, enumPromptVisibility, enumRequirementStatus, enumRequirementType,
   type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleGroup, type AccessRoleInput, type AccessUserFilter,
   type AppRequestActivityFilters, type AppRequestFilter, type IneligiblePhases, type Pagination, type PeriodUpdate, type PromptVisibility,
-  type RequirementStatus, type RequirementType, type PhaseChangeMutations, type CompletionStatus
+  type RequirementStatus, type RequirementType, type PhaseChangeMutations, type CompletionStatus,
+  type PeriodFilters
 } from '$lib'
 import { applicantRequirementTypes } from './status-utils.js'
 
@@ -17,14 +18,20 @@ export type DashboardAppRequest = Awaited<ReturnType<typeof api.getApplicantRequ
 export type AppRequestForExportResponse = Awaited<ReturnType<typeof api.getAppRequestForExport>>
 
 class API extends APIBase {
+  baseUrl = PUBLIC_API_BASE
   client = createClient({
-    url: PUBLIC_API_BASE,
+    url: this.baseUrl,
     fetcher: async operation => {
       if (Array.isArray(operation)) throw new Error('Batching not supported')
       const data = await this.graphql(operation.query, operation.variables)
       return { data }
     }
   })
+
+  async getDownloadTicket () {
+    const resp = await this.post<{ ticket: string }>('/ticket')
+    return resp.ticket
+  }
 
   async getAccess () {
     const response = await this.client.query({
@@ -89,13 +96,13 @@ class API extends APIBase {
     return { users: response.accessUsers, pageInfo: response.pageInfo.accessUsers }
   }
 
-  async getApplicantRequests (additionalFilters = {}, paged?: Pagination) {
+  async getApplicantRequests (additionalFilters: AppRequestFilter = {}) {
     // const filter = { own: true, ...additionalFilters }
-    const filter = { ...additionalFilters }
+    const filter: AppRequestFilter = { ...additionalFilters }
     const response = await this.client.query({
       __name: 'GetApplicantRequests',
       appRequests: {
-        __args: { filter, paged },
+        __args: { filter },
         id: true,
         status: true,
         createdAt: true,
@@ -144,6 +151,74 @@ class API extends APIBase {
     })
 
     return response.appRequests
+  }
+
+  async getReviewerDashboardRequests (filter: AppRequestFilter = {}, paged?: Pagination) {
+    const response = await this.client.query({
+      __name: 'GetReviewerDashboardRequests',
+      appRequestIndexes: {
+        __args: { for: enumAppRequestIndexDestination.REVIEWER_DASHBOARD },
+        category: true,
+        categoryLabel: true,
+        reviewerDashboardPriority: true,
+        listable: true,
+        values: {
+          value: true,
+          label: true
+        }
+      },
+      appRequests: {
+        __args: { filter, paged },
+        id: true,
+        phase: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        closedAt: true,
+        indexCategories: {
+          __args: { for: enumAppRequestIndexDestination.REVIEWER_DASHBOARD },
+          categoryLabel: true,
+          values: {
+            label: true
+          }
+        },
+        applicant: {
+          login: true,
+          fullname: true,
+          otherIdentifiers: {
+            id: true
+          }
+        },
+        period: {
+          name: true
+        },
+        applications: {
+          id: true,
+          title: true,
+          status: true
+        },
+        actions: {
+          review: true
+        }
+      },
+      pageInfo: {
+        appRequests: {
+          totalItems: true
+        }
+      }
+    })
+
+    return response
+  }
+
+  async getApplicationCount (filter: AppRequestFilter = {}) {
+    const response = await this.client.query({
+      __name: 'GetApplicationCount',
+      countAppRequests: {
+        __args: { filter }
+      }
+    })
+    return response.countAppRequests
   }
 
   async getApplicantPrompt (appRequestId: string, promptId: string) {
@@ -637,7 +712,6 @@ class API extends APIBase {
       __name: 'GetBasicRequestData',
       appRequests: {
         __args: { filter: { ids: [appRequestId] } },
-        complete: true,
         status: true,
         closedAt: true,
         applicant: {
@@ -819,10 +893,11 @@ class API extends APIBase {
     return appRequest.prompt
   }
 
-  async getPeriodList () {
+  async getPeriodList (filter?: PeriodFilters) {
     const response = await this.client.query({
       __name: 'GetPeriodList',
       periods: {
+        __args: { filter },
         id: true,
         name: true,
         code: true,
@@ -840,11 +915,11 @@ class API extends APIBase {
     return response.periods
   }
 
-  async getOpenPeriods () {
+  async getOpenPeriods (filter?: PeriodFilters) {
     const response = await this.client.query({
       __name: 'GetOpenPeriods',
       periods: {
-        __args: { filter: { openNow: true } },
+        __args: { filter: { ...filter, openNow: true } },
         id: true,
         name: true,
         code: true,

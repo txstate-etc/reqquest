@@ -5,7 +5,7 @@ import { DateTime } from 'luxon'
 import { NonEmptyArray } from 'type-graphql'
 import {
   applicationMigrations, AccessResolver, ApplicationActions, ApplicationActionsResolver,
-  AppRequestAccessResolver, PeriodProgramResolver,
+  AppRequestAccessResolver, PeriodProgramResolver, installAppRequestRoutes,
   AccessUserResolver, AccessRoleResolver, RoleActionsResolver, RequirementPromptActionsResolver, accessMigrations,
   DatabaseMigration, initializeDb, DateTimeScalar, rqContextMixin, ProgramDefinition,
   RequirementDefinition, PromptDefinition, AppDefinition, programRegistry,
@@ -16,11 +16,12 @@ import {
   ConfigurationActionsResolver, SnakeCaseString, SnakeCaseStringScalar, PeriodProgramActionsResolver,
   PeriodRequirementResolver, PeriodPromptResolver, initAccess, AppRequestIndexCategoryResolver,
   AccessRoleGroupResolver, AccessRoleGrantResolver, AccessGrantTagResolver, IndexCategoryResolver,
-  AccessRoleGrantActionsResolver, AccessTagCategoryResolver, logMutation,
+  AccessRoleGrantActionsResolver, AccessTagCategoryResolver, logMutation, installDownloadRoutes,
   AppRequestActivityResolver, PaginationResolver, noteMigrations, NoteResolver, NoteActionsResolver
 } from './internal.js'
 import { scheduler, schedulerMigration } from './util/scheduler.js'
-import { installDownloadRoutes } from './download/download.routes.js'
+import { FastifyTxStateOptions } from 'fastify-txstate'
+import { fromQuery } from 'txstate-utils'
 
 export interface RQStartOpts extends Omit<GQLStartOpts, 'resolvers'> {
   resolvers?: NonEmptyArray<Function>
@@ -45,6 +46,13 @@ export interface RQStartOpts extends Omit<GQLStartOpts, 'resolvers'> {
 }
 
 export class RQServer extends GQLServer {
+  constructor (config?: FastifyTxStateOptions) {
+    super({
+      ...config,
+      querystringParser (str: string) { return fromQuery(str) as Record<string, any> }
+    })
+  }
+
   /**
    * typescript is complaining that I made resolvers optional, this is a liskov violation but it
    * really doesn't matter with the way we'll be using it.
@@ -117,7 +125,9 @@ export class RQServer extends GQLServer {
     programRegistry.finalize()
     await initializeDb([...periodMigrations, ...promptMigrations, ...requirementMigrations, ...accessMigrations, ...appRequestMigrations, ...applicationMigrations, ...noteMigrations, schedulerMigration, ...(options?.migrations ?? [])])
     await initAccess()
+    await super.swagger()
     await installDownloadRoutes(this.app)
+    await installAppRequestRoutes(this.app)
     await ensureConfigurationRecords()
     await super.start({ ...options, resolvers })
     await scheduler.start()

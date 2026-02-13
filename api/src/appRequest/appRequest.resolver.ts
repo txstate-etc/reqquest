@@ -1,14 +1,19 @@
 import { sortby } from 'txstate-utils'
 import { Arg, Ctx, FieldResolver, ID, Int, Mutation, Query, Resolver, Root } from 'type-graphql'
-import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse, AppRequestIndexCategory, IndexValue, AppRequestIndexDestination, IndexCategory, RequirementPrompt, AccessUser, AccessUserService, AppRequestActivity, AppRequestActivityFilters, Pagination, PaginationInfoWithTotalItems, Note, NoteService, AppRequestNoteFilters } from '../internal.js'
+import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse, AppRequestIndexCategory, IndexValue, AppRequestIndexDestination, IndexCategory, RequirementPrompt, AccessUser, AccessUserService, AppRequestActivity, AppRequestActivityFilters, Pagination, PaginationInfoWithTotalItems, Note, NoteService, AppRequestNoteFilters, countAppRequests } from '../internal.js'
 
 @Resolver(of => AppRequest)
 export class AppRequestResolver {
   @Query(returns => [AppRequest])
   async appRequests (@Ctx() ctx: RQContext, @Arg('filter', { nullable: true }) filter?: AppRequestFilter, @Arg('paged', { nullable: true }) paged?: Pagination) {
     return await ctx.executePaginated('appRequests', paged, new PaginationInfoWithTotalItems(), async pageInfo => {
-      return await ctx.svc(AppRequestService).find(pageInfo, filter, paged)
+      return await ctx.svc(AppRequestService).find(filter, paged, pageInfo)
     })
+  }
+
+  @Query(returns => Int)
+  async countAppRequests (@Ctx() ctx: RQContext, @Arg('filter', { nullable: true }) filter?: AppRequestFilter) {
+    return await ctx.svc(AppRequestService).count(filter)
   }
 
   @FieldResolver(type => AccessUser)

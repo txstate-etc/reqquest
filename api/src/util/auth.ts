@@ -1,7 +1,7 @@
 import { AuthorizedServiceSync, Context, MockContext } from '@txstate-mws/graphql-server'
 import { FastifyRequest } from 'fastify'
 import { Cache, isNotBlank } from 'txstate-utils'
-import { AccessUser, appConfig, AccessDatabase, AccessRoleServiceInternal, getAcceptancePeriodIds, ReqquestUser, PaginationInfoShared, Pagination, PaginationWithCursor, getNonBlockingWorkflowPeriodIds } from '../internal.js'
+import { AccessUser, appConfig, AccessDatabase, AccessRoleServiceInternal, getAcceptancePeriodIds, ReqquestUser, PaginationInfoShared, Pagination, PaginationWithCursor, getNonBlockingWorkflowPeriodIds, useTicket } from '../internal.js'
 import { sleep } from 'txstate-utils'
 
 type RoleLookup = Record<string, Record<string, Record<number, Record<string, Set<string>>>>>
@@ -162,6 +162,8 @@ export interface RQContext extends Context {
   authInfo: AuthInfo
   login: string
 
+  acceptTicket: (ticket: string) => Promise<void>
+
   waitForAuth: () => Promise<void>
 
   executePaginated: <T, P extends PaginationInfoShared> (queryType: string, paged: Pagination | PaginationWithCursor | undefined, pageInfo: P, work: (pageInfo: P) => Promise<T> | T) => Promise<T | undefined>
@@ -181,6 +183,14 @@ export function rqContextMixin (Ctx: typeof Context): RQContextClass {
       return this.auth?.username
     }
 
+    async acceptTicket (ticket: string) {
+      const auth = await useTicket(ticket)
+      if (!auth) return
+      this.auth = auth
+      this.authInfo = await authCache.get(this.login, this)
+      this.authInfo.impersonationUser = this.auth?.impersonatedBy ? await userCache.get(this.auth.impersonatedBy, this) : undefined
+    }
+
     async waitForAuth () {
       await super.waitForAuth()
       if (!this.login) return
@@ -197,6 +207,7 @@ export function rqContextMixin (Ctx: typeof Context): RQContextClass {
       if (paginationRequested && this.paginationPromises[queryType] != null) throw new Error('Cannot execute more than one paginated request per top-level Query resolver.')
       if (!paged) (pageInfo as any).currentPage = 1
       else if (!('cursor' in paged)) (pageInfo as any).currentPage = paged.page ?? 1
+      ;(pageInfo as any).perPage = paged?.perPage
       let ret: T | undefined
       const executePromise = new Promise<P>((resolve, reject) => {
         try {

@@ -285,7 +285,6 @@ type AppRequest {
   Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date.
   """
   closedAt: DateTime
-  complete: Boolean!
   createdAt: DateTime!
 
   """
@@ -328,6 +327,11 @@ type AppRequest {
   period: Period!
 
   """
+  The current phase of the app request. The phase generally only changes when control of the app request shifts between the applicant and reviewer.
+  """
+  phase: AppRequestPhase!
+
+  """
   Retrieve a specific prompt by its ID. This is useful for the UI to get the full prompt data and configuration when trying to edit an individual prompt. We don't want to be downloading all the config data for everything up front.
   """
   prompt(promptId: ID!): RequirementPrompt!
@@ -337,6 +341,11 @@ type AppRequest {
   The most pertinent status reason for this app request. The logic is complicated and depends on the AppRequest's status.
   """
   statusReason: String
+
+  """
+  The date that the applicant submitted their request. If the applicant has not yet submitted, this will be null.
+  """
+  submittedAt: DateTime
   updatedAt: DateTime!
 }
 
@@ -484,6 +493,11 @@ input AppRequestFilter {
   """
   closedBefore: DateTime
 
+  """
+  true -> only return appRequests that are complete (i.e. no more work to do, everything including nonblocking workflow is done). false -> only return appRequests that are not complete. null -> return all appRequests. Complete does not necessarily mean closed.
+  """
+  complete: Boolean
+
   """Only return appRequests that were created after this date."""
   createdAfter: DateTime
 
@@ -500,6 +514,11 @@ input AppRequestFilter {
   """Only return appRequests that are owned by the current user."""
   own: Boolean
   periodIds: [ID!]
+
+  """
+  Only return appRequests that have had their review started. true -> return review started, false -> return not started. Note that this is NOT mutually exclusive with complete or closed, it very simply means that a non-applicant has taken an action on it.
+  """
+  reviewStarted: Boolean
 
   """
   Search for appRequests that match this search term. This will do a prefix search across all fields that are indexed.
@@ -600,6 +619,34 @@ input AppRequestNoteFilters {
 
   """Filter to the specified note IDs."""
   ids: [ID!]
+}
+
+"""
+The current phase of the app request. The phase generally only changes when control of the app request shifts between the applicant and reviewer.
+"""
+enum AppRequestPhase {
+  """
+  Reviewer has approved an offer and we are waiting for the applicant to accept. This phase is unreachable if the period has no ACCEPTANCE requirements.
+  """
+  ACCEPTANCE
+
+  """
+  All applications are complete and any non-blocking workflow is complete. The request is not necessarily closed, as that is an additional status, but nothing else needs be done to it.
+  """
+  COMPLETE
+
+  """Applicant has begun the process and has not yet submitted."""
+  STARTED
+
+  """
+  Applicant has submitted and we are waiting for reviewers to do their part.
+  """
+  SUBMITTED
+
+  """
+  The request has moved past ACCEPTANCE and is ready for each application to begin its non-blocking workflow. This phase is unreachable if the period has no non-blocking workflow stages.
+  """
+  WORKFLOW_NONBLOCKING
 }
 
 "\n    The status of an appRequest. This status is computed based on the \"dbStatus\" recorded in\n    the database and the status of each application.\n  "
@@ -1479,6 +1526,7 @@ type Query {
   This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant.
   """
   controlGroups: [AccessControlGroup!]!
+  countAppRequests(filter: AppRequestFilter): Int!
   pageInfo: PaginationResponse!
   periods(filter: PeriodFilters): [Period!]!
   programs(filter: ProgramFilters): [Program!]!

@@ -1,4 +1,4 @@
-import { createPeriod, DatabaseMigration, AccessDatabase, updateAppRequestData, submitAppRequest, markPeriodReviewed } from '@reqquest/api'
+import { createPeriod, DatabaseMigration, AccessDatabase, markPeriodReviewed, createAppRequest } from '@reqquest/api'
 import { DateTime } from 'luxon'
 
 export const simpleTestMigrations: DatabaseMigration[] = [
@@ -71,6 +71,16 @@ export const simpleTestMigrations: DatabaseMigration[] = [
             ])
           }
         }
+      }
+    }
+  }, {
+    id: '20260211120000',
+    execute: async (db, installTestData) => {
+      if (!installTestData) return
+      const periodId = await db.getval<number>('SELECT id FROM periods')
+      for (let i = 10; i < 50; i++) {
+        const applicant = await AccessDatabase.upsertAccessUser({ login: `applicant${i}`, fullname: `Test Applicant ${i}`, groups: ['applicants'] })
+        const appReqId = await createAppRequest(periodId!, applicant.internalId)
       }
     }
   }
