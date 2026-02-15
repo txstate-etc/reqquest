@@ -87,7 +87,7 @@ function processFilters (filter?: AppRequestFilter) {
     where.push(`ar.id IN (${db.in(binds, filter.internalIds)})`)
   }
   if (filter?.status?.length) {
-    where.push(`ar.status IN (${db.in(binds, filter.status)})`)
+    where.push(`ar.computedStatus IN (${db.in(binds, filter.status)})`)
   }
   if (filter?.periodIds?.length) {
     where.push(`ar.periodId IN (${db.in(binds, filter.periodIds)})`)

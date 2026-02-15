@@ -19,7 +19,7 @@ export async function installAppRequestRoutes (app: FastifyInstanceTyped) {
         properties: {
           f: { type: 'object' },
           q: { type: 'object' },
-          t: { type: ['object', 'string'] },
+          t: { anyOf: [{ type: 'object' }, { type: 'string' }] },
           search: { type: 'string' }
         }
       }

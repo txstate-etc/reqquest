@@ -7,13 +7,14 @@ import { enumAppRequestStatus, type AppRequestFilter } from '$lib'
 import type { PageLoad } from './$types'
 
 export const _dashboardStatuses = [enumAppRequestStatus.PREAPPROVAL, enumAppRequestStatus.APPROVAL, enumAppRequestStatus.ACCEPTANCE, enumAppRequestStatus.READY_TO_ACCEPT, enumAppRequestStatus.REVIEW_COMPLETE]
+export const _defaultReviewerDashboardFilters = { closed: false, complete: false, status: _dashboardStatuses }
 
 export const load: PageLoad = async ({ url, parent }) => {
   const { access } = await parent()
   if (!access.viewReviewerInterface) throw error(403)
   const { page, pagesize } = extractPaginationParams(url)
   const filters = extractFilters(url)
-  const merged: AppRequestFilter = url.search ? { ...filters.f, ...filters.q, ...filters.t, search: filters.search, closed: false } : { reviewStarted: false, complete: false, status: _dashboardStatuses, closed: false }
+  const merged: AppRequestFilter = url.search ? { ...filters.f, ...filters.q, ...filters.t, search: filters.search, closed: false } : { reviewStarted: false, ..._defaultReviewerDashboardFilters }
   const now = DateTime.now()
 
   const [{ appRequests, pageInfo, appRequestIndexes }, appCount, periods] = await Promise.all([
@@ -21,7 +22,7 @@ export const load: PageLoad = async ({ url, parent }) => {
       page,
       perPage: pagesize ?? 25
     }),
-    api.getApplicationCount({ closed: false, complete: false }),
+    api.getApplicationCount(_defaultReviewerDashboardFilters),
     api.getPeriodList({ opensAfter: now.minus({ years: 2 }).toISO() })
   ])
 

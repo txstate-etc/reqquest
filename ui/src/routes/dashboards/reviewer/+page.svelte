@@ -5,11 +5,12 @@
   import View from 'carbon-icons-svelte/lib/View.svelte'
   import { DateTime } from 'luxon'
   import { onMount } from 'svelte'
+  import { toQuery } from 'txstate-utils'
   import { resolve } from '$app/paths'
   import { api, REVIEWER_STATUS_CONFIG } from '$internal'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../local/index.js'
-  import { _dashboardStatuses } from './+page.js'
+  import { _dashboardStatuses, _defaultReviewerDashboardFilters } from './+page.js'
 
   export let data: PageData
   $: ({ appRequests, totalItems, period, filters, appCount, appRequestIndexes } = data)
@@ -20,7 +21,7 @@
 
   async function downloadCSV () {
     const ticket = await api.getDownloadTicket()
-    location.href = `${api.baseUrl}/csv/${ticket}/requests/reviewerdashboard${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv${location.search}`
+    location.href = `${api.baseUrl}/csv/${ticket}/requests/reviewerdashboard${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv${location.search || ('?' + toQuery({ reviewStarted: false, ..._defaultReviewerDashboardFilters }))}`
   }
 
   onMount(() => {
@@ -113,8 +114,8 @@
     ]}
   >
     <svelte:fragment slot="filters">
-      <FieldDate path='submittedAfter' label='Submitted After' />
-      <FieldDate path='submittedBefore' label='Submitted Before' />
+      <FieldDate path='submittedAfter' labelText='Submitted After' />
+      <FieldDate path='submittedBefore' labelText='Submitted Before' />
     </svelte:fragment>
   </ColumnList>
 
