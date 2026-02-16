@@ -22,7 +22,7 @@
 
 </script>
 <IntroPanel
-  title="Manage Users"
+  title="User Lookup"
   subtitle={roleUsersAttributeDescription}
 />
 <FilterUI
