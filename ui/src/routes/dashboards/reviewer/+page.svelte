@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ColumnList, FieldDate, FilterUI, Pagination } from '@txstate-mws/carbon-svelte'
+  import { ColumnList, FieldDate, FilterUI, Pagination, IntroPanel } from '@txstate-mws/carbon-svelte'
   import { Tile } from 'carbon-components-svelte'
   import DocExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
   import View from 'carbon-icons-svelte/lib/View.svelte'
@@ -75,10 +75,7 @@
   ]}>
   </FilterUI>
 
-  <div class="flow [ p-4 bg-gray-100 ]">
-    <h2 class="[ text-lg ]">{filters.reviewStarted ? 'Review in progress' : filters.complete ? 'Completed review' : 'Review not started'}</h2>
-    <p class="[ text-gray-600 ]">{filters.reviewStarted ? 'These are applications that are in progress, if you are looking for reviews you have participated in, filter by your name.' : filters.complete ? 'These applications have been completely reviewed.' : 'These are applications waiting to be reviewed.'}</p>
-  </div>
+  <IntroPanel title={filters.reviewStarted ? 'Review in progress' : filters.complete ? 'Completed review' : 'Review not started'} subtitle={filters.reviewStarted ? 'These are applications that are in progress, if you are looking for reviews you have participated in, filter by your name.' : filters.complete ? 'These applications have been completely reviewed.' : 'These are applications waiting to be reviewed.'} />
 
   <ColumnList
     searchable
@@ -98,7 +95,7 @@
         id: 'cat_' + index.category,
         label: index.categoryLabel,
         render: r => {
-          const matchingIndex = r.indexes.find(i => i.category === index.category)
+          const matchingIndex = r.indexes?.find(i => i.category === index.category)
           return (matchingIndex?.values.map(v => ({ label: v.label })) ?? []).join(', ')
         }
       }))
