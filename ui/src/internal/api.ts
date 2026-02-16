@@ -107,7 +107,6 @@ class API extends APIBase {
         status: true,
         createdAt: true,
         updatedAt: true,
-        complete: true,
         applicant: {
           login: true,
           fullname: true,
@@ -713,6 +712,7 @@ class API extends APIBase {
       appRequests: {
         __args: { filter: { ids: [appRequestId] } },
         status: true,
+        phase: true,
         closedAt: true,
         applicant: {
           login: true,
@@ -763,6 +763,7 @@ class API extends APIBase {
         __args: { filter: { ids: [appRequestId] } },
         id: true,
         status: true,
+        phase: true,
         data: true,
         applications: {
           id: true,

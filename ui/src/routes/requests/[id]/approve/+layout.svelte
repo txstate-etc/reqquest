@@ -6,7 +6,7 @@
   import { resolve } from '$app/paths'
   import type { LayoutData } from './$types.js'
   import { api, IntroPanel, applicantStatuses, REVIEWER_STATUS_CONFIG, longNumericTime } from '$internal'
-  import { phaseChangeMutations, type PhaseChangeMutations } from '$lib'
+  import { enumAppRequestPhase, phaseChangeMutations, type PhaseChangeMutations } from '$lib'
 
   export let data: LayoutData
   $: ({ basicRequestData, requestId } = data)
@@ -109,7 +109,7 @@
               Closed
             {:else if applicantStatuses.has(basicRequestData.status)}
               Submit By
-            {:else if !basicRequestData.complete}
+            {:else if basicRequestData.phase !== enumAppRequestPhase.COMPLETE}
               Review By
             {:else}
               Auto-Closes
@@ -124,7 +124,7 @@
               {:else}
                 No deadline
               {/if}
-            {:else if !basicRequestData.complete}
+            {:else if basicRequestData.phase !== enumAppRequestPhase.COMPLETE}
               {#if basicRequestData.period.archiveDate}
                 <time datetime={basicRequestData.period.archiveDate}>{longNumericTime(basicRequestData.period.archiveDate)}</time>
               {:else}

@@ -1,13 +1,13 @@
 import type { APIBase } from '@txstate-mws/sveltekit-utils'
-import type { AppRequestStatus, createClient } from './typed-client/index.js'
+import type { AppRequestPhase, AppRequestStatus, createClient } from './typed-client/index.js'
 
 export interface ReqquestAPI extends APIBase {
   client: ReturnType<typeof createClient>
   getDownloadTicket: () => Promise<string>
 }
 export interface ReviewerCardRequest<OtherInfoType = any> {
-  complete: boolean
   status: AppRequestStatus
+  phase: AppRequestPhase
   closedAt: string
   applicant: ReviewerCardApplicant<OtherInfoType>
   period: {
