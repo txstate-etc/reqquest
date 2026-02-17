@@ -27,12 +27,14 @@
 </script>
 
 <ProgressNavContainer title="Your potential programs" subtitle='Select "Start" to answer additional qualifying questions about the benefits you may be eligible for.'>
-  <ApplicantProgramList applications={applicationsForNav} />
-  {#if applicationsForNav.some(a => a.status === enumApplicationStatus.INELIGIBLE)}
-    <div class="program-helptext">
-      If you believe you should be eligible, read the tooltips above and review your answers. If you believe there is an error, please contact us.
-    </div>
-  {/if}
+  <div class="max-w-screen-md mx-auto">
+    <ApplicantProgramList applications={applicationsForNav} />
+    {#if applicationsForNav.some(a => a.status === enumApplicationStatus.INELIGIBLE)}
+      <div class="program-helptext">
+        If you believe you should be eligible, read the tooltips above and review your answers. If you believe there is an error, please contact us.
+      </div>
+    {/if}
+  </div>
   <div class='form-submit flex gap-12 justify-center mt-16'>
     {#if prevHref}
       <Button kind="ghost" href={prevHref}>Back</Button>

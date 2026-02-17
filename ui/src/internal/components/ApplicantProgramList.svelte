@@ -39,7 +39,7 @@
   }), {})
 </script>
 
-<section class="programs-container max-w-screen-md mx-auto">
+<section class="programs-container">
   <header>
     <div class="program column">Program</div>
     <div class="status column">Eligibility</div>
