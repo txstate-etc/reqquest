@@ -4,7 +4,13 @@ import type { GraphQLError } from 'graphql'
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
 import { clone, findIndex, groupby, isNotBlank, keyby, omit, stringify } from 'txstate-utils'
-import { ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter, AppRequestPhase, AppRequestStatus, getApplications, getPeriodWorkflowStages, IneligiblePhases, Pagination, PaginationInfoWithTotalItems, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, requirementRegistry, RequirementStatus, RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData } from '../internal.js'
+import {
+  ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters,
+  AppRequestFilter, AppRequestPhase, AppRequestStatus, getApplications, getPeriodWorkflowStages, IneligiblePhases, Pagination,
+  PaginationInfoWithTotalItems, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, RequirementStatus,
+  RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed,
+  updatePromptComputed, updateRequirementComputed, type AppRequestData
+} from '../internal.js'
 
 /**
  * This is the status of the whole appRequest as stored in the database. Each application
@@ -106,14 +112,14 @@ function processFilters (filter?: AppRequestFilter) {
   }
   if (filter?.indexes?.length) {
     for (const index of filter.indexes) {
-      joins.set('t', 'INNER JOIN app_request_tags t ON t.appRequestId = ar.id')
+      joins.set('t', 'LEFT JOIN app_request_tags t ON t.appRequestId = ar.id')
       binds.push(index.category)
       where.push(`t.category = ? AND t.tag IN (${db.in(binds, index.tags)})`)
     }
   }
   if (isNotBlank(filter?.search)) {
     joins.set('u', 'INNER JOIN accessUsers u ON u.id = ar.userId')
-    joins.set('t', 'INNER JOIN app_request_tags t ON t.appRequestId = ar.id')
+    joins.set('t', 'LEFT JOIN app_request_tags t ON t.appRequestId = ar.id')
     joins.set('tl', 'LEFT JOIN tag_labels tl ON tl.category = t.category AND tl.tag = t.tag')
     where.push('(p.name LIKE ? OR u.login LIKE ? OR u.fullname LIKE ? OR t.tag LIKE ? OR tl.label LIKE ?)')
     binds.push(`${filter.search}%`, `${filter.search}%`, `%${filter.search}%`, `${filter.search}%`, `${filter.search}%`)
