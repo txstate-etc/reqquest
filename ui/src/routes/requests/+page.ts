@@ -4,6 +4,8 @@ import type { AppRequestFilter } from '$lib'
 import type { PageLoad } from './$types'
 import { error } from '@sveltejs/kit'
 
+export const _defaultRequestListFilters = {}
+
 export const load: PageLoad = async ({ url, parent }) => {
   const { access } = await parent()
   if (!access.viewAppRequestList) throw error(403)

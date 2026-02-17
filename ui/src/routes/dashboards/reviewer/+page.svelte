@@ -78,19 +78,20 @@
   <IntroPanel title={filters.reviewStarted ? 'Review in progress' : filters.complete ? 'Completed review' : 'Review not started'} subtitle={filters.reviewStarted ? 'These are applications that are in progress, if you are looking for reviews you have participated in, filter by your name.' : filters.complete ? 'These applications have been completely reviewed.' : 'These are applications waiting to be reviewed.'} />
 
   <ColumnList
+    autoHideColumns
     searchable
     filterTitle='Request Filters'
     listActions={[
       { label: 'Download', icon: DocExport, onClick: downloadCSV }
     ]}
     columns={[
-      { id: 'request', label: 'Request #', tags: row => [{ label: String(row.id) }] },
+      { id: 'request', label: 'Request #', fixed: '90px', minWidth: 90, tags: row => [{ label: String(row.id) }] },
       { id: 'period', label: 'Period', render: r => r.period.name },
-      { id: 'login', label: uiRegistry.getWord('login'), tags: r => [{ label: r.applicant.login, type: 'green' }] },
+      { id: 'login', label: uiRegistry.getWord('login'), minWidth: 100, tags: r => [{ label: r.applicant.login, type: 'green' }] },
       { id: 'name', label: 'Name', get: 'applicant.fullname' },
-      { id: 'dateSubmitted', label: 'Date Submitted', render: r => DateTime.fromISO(r.createdAt).toFormat('f') },
-      { id: 'status', label: 'Status', tags: r => [{ label: REVIEWER_STATUS_CONFIG[r.status].label, type: REVIEWER_STATUS_CONFIG[r.status].color }] },
-      { id: 'lastUpdated', label: 'Last Updated', render: r => DateTime.fromISO(r.updatedAt).toFormat('f') },
+      { id: 'dateSubmitted', label: 'Date Submitted', minWidth: 150, render: r => DateTime.fromISO(r.createdAt).toFormat('f') },
+      { id: 'status', label: 'Status', minWidth: 150, tags: r => [{ label: REVIEWER_STATUS_CONFIG[r.status].label, type: REVIEWER_STATUS_CONFIG[r.status].color }] },
+      { id: 'lastUpdated', label: 'Last Updated', minWidth: 150, render: r => DateTime.fromISO(r.updatedAt).toFormat('f') },
       ...appRequestIndexes.map(index => ({
         id: 'cat_' + index.category,
         label: index.categoryLabel,
