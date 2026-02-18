@@ -1,13 +1,11 @@
 import type { TagItem } from '@txstate-mws/carbon-svelte'
-import { enumAppRequestStatus, enumRequirementType, type AppRequestStatus, type RequirementType } from '$lib'
+import { enumAppRequestPhase, enumAppRequestStatus, enumRequirementType, type AppRequestPhase, type AppRequestStatus, type RequirementType } from '$lib'
 import { longNumericTime } from './util.js'
 
 interface AppStatusConfig {
-  // Display information
-  label: string
   description: string
-  color: TagItem['type']
-  waitingOn: 'Applicant' | 'System' | 'Reviewer' | 'No one, complete'
+  tags: TagItem[]
+  waitingOn?: 'Applicant' | 'System' | 'Reviewer'
   navigation?: {
     label: string
     href: (requestId: string) => string
@@ -30,9 +28,8 @@ interface ApplicationStatusTagInfo {
 
 export const APP_REQUEST_STATUS_CONFIG: Record<AppRequestStatus, AppStatusConfig> = {
   STARTED: {
-    label: 'In progress',
+    tags: [{ label: 'In progress', type: 'green' }],
     description: 'Application is in progress and has not been submitted.',
-    color: 'green',
     waitingOn: 'Applicant',
     buttonText: 'Edit Application',
     actionType: 'navigate',
@@ -43,9 +40,8 @@ export const APP_REQUEST_STATUS_CONFIG: Record<AppRequestStatus, AppStatusConfig
     }
   },
   READY_TO_SUBMIT: {
-    label: 'In progress',
+    tags: [{ label: 'In progress', type: 'green' }],
     description: 'Application is complete and ready to submit.',
-    color: 'green',
     waitingOn: 'Applicant',
     buttonText: 'Edit Application',
     actionType: 'navigate',
@@ -56,27 +52,24 @@ export const APP_REQUEST_STATUS_CONFIG: Record<AppRequestStatus, AppStatusConfig
     }
   },
   PREAPPROVAL: {
-    label: 'Review pending',
+    tags: [{ label: 'Review pending', type: 'blue' }],
     description: 'Application submitted and waiting for pre-approval requirements.',
-    color: 'blue',
     waitingOn: 'System',
     buttonText: 'Export Application',
     actionType: 'export',
     category: 'current'
   },
   APPROVAL: {
-    label: 'In review',
+    tags: [{ label: 'In review', type: 'blue' }],
     description: 'Application is being reviewed.',
-    color: 'blue',
     waitingOn: 'Reviewer',
     buttonText: 'Export Application',
     actionType: 'export',
     category: 'current'
   },
   ACCEPTANCE: {
-    label: 'Offer pending',
+    tags: [{ label: 'Offer pending', type: 'teal' }],
     description: 'Waiting for you to respond to the offer.',
-    color: 'teal',
     waitingOn: 'Applicant',
     buttonText: 'Review Offer',
     actionType: 'navigate',
@@ -87,18 +80,15 @@ export const APP_REQUEST_STATUS_CONFIG: Record<AppRequestStatus, AppStatusConfig
     }
   },
   ACCEPTED: {
-    label: 'Offer accepted',
+    tags: [{ label: 'Offer accepted', type: 'green' }],
     description: 'You have accepted an offer.',
-    color: 'green',
-    waitingOn: 'No one, complete',
     buttonText: 'Download Offer',
     actionType: 'download',
     category: 'past'
   },
   READY_TO_ACCEPT: {
-    label: 'Offer pending',
+    tags: [{ label: 'Offer pending', type: 'teal' }],
     description: 'You have been offered and can now accept.',
-    color: 'teal',
     waitingOn: 'Applicant',
     buttonText: 'Review Offer',
     actionType: 'navigate',
@@ -109,63 +99,51 @@ export const APP_REQUEST_STATUS_CONFIG: Record<AppRequestStatus, AppStatusConfig
     }
   },
   REVIEW_COMPLETE: {
-    label: 'In review',
+    tags: [{ label: 'In review', type: 'blue' }],
     description: 'Your application is being reviewed.',
-    color: 'blue',
     waitingOn: 'Reviewer',
     buttonText: 'Export Application',
     actionType: 'export',
     category: 'current'
   },
   APPROVED: {
-    label: 'Approved',
+    tags: [{ label: 'Approved', type: 'green' }],
     description: 'Your application has been approved.',
-    color: 'green',
-    waitingOn: 'No one, complete',
     buttonText: '',
     actionType: 'none',
     category: 'past'
   },
   NOT_APPROVED: {
-    label: 'Ineligible',
+    tags: [{ label: 'Ineligible', type: 'red' }],
     description: 'Your application was not approved.',
-    color: 'red',
-    waitingOn: 'No one, complete',
     buttonText: '',
     actionType: 'none',
     category: 'past'
   },
   NOT_ACCEPTED: {
-    label: 'Offer declined',
+    tags: [{ label: 'Offer declined', type: 'gray' }],
     description: 'The offer was not accepted.',
-    color: 'gray',
-    waitingOn: 'No one, complete',
     buttonText: '',
     actionType: 'none',
     category: 'past'
   },
   CANCELLED: {
-    label: 'Cancelled',
+    tags: [{ label: 'Cancelled', type: 'gray' }],
     description: 'Application was cancelled before submission.',
-    color: 'gray',
-    waitingOn: 'No one, complete',
     buttonText: '',
     actionType: 'none',
     category: 'past'
   },
   WITHDRAWN: {
-    label: 'Withdrawn',
+    tags: [{ label: 'Withdrawn', type: 'gray' }],
     description: 'Application was withdrawn after submission.',
-    color: 'gray',
-    waitingOn: 'No one, complete',
     buttonText: '',
     actionType: 'none',
     category: 'past'
   },
   DISQUALIFIED: {
-    label: 'Ineligible',
+    tags: [{ label: 'Ineligible', type: 'red' }],
     description: 'All applications have been disqualified.',
-    color: 'red',
     waitingOn: 'Applicant',
     buttonText: '',
     actionType: 'none',
@@ -173,7 +151,7 @@ export const APP_REQUEST_STATUS_CONFIG: Record<AppRequestStatus, AppStatusConfig
   }
 }
 
-export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, Pick<AppStatusConfig, 'label' | 'description' | 'color'>> = {
+export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, { description: string, label: string, color: TagItem['type'] }> = {
   STARTED: {
     label: 'In progress',
     description: 'Application is in progress and has not been submitted.',
@@ -247,16 +225,16 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, Pick<AppStatusConf
 }
 
 // Get complete AppRequest status information
-export function getAppRequestStatusInfo (status: string): AppStatusConfig {
-  return APP_REQUEST_STATUS_CONFIG[status] ?? {
-    label: status,
-    description: 'Status pending.',
-    color: 'gray',
-    waitingOn: 'No one, complete',
-    buttonText: '',
-    actionType: 'none',
-    category: 'past'
-  }
+export function getAppRequestStatusInfo (status: AppRequestStatus, phase: AppRequestPhase, closedAt: string | null | undefined): AppStatusConfig {
+  const info = (closedAt == null || phase === enumAppRequestPhase.COMPLETE || phase === enumAppRequestPhase.WORKFLOW_NONBLOCKING || status === enumAppRequestStatus.WITHDRAWN || status === enumAppRequestStatus.CANCELLED)
+    ? APP_REQUEST_STATUS_CONFIG[status]
+    : {
+      ...APP_REQUEST_STATUS_CONFIG[status],
+      tags: [{ label: 'Incomplete', type: 'red' as const }],
+      description: 'This was closed before being completed.'
+    }
+  if (closedAt != null && phase !== enumAppRequestPhase.STARTED) info.tags.push({ label: 'Closed', type: 'yellow' })
+  return info
 }
 
 // Extract status categories
@@ -297,7 +275,7 @@ export function getStatusActionType (status: AppRequestStatus): 'navigate' | 'do
 // ========================================
 
 // Map ApplicationStatus enum to display info
-export function getApplicationStatusInfo (status: string): ApplicationStatusTagInfo {
+export function getApplicationStatusInfo (status: string, appRequestPhase: string, closedAt: string | null | undefined): ApplicationStatusTagInfo {
   const statusMap: Record<string, ApplicationStatusTagInfo> = {
     ACCEPTED: {
       label: 'Offer accepted',
@@ -323,6 +301,21 @@ export function getApplicationStatusInfo (status: string): ApplicationStatusTagI
       label: 'Offer declined',
       description: 'Offer rejected or requirements not met.',
       color: 'gray'
+    }
+  }
+  if (appRequestPhase !== enumAppRequestPhase.COMPLETE && appRequestPhase !== enumAppRequestPhase.WORKFLOW_NONBLOCKING && closedAt != null) {
+    if (appRequestPhase === enumAppRequestPhase.STARTED) {
+      return {
+        label: 'Cancelled',
+        description: 'Application was cancelled before submission.',
+        color: 'gray'
+      }
+    } else {
+      return {
+        label: 'Incomplete',
+        description: 'This was closed before being completed.',
+        color: 'red'
+      }
     }
   }
   return statusMap[status] ?? { label: status, description: 'Unknown status.', color: 'gray' }

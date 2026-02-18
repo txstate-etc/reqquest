@@ -1,4 +1,4 @@
-import type { ApplicationStatus, AppRequestStatus, IneligiblePhases, RequirementType } from './typed-client/index.js'
+import type { ApplicationStatus, AppRequestPhase, AppRequestStatus, IneligiblePhases, RequirementType } from './typed-client/index.js'
 
 export type CompletionStatus = 'ELIGIBLE' | 'INELIGIBLE' | 'PENDING'
 
@@ -32,9 +32,11 @@ export interface PromptSection {
 export interface AppRequestForDetails {
   id: string
   status: AppRequestStatus
+  phase: AppRequestPhase
   period?: { name: string }
   createdAt?: string
   updatedAt?: string
+  closedAt?: string | null
   actions?: any
 }
 

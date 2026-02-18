@@ -19,7 +19,7 @@
   export let showAcceptanceButtons = true
   export let onAcceptanceNavigate: ((requestId: string) => void) | undefined = undefined
 
-  $: statusInfo = getAppRequestStatusInfo(request.status)
+  $: statusInfo = getAppRequestStatusInfo(request.status, request.phase, request.closedAt)
   $: firstInvalidatedPrompt = request.applications
     .flatMap(app => app.requirements)
     .flatMap(req => req.prompts)
@@ -40,7 +40,7 @@
 <Card
   title={request.period.name}
   subhead={`Started: ${longNumericTime(request.createdAt)}`}
-  tags={[{ label: statusInfo.label, type: statusInfo.color }]}
+  tags={statusInfo.tags}
   tagsInBody
   {actions}
   forceOverflow={true}
@@ -65,7 +65,7 @@
         {@const warningReqs = application.requirements.filter(r => r.status === 'WARNING' && r.statusReason)}
         {@const appStatusTag = invalidatedPrompts.length > 0
           ? { label: 'Needs corrections', color: 'magenta' as const }
-          : getApplicationStatusInfo(application.status)}
+          : getApplicationStatusInfo(application.status, request.phase, request.closedAt)}
         <div class="program-status py-2 px-4 mb-4">
           <div class="flex items-center">
             <span class="font-medium">{application.title}</span>

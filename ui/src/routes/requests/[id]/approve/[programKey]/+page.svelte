@@ -9,7 +9,7 @@
   import WarningAltFilled from 'carbon-icons-svelte/lib/WarningAltFilled.svelte'
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import { invalidateAll } from '$app/navigation'
-  import { api, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes } from '$internal'
+  import { api, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, getApplicationStatusInfo } from '$internal'
   import { enumPromptVisibility, enumRequirementStatus, enumRequirementType } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../../local'
@@ -97,6 +97,7 @@
     ...blockingWorkflowStages,
     ...nonBlockingWorkflowStages
   ].filter(s => (!!s.requirements[0]?.workflowStage) || (s.requirements.length > 0 && s.requirements.some(r => r.prompts.length > 0)))
+  $: applicationStatusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt)
 
   type PromptExtraData = Awaited<ReturnType<typeof api.getPromptData>>
   type Prompt = PageData['appRequest']['applications'][0]['requirements'][0]['prompts'][0]
@@ -189,11 +190,13 @@
 
 <ApproveLayout {basicRequestData}>
   <svelte:fragment slot="sidebar">
-    <Card title={application.title}>
+    <Card title={application.title} tags={[{ label: applicationStatusInfo.label, type: applicationStatusInfo.color }]} tagsInBody>
+      <!--
       <dl class="card">
         <dt>Status</dt>
-        <dd>{application.status}</dd>
+        <dd><TagSet tags={[{ label: applicationStatusInfo.label, type: applicationStatusInfo.color }]} /></dd>
       </dl>
+      -->
     </Card>
   </svelte:fragment>
   {#each sections as section (section.title)}
@@ -326,6 +329,7 @@
     top: 0;
     right: 0;
   }
+  /*
   dl.card {
     display: grid;
     grid-template-columns: auto 1fr;
@@ -334,6 +338,7 @@
   .card dt {
     font-weight: bold;
   }
+  */
   .prompts dt .indicator-tooltip {
     display: inline-block;
     margin-left: -24px;

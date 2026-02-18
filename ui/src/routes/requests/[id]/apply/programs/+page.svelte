@@ -9,7 +9,7 @@
   import { enumApplicationStatus } from '$lib'
 
   export let data: PageData
-  $: ({ applicationsForNav } = data)
+  $: ({ applicationsForNav, appRequestForExport } = data)
 
   let prevHref: string | undefined
   let nextHref: string | undefined
@@ -28,7 +28,7 @@
 
 <ProgressNavContainer title="Your potential programs" subtitle='Select "Start" to answer additional qualifying questions about the benefits you may be eligible for.'>
   <div class="max-w-screen-md mx-auto">
-    <ApplicantProgramList applications={applicationsForNav} />
+    <ApplicantProgramList applications={applicationsForNav} appRequest={appRequestForExport} />
     {#if applicationsForNav.some(a => a.status === enumApplicationStatus.INELIGIBLE)}
       <div class="program-helptext">
         If you believe you should be eligible, read the tooltips above and review your answers. If you believe there is an error, please contact us.

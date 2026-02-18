@@ -9,7 +9,7 @@ import type { PageLoad } from './$types'
 
 function statusLabelsToEnums (labels: string[]): AppRequestStatus[] {
   const keys = Object.keys(APP_REQUEST_STATUS_CONFIG) as AppRequestStatus[]
-  return keys.filter(k => labels.includes(APP_REQUEST_STATUS_CONFIG[k].label))
+  return keys.filter(k => labels.includes(APP_REQUEST_STATUS_CONFIG[k].tags[0].label))
 }
 
 export const load: PageLoad = async ({ url, depends, parent }) => {
@@ -66,7 +66,7 @@ export const load: PageLoad = async ({ url, depends, parent }) => {
     const statusesInData = new Set(allPastRequests.map(r => r.status))
     const configKeys = Object.keys(APP_REQUEST_STATUS_CONFIG) as AppRequestStatus[]
     const availableStatuses = unique(
-      configKeys.filter(k => statusesInData.has(k)).map(k => APP_REQUEST_STATUS_CONFIG[k].label)
+      configKeys.filter(k => statusesInData.has(k)).map(k => APP_REQUEST_STATUS_CONFIG[k].tags[0].label)
     )
 
     return {

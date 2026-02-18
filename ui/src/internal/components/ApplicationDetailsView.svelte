@@ -99,13 +99,13 @@
           <dl class="status-list-item [ flex items-center justify-between px-2 py-3 border-b ]">
             <dt class="status-list-label font-medium">Application Status</dt>
             <dd class="px-2">
-              <TagSet tags={[{ label: getAppRequestStatusInfo(appRequest.status).label, type: getAppRequestStatusInfo(appRequest.status).color }]} />
+              <TagSet tags={getAppRequestStatusInfo(appRequest.status, appRequest.phase, appRequest.closedAt).tags} />
             </dd>
           </dl>
         {/if}
 
         <!-- Application Status List -->
-        <ApplicantProgramList {applications} viewMode={statusDisplay === 'tags'} {showTooltipsAsText} />
+        <ApplicantProgramList {applications} {appRequest} viewMode={statusDisplay === 'tags'} {showTooltipsAsText} />
       </div>
     </section>
 
@@ -116,10 +116,11 @@
       </Panel>
     {:else if sections.length > 0}
       {#each sections as section (section.title)}
+        {@const applicationStatusInfo = section.applicationStatus ? getApplicationStatusInfo(section.applicationStatus, appRequest.phase, appRequest.closedAt) : undefined}
         <Panel title={section.title} {expandable} expanded>
           <svelte:fragment slot="headerLeft">
-            {#if section.applicationStatus}
-              <TagSet tags={[{ label: getApplicationStatusInfo(section.applicationStatus).label, type: getApplicationStatusInfo(section.applicationStatus).color }]} />
+            {#if applicationStatusInfo}
+              <TagSet tags={[{ label: applicationStatusInfo.label, type: applicationStatusInfo.color }]} />
             {/if}
           </svelte:fragment>
           {#if section.prompts.length}

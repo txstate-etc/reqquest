@@ -8,6 +8,7 @@
   import ApplicantProgramListTooltip from './ApplicantProgramListTooltip.svelte'
   import WarningIconYellow from './WarningIconYellow.svelte'
 
+  export let appRequest: { phase: string, closedAt?: string | null }
   export let applications: ApplicationForDetails[]
   export let viewMode = false
   export let showTooltipsAsText = false
@@ -66,7 +67,7 @@
           <Button size="small" kind={programStatus === 'complete' ? 'ghost' : programStatus === 'revisit' ? 'secondary' : 'primary'} href={programFirstPrompt}>{ucfirst(programStatus)}</Button>
         {/if}
       {:else}
-        {@const statusInfo = getApplicationStatusInfo(application.status)}
+        {@const statusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt)}
         <TagSet tags={[{ type: statusInfo.color, label: statusInfo.label }]} />
         <ApplicantProgramListTooltip {application} />
       {/if}
