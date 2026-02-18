@@ -7,7 +7,7 @@ import { enumAppRequestStatus, type AppRequestFilter } from '$lib'
 import type { PageLoad } from './$types'
 
 export const _dashboardStatuses = [enumAppRequestStatus.PREAPPROVAL, enumAppRequestStatus.APPROVAL, enumAppRequestStatus.ACCEPTANCE, enumAppRequestStatus.READY_TO_ACCEPT, enumAppRequestStatus.REVIEW_COMPLETE]
-export const _defaultReviewerDashboardFilters = { closed: false, complete: false, status: _dashboardStatuses }
+export const _defaultReviewerDashboardFilters = { closed: false, complete: false, reviewStarted: false, status: _dashboardStatuses }
 
 export const load: PageLoad = async ({ url, parent }) => {
   const { access } = await parent()
@@ -20,6 +20,7 @@ export const load: PageLoad = async ({ url, parent }) => {
       merged[key] = merged[key] ?? _defaultReviewerDashboardFilters[key]
     }
   }
+  console.log(`Merged: ${JSON.stringify(merged)}`)
   /** Previous - url.search check resulted in page params only on default 'Awaiting Review' view, excluded additional filters since not in url */
   // const merged: AppRequestFilter = url.search ? { ...filters.f, ...filters.q, ...filters.t, search: filters.search, closed: false } : { reviewStarted: false, ..._defaultReviewerDashboardFilters }
   const now = DateTime.now()
