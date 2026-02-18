@@ -237,9 +237,9 @@ export async function createAppRequest (periodId: number, userId: number) {
 
 export async function updateAppRequestData (appRequestId: number, data: AppRequestData, dataVersion?: number, tdb: Queryable = db) {
   const where = dataVersion != null ? ' AND dataVersion = ?' : ''
-  const binds: any[] = [JSON.stringify(data), appRequestId]
+  const binds: any[] = [JSON.stringify(data), AppRequestPhase.SUBMITTED, appRequestId]
   if (dataVersion != null) binds.push(dataVersion)
-  const rowsAffected = await tdb.update('UPDATE app_requests SET data = ?, dataVersion = dataVersion + 1 WHERE id = ?' + where, binds)
+  const rowsAffected = await tdb.update('UPDATE app_requests SET data = ?, reviewStarted=(CASE WHEN phase=? THEN 1 ELSE reviewStarted END), dataVersion = dataVersion + 1 WHERE id = ?' + where, binds)
   if (!rowsAffected) throw new Error('Someone else is working on the same request and made changes since you loaded. Copy any unsaved work into another document and reload the page to see what has changed.')
   return await evaluateAppRequest(appRequestId, tdb)
 }
