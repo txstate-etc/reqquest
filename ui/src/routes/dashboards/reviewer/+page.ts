@@ -14,7 +14,14 @@ export const load: PageLoad = async ({ url, parent }) => {
   if (!access.viewReviewerInterface) throw error(403)
   const { page, pagesize } = extractPaginationParams(url)
   const filters = extractFilters(url)
-  const merged: AppRequestFilter = url.search ? { ...filters.f, ...filters.q, ...filters.t, search: filters.search, closed: false } : { reviewStarted: false, ..._defaultReviewerDashboardFilters }
+  const merged: AppRequestFilter = { ...filters.f, ...filters.q, ...filters.t, search: filters.search, closed: false }
+  if (!merged.reviewStarted && !merged.complete) {
+    for (const key in _defaultReviewerDashboardFilters) {
+      merged[key] = merged[key] ?? _defaultReviewerDashboardFilters[key]
+    }
+  }
+  /** Previous - url.search check resulted in page params only on default 'Awaiting Review' view, excluded additional filters since not in url */
+  // const merged: AppRequestFilter = url.search ? { ...filters.f, ...filters.q, ...filters.t, search: filters.search, closed: false } : { reviewStarted: false, ..._defaultReviewerDashboardFilters }
   const now = DateTime.now()
 
   const [{ appRequests, pageInfo, appRequestIndexes }, appCount, periods] = await Promise.all([
