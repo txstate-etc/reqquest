@@ -20,7 +20,6 @@ export const load: PageLoad = async ({ url, parent }) => {
       merged[key] = merged[key] ?? _defaultReviewerDashboardFilters[key]
     }
   }
-  console.log(`Merged: ${JSON.stringify(merged)}`)
   /** Previous - url.search check resulted in page params only on default 'Awaiting Review' view, excluded additional filters since not in url */
   // const merged: AppRequestFilter = url.search ? { ...filters.f, ...filters.q, ...filters.t, search: filters.search, closed: false } : { reviewStarted: false, ..._defaultReviewerDashboardFilters }
   const now = DateTime.now()
