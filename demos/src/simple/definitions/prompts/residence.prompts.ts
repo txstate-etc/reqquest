@@ -1,11 +1,12 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
 import { fileHandler } from 'fastify-txstate'
-import { StateResidencePromptSchema, StateResidencePromptData, StateResidenceConfigRequirementData, StateResidenceConfirmationPromptSchema } from '../models/index.js'
+import { StateResidencePromptSchema, StateResidencePromptData, StateResidenceConfigRequirementData, StateResidenceConfirmationPromptSchema, Step1PostResidencePromptSchema, Step2PostResidencePromptSchema, Step3PostResidencePromptSchema } from '../models/index.js'
 
 export const state_residence_prompt: PromptDefinition = {
   key: 'state_residence_prompt',
-  title: 'State residency',
+  title: 'State residency, prompt 1 of 1, req 1',
+  navTitle: 'State residency, prompt 1 of 1, req 1',
   description: 'Applicant will identify if they reside in the required state.',
   schema: StateResidencePromptSchema,
   preValidate: (data, config) => {
@@ -70,6 +71,48 @@ export const state_residence_confirmation_prompt: PromptDefinition = {
     if (data.residenceIsHome == null) {
       messages.push({ type: MutationMessageType.error, message: `Please validate whether applicant address provided is a home in ${allConfig.state_residence_req.residentOfState}.`, arg: 'residenceIsHome' })
     }
+    return messages
+  }
+}
+
+export const step1_post_residence_prompt: PromptDefinition = {
+  key: 'step1_post_residence_prompt',
+  title: 'Accessible prompt 1 of 2, req 2',
+  navTitle: 'Accessible prompt 1 of 2, req 2',
+  description: 'Identifies whether requirement+prompts show post previous req that returns disqualifying',
+  schema: Step1PostResidencePromptSchema,
+  validate: (data, config, appRequestData, allConfig) => {
+    const messages: MutationMessage[] = []
+    if (data.allow == null) messages.push({ type: MutationMessageType.error, message: 'Please confirm if allowed to continue', arg: 'allow' })
+    if (data.allow == false) messages.push({ type: MutationMessageType.error, message: 'Validation type error creates hard ui flow stop, prevents continuing to next prompt' })
+    return messages
+  }
+}
+
+export const step2_post_residence_prompt: PromptDefinition = {
+  key: 'step2_post_residence_prompt',
+  title: 'Accessible prompt 2 of 2, req 2',
+  navTitle: 'Accessible prompt 2 of 2, req 2',
+  description: 'Identifies whether requirement+prompts show post previous req that returns disqualifying',
+  schema: Step2PostResidencePromptSchema,
+  validate: (data, config, appRequestData, allConfig) => {
+    const messages: MutationMessage[] = []
+    if (data.allow == null) messages.push({ type: MutationMessageType.error, message: 'Please confirm if allowed to continue', arg: 'allow' })
+    if (data.allow == false) messages.push({ type: MutationMessageType.warning, message: 'Validation type warning does not stop UI flow to next prompt' })
+    return messages
+  }
+}
+
+export const step3_post_residence_prompt: PromptDefinition = {
+  key: 'step3_post_residence_prompt',
+  title: 'Accessible prompt 1 of 1, req 3',
+  navTitle: 'Accessible prompt 1 of 1, req 3',
+  description: 'Identifies whether requirement+prompts show post previous req that returns disqualifying',
+  schema: Step3PostResidencePromptSchema,
+  validate: (data, config, appRequestData, allConfig) => {
+    const messages: MutationMessage[] = []
+    if (data.allow == null) messages.push({ type: MutationMessageType.error, message: 'Please confirm if allowed to continue', arg: 'allow' })
+    if (data.allow == false) messages.push({ type: MutationMessageType.warning, message: 'Validation type warning does not stop UI flow to next prompt' })
     return messages
   }
 }

@@ -30,6 +30,12 @@ import ResidencePromptDisplay from './simple/ResidencePromptDisplay.svelte'
 import ResidenceConfig from './simple/ResidenceConfig.svelte'
 import ResidenceConfirmationReviewPrompt from './simple/ResidenceConfirmationReviewPrompt.svelte'
 import ResidenceConfirmationReviewPromptDisplay from './simple/ResidenceConfirmationReviewPromptDisplay.svelte'
+import Step1PostResidencePrompt from './simple/Step1PostResidencePrompt.svelte'
+import Step1PostResidencePromptDisplay from './simple/Step1PostResidencePromptDisplay.svelte'
+import Step2PostResidencePrompt from './simple/Step2PostResidencePrompt.svelte'
+import Step2PostResidencePromptDisplay from './simple/Step2PostResidencePromptDisplay.svelte'
+import Step3PostResidencePrompt from './simple/Step3PostResidencePrompt.svelte'
+import Step3PostResidencePromptDisplay from './simple/Step3PostResidencePromptDisplay.svelte'
 
 /** Complex */
 import ComplexResidencePrompt from './complex/residence/ResidencePrompt.svelte'
@@ -133,7 +139,9 @@ function configureDemoInstanceParams () {
       }],
       requirements: [
         { key: 'state_residence_req', configureComponent: ResidenceConfig },
-        { key: 'state_residence_confirmation_req' }
+        { key: 'state_residence_confirmation_req' },
+        { key: 'step1_post_residence_req' },
+        { key: 'step3_post_residence_req' }
       ],
       prompts: [{
         key: 'state_residence_prompt',
@@ -144,6 +152,21 @@ function configureDemoInstanceParams () {
         key: 'state_residence_confirmation_prompt',
         formComponent: ResidenceConfirmationReviewPrompt,
         displayComponent: ResidenceConfirmationReviewPromptDisplay
+      },
+      {
+        key: 'step1_post_residence_prompt',
+        formComponent: Step1PostResidencePrompt,
+        displayComponent: Step1PostResidencePromptDisplay
+      },
+      {
+        key: 'step2_post_residence_prompt',
+        formComponent: Step2PostResidencePrompt,
+        displayComponent: Step2PostResidencePromptDisplay
+      },
+      {
+        key: 'step3_post_residence_prompt',
+        formComponent: Step3PostResidencePrompt,
+        displayComponent: Step3PostResidencePromptDisplay
       }
       ]
     }

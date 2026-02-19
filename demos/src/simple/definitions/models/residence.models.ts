@@ -97,7 +97,7 @@ export type UploadInfoWithSumData = FromSchema<typeof UploadInfoWithSumSchema>
 export const StateResidencePromptSchema = {
   type: 'object',
   properties: {
-    residentOfRequiredState: { type: 'boolean' },    
+    residentOfRequiredState: { type: 'boolean' },
     firstName: { type: 'string' },
     lastName: { type: 'string' },
     streetAddress: { type: 'string' },
@@ -105,7 +105,7 @@ export const StateResidencePromptSchema = {
     phoneNumber: { type: 'string' },
     city: { type: 'string' },
     zipCode: { type: 'string' },
-    residentIdDoc: UploadInfoWithSumSchema,
+    residentIdDoc: UploadInfoWithSumSchema
   },
   required: ['residentOfRequiredState'],
   additionalProperties: false
@@ -132,3 +132,23 @@ export const Step1PostResidencePromptSchema = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type Step1PostResidencePromptData = FromSchema<typeof Step1PostResidencePromptSchema>
+
+export const Step2PostResidencePromptSchema = {
+  type: 'object',
+  properties: {
+    allow: { type: 'boolean' }
+  },
+  required: [],
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type Step2PostResidencePromptData = FromSchema<typeof Step2PostResidencePromptSchema>
+
+export const Step3PostResidencePromptSchema = {
+  type: 'object',
+  properties: {
+    allow: { type: 'boolean' }
+  },
+  required: [],
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type Step3PostResidencePromptData = FromSchema<typeof Step3PostResidencePromptSchema>
