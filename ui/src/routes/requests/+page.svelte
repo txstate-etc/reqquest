@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ColumnList, FieldDate, FieldMultiselect, FieldSelect, FieldTextInput, FilterUI, Pagination, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
+  import { ColumnList, FieldDate, FieldMultiselect, FieldSelect, FieldTextInput, FilterUI, IntroPanel, Pagination, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import View from 'carbon-icons-svelte/lib/View.svelte'
   import DocExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
   import { DateTime } from 'luxon'
@@ -163,10 +163,7 @@
       {/if}
     {/each}
   </FilterUI>
-  <div class="app-requests-intro [ flow py-4 px-[16px] ]">
-    <h2 class="[ text-lg ]">All Applications</h2>
-    <p class="[ text-gray-600 ]">This is where you can see all applications submitted to the business app. Browse them all or use the filters above to narrow down applications.</p>
-  </div>
+  <IntroPanel title="All Applications" subtitle="This is where you can see all applications submitted to the business app. Browse them all or use the filters above to narrow down applications." />
   <ColumnList
     autoHideColumns
     title={uiRegistry.getPlural('appRequest')}
