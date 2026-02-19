@@ -41,6 +41,7 @@
     } else if (appRequestAction === 'reopen') {
       await reopenRequest()
     }
+    appRequestAction = ''
   }
 
   async function appRequestPhaseChange (action: PhaseChangeMutations) {

@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { StateResidenceConfigRequirementData, StateResidenceConfirmationPromptData, StateResidenceConfirmationRequirementData, StateResidencePromptData } from '../models/index.js'
+import { StateResidenceConfigRequirementData, StateResidenceConfirmationPromptData, StateResidenceConfirmationRequirementData, StateResidencePromptData, Step1PostResidencePromptData } from '../models/index.js'
 
 export const state_residence_req: RequirementDefinition<StateResidenceConfigRequirementData> = {
   type: RequirementType.QUALIFICATION,
@@ -24,7 +24,22 @@ export const state_residence_req: RequirementDefinition<StateResidenceConfigRequ
       return messages
     },
     default: { residentOfState: 'Texas' }
-  }  
+  }
+}
+
+export const step1_post_residence_req: RequirementDefinition<StateResidenceConfigRequirementData> = {
+  type: RequirementType.QUALIFICATION,
+  key: 'step1_post_residence_req',
+  title: 'Accessible post hard req stop?',
+  navTitle: 'Accessible post hard req stop?',
+  description: 'Identifies whether requirement+prompts show post previous req that returns disqualifying',
+  promptKeys: ['state_residence_prompt'],
+  resolve: (data, config) => {
+    const promptData = data.state_residence_prompt as Step1PostResidencePromptData
+    if (promptData?.allow == null) return { status: RequirementStatus.PENDING }
+    if (promptData?.allow === true) return { status: RequirementStatus.MET }
+    return { status: RequirementStatus.DISQUALIFYING, reason: 'Not allowed.' }
+  }
 }
 
 export const state_residence_confirmation_req: RequirementDefinition<StateResidenceConfirmationRequirementData> = {
@@ -44,5 +59,3 @@ export const state_residence_confirmation_req: RequirementDefinition<StateReside
     return { status: RequirementStatus.DISQUALIFYING, reason: `Applicant does not reside in a home in ${allConfig.state_residence_req.residentOfState}.` }
   }
 }
-
-
