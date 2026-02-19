@@ -36,6 +36,8 @@ import Step2PostResidencePrompt from './simple/Step2PostResidencePrompt.svelte'
 import Step2PostResidencePromptDisplay from './simple/Step2PostResidencePromptDisplay.svelte'
 import Step3PostResidencePrompt from './simple/Step3PostResidencePrompt.svelte'
 import Step3PostResidencePromptDisplay from './simple/Step3PostResidencePromptDisplay.svelte'
+import ThanksOrNoThanksPrompt from './simple/ThanksOrNoThanksPrompt.svelte'
+import ThanksOrNoThanksPromptDisplay from './simple/ThanksOrNoThanksPromptDisplay.svelte'
 
 /** Complex */
 import ComplexResidencePrompt from './complex/residence/ResidencePrompt.svelte'
@@ -133,10 +135,9 @@ function configureDemoInstanceParams () {
       applicantDashboardIntroHeader: 'Start your Pet Journey Here!',
       applicantDashboardIntroDetail: 'Submitting an adoption application is the first step in adopting a pet. Based on your responses you will receive a list of "eligible benefits."',
       applicantDashboardRecentDays: 30,
-      programs: [{
-        key: 'adopt_a_pet_program',
-        icon: DogWalker
-      }],
+      programs: [{ key: 'adopt_a_pet_program', icon: DogWalker },
+        { key: 'thanks_or_no_thanks_program', icon: Gamification }
+      ],
       requirements: [
         { key: 'state_residence_req', configureComponent: ResidenceConfig },
         { key: 'state_residence_confirmation_req' },
@@ -167,6 +168,11 @@ function configureDemoInstanceParams () {
         key: 'step3_post_residence_prompt',
         formComponent: Step3PostResidencePrompt,
         displayComponent: Step3PostResidencePromptDisplay
+      },
+      {
+        key: 'thanks_or_no_thanks_prompt',
+        formComponent: ThanksOrNoThanksPrompt,
+        displayComponent: ThanksOrNoThanksPromptDisplay
       }
       ]
     }

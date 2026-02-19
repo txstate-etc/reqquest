@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { StateResidenceConfigRequirementData, StateResidenceConfirmationPromptData, StateResidenceConfirmationRequirementData, StateResidencePromptData, Step1PostResidencePromptData, Step2PostResidencePromptData, Step3PostResidencePromptData } from '../models/index.js'
+import { StateResidenceConfigRequirementData, StateResidenceConfirmationPromptData, StateResidenceConfirmationRequirementData, StateResidencePromptData, Step1PostResidencePromptData, Step2PostResidencePromptData, Step3PostResidencePromptData, ThanksOrNoThanksPromptData } from '../models/index.js'
 
 export const state_residence_req: RequirementDefinition<StateResidenceConfigRequirementData> = {
   type: RequirementType.QUALIFICATION,
@@ -71,6 +71,21 @@ export const step3_post_residence_req: RequirementDefinition = {
     const promptData3 = data.step3_post_residence_prompt as Step3PostResidencePromptData
     if (promptData3?.allow == null) return { status: RequirementStatus.PENDING }
     if (promptData3?.allow === true) return { status: RequirementStatus.MET }
+    return { status: RequirementStatus.DISQUALIFYING, reason: 'Not allowed.' }
+  }
+}
+
+export const thanks_or_no_thanks_req: RequirementDefinition = {
+  type: RequirementType.QUALIFICATION,
+  key: 'thanks_or_no_thanks_req',
+  title: 'May or may not want',
+  navTitle: 'May or may not want',
+  description: 'Simulate a requirement within a program/track that a user may not want',
+  promptKeys: ['thanks_or_no_thanks_prompt'],
+  resolve: (data, config) => {
+    const promptData = data.thanks_or_no_thanks_prompt as ThanksOrNoThanksPromptData
+    if (promptData?.thanks == null) return { status: RequirementStatus.PENDING }
+    if (promptData?.thanks === true) return { status: RequirementStatus.MET }
     return { status: RequirementStatus.DISQUALIFYING, reason: 'Not allowed.' }
   }
 }

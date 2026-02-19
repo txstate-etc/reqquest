@@ -152,3 +152,13 @@ export const Step3PostResidencePromptSchema = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type Step3PostResidencePromptData = FromSchema<typeof Step3PostResidencePromptSchema>
+
+export const ThanksOrNoThanksPromptSchema = {
+  type: 'object',
+  properties: {
+    thanks: { type: 'boolean' }
+  },
+  required: [],
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type ThanksOrNoThanksPromptData = FromSchema<typeof ThanksOrNoThanksPromptSchema>
