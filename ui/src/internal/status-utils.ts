@@ -226,15 +226,16 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, { description: str
 
 // Get complete AppRequest status information
 export function getAppRequestStatusInfo (status: AppRequestStatus, phase: AppRequestPhase, closedAt: string | null | undefined): AppStatusConfig {
-  const info = structuredClone((closedAt == null || phase === enumAppRequestPhase.COMPLETE || phase === enumAppRequestPhase.WORKFLOW_NONBLOCKING || status === enumAppRequestStatus.WITHDRAWN || status === enumAppRequestStatus.CANCELLED)
+  const info = (closedAt == null || phase === enumAppRequestPhase.COMPLETE || phase === enumAppRequestPhase.WORKFLOW_NONBLOCKING || status === enumAppRequestStatus.WITHDRAWN || status === enumAppRequestStatus.CANCELLED)
     ? APP_REQUEST_STATUS_CONFIG[status]
     : {
       ...APP_REQUEST_STATUS_CONFIG[status],
       tags: [{ label: 'Incomplete', type: 'red' as const }],
       description: 'This was closed before being completed.'
-    })
-  if (closedAt != null && phase !== enumAppRequestPhase.STARTED) info.tags.push({ label: 'Closed', type: 'yellow' })
-  return info
+    }
+  const ret = { ...info, tags: [...info.tags] }
+  if (closedAt != null && phase !== enumAppRequestPhase.STARTED) ret.tags.push({ label: 'Closed', type: 'yellow' })
+  return ret
 }
 
 // Extract status categories
