@@ -10,7 +10,7 @@
   import { api, REVIEWER_STATUS_CONFIG } from '$internal'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../local/index.js'
-  import { _dashboardStatuses, _defaultReviewerDashboardFilters } from './+page.js'
+  import { _reviewerDashboardInReviewStatuses, _defaultReviewerDashboardFilters } from './+page.js'
 
   export let data: PageData
   $: ({ appRequests, totalItems, period, filters, appCount, appRequestIndexes } = data)
@@ -69,8 +69,8 @@
   </div>
 
   <FilterUI tabs={[
-    { label: 'Awaiting Review', value: { reviewStarted: false, complete: false, status: _dashboardStatuses } },
-    { label: 'Review in Progress', value: { reviewStarted: true, complete: false, status: _dashboardStatuses } },
+    { label: 'Awaiting Review', value: { reviewStarted: false, complete: false, status: _reviewerDashboardInReviewStatuses } },
+    { label: 'Review in Progress', value: { reviewStarted: true, complete: false, status: _reviewerDashboardInReviewStatuses } },
     { label: 'Completed Review', value: { complete: true } }
   ]}>
   </FilterUI>
