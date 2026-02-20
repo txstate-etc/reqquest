@@ -98,50 +98,50 @@
       path="createdAfter"
       labelText="Created After"
       placeholder="Select a date"
-      filterable
+      beginningOfDay
     />
     <FieldDate
       path="createdBefore"
       labelText="Created Before"
       placeholder="Select a date"
-      filterable
+      endOfDay
     />
     <Panel bind:expanded={showDateFilters} expandable title="Additional Date Filters">
       <FieldDate
         path="submittedAfter"
         labelText="Submitted After"
         placeholder="Select a date"
-        filterable
+        beginningOfDay
       />
       <FieldDate
         path="submittedBefore"
         labelText="Submitted Before"
         placeholder="Select a date"
-        filterable
+        endOfDay
       />
       <FieldDate
         path="closedAfter"
         labelText="Closed After"
         placeholder="Select a date"
-        filterable
+        beginningOfDay
       />
       <FieldDate
         path="closedBefore"
         labelText="Closed Before"
         placeholder="Select a date"
-        filterable
+        endOfDay
       />
       <FieldDate
         path="updatedAfter"
         labelText="Updated After"
         placeholder="Select a date"
-        filterable
+        beginningOfDay
       />
       <FieldDate
         path="updatedBefore"
         labelText="Updated Before"
         placeholder="Select a date"
-        filterable
+        endOfDay
       />
     </Panel>
     <FieldMultiselect

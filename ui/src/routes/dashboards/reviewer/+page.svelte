@@ -112,8 +112,8 @@
     ]}
   >
     <svelte:fragment slot="filters">
-      <FieldDate path='submittedAfter' labelText='Submitted After' />
-      <FieldDate path='submittedBefore' labelText='Submitted Before' />
+      <FieldDate path='submittedAfter' labelText='Submitted After' beginningOfDay />
+      <FieldDate path='submittedBefore' labelText='Submitted Before' endOfDay />
     </svelte:fragment>
   </ColumnList>
 
