@@ -7,6 +7,7 @@ export const adopt_a_pet_program: ProgramDefinition = {
     'state_residence_req',
     'step1_post_residence_req',
     'step3_post_residence_req',
+    'id_type_req',
     'state_residence_confirmation_req'
   ]
 }

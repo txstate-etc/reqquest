@@ -38,6 +38,11 @@ import Step3PostResidencePrompt from './simple/Step3PostResidencePrompt.svelte'
 import Step3PostResidencePromptDisplay from './simple/Step3PostResidencePromptDisplay.svelte'
 import ThanksOrNoThanksPrompt from './simple/ThanksOrNoThanksPrompt.svelte'
 import ThanksOrNoThanksPromptDisplay from './simple/ThanksOrNoThanksPromptDisplay.svelte'
+import IDValuesPrompt from './simple/IDValuesPrompt.svelte'
+import IDValuesPromptDisplay from './simple/IDValuesPromptDisplay.svelte'
+import IDValuesExtraDataPrompt from './simple/IDValuesExtraDataPrompt.svelte'
+import IDValuesExtraDataPromptDisplay from './simple/IDValuesExtraDataPromptDisplay.svelte'
+import SSNValuePrompt from './simple/SSNValuePrompt.svelte'
 
 /** Complex */
 import ComplexResidencePrompt from './complex/residence/ResidencePrompt.svelte'
@@ -142,7 +147,8 @@ function configureDemoInstanceParams () {
         { key: 'state_residence_req', configureComponent: ResidenceConfig },
         { key: 'state_residence_confirmation_req' },
         { key: 'step1_post_residence_req' },
-        { key: 'step3_post_residence_req' }
+        { key: 'step3_post_residence_req' },
+        { key: 'id_type_req' }
       ],
       prompts: [{
         key: 'state_residence_prompt',
@@ -173,6 +179,21 @@ function configureDemoInstanceParams () {
         key: 'thanks_or_no_thanks_prompt',
         formComponent: ThanksOrNoThanksPrompt,
         displayComponent: ThanksOrNoThanksPromptDisplay
+      },
+      {
+        key: 'id_values_prompt',
+        formComponent: IDValuesPrompt,
+        displayComponent: IDValuesPromptDisplay
+      },
+      {
+        key: 'id_values_extra_data_prompt',
+        formComponent: IDValuesExtraDataPrompt,
+        displayComponent: IDValuesExtraDataPromptDisplay
+      },
+      {
+        key: 'id_values_prompt',
+        formComponent: SSNValuePrompt,
+        displayComponent: IDValuesPromptDisplay
       }
       ]
     }
