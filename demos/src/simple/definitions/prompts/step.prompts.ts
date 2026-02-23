@@ -1,6 +1,6 @@
 import { type PromptDefinition } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { IDValuesExtraDataPromptSchema, IDValuesPromptSchema, Step1PostResidencePromptSchema, Step2PostResidencePromptSchema, Step3PostResidencePromptSchema, ThanksOrNoThanksPromptSchema } from '../models/index.js'
+import { IDValuesExtraDataPromptSchema, IDValuesPromptSchema, SSNValuePromptSchema, Step1PostResidencePromptSchema, Step2PostResidencePromptSchema, Step3PostResidencePromptSchema, ThanksOrNoThanksPromptSchema } from '../models/index.js'
 
 export const step1_post_residence_prompt: PromptDefinition = {
   key: 'step1_post_residence_prompt',
@@ -66,10 +66,8 @@ export const id_values_prompt: PromptDefinition = {
   validate: (data, config, appRequestData, allConfig) => {
     const messages: MutationMessage[] = []
     if (data.type == null) messages.push({ type: MutationMessageType.error, message: 'Id type required', arg: 'type' })
-    if (data.dodidValue == null && data.ssnValue == null) {
-      messages.push({ type: MutationMessageType.error, message: 'DODId value required', arg: 'dodidValue' })
-      messages.push({ type: MutationMessageType.error, message: 'SSN value required', arg: 'ssnValue' })
-    }
+    if (data.type == 'ssn' && data.ssnValue == null) messages.push({ type: MutationMessageType.error, message: 'SSN value required', arg: 'ssnValue' })
+    if (data.type === 'dodid' && data.dodidValue == null) messages.push({ type: MutationMessageType.error, message: 'DODId value required', arg: 'dodidValue' })
     return messages
   }
 }
@@ -83,6 +81,19 @@ export const id_values_extra_data_prompt: PromptDefinition = {
   validate: (data, config, appRequestData, allConfig) => {
     const messages: MutationMessage[] = []
     if (data.allow == null) messages.push({ type: MutationMessageType.error, message: 'Allow value required', arg: 'allow' })
+    return messages
+  }
+}
+
+export const ssn_value_prompt: PromptDefinition = {
+  key: 'ssn_value_prompt',
+  title: 'SSN',
+  navTitle: 'SSN',
+  description: 'Give me your SSN',
+  schema: SSNValuePromptSchema,
+  validate: (data, config, appRequestData, allConfig) => {
+    const messages: MutationMessage[] = []
+    // if (data.value == null) messages.push({ type: MutationMessageType.error, message: 'SSN required', arg: 'value' })
     return messages
   }
 }

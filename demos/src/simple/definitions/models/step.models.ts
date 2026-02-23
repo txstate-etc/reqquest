@@ -65,3 +65,13 @@ export const IDValuesExtraDataPromptSchema = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type IDValuesExtraDataPromptData = FromSchema<typeof IDValuesExtraDataPromptSchema>
+
+export const SSNValuePromptSchema = {
+  type: 'object',
+  properties: {
+    value: { type: 'string' }
+  },
+  required: [],
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type SSNValuePromptData = FromSchema<typeof SSNValuePromptSchema>

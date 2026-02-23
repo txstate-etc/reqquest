@@ -43,6 +43,7 @@ import IDValuesPromptDisplay from './simple/IDValuesPromptDisplay.svelte'
 import IDValuesExtraDataPrompt from './simple/IDValuesExtraDataPrompt.svelte'
 import IDValuesExtraDataPromptDisplay from './simple/IDValuesExtraDataPromptDisplay.svelte'
 import SSNValuePrompt from './simple/SSNValuePrompt.svelte'
+import SSNValuePromptDisplay from './simple/SSNValuePromptDisplay.svelte'
 
 /** Complex */
 import ComplexResidencePrompt from './complex/residence/ResidencePrompt.svelte'
@@ -191,9 +192,9 @@ function configureDemoInstanceParams () {
         displayComponent: IDValuesExtraDataPromptDisplay
       },
       {
-        key: 'id_values_prompt',
+        key: 'ssn_value_prompt',
         formComponent: SSNValuePrompt,
-        displayComponent: IDValuesPromptDisplay
+        displayComponent: SSNValuePromptDisplay
       }
       ]
     }

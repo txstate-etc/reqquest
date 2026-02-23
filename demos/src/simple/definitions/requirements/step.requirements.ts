@@ -1,6 +1,6 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { IDValuesExtraDataPromptData, IDValuesPromptData, Step1PostResidencePromptData, Step2PostResidencePromptData, Step3PostResidencePromptData, ThanksOrNoThanksPromptData } from '../models/index.js'
+import { IDValuesExtraDataPromptData, IDValuesPromptData, SSNValuePromptData, Step1PostResidencePromptData, Step2PostResidencePromptData, Step3PostResidencePromptData, ThanksOrNoThanksPromptData } from '../models/index.js'
 
 export const step1_post_residence_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
@@ -54,15 +54,20 @@ export const id_type_req: RequirementDefinition = {
   title: 'DODId or SSN',
   navTitle: 'DODId or SSN',
   description: 'Simulate collecting potential similar data from two different prompt screens',
-  promptKeys: ['id_values_prompt', 'id_values_extra_data_prompt'],
+  promptKeys: ['id_values_prompt', 'id_values_extra_data_prompt', 'ssn_value_prompt'],
   resolve: (data, config) => {
     const promptData1 = data.id_values_prompt as IDValuesPromptData
     const promptData2 = data.id_values_extra_data_prompt as IDValuesExtraDataPromptData
+    const promptData3 = data.ssn_value_prompt as SSNValuePromptData
     if (promptData1?.type == null) return { status: RequirementStatus.PENDING }
     if (promptData1?.dodidValue == null && promptData1?.ssnValue == null) return { status: RequirementStatus.PENDING }
-    if (promptData1?.dodidValue != null && promptData1?.ssnValue == null) return { status: RequirementStatus.PENDING }
+
+    if (promptData1?.dodidValue != null && (promptData1?.ssnValue == null && promptData3?.value == null)) return { status: RequirementStatus.PENDING }
     if (promptData1?.ssnValue == null && promptData2?.allow == null) return { status: RequirementStatus.PENDING }
-    if (promptData1?.ssnValue != null && promptData2?.allow === true) return { status: RequirementStatus.MET }
+    if (promptData1?.ssnValue != null || promptData3?.value != null) {
+      if (promptData2?.allow == null) return { status: RequirementStatus.PENDING }
+      if (promptData2?.allow === true) return { status: RequirementStatus.MET }
+    }
     return { status: RequirementStatus.DISQUALIFYING, reason: 'Not allowed.' }
   }
 }
