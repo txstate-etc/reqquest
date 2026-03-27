@@ -6,6 +6,7 @@
   import { resolve } from '$app/paths'
   import type { LayoutData } from './$types.js'
   import { api, IntroPanel, applicantStatuses, REVIEWER_STATUS_CONFIG, longNumericTime } from '$internal'
+  import { uiRegistry } from '../../../../local/index.js'
   import { enumAppRequestPhase, phaseChangeMutations, type PhaseChangeMutations } from '$lib'
 
   export let data: LayoutData
@@ -66,13 +67,13 @@
     if (!response.success) {
       toasts.add({
         type: 'error',
-        title: 'Could not close application request',
+        title: `Could not close ${uiRegistry.getWord('appRequest').toLowerCase()}`,
         message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
       })
     } else {
       toasts.add({
         type: 'success',
-        message: 'Application request closed.'
+        message: `${uiRegistry.getWord('appRequest')} closed.`
       })
     }
     await invalidateAll()
@@ -83,13 +84,13 @@
     if (!response.success) {
       toasts.add({
         type: 'error',
-        title: 'Could not reopen application request',
+        title: `Could not reopen ${uiRegistry.getWord('appRequest').toLowerCase()}`,
         message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
       })
     } else {
       toasts.add({
         type: 'success',
-        message: 'Application request reopened.'
+        message: `${uiRegistry.getWord('appRequest')} reopened.`
       })
     }
     await invalidateAll()
@@ -98,7 +99,7 @@
 
 <IntroPanel
   title={basicRequestData.period.name + (basicRequestData.period.code ? ` (${basicRequestData.period.code})` : '')}
-  subtitle="Review and complete the application below or advance it in the workflow."
+  subtitle={`Review and complete the ${uiRegistry.getWord('appRequest').toLowerCase()} below or advance it in the workflow.`}
   tags={[{ label: REVIEWER_STATUS_CONFIG[basicRequestData.status].label, type: REVIEWER_STATUS_CONFIG[basicRequestData.status].color }]}
 >
   <div class="block-end flex items-center" slot="block-end">
@@ -143,7 +144,7 @@
       </dl>
     </section>
     {#if basicRequestData.actions.completeReview || basicRequestData.actions.completeRequest || basicRequestData.actions.reopen || basicRequestData.actions.close || basicRequestData.actions.returnToApplicant || basicRequestData.actions.returnToOffer || basicRequestData.actions.returnToReview || basicRequestData.actions.returnToNonBlocking || basicRequestData.actions.submit || basicRequestData.actions.acceptOffer}
-      <Select bind:selected={appRequestAction} labelText="Application action" size="sm">
+      <Select bind:selected={appRequestAction} labelText={`${uiRegistry.getWord('appRequest')} action`} size="sm">
         <SelectItem value="" text="Choose one" />
         {#if basicRequestData.actions.completeReview}
           <SelectItem value="completeReview" text="Complete Review" />

@@ -219,7 +219,7 @@ export class UIRegistry {
     for (const requirement of config.requirements) this.requirementMap[requirement.key] = requirement
     for (const program of config.programs) this.programMap[program.key] = program
     this.lang = {
-      appRequest: config.terminology?.appRequest ?? config.programs.length > 1 ? 'App Request' : 'Application',
+      appRequest: config.terminology?.appRequest ?? (config.programs.length > 1 ? 'App Request' : 'Application'),
       login: config.terminology?.login ?? 'Login',
       period: config.terminology?.period ?? 'Period'
     }

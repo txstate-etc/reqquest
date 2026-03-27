@@ -180,7 +180,7 @@
     listActions={[
       ...(access.createAppRequestOther
         ? [
-          { label: 'Create App Request', onClick: openCreateDialog }
+          { label: `Create ${uiRegistry.getWord('appRequest')}`, onClick: openCreateDialog }
         ]
         : []
       ),
@@ -199,20 +199,20 @@
   />
 </div>
 
-<PanelFormDialog open={createDialog} title="Create App Request" validate={validateAppRequest} submit={submitAppRequest} on:cancel={closeCreateDialog} on:saved={onCreateSaved}>
+<PanelFormDialog open={createDialog} title={`Create ${uiRegistry.getWord('appRequest')}`} validate={validateAppRequest} submit={submitAppRequest} on:cancel={closeCreateDialog} on:saved={onCreateSaved}>
   <FieldSelect
-    labelText="Period"
+    labelText={uiRegistry.getWord('period')}
     path="periodId"
     items={openPeriods.map(p => ({ value: p.id, label: p.name }))}
     required
-    helperText="Select the period in which you want to create an app request."
+    helperText={`Select the ${uiRegistry.getWord('period').toLowerCase()} in which you want to create an ${uiRegistry.getWord('appRequest').toLowerCase()}.`}
   />
   <FieldTextInput
     path="login"
-    labelText="Applicant Login"
+    labelText={`Applicant ${uiRegistry.getWord('login')}`}
     required
     notNull
-    helperText="Enter the login of the applicant for this request."
+    helperText={`Enter the ${uiRegistry.getWord('login').toLowerCase()} of the applicant for this request.`}
   />
 </PanelFormDialog>
 

@@ -7,6 +7,7 @@
   import { enumPromptVisibility } from '$lib'
   import { getApplicationStatusInfo, getAppRequestStatusInfo, getNavigationButton } from '../status-utils.js'
   import { longNumericTime } from '../util.js'
+  import { uiRegistry } from '../../local/index.js'
   import type { PageData } from '../../routes/dashboards/applicant/$types'
   import StatusMessageList from './StatusMessageList.svelte'
   import WarningIconYellow from './WarningIconYellow.svelte'
@@ -54,7 +55,7 @@
   <!-- Benefits section -->
   <div class="rounded">
     <h4 class="m-0 mb-2 text-lg benefits-title">Potential benefits</h4>
-    <p class="m-0 mb-3 benefits-subtitle text-sm">Benefit results will be finalized once the application submission and review is completed.</p>
+    <p class="m-0 mb-3 benefits-subtitle text-sm">Benefit results will be finalized once the {uiRegistry.getWord('appRequest').toLowerCase()} submission and review is completed.</p>
 
     {#if request.applications.length > 0}
       {#each request.applications as application (application.id)}
@@ -115,7 +116,7 @@
         </div>
       {/each}
     {:else}
-      <p>No benefits associated with this application.</p>
+      <p>No benefits associated with this {uiRegistry.getWord('appRequest').toLowerCase()}.</p>
     {/if}
   </div>
 

@@ -73,7 +73,7 @@ export const load: PageLoad = async ({ url, depends }) => {
   const columns: ColumnDefinition<User>[] = [
     { id: 'contact', label: 'Name', get: 'contact' },
     { id: 'id', label: 'IDs', get: 'ids' },
-    { id: 'applicationRoles', label: 'Application Roles', get: 'applicationRoles' },
+    { id: 'applicationRoles', label: `${uiRegistry.getWord('appRequest')} Roles`, get: 'applicationRoles' },
     { id: 'groups', label: 'Groups', get: 'groups' }
     // TODO: Dynamically pull extra grouping columns
     // { id: 'institutionalRoles', label: 'Institutional Roles', render: user => user['institutionalRoles'] ? user['institutionalRoles'].join(', ') : '' },

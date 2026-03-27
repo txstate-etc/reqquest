@@ -118,11 +118,11 @@
   // In general these actions are based off of the text info in https://www.figma.com/design/VXFWNXZ6UNlDxmGNwVoEuu/ReqQuest?node-id=954-101490&m=dev
   function buildCardActions (request: DashboardAppRequest) {
     const submitted = isSubmitted(request.status)
-    const cancelWithdrawLabel = submitted ? 'Withdraw Application' : 'Cancel Application'
+    const cancelWithdrawLabel = submitted ? `Withdraw ${uiRegistry.getWord('appRequest')}` : `Cancel ${uiRegistry.getWord('appRequest')}`
 
     return [
       {
-        label: 'View Application',
+        label: `View ${uiRegistry.getWord('appRequest')}`,
         onClick: async () => await openSidePanel(request)
       },
       // {
@@ -138,7 +138,7 @@
       //   disabled: !request.actions.returnToApplicant
       // },
       {
-        label: 'Export Application',
+        label: `Export ${uiRegistry.getWord('appRequest')}`,
         onClick: async () => await exportApplication(request.id),
         icon: DocumentExport
       },
@@ -223,8 +223,8 @@
     const actionType = cancelConfirmation.isWithdraw ? 'withdraw' : 'cancel'
     await handleApiAction(
       async () => await api.cancelAppRequest(cancelConfirmation.requestId!),
-      `Failed to ${actionType} application`,
-      `Application ${actionType === 'withdraw' ? 'withdrawn' : 'cancelled'} successfully`
+      `Failed to ${actionType} ${uiRegistry.getWord('appRequest').toLowerCase()}`,
+      `${uiRegistry.getWord('appRequest')} ${actionType === 'withdraw' ? 'withdrawn' : 'cancelled'} successfully`
     )
 
     cancelConfirmation = { open: false, requestId: null, isWithdraw: false }
@@ -294,8 +294,8 @@
   <FilterUI
     search={isPastTab}
     tabs={[
-      { label: 'Recent Applications', value: 'recent_applications' },
-      { label: 'Past Applications', value: 'past_applications' }
+      { label: `Recent ${uiRegistry.getPlural('appRequest')}`, value: 'recent_applications' },
+      { label: `Past ${uiRegistry.getPlural('appRequest')}`, value: 'past_applications' }
     ]}
     on:apply={e => { filterDataSearch = e.detail }}
     on:mount={e => { filterDataSearch = e.detail }}>
@@ -322,7 +322,7 @@
               <section class="text-base text-center flex-col gap-2">
                 <dl class="flex gap-4  text-sm">
                   <div class="flex flex-col bg-[var(--cds-ui-03,#d9d9d9)] py-4 px-4  justify-center">
-                    <dt class="font-bold">Application opens:</dt>
+                    <dt class="font-bold">{uiRegistry.getWord('appRequest')} opens:</dt>
                     <dd>
                       <time datetime={periodInfo.openDateMachineFormat}>
                         {periodInfo.openLabel}
@@ -331,7 +331,7 @@
                   </div>
                   {#if currentPeriod.closeDate}
                   <div class="flex flex-col bg-[var(--cds-ui-03,#d9d9d9)] py-4 px-4  justify-center">
-                    <dt class="font-bold">Application closes:</dt>
+                    <dt class="font-bold">{uiRegistry.getWord('appRequest')} closes:</dt>
                     <dd>
                       <time datetime={periodInfo.closeDateMachineFormat}>
                         {periodInfo.closeDate}
@@ -366,11 +366,11 @@
                     kind="primary"
                     size="field"
                   >
-                    Start application
+                    Start {uiRegistry.getWord('appRequest').toLowerCase()}
                   </Button>
                 {:else if (!periodInfo.canStartNew || !access.createAppRequestSelf) && appRequests.length > 0}
                   <Tooltip>
-                    <p>Application started, see dashboard card for details.</p>
+                    <p>{uiRegistry.getWord('appRequest')} started, see dashboard card for details.</p>
                   </Tooltip>
                 {/if}
               </section>
@@ -378,13 +378,13 @@
             </div>
           {/if}
         {:else}
-          <p>No application periods are currently available.</p>
+          <p>No {uiRegistry.getWord('appRequest').toLowerCase()} {uiRegistry.getPlural('period').toLowerCase()} are currently available.</p>
         {/if}
       </svelte:fragment>
     </IntroPanel>
   {/if}
   <!-- Application Cards -->
-  <Panel title={filterDataSearch?.tab === 'past_applications' ? 'All past applications' : 'All recent applications'}>
+  <Panel title={filterDataSearch?.tab === 'past_applications' ? `All past ${uiRegistry.getPlural('appRequest').toLowerCase()}` : `All recent ${uiRegistry.getPlural('appRequest').toLowerCase()}`}>
     {#if appRequests.length === 0}
       {#if filterDataSearch?.tab === 'past_applications'}
         <InlineNotification
@@ -397,8 +397,8 @@
       {:else}
         <InlineNotification
           kind="info"
-          title="No recent applications found."
-          subtitle="You have no applications created or modified in the last {recentDays} days. Check under Past applications tab."
+          title="No recent {uiRegistry.getPlural('appRequest').toLowerCase()} found."
+          subtitle="You have no {uiRegistry.getPlural('appRequest').toLowerCase()} created or modified in the last {recentDays} days. Check under Past {uiRegistry.getPlural('appRequest').toLowerCase()} tab."
           lowContrast
           hideCloseButton
         />
@@ -420,7 +420,7 @@
   <PanelDialog
     size="large"
     open={sidePanelOpen}
-    title={selectedAppRequest?.period?.name ?? 'Application Details'}
+    title={selectedAppRequest?.period?.name ?? `${uiRegistry.getWord('appRequest')} Details`}
     cancelText="Close"
     submitText={selectedAppRequest?.status ? getSubmitButtonText(selectedAppRequest.status) : ''}
     on:cancel={closeSidePanel}
@@ -434,7 +434,7 @@
         {postqualPrompts}
         {loading}
         {uiRegistry}
-        title={selectedAppRequest.period?.name ? `View your ${selectedAppRequest.period.name} application` : 'View your application'}
+        title={selectedAppRequest.period?.name ? `View your ${selectedAppRequest.period.name} ${uiRegistry.getWord('appRequest').toLowerCase()}` : `View your ${uiRegistry.getWord('appRequest').toLowerCase()}`}
         showCorrectionsInline
       />
     {/if}
@@ -442,18 +442,18 @@
 
   <Modal
     bind:open={cancelConfirmation.open}
-    modalHeading={cancelConfirmation.isWithdraw ? 'Withdraw Application' : 'Cancel Application'}
-    primaryButtonText={cancelConfirmation.isWithdraw ? 'Yes, Withdraw Application' : 'Yes, Cancel Application'}
-    secondaryButtonText="Keep Application"
+    modalHeading={cancelConfirmation.isWithdraw ? `Withdraw ${uiRegistry.getWord('appRequest')}` : `Cancel ${uiRegistry.getWord('appRequest')}`}
+    primaryButtonText={cancelConfirmation.isWithdraw ? `Yes, Withdraw ${uiRegistry.getWord('appRequest')}` : `Yes, Cancel ${uiRegistry.getWord('appRequest')}`}
+    secondaryButtonText={`Keep ${uiRegistry.getWord('appRequest')}`}
     on:click:button--secondary={() => { cancelConfirmation = { open: false, requestId: null, isWithdraw: false } }}
     on:submit={handleCancelConfirm}
     on:close={() => { cancelConfirmation = { open: false, requestId: null, isWithdraw: false } }}
   >
     <p>
       {#if cancelConfirmation.isWithdraw}
-        Withdrawing your application will remove it from consideration and any approved benefits will be lost. You can reopen and edit this application to resubmit it, as long as the application window is still open.
+        Withdrawing your {uiRegistry.getWord('appRequest').toLowerCase()} will remove it from consideration and any approved benefits will be lost. You can reopen and edit this {uiRegistry.getWord('appRequest').toLowerCase()} to resubmit it, as long as the {uiRegistry.getWord('appRequest').toLowerCase()} window is still open.
       {:else}
-        Canceling your application will remove it from consideration. You can reinstate and submit it later, as long as the application window is still open.
+        Canceling your {uiRegistry.getWord('appRequest').toLowerCase()} will remove it from consideration. You can reinstate and submit it later, as long as the {uiRegistry.getWord('appRequest').toLowerCase()} window is still open.
       {/if}
     </p>
   </Modal>

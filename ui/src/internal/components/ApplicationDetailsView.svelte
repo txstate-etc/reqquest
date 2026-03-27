@@ -18,7 +18,7 @@
   export let postqualPrompts: AnsweredPrompt[] | undefined = undefined
   export let loading = false
   export let uiRegistry: UIRegistry
-  export let title = 'View your application'
+  export let title = `View your ${uiRegistry.getWord('appRequest').toLowerCase()}`
   export let subtitle = 'Select document names to preview them.'
   export let expandable = true
   export let showWarningsInline = false
@@ -97,7 +97,7 @@
       <div class="status-content">
         {#if showAppRequestStatus}
           <dl class="status-list-item [ flex items-center justify-between px-2 py-3 border-b ]">
-            <dt class="status-list-label font-medium">Application Status</dt>
+            <dt class="status-list-label font-medium">{uiRegistry.getWord('appRequest')} Status</dt>
             <dd class="px-2">
               <TagSet tags={getAppRequestStatusInfo(appRequest.status, appRequest.phase, appRequest.closedAt).tags} />
             </dd>
@@ -217,14 +217,14 @@
       {/each}
     {:else}
       <Panel title="Prompts and Answers">
-        <p>No prompts available for this application.</p>
+        <p>No prompts available for this {uiRegistry.getWord('appRequest').toLowerCase()}.</p>
       </Panel>
     {/if}
 
     <slot name="footer" />
   </div>
 {:else}
-  <p>No application selected</p>
+  <p>No {uiRegistry.getWord('appRequest').toLowerCase()} selected</p>
 {/if}
 
 <style>

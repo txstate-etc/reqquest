@@ -29,7 +29,7 @@
       icon: Dashboard,
       routeId: '/dashboards/applicant',
       children: [{
-        title: 'Application',
+        title: uiRegistry.getWord('appRequest'),
         routeId: '/requests/[id]/apply',
         children: [{
           title: 'Review Your Submission',
@@ -84,14 +84,14 @@
       }]
     },
     {
-      title: 'Manage Periods',
+      title: `Manage ${uiRegistry.getPlural('period')}`,
       group: 'Administration',
       hideFromSideNav: !access.viewPeriodManagement,
       icon: Time,
       routeId: '/periods',
       children: [
         {
-          title: 'Configure Period',
+          title: `Configure ${uiRegistry.getWord('period')}`,
           routeId: '/periods/[id]/configure'
         }
       ]

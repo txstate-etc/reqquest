@@ -6,6 +6,7 @@
   import type { PageData } from './$types'
   import ProgressNavContainer from '../ProgressNavContainer.svelte'
   import { ApplicantProgramList } from '$internal'
+  import { uiRegistry } from '../../../../../local/index.js'
   import { enumApplicationStatus } from '$lib'
 
   export let data: PageData
@@ -41,7 +42,7 @@
     {/if}
     <Button type="submit" href={nextHref}>
       {#if nextHref?.endsWith('/review')}
-        Review Application
+        Review {uiRegistry.getWord('appRequest')}
       {:else}
         Continue
       {/if}

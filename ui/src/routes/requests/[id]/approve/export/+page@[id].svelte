@@ -20,15 +20,15 @@
       {uiRegistry}
       expandable={false}
       showWarningsInline={true}
-      title="Review Application"
-      subtitle="Complete application details for review."
+      title={`Review ${uiRegistry.getWord('appRequest')}`}
+      subtitle={`Complete ${uiRegistry.getWord('appRequest').toLowerCase()} details for review.`}
     />
   </div>
 
 {:else}
   <div class="error">
-    <h1>Application Not Found</h1>
-    <p>The requested application could not be loaded.</p>
+    <h1>{uiRegistry.getWord('appRequest')} Not Found</h1>
+    <p>The requested {uiRegistry.getWord('appRequest').toLowerCase()} could not be loaded.</p>
   </div>
 {/if}
 

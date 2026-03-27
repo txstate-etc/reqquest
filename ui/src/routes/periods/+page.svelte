@@ -10,6 +10,7 @@
   import { invalidate } from '$app/navigation'
   import { base } from '$app/paths'
   import { api } from '$internal'
+  import { uiRegistry } from '../../local/index.js'
   import type { PeriodUpdate } from '$lib'
   import type { PageData } from './$types'
 
@@ -94,19 +95,19 @@
 </script>
 
 <Panel
-  title='Period'
+  title={uiRegistry.getWord('period')}
   actions={[
     {
-      label: 'Add Period',
+      label: `Add ${uiRegistry.getWord('period')}`,
       disabled: !access.createPeriod,
       icon: Add,
       onClick: () => { creatingPeriod = true; editingPeriod = undefined }
     }
 ]}>
   <ColumnList
-  title="Periods"
+  title={uiRegistry.getPlural('period')}
   columns={[
-    { id: 'period', label: 'Period', get: 'name' },
+    { id: 'period', label: uiRegistry.getWord('period'), get: 'name' },
     { id: 'code', label: 'Code', tags: (row) => row.code ? [{ label: row.code, type: 'green' }] : [] },
     { id: 'phase', label: 'Phase', tags: displayPhase },
     { id: 'openDate', label: 'Start Date', render: renderDate('openDate') },
@@ -123,7 +124,7 @@
 />
 </Panel>
 
-<PanelFormDialog open={creatingPeriod || !!editingPeriod} title={editingPeriod ? 'Edit Period' : 'Create Period'}
+<PanelFormDialog open={creatingPeriod || !!editingPeriod} title={editingPeriod ? `Edit ${uiRegistry.getWord('period')}` : `Create ${uiRegistry.getWord('period')}`}
   preload={editingPeriod} {validate} {submit} on:saved={onSaved} on:cancel={closeDialog}>
   <InlineNotification
     kind='info'
@@ -132,12 +133,12 @@
     lowContrast
   />
   <FieldSelect
-    labelText='Period configurations copied from'
+    labelText={`${uiRegistry.getWord('period')} configurations copied from`}
     helpText='Help Text'
     items={periods.map(p => ({ value: p.id, label: p.name }))}
     path='copyPeriod'
   />
-  <FieldTextInput path="name" labelText="Period Name" required notNull />
+  <FieldTextInput path="name" labelText={`${uiRegistry.getWord('period')} Name`} required notNull />
   <FieldTextInput path="code" labelText="Code" />
   <FieldDateTime path="openDate" labelText="Open Date" required defaultValue={new Date().toISOString()} />
   <FieldDateTime path="closeDate" labelText="Close Date" />
@@ -145,13 +146,13 @@
 </PanelFormDialog>
 <Modal
   bind:open={deleteDialog}
-  modalHeading="Delete Period"
+  modalHeading={`Delete ${uiRegistry.getWord('period')}`}
   primaryButtonText="Delete"
   secondaryButtonText="Cancel"
   size="sm"
   on:click:button--secondary={closePeriodDeleteDialog}
   on:submit={executePeriodDelete}
 >
-  <p>Are you sure you want to delete the period {deletingPeriod?.name}?</p>
+  <p>Are you sure you want to delete the {uiRegistry.getWord('period').toLowerCase()} {deletingPeriod?.name}?</p>
   <p>This action cannot be undone.</p>
 </Modal>

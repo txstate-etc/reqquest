@@ -1,6 +1,7 @@
 import type { TagItem } from '@txstate-mws/carbon-svelte'
 import { enumAppRequestPhase, enumAppRequestStatus, enumRequirementType, type AppRequestPhase, type AppRequestStatus, type RequirementType } from '$lib'
 import { longNumericTime } from './util.js'
+import { uiRegistry } from '../local/index.js'
 
 interface AppStatusConfig {
   description: string
@@ -29,41 +30,41 @@ interface ApplicationStatusTagInfo {
 export const APP_REQUEST_STATUS_CONFIG: Record<AppRequestStatus, AppStatusConfig> = {
   STARTED: {
     tags: [{ label: 'In progress', type: 'green' }],
-    description: 'Application is in progress and has not been submitted.',
+    description: `${uiRegistry.getWord('appRequest')} is in progress and has not been submitted.`,
     waitingOn: 'Applicant',
-    buttonText: 'Edit Application',
+    buttonText: `Edit ${uiRegistry.getWord('appRequest')}`,
     actionType: 'navigate',
     category: 'current',
     navigation: {
-      label: 'Continue application',
+      label: `Continue ${uiRegistry.getWord('appRequest').toLowerCase()}`,
       href: (requestId: string) => `/requests/${requestId}/apply`
     }
   },
   READY_TO_SUBMIT: {
     tags: [{ label: 'In progress', type: 'green' }],
-    description: 'Application is complete and ready to submit.',
+    description: `${uiRegistry.getWord('appRequest')} is complete and ready to submit.`,
     waitingOn: 'Applicant',
-    buttonText: 'Edit Application',
+    buttonText: `Edit ${uiRegistry.getWord('appRequest')}`,
     actionType: 'navigate',
     category: 'current',
     navigation: {
-      label: 'Continue application',
+      label: `Continue ${uiRegistry.getWord('appRequest').toLowerCase()}`,
       href: (requestId: string) => `/requests/${requestId}/apply`
     }
   },
   PREAPPROVAL: {
     tags: [{ label: 'Review pending', type: 'blue' }],
-    description: 'Application submitted and waiting for pre-approval requirements.',
+    description: `${uiRegistry.getWord('appRequest')} submitted and waiting for pre-approval requirements.`,
     waitingOn: 'System',
-    buttonText: 'Export Application',
+    buttonText: `Export ${uiRegistry.getWord('appRequest')}`,
     actionType: 'export',
     category: 'current'
   },
   APPROVAL: {
     tags: [{ label: 'In review', type: 'blue' }],
-    description: 'Application is being reviewed.',
+    description: `${uiRegistry.getWord('appRequest')} is being reviewed.`,
     waitingOn: 'Reviewer',
-    buttonText: 'Export Application',
+    buttonText: `Export ${uiRegistry.getWord('appRequest')}`,
     actionType: 'export',
     category: 'current'
   },
@@ -100,22 +101,22 @@ export const APP_REQUEST_STATUS_CONFIG: Record<AppRequestStatus, AppStatusConfig
   },
   REVIEW_COMPLETE: {
     tags: [{ label: 'In review', type: 'blue' }],
-    description: 'Your application is being reviewed.',
+    description: `Your ${uiRegistry.getWord('appRequest').toLowerCase()} is being reviewed.`,
     waitingOn: 'Reviewer',
-    buttonText: 'Export Application',
+    buttonText: `Export ${uiRegistry.getWord('appRequest')}`,
     actionType: 'export',
     category: 'current'
   },
   APPROVED: {
     tags: [{ label: 'Approved', type: 'green' }],
-    description: 'Your application has been approved.',
+    description: `Your ${uiRegistry.getWord('appRequest').toLowerCase()} has been approved.`,
     buttonText: '',
     actionType: 'none',
     category: 'past'
   },
   NOT_APPROVED: {
     tags: [{ label: 'Ineligible', type: 'red' }],
-    description: 'Your application was not approved.',
+    description: `Your ${uiRegistry.getWord('appRequest').toLowerCase()} was not approved.`,
     buttonText: '',
     actionType: 'none',
     category: 'past'
@@ -129,21 +130,21 @@ export const APP_REQUEST_STATUS_CONFIG: Record<AppRequestStatus, AppStatusConfig
   },
   CANCELLED: {
     tags: [{ label: 'Cancelled', type: 'gray' }],
-    description: 'Application was cancelled before submission.',
+    description: `${uiRegistry.getWord('appRequest')} was cancelled before submission.`,
     buttonText: '',
     actionType: 'none',
     category: 'past'
   },
   WITHDRAWN: {
     tags: [{ label: 'Withdrawn', type: 'gray' }],
-    description: 'Application was withdrawn after submission.',
+    description: `${uiRegistry.getWord('appRequest')} was withdrawn after submission.`,
     buttonText: '',
     actionType: 'none',
     category: 'past'
   },
   DISQUALIFIED: {
     tags: [{ label: 'Ineligible', type: 'red' }],
-    description: 'All applications have been disqualified.',
+    description: `All ${uiRegistry.getPlural('appRequest').toLowerCase()} have been disqualified.`,
     waitingOn: 'Applicant',
     buttonText: '',
     actionType: 'none',
@@ -154,22 +155,22 @@ export const APP_REQUEST_STATUS_CONFIG: Record<AppRequestStatus, AppStatusConfig
 export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, { description: string, label: string, color: TagItem['type'] }> = {
   STARTED: {
     label: 'In progress',
-    description: 'Application is in progress and has not been submitted.',
+    description: `${uiRegistry.getWord('appRequest')} is in progress and has not been submitted.`,
     color: 'green'
   },
   READY_TO_SUBMIT: {
     label: 'Ready to submit',
-    description: 'Application is complete and ready to submit.',
+    description: `${uiRegistry.getWord('appRequest')} is complete and ready to submit.`,
     color: 'green'
   },
   PREAPPROVAL: {
     label: 'Pre-Review',
-    description: 'Application submitted and waiting for pre-approval requirements.',
+    description: `${uiRegistry.getWord('appRequest')} submitted and waiting for pre-approval requirements.`,
     color: 'blue'
   },
   APPROVAL: {
     label: 'In review',
-    description: 'Application is being reviewed.',
+    description: `${uiRegistry.getWord('appRequest')} is being reviewed.`,
     color: 'blue'
   },
   ACCEPTANCE: {
@@ -194,12 +195,12 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, { description: str
   },
   APPROVED: {
     label: 'Approved',
-    description: 'Your application has been approved.',
+    description: `Your ${uiRegistry.getWord('appRequest').toLowerCase()} has been approved.`,
     color: 'green'
   },
   NOT_APPROVED: {
     label: 'Ineligible',
-    description: 'Your application was not approved.',
+    description: `Your ${uiRegistry.getWord('appRequest').toLowerCase()} was not approved.`,
     color: 'red'
   },
   NOT_ACCEPTED: {
@@ -209,17 +210,17 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, { description: str
   },
   CANCELLED: {
     label: 'Cancelled',
-    description: 'Application was cancelled before submission.',
+    description: `${uiRegistry.getWord('appRequest')} was cancelled before submission.`,
     color: 'gray'
   },
   WITHDRAWN: {
     label: 'Withdrawn',
-    description: 'Application was withdrawn after submission.',
+    description: `${uiRegistry.getWord('appRequest')} was withdrawn after submission.`,
     color: 'gray'
   },
   DISQUALIFIED: {
     label: 'Not qualified',
-    description: 'All applications have been disqualified.',
+    description: `All ${uiRegistry.getPlural('appRequest').toLowerCase()} have been disqualified.`,
     color: 'red'
   }
 }
@@ -308,7 +309,7 @@ export function getApplicationStatusInfo (status: string, appRequestPhase: strin
     if (appRequestPhase === enumAppRequestPhase.STARTED) {
       return {
         label: 'Cancelled',
-        description: 'Application was cancelled before submission.',
+        description: `${uiRegistry.getWord('appRequest')} was cancelled before submission.`,
         color: 'gray'
       }
     } else {
@@ -372,7 +373,7 @@ export function getPeriodDisplayInfo (period: any) {
     status,
     openLabel: status === 'closed' ? 'TBD' : longNumericTime(period.openDate),
     openDateMachineFormat: period.openDate,
-    closeLabel: status === 'closed' ? 'Application closed' : 'Application closes',
+    closeLabel: status === 'closed' ? `${uiRegistry.getWord('appRequest')} closed` : `${uiRegistry.getWord('appRequest')} closes`,
     closeDate: (!period.closeDate) ? longNumericTime(noClosePeriodDate) : longNumericTime(period.closeDate),
     closeDateMachineFormat: period.closeDate ?? new Date(noClosePeriodDate),
     canStartNew: status === 'open' && period.reviewed === true

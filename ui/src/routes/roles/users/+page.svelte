@@ -2,6 +2,7 @@
   import { ColumnList, FieldMultiselect, FilterUI, Pagination } from '@txstate-mws/carbon-svelte'
   import type { PageData } from './$types'
   import { IntroPanel } from '$internal'
+  import { uiRegistry } from '../../../local/index.js'
 
   export let data: PageData
   $: ({ columns, rows, filters, page, totalItems, availableApplicationRoles, roleUsersAttributeDescription } = data)
@@ -30,7 +31,7 @@
   on:apply={e => { usersSearchFormData = e.detail }}
   on:mount={e => { usersSearchFormData = e.detail }}>
   <svelte:fragment slot="quickfilters">
-    <FieldMultiselect path="applicationRoles" label="Application Roles" items={availableApplicationRoles} />
+    <FieldMultiselect path="applicationRoles" label={`${uiRegistry.getWord('appRequest')} Roles`} items={availableApplicationRoles} />
     {#each filters as filter (filter.id)}
     <FieldMultiselect path={filter.id} label={filter.label} items={filter.items} />
     {/each}

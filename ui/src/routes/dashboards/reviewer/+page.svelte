@@ -64,7 +64,7 @@
       <span class='[ text-lg ]'>
         {appCount}
       </span>
-      <span>Applications to review</span>
+      <span>{appCount > 1 ? uiRegistry.getPlural('appRequest') : uiRegistry.getWord('appRequest')} to review</span>
     </Tile>
   </div>
 
@@ -86,7 +86,7 @@
     ]}
     columns={[
       { id: 'request', label: 'Request #', fixed: '90px', minWidth: 90, tags: row => [{ label: String(row.id) }] },
-      { id: 'period', label: 'Period', render: r => r.period.name },
+      { id: 'period', label: uiRegistry.getWord('period'), render: r => r.period.name },
       { id: 'login', label: uiRegistry.getWord('login'), minWidth: 100, tags: r => [{ label: r.applicant.login, type: 'green' }] },
       { id: 'name', label: 'Name', get: 'applicant.fullname' },
       { id: 'dateSubmitted', label: 'Date Submitted', minWidth: 150, render: r => DateTime.fromISO(r.createdAt).toFormat('f') },
@@ -102,7 +102,7 @@
       }))
     ]}
     rows={appRequests}
-    title="App Requests"
+    title={uiRegistry.getPlural('appRequest')}
     actions={r => [
       {
         label: 'View',
