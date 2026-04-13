@@ -108,6 +108,8 @@ import ComplexAcceptFosterPetDisplayPrompt from './complex/petOwner/AcceptFoster
 import ComplexConfirmCatMircochipServicePrompt from './complex/catOwner/ConfirmCatMircochipServicePrompt.svelte'
 import ComplexConfirmCatMircochipServiceDisplayPrompt from './complex/catOwner/ConfirmCatMircochipServiceDisplayPrompt.svelte'
 
+/** RC */
+
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts } = configureDemoInstanceParams()
 
 export const uiRegistry = new UIRegistry({
@@ -326,7 +328,12 @@ function configureDemoInstanceParams () {
         { key: 'confirm_cat_microchip_service_prompt', formComponent: ComplexConfirmCatMircochipServicePrompt, displayComponent: ComplexConfirmCatMircochipServiceDisplayPrompt }
       ]
     }
+  } /* RC TODO
+  else if (tmpDemoInstance === 'rc') {
+    return {
+    }
   }
+  */
   return {
     appName: 'Adopt a Critter',
     applicantDashboardIntroHeader: 'Start your Pet Journey Here!',
