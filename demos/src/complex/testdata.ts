@@ -3,7 +3,7 @@ import { DateTime } from 'luxon'
 
 export const complexTestMigrations: DatabaseMigration[] = [
   {
-    id: '20250430210000',
+    id: '30250430210000',
     execute: async (db, installTestData) => {
       if (!installTestData) return
       await AccessDatabase.upsertAccessUser({ login: 'applicant', fullname: 'Test Applicant 1', groups: ['applicants'] })
@@ -14,7 +14,7 @@ export const complexTestMigrations: DatabaseMigration[] = [
     }
   },
   {
-    id: '20250722104300', // test support
+    id: '30250722104300', // test support
     execute: async (db, installTestData) => {
       if (!installTestData) return
       await AccessDatabase.upsertAccessUser({ login: 'admin01', fullname: 'Admin 01 full name prior to upsert', groups: ['administrators'] })
