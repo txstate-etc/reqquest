@@ -14,6 +14,7 @@ const customConfig = {
     ...stylistic.configs['recommended-flat'].rules,
     ...love.rules,
     'import/first': 'off',
+    'max-lines': 'off',
     'no-multiple-empty-lines': 'off',
     'no-self-assign': 'off', // self assign in svelte is to trigger reactivity
     'no-unused-vars': 'off',
