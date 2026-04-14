@@ -3,18 +3,18 @@ import { DateTime } from 'luxon'
 
 export const multiTestMigrations: DatabaseMigration[] = [
   {
-    id: '20251001090000',
+    id: '30251001090000',
     execute: async (db, installTestData) => {
       if (!installTestData) return
       await AccessDatabase.upsertAccessUser({ login: 'applicant', fullname: 'Test Applicant 1', groups: ['applicants'] })
       const applicant = await db.getrow<{ id: number, login: string }>('SELECT * FROM accessUsers WHERE login = ?', ['applicant'])
       if (!applicant) return
-      const periodId = await createPeriod({ name: '2025', code: '2025 Sem 1', openDate: DateTime.fromFormat('20250101080000', 'yyyyMMddHHmmss')})
+      const periodId = await createPeriod({ name: '2025', code: '2025 Sem 1', openDate: DateTime.fromFormat('20250101080000', 'yyyyMMddHHmmss') })
       await markPeriodReviewed(periodId)
     }
   },
   {
-    id: '20251001090001', // test support
+    id: '30251001090001', // test support
     execute: async (db, installTestData) => {
       if (!installTestData) return
       await AccessDatabase.upsertAccessUser({ login: 'admin01', fullname: 'Admin 01 full name prior to upsert', groups: ['administrators'] })
