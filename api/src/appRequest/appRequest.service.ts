@@ -235,9 +235,10 @@ export class AppRequestService extends AuthService<AppRequest> {
     if (!this.mayCreate() && user.login === this.login) return { message: 'You may not create a request.' }
     if (!this.mayCreateOther() && user.login !== this.login) return { message: 'You may not create requests for other people.' }
     if (!appConfig.multipleRequestsPerPeriod) {
+      const activeStatuses = Object.values(AppRequestStatus).filter(s => s !== AppRequestStatus.WITHDRAWN && s !== AppRequestStatus.CANCELLED)
       const requests = 'internalId' in user
-        ? await this.svc(AppRequestServiceInternal).find({ periodIds: [period.id], userInternalIds: [user.internalId] })
-        : await this.svc(AppRequestServiceInternal).find({ periodIds: [period.id], logins: [user.login] })
+        ? await this.svc(AppRequestServiceInternal).find({ periodIds: [period.id], userInternalIds: [user.internalId], status: activeStatuses })
+        : await this.svc(AppRequestServiceInternal).find({ periodIds: [period.id], logins: [user.login], status: activeStatuses })
       if (requests.length > 0) return { message: `A request already exists in ${period.name}.`, arg: 'login' }
     }
     return undefined
