@@ -503,6 +503,12 @@ export default {
             "completeReview": [
                 38
             ],
+            "createNote": [
+                38
+            ],
+            "createPersistentNote": [
+                38
+            ],
             "reopen": [
                 38
             ],
@@ -957,11 +963,17 @@ export default {
                 }
             ],
             "addNote": [
-                79,
+                81,
                 {
                     "content": [
                         78,
                         "String!"
+                    ],
+                    "persistent": [
+                        38
+                    ],
+                    "validateOnly": [
+                        38
                     ]
                 }
             ],
@@ -1030,7 +1042,7 @@ export default {
                 }
             ],
             "createPeriod": [
-                81,
+                82,
                 {
                     "copyPeriodId": [
                         78
@@ -1048,13 +1060,13 @@ export default {
                 38,
                 {
                     "noteId": [
-                        78,
-                        "String!"
+                        46,
+                        "ID!"
                     ]
                 }
             ],
             "deletePeriod": [
-                82,
+                83,
                 {
                     "periodId": [
                         46,
@@ -1063,7 +1075,7 @@ export default {
                 }
             ],
             "markPeriodReviewed": [
-                81,
+                82,
                 {
                     "periodId": [
                         46,
@@ -1160,7 +1172,7 @@ export default {
                 }
             ],
             "roleDelete": [
-                82,
+                83,
                 {
                     "roleId": [
                         46,
@@ -1218,6 +1230,15 @@ export default {
                     ]
                 }
             ],
+            "togglePersistence": [
+                81,
+                {
+                    "noteId": [
+                        46,
+                        "ID!"
+                    ]
+                }
+            ],
             "updateConfiguration": [
                 80,
                 {
@@ -1239,20 +1260,20 @@ export default {
                 }
             ],
             "updateNote": [
-                55,
+                81,
                 {
                     "content": [
                         78,
                         "String!"
                     ],
                     "noteId": [
-                        78,
-                        "String!"
+                        46,
+                        "ID!"
                     ]
                 }
             ],
             "updatePeriod": [
-                81,
+                82,
                 {
                     "periodId": [
                         46,
@@ -1268,7 +1289,7 @@ export default {
                 }
             ],
             "updatePeriodRequirement": [
-                82,
+                83,
                 {
                     "disabled": [
                         38,
@@ -1341,6 +1362,9 @@ export default {
             "id": [
                 46
             ],
+            "persistent": [
+                38
+            ],
             "updatedAt": [
                 44
             ],
@@ -1353,6 +1377,9 @@ export default {
                 38
             ],
             "update": [
+                38
+            ],
+            "updatePersistent": [
                 38
             ],
             "__typename": [
@@ -1861,6 +1888,20 @@ export default {
             ],
             "messages": [
                 53
+            ],
+            "success": [
+                38
+            ],
+            "__typename": [
+                78
+            ]
+        },
+        "ValidatedNoteResponse": {
+            "messages": [
+                53
+            ],
+            "note": [
+                55
             ],
             "success": [
                 38

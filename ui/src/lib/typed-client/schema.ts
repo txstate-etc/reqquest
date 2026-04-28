@@ -220,6 +220,10 @@ export interface AppRequestActions {
     completeRequest: Scalars['Boolean']
     /** User may complete the review app request. Sends the app request to the acceptance phase, or if there is no acceptance phase, to the non-blocking workflow or completion. */
     completeReview: Scalars['Boolean']
+    /** User is able to create a new internal note on the app request. */
+    createNote: Scalars['Boolean']
+    /** User is able to create a new internal note on the app request. */
+    createPersistentNote: Scalars['Boolean']
     /** User may reopen this app request, whether as the owner or as a reviewer/admin. */
     reopen: Scalars['Boolean']
     /** User may return this app request to the applicant phase. */
@@ -453,7 +457,7 @@ export interface Mutation {
     /** This is for the applicant to accept or reject the offer that was made based on their app request. The difference between accept and reject is determined by the status of the acceptance requirements. They will still "accept offer" after they answer that they do not want the offer. If there is non-blocking workflow on any applications, the first one in each will begin. Applications without non-blocking workflow will be advanced to the COMPLETE phase. If all applications are complete, the app request will be closed. */
     acceptOffer: ValidatedAppRequestResponse
     /** Add a note to the app request. */
-    addNote: ValidatedAppRequestResponse
+    addNote: ValidatedNoteResponse
     /** Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation. */
     advanceWorkflow: ValidatedAppRequestResponse
     /** Cancel or withdraw the app request, depending on its current phase. This is only available if the app request is in a cancellable state. */
@@ -491,9 +495,11 @@ export interface Mutation {
     roleUpdateGrant: AccessRoleValidatedResponse
     /** Submit the app request. */
     submitAppRequest: ValidatedAppRequestResponse
+    /** Toggle an existing note's persistent status. */
+    togglePersistence: ValidatedNoteResponse
     updateConfiguration: ValidatedConfigurationResponse
     /** Update the content of an existing note. */
-    updateNote: Note
+    updateNote: ValidatedNoteResponse
     updatePeriod: ValidatedPeriodResponse
     updatePeriodRequirement: ValidatedResponse
     /** Update the data for a prompt in this app request. */
@@ -525,6 +531,8 @@ export interface Note {
     content: Scalars['String']
     createdAt: Scalars['DateTime']
     id: Scalars['ID']
+    /** Whether this note contains permanently useful information about a person, as opposed to only being relevant in the context of the app request it was posted to. */
+    persistent: Scalars['Boolean']
     updatedAt: Scalars['DateTime']
     __typename: 'Note'
 }
@@ -534,6 +542,7 @@ export interface Note {
 export interface NoteActions {
     delete: Scalars['Boolean']
     update: Scalars['Boolean']
+    updatePersistent: Scalars['Boolean']
     __typename: 'NoteActions'
 }
 
@@ -753,6 +762,14 @@ export interface ValidatedConfigurationResponse {
     /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
     success: Scalars['Boolean']
     __typename: 'ValidatedConfigurationResponse'
+}
+
+export interface ValidatedNoteResponse {
+    messages: MutationMessage[]
+    note: Note
+    /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
+    success: Scalars['Boolean']
+    __typename: 'ValidatedNoteResponse'
 }
 
 export interface ValidatedPeriodResponse {
@@ -1042,6 +1059,10 @@ export interface AppRequestActionsGenqlSelection{
     completeRequest?: boolean | number
     /** User may complete the review app request. Sends the app request to the acceptance phase, or if there is no acceptance phase, to the non-blocking workflow or completion. */
     completeReview?: boolean | number
+    /** User is able to create a new internal note on the app request. */
+    createNote?: boolean | number
+    /** User is able to create a new internal note on the app request. */
+    createPersistentNote?: boolean | number
     /** User may reopen this app request, whether as the owner or as a reviewer/admin. */
     reopen?: boolean | number
     /** User may return this app request to the applicant phase. */
@@ -1320,9 +1341,9 @@ export interface MutationGenqlSelection{
     /** This is for the applicant to accept or reject the offer that was made based on their app request. The difference between accept and reject is determined by the status of the acceptance requirements. They will still "accept offer" after they answer that they do not want the offer. If there is non-blocking workflow on any applications, the first one in each will begin. Applications without non-blocking workflow will be advanced to the COMPLETE phase. If all applications are complete, the app request will be closed. */
     acceptOffer?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Add a note to the app request. */
-    addNote?: (ValidatedAppRequestResponseGenqlSelection & { __args: {
+    addNote?: (ValidatedNoteResponseGenqlSelection & { __args: {
     /** The content of the note. HTML is expected. */
-    content: Scalars['String']} })
+    content: Scalars['String'], persistent?: (Scalars['Boolean'] | null), validateOnly?: (Scalars['Boolean'] | null)} })
     /** Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation. */
     advanceWorkflow?: (ValidatedAppRequestResponseGenqlSelection & { __args: {applicationId: Scalars['ID']} })
     /** Cancel or withdraw the app request, depending on its current phase. This is only available if the app request is in a cancellable state. */
@@ -1339,7 +1360,7 @@ export interface MutationGenqlSelection{
     createAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {login: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     createPeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {copyPeriodId?: (Scalars['String'] | null), period: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
     /** Delete an existing note. */
-    deleteNote?: { __args: {noteId: Scalars['String']} }
+    deleteNote?: { __args: {noteId: Scalars['ID']} }
     deletePeriod?: (ValidatedResponseGenqlSelection & { __args: {periodId: Scalars['ID']} })
     markPeriodReviewed?: (ValidatedPeriodResponseGenqlSelection & { __args: {periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     /** Reopen the app request. This is only available if the app request is in a state that allows reopening. */
@@ -1362,9 +1383,11 @@ export interface MutationGenqlSelection{
     roleUpdateGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grant: AccessRoleGrantUpdate, grantId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     /** Submit the app request. */
     submitAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
+    /** Toggle an existing note's persistent status. */
+    togglePersistence?: (ValidatedNoteResponseGenqlSelection & { __args: {noteId: Scalars['ID']} })
     updateConfiguration?: (ValidatedConfigurationResponseGenqlSelection & { __args: {data: Scalars['JsonData'], key: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     /** Update the content of an existing note. */
-    updateNote?: (NoteGenqlSelection & { __args: {content: Scalars['String'], noteId: Scalars['String']} })
+    updateNote?: (ValidatedNoteResponseGenqlSelection & { __args: {content: Scalars['String'], noteId: Scalars['ID']} })
     updatePeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {periodId: Scalars['ID'], update: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
     updatePeriodRequirement?: (ValidatedResponseGenqlSelection & { __args: {disabled: Scalars['Boolean'], periodId: Scalars['String'], requirementKey: Scalars['String']} })
     /** Update the data for a prompt in this app request. */
@@ -1398,6 +1421,8 @@ export interface NoteGenqlSelection{
     content?: boolean | number
     createdAt?: boolean | number
     id?: boolean | number
+    /** Whether this note contains permanently useful information about a person, as opposed to only being relevant in the context of the app request it was posted to. */
+    persistent?: boolean | number
     updatedAt?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
@@ -1408,6 +1433,7 @@ export interface NoteGenqlSelection{
 export interface NoteActionsGenqlSelection{
     delete?: boolean | number
     update?: boolean | number
+    updatePersistent?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -1674,6 +1700,15 @@ export interface ValidatedAppRequestResponseGenqlSelection{
 export interface ValidatedConfigurationResponseGenqlSelection{
     configuration?: ConfigurationGenqlSelection
     messages?: MutationMessageGenqlSelection
+    /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
+    success?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ValidatedNoteResponseGenqlSelection{
+    messages?: MutationMessageGenqlSelection
+    note?: NoteGenqlSelection
     /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
     success?: boolean | number
     __typename?: boolean | number
@@ -2070,6 +2105,14 @@ export interface ValidatedResponseGenqlSelection{
     export const isValidatedConfigurationResponse = (obj?: { __typename?: any } | null): obj is ValidatedConfigurationResponse => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isValidatedConfigurationResponse"')
       return ValidatedConfigurationResponse_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ValidatedNoteResponse_possibleTypes: string[] = ['ValidatedNoteResponse']
+    export const isValidatedNoteResponse = (obj?: { __typename?: any } | null): obj is ValidatedNoteResponse => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isValidatedNoteResponse"')
+      return ValidatedNoteResponse_possibleTypes.includes(obj.__typename)
     }
     
 

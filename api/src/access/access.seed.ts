@@ -61,6 +61,11 @@ export const rqAccessSeed: AccessRoleGrantDefinition = {
         controlGroup: 'Application',
         controls: ['view'],
         allow: true
+      },
+      {
+        controlGroup: 'Notes',
+        controls: ['view', 'create', 'edit', 'edit_own', 'delete', 'delete_own', 'make_persistent'],
+        allow: true
       }
     ]
   },

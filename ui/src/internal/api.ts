@@ -602,6 +602,22 @@ class API extends APIBase {
     return this.mutationForDialog(response.reverseWorkflow)
   }
 
+  async addNote (content: string, persistent?: boolean, validateOnly?: boolean) {
+    const response = await this.client.mutation({
+      __name: 'AddNote',
+      addNote: {
+        __args: { content, persistent, validateOnly },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.addNote, { dataName: 'note' })
+  }
+
   async closeAppRequest (appRequestId: string) {
     const response = await this.client.mutation({
       __name: 'CloseAppRequest',
@@ -827,6 +843,15 @@ class API extends APIBase {
             }
           }
         },
+        notes: {
+          id: true,
+          content: true,
+          createdAt: true,
+          author: {
+            login: true,
+            fullname: true
+          }
+        },
         actions: {
           acceptOffer: true,
           cancel: true,
@@ -839,7 +864,9 @@ class API extends APIBase {
           returnToOffer: true,
           returnToReview: true,
           review: true,
-          submit: true
+          submit: true,
+          createNote: true,
+          createPersistentNote: true
         }
       }
     })

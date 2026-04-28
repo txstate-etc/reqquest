@@ -13,12 +13,14 @@ const customConfig = {
   rules: {
     ...stylistic.configs['recommended-flat'].rules,
     ...love.rules,
+    'eqeqeq': ['error', 'never'],
     'import/first': 'off',
     'max-lines': 'off',
     'no-multiple-empty-lines': 'off',
     'no-self-assign': 'off', // self assign in svelte is to trigger reactivity
     'no-unused-vars': 'off',
     'no-use-before-define': 'off',
+    'svelte/no-at-html-tags': 'off',
     '@typescript-eslint/array-type': ['error', { default: 'array' }],
     // '@typescript-eslint/consistent-type-assertions': ['error', { assertionStyle: 'as' }], // disabling this for now to see if eslint-config-love's default is good
     '@typescript-eslint/explicit-function-return-type': 'off',

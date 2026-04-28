@@ -1,16 +1,19 @@
 <script lang="ts">
-  import { Card, FormInlineNotification, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
+  import { BadgeNumber, FieldCheckbox, FieldTextArea, FormInlineNotification, Panel, PanelDialog, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
   import { Form } from '@txstate-mws/svelte-forms'
   import { Button, Select, SelectItem, Tooltip } from 'carbon-components-svelte'
   import DocumentExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
+  import Pen from 'carbon-icons-svelte/lib/Pen.svelte'
+  import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
+  import View from 'carbon-icons-svelte/lib/View.svelte'
   import WarningAltFilled from 'carbon-icons-svelte/lib/WarningAltFilled.svelte'
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import { invalidateAll } from '$app/navigation'
   import { api, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, getApplicationStatusInfo } from '$internal'
-  import { enumPromptVisibility, enumRequirementStatus, enumRequirementType } from '$lib'
+  import { CommentCard, enumPromptVisibility, enumRequirementStatus, enumRequirementType, InfoCard } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../../local'
   import ApproveLayout from '../ApproveLayout.svelte'
@@ -23,6 +26,26 @@
   export let data: PageData
   $: ({ basicRequestData, appRequest, programKey } = data)
   $: application = appRequest.applications.find(a => a.programKey === programKey)!
+  $: notes = appRequest.notes
+  $: latestNote = notes[0]
+
+  let showNotesDialog = false
+  let showAddNoteDialog = false
+
+  async function onAddNoteValidate (data: { content: string, persistent?: boolean }) {
+    const response = await api.addNote(data.content, data.persistent, true)
+    return response.messages
+  }
+
+  async function onAddNoteSubmit (data: { content: string, persistent?: boolean }) {
+    const response = await api.addNote(data.content, data.persistent, false)
+    return { ...response, data }
+  }
+
+  async function onAddNoteSaved () {
+    showAddNoteDialog = false
+    await invalidateAll()
+  }
 
   type ApplicationRequirement = (typeof appRequest)['applications'][number]['requirements'][number]
   const PromptIndicators = {
@@ -190,14 +213,36 @@
 
 <ApproveLayout {basicRequestData}>
   <svelte:fragment slot="sidebar">
-    <Card title={application.title} tags={[{ label: applicationStatusInfo.label, type: applicationStatusInfo.color }]} tagsInBody>
+    <InfoCard title={application.title} tags={[{ label: applicationStatusInfo.label, type: applicationStatusInfo.color }]} tagsInBody>
       <!--
       <dl class="card">
         <dt>Status</dt>
         <dd><TagSet tags={[{ label: applicationStatusInfo.label, type: applicationStatusInfo.color }]} /></dd>
       </dl>
       -->
-    </Card>
+    </InfoCard>
+    <InfoCard
+      title="Application Notes"
+      actions={[
+        ...(appRequest.actions.createNote ? [{ label: 'Add Note', icon: Pen, onClick: () => { showAddNoteDialog = true } }] : []),
+        ...(notes.length > 1 ? [{ label: 'See All Notes', icon: View, onClick: () => { showNotesDialog = true } }] : [])
+      ]}
+    >
+      <BadgeNumber slot="header-right" value={notes.length} style="--badge-bg: var(--cds-ui-04)" />
+      <div class="active-note">
+        {#if latestNote}
+          <CommentCard
+          authorName={latestNote.author.fullname}
+          authorLogin={latestNote.author.login}
+          content={latestNote.content}
+          createdAt={latestNote.createdAt}
+          noborder
+          />
+        {:else}
+          <p class="note-empty">No notes yet.</p>
+        {/if}
+      </div>
+    </InfoCard>
   </svelte:fragment>
   {#each sections as section (section.title)}
     <Panel title={section.title} expandable expanded>
@@ -296,6 +341,49 @@
   </PanelFormDialog>
 {/if}
 
+<PanelFormDialog
+  title="Add Note"
+  bind:open={showAddNoteDialog}
+  on:cancel={() => { showAddNoteDialog = false }}
+  on:saved={onAddNoteSaved}
+  validate={onAddNoteValidate}
+  submit={onAddNoteSubmit}
+  submitText="Save"
+  centered
+>
+  <FieldTextArea path="content" labelText="Note" required notNull rows={6} />
+  {#if appRequest.actions.createPersistentNote}
+    <FieldCheckbox path="persistent" labelText="Persistent (show on the applicant's profile)" />
+  {/if}
+</PanelFormDialog>
+
+<PanelDialog
+  title="Application Notes"
+  bind:open={showNotesDialog}
+  on:cancel={() => { showNotesDialog = false }}
+  cancelText="Close"
+  submitText=""
+  centered
+  size="large"
+>
+  <div class="notes-list flow">
+    {#each notes as note (note.id)}
+      <CommentCard
+        content={note.content}
+        authorName={note.author.fullname}
+        authorLogin={note.author.login}
+        createdAt={note.createdAt}
+        actions={[
+          { label: 'Edit', icon: Edit, onClick: () => {} },
+          { label: 'Delete', icon: TrashCan, onClick: () => {} }
+        ]}
+      />
+    {:else}
+      <p>No notes yet.</p>
+    {/each}
+  </div>
+</PanelDialog>
+
 <style>
   dl.prompts {
     display: grid;
@@ -329,16 +417,6 @@
     top: 0;
     right: 0;
   }
-  /*
-  dl.card {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 8px;
-  }
-  .card dt {
-    font-weight: bold;
-  }
-  */
   .prompts dt .indicator-tooltip {
     display: inline-block;
     margin-left: -24px;
@@ -354,6 +432,18 @@
   }
   .prompts dt :global(.disqualifying-icon) {
     fill: var(--cds-support-01, #da1e28);
+  }
+
+  .active-note {
+    padding: 4px 8px;
+  }
+  .note-empty {
+    font-size: 100%;
+    color: var(--cds-text-02);
+  }
+  :global(.content):has(.notes-list) {
+    max-height: calc(90vh - 1.5rem - 64px);
+    background-color: var(--cds-ui-01);
   }
 
   .app-actions {

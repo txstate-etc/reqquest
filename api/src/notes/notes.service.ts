@@ -1,6 +1,6 @@
 import { MutationMessageType, UnimplementedError } from '@txstate-mws/graphql-server'
 import { isBlank } from 'txstate-utils'
-import { AccessUserService, addAppRequestNote, AppRequest, AppRequestNoteFilters, AppRequestService, AuthService, cleanHTML, deleteAppRequestNote, getAppRequestNotes, Note, RQContext, updateAppRequestNote, ValidatedAppRequestResponse } from '../internal.js'
+import { AccessUserService, addAppRequestNote, AppRequest, AppRequestNoteFilters, AppRequestService, AuthService, cleanHTML, deleteAppRequestNote, getAppRequestNotes, Note, RQContext, toggleNotePersistence, updateAppRequestNote, ValidatedAppRequestResponse, ValidatedNoteResponse } from '../internal.js'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 
 const notesById = new PrimaryKeyLoader({
@@ -59,6 +59,10 @@ export class NoteService extends AuthService<Note> {
     return this.removeUnauthorized(note)
   }
 
+  async findByInternalId (id: number) {
+    return this.findById(String(id))
+  }
+
   async findByAppRequestId (appRequestId: string, filter?: AppRequestNoteFilters) {
     const notes = await this.loaders.get(notesByAppRequestId, filter).load(appRequestId)
     for (const note of notes) this.loaders.prime(notesById, note)
@@ -83,26 +87,40 @@ export class NoteService extends AuthService<Note> {
   }
 
   mayUpdate (note: Note) {
-    return false // no editing for now
+    if (!this.mayView(note)) return false
+    if (note.authorId === this.user!.internalId && this.hasControl('Notes', 'edit_own', note.appRequestTags)) return true
+    return this.hasControl('Notes', 'edit', note.appRequestTags)
   }
 
   mayDelete (note: Note) {
-    return false // no deleting for now
+    if (!this.mayView(note)) return false
+    if (note.authorId === this.user!.internalId && this.hasControl('Notes', 'delete_own', note.appRequestTags)) return true
+    return this.hasControl('Notes', 'delete', note.appRequestTags)
   }
 
   mayAddNote (appRequest: AppRequest) {
-    return this.svc(AppRequestService).mayViewAsReviewer(appRequest)
+    if (!this.svc(AppRequestService).mayViewAsReviewer(appRequest)) return false
+    return this.hasControl('Notes', 'create', appRequest.tags)
   }
 
-  async addNote (appRequest: AppRequest, note: string) {
+  mayCreatePersistent (appRequest: AppRequest) {
+    return this.hasControl('Notes', 'make_persistent', appRequest.tags) && this.mayAddNote(appRequest)
+  }
+
+  mayUpdatePersistent (note: Note) {
+    return this.mayView(note) && this.hasControl('Notes', 'make_persistent', note.appRequestTags)
+  }
+
+  async addNote (appRequest: AppRequest, content: string, persistent?: boolean, validateOnly?: boolean) {
     if (!this.mayAddNote(appRequest)) throw new Error('You may not add a note to this app request.')
-    const response = new ValidatedAppRequestResponse()
-    if (isBlank(note)) response.addMessage('Message is required.', 'note', MutationMessageType.error)
-    if (response.hasErrors()) return response
-    await addAppRequestNote(appRequest.internalId, this.user!.internalId, note)
-    await this.svc(AppRequestService).recordActivity(appRequest.internalId, 'Added Note', { description: cleanHTML(note) })
+    const response = new ValidatedNoteResponse()
+    const cleanContent = cleanHTML(content)
+    if (isBlank(cleanContent)) response.addMessage('Message is required.', 'content', MutationMessageType.error)
+    if (response.hasErrors() || validateOnly) return response
+    const noteId = await addAppRequestNote(appRequest.internalId, this.user!.internalId, cleanContent, persistent)
+    await this.svc(AppRequestService).recordActivity(appRequest.internalId, 'Added Note', { description: cleanContent })
     this.loaders.clear()
-    response.appRequest = (await this.svc(AppRequestService).findById(appRequest.id))!
+    response.note = (await this.findByInternalId(noteId))!
     return response
   }
 
@@ -110,14 +128,28 @@ export class NoteService extends AuthService<Note> {
     const note = await this.findById(noteId)
     if (!note) throw new Error('Note not found.')
     if (!this.mayUpdate(note)) throw new Error('You may not update this note.')
-    const response = new ValidatedAppRequestResponse()
-    if (isBlank(content)) response.addMessage('Note content may not be blank. Delete the note instead.', 'content', MutationMessageType.error)
+    const response = new ValidatedNoteResponse()
+    const cleanContent = cleanHTML(content)
+    if (isBlank(cleanContent)) response.addMessage('Note content may not be blank. Delete the note instead.', 'content', MutationMessageType.error)
     if (response.hasErrors()) return response
     const authorLogin = (await this.svc(AccessUserService).findByInternalId(note.authorId))?.login
-    await updateAppRequestNote(noteId, content)
-    await this.svc(AppRequestService).recordActivity(note.appRequestId, 'Updated Note', { data: { id: note.id, author: authorLogin, createdAt: note.createdAt.toISO() }, description: cleanHTML(content) })
+    await updateAppRequestNote(noteId, cleanContent)
+    await this.svc(AppRequestService).recordActivity(note.appRequestId, 'Updated Note', { data: { id: note.id, author: authorLogin, createdAt: note.createdAt.toISO() }, description: cleanContent })
     this.loaders.clear()
-    response.appRequest = (await this.svc(AppRequestService).findById(note.appRequestId))!
+    response.note = (await this.findById(note.id))!
+    return response
+  }
+
+  async togglePersistence (noteId: string) {
+    const note = await this.findById(noteId)
+    if (!note) throw new Error('Note not found.')
+    if (!this.mayUpdatePersistent(note)) throw new Error('You may not update this note\'s persistence.')
+    const response = new ValidatedNoteResponse()
+    const authorLogin = (await this.svc(AccessUserService).findByInternalId(note.authorId))?.login
+    const newPersistence = await toggleNotePersistence(note.id)
+    await this.svc(AppRequestService).recordActivity(note.appRequestId, 'Note Persistence', { data: { id: note.id, author: authorLogin, createdAt: note.createdAt }, description: newPersistence ? 'Made note persistent.' : 'Removed note persistence.' })
+    this.loaders.clear()
+    response.note = (await this.findById(note.id))!
     return response
   }
 

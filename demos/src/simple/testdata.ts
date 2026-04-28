@@ -1,4 +1,4 @@
-import { createPeriod, DatabaseMigration, AccessDatabase, markPeriodReviewed, createAppRequest, updateAppRequestData, submitAppRequest } from '@reqquest/api'
+import { createPeriod, DatabaseMigration, AccessDatabase, markPeriodReviewed, createAppRequest, updateAppRequestData, submitAppRequest, addAppRequestNote } from '@reqquest/api'
 import { DateTime } from 'luxon'
 
 export const simpleTestMigrations: DatabaseMigration[] = [
@@ -98,6 +98,29 @@ export const simpleTestMigrations: DatabaseMigration[] = [
           savedAtVersion: '20240101000000'
         })
         if (i % 2 === 0) await submitAppRequest(appReqId)
+      }
+    }
+  }, {
+    id: '30260414120000',
+    execute: async (db, installTestData) => {
+      if (!installTestData) return
+      const reviewer1 = await AccessDatabase.upsertAccessUser({ login: 'reviewer1', fullname: 'Rachel Reviewer', groups: ['sudoers'] })
+      const reviewer2 = await AccessDatabase.upsertAccessUser({ login: 'reviewer2', fullname: 'Robert Reviewer', groups: ['sudoers'] })
+      const reviewers = [reviewer1, reviewer2]
+      const noteTexts = [
+        'Applicant submitted all required documentation on time.',
+        'Residency verification looks good — ID matches the address provided.',
+        'Had a phone conversation with applicant to clarify employment details.',
+        "Supervisor confirmed applicant's work history via email.",
+        'Financial documents are consistent with what was reported on the application.',
+        "Flagging this for a second review — some of the dates don't line up.",
+        'Second review complete. Dates were off due to a calendar year vs. fiscal year mixup. All clear.',
+        'Applicant called to ask about timeline. Let them know we are still processing.',
+        "Verified enrollment status with registrar's office.",
+        'All checks passed. This application is ready for final approval.'
+      ]
+      for (let i = 0; i < noteTexts.length; i++) {
+        await addAppRequestNote(1, reviewers[i % 2].internalId, `<p>${noteTexts[i]}</p>`)
       }
     }
   }
