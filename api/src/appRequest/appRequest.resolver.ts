@@ -266,6 +266,16 @@ export class AppRequestAccessResolver {
   viewAcceptUI (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
     return ctx.svc(AppRequestService).mayViewAccept(appRequest)
   }
+
+  @FieldResolver(returns => Boolean, { description: 'User is able to create a new internal note on the app request.' })
+  createNote (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    return ctx.svc(NoteService).mayAddNote(appRequest)
+  }
+
+  @FieldResolver(returns => Boolean, { description: 'User is able to create a new internal note on the app request.' })
+  createPersistentNote (@Ctx() ctx: RQContext, @Root() appRequest: AppRequest) {
+    return ctx.svc(NoteService).mayCreatePersistent(appRequest)
+  }
 }
 
 @Resolver(of => AppRequestActivity)

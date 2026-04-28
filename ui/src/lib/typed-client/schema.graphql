@@ -375,6 +375,12 @@ type AppRequestActions {
   """
   completeReview: Boolean!
 
+  """User is able to create a new internal note on the app request."""
+  createNote: Boolean!
+
+  """User is able to create a new internal note on the app request."""
+  createPersistentNote: Boolean!
+
   """
   User may reopen this app request, whether as the owner or as a reviewer/admin.
   """
@@ -1086,7 +1092,9 @@ type Mutation {
   addNote(
     """The content of the note. HTML is expected."""
     content: String!
-  ): ValidatedAppRequestResponse!
+    persistent: Boolean
+    validateOnly: Boolean
+  ): ValidatedNoteResponse!
 
   """
   Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation.
@@ -1125,7 +1133,7 @@ type Mutation {
   createPeriod(copyPeriodId: String, period: PeriodUpdate!, validateOnly: Boolean): ValidatedPeriodResponse!
 
   """Delete an existing note."""
-  deleteNote(noteId: String!): Boolean!
+  deleteNote(noteId: ID!): Boolean!
   deletePeriod(periodId: ID!): ValidatedResponse!
   markPeriodReviewed(periodId: ID!, validateOnly: Boolean): ValidatedPeriodResponse!
 
@@ -1165,10 +1173,13 @@ type Mutation {
 
   """Submit the app request."""
   submitAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
+
+  """Toggle an existing note's persistent status."""
+  togglePersistence(noteId: ID!): ValidatedNoteResponse!
   updateConfiguration(data: JsonData!, key: String!, periodId: ID!, validateOnly: Boolean): ValidatedConfigurationResponse!
 
   """Update the content of an existing note."""
-  updateNote(content: String!, noteId: String!): Note!
+  updateNote(content: String!, noteId: ID!): ValidatedNoteResponse!
   updatePeriod(periodId: ID!, update: PeriodUpdate!, validateOnly: Boolean): ValidatedPeriodResponse!
   updatePeriodRequirement(disabled: Boolean!, periodId: String!, requirementKey: String!): ValidatedResponse!
 
@@ -1231,6 +1242,11 @@ type Note {
   content: String!
   createdAt: DateTime!
   id: ID!
+
+  """
+  Whether this note contains permanently useful information about a person, as opposed to only being relevant in the context of the app request it was posted to.
+  """
+  persistent: Boolean!
   updatedAt: DateTime!
 }
 
@@ -1238,6 +1254,7 @@ type Note {
 type NoteActions {
   delete: Boolean!
   update: Boolean!
+  updatePersistent: Boolean!
 }
 
 input Pagination {
@@ -1723,6 +1740,16 @@ type ValidatedAppRequestResponse {
 type ValidatedConfigurationResponse {
   configuration: Configuration
   messages: [MutationMessage!]!
+
+  """
+  True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings.
+  """
+  success: Boolean!
+}
+
+type ValidatedNoteResponse {
+  messages: [MutationMessage!]!
+  note: Note!
 
   """
   True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings.

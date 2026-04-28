@@ -8,6 +8,7 @@ export interface NoteRow {
   content: string
   createdAt: Date
   updatedAt: Date
+  persistent: 0 | 1
   applicantId: number
   login?: string
 }
@@ -46,17 +47,22 @@ export async function getAppRequestNotes (filter: AppRequestNoteFilters) {
   return rows.map(row => new Note(row))
 }
 
-export async function addAppRequestNote (appRequestId: number, authorInternalId: number, note: string) {
+export async function addAppRequestNote (appRequestId: number, authorInternalId: number, note: string, persistent?: boolean) {
   return await db.insert(`
-    INSERT INTO app_request_notes (appRequestId, authorId, content)
-    VALUES (?, ?, ?)
-  `, [appRequestId, authorInternalId, cleanHTML(note)])
+    INSERT INTO app_request_notes (appRequestId, authorId, content, persistent)
+    VALUES (?, ?, ?, ?)
+  `, [appRequestId, authorInternalId, note, persistent ?? 0])
 }
 
 export async function updateAppRequestNote (noteId: string, content: string) {
-  return await db.update('UPDATE app_request_notes SET content = ? WHERE id = ?', [cleanHTML(content), noteId])
+  return await db.update('UPDATE app_request_notes SET content = ? WHERE id = ?', [content, noteId])
 }
 
 export async function deleteAppRequestNote (noteId: string) {
   return await db.delete('DELETE FROM app_request_notes WHERE id = ?', [noteId])
+}
+
+export async function toggleNotePersistence (noteId: string) {
+  await db.update('UPDATE app_request_notes SET persistent = NOT persistent WHERE id = ?', [noteId])
+  return await db.getval<0 | 1>('SELECT persistent FROM app_request_notes WHERE id = ?', [noteId])
 }

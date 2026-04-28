@@ -180,6 +180,20 @@ export async function initAccess () {
       offer: { description: 'Finish out a review and make an offer to the applicant. This only applies when there is at least one ACCEPTANCE requirement in the system/period.' }
     }
   }
+  controlGroups.Notes = {
+    title: 'Reviewer - Internal Notes',
+    description: 'These controls govern internal notes on appRequests.',
+    tags: appRequestTags,
+    controls: {
+      view: { description: 'View internal notes on an appRequest.' },
+      create: { description: 'Add new internal notes to an appRequest.' },
+      edit: { description: 'Edit any internal note on an appRequest.' },
+      edit_own: { description: 'Able to edit internal notes that they created.' },
+      delete: { description: 'Delete any internal note on an appRequest.' },
+      delete_own: { description: 'Able to delete internal notes that they created.' },
+      make_persistent: { description: 'Make an internal note persistent so that it shows up on future appRequests.' }
+    }
+  }
   controlGroups.AppRequestPreReview = {
     title: 'Reviewer - Applicant Phase',
     description: 'These are the App Request controls that relate to reviewers/admins taking action during the applicant phase instead of the review phase. No restrictions are available because we need to complete the applicant phase in order to collect enough data to generate tags.',

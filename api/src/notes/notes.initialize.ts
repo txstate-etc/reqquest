@@ -16,5 +16,12 @@ export const noteMigrations: DatabaseMigration[] = [
         FOREIGN KEY (authorId) REFERENCES accessUsers (id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
     }
+  },
+  {
+    id: '20260414110000',
+    async execute (db: Queryable) {
+      const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_NAME = 'app_request_notes' AND COLUMN_NAME = 'persistent'")
+      if (!exists) await db.execute('ALTER TABLE app_request_notes ADD COLUMN persistent TINYINT(1) NOT NULL DEFAULT 0')
+    }
   }
 ]

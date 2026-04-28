@@ -1,6 +1,7 @@
 import { Field, ID, InputType, ObjectType } from 'type-graphql'
 import { NoteRow } from '../internal.js'
 import { DateTime } from 'luxon'
+import { ValidatedResponse } from '@txstate-mws/graphql-server'
 
 @ObjectType({ description: 'An internal note attached to an application request. Notes are always written by reviewers and never visible to applicants. "Messages" are for reviewers and applicants communicating with one another.' })
 export class Note {
@@ -11,6 +12,7 @@ export class Note {
     this.content = data.content
     this.createdAt = DateTime.fromJSDate(data.createdAt)
     this.updatedAt = DateTime.fromJSDate(data.updatedAt)
+    this.persistent = !!data.persistent
     this.applicantId = data.applicantId
     this.applicantLogin = data.login
   }
@@ -26,6 +28,9 @@ export class Note {
 
   @Field(type => DateTime)
   updatedAt: DateTime
+
+  @Field({ description: 'Whether this note contains permanently useful information about a person, as opposed to only being relevant in the context of the app request it was posted to.' })
+  persistent: boolean
 
   appRequestId: string
   authorId: number
@@ -49,4 +54,10 @@ export class AppRequestNoteFilters {
   applicants?: string[]
 
   applicantInternalIds?: number[]
+}
+
+@ObjectType()
+export class ValidatedNoteResponse extends ValidatedResponse {
+  @Field(type => Note)
+  note!: Note
 }
