@@ -39,6 +39,12 @@ interface UserOtherInfo {
 
 async function main () {
   const server = new RQServer({
+    ajv: {
+      customOptions: {
+        /**  removeAdditional supports removal of schema objects listed as readOnly, so eliminates need to preprocess server side only data elements */
+        removeAdditional: true // true: Removes additional properties when additionalProperties: false is set. 'all': Removes all additional properties, even if additionalProperties is not set to false
+      }
+    },
     authenticate: unifiedAuthenticate,
     validOrigins: process.env.NODE_ENV === 'development' ? ['http://localhost', 'http://localhost:3000'] : undefined
   })
