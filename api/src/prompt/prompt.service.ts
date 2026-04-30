@@ -96,15 +96,11 @@ export class RequirementPromptServiceInternal extends BaseService<RequirementPro
 
 const promptPreloadCache = new Cache(async (key: string, params: { requirementPrompt: RequirementPrompt, appRequest: AppRequest | undefined, config: any, data: any, allPeriodConfig: Record<string, any>, ctx: RQContext }) => {
   const result = await params.requirementPrompt.definition.preload?.(params.appRequest!, params.config, params.data, params.allPeriodConfig, params.ctx)
-  // TODO: Replace after completing, helpful for test
-  console.log(`*** Adding preload cache entry ${key}: ${JSON.stringify(result)}`)
   return result
 }, { freshseconds: 30 })
 
 const promptFetchCache = new Cache(async (key: string, params: { requirementPrompt: RequirementPrompt, appRequest: AppRequest | undefined, config: any, data: any, allPeriodConfig: Record<string, any>, ctx: RQContext }) => {
   const result = await params.requirementPrompt.definition.fetch?.(params.appRequest!, params.config, params.data, params.allPeriodConfig, params.ctx)
-  // TODO: Replace after completing, helpful for test
-  console.log(`*** Adding fetch cache entry ${key}: ${JSON.stringify(result)}`)
   return result
 }, { freshseconds: 30 })
 
