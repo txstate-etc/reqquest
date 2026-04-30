@@ -1,6 +1,6 @@
 import { BaseService } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { equal } from 'txstate-utils'
+import { equal, Cache } from 'txstate-utils'
 import {
   AppRequestService, ApplicationRequirement, AuthService, Prompt, RequirementPrompt, promptRegistry,
   getRequirementPrompts, ValidatedAppRequestResponse, getPeriodPrompts, PeriodPrompt,
@@ -93,6 +93,20 @@ export class RequirementPromptServiceInternal extends BaseService<RequirementPro
   }
 }
 
+const promptPreloadCache = new Cache(async (key: string, params: { requirementPrompt: RequirementPrompt, appRequest: AppRequest | undefined, config: any, data: any, allPeriodConfig: Record<string, any>, ctx: RQContext }) => {
+  const result = await params.requirementPrompt.definition.preload?.(params.appRequest!, params.config, params.data, params.allPeriodConfig, params.ctx)
+  // TODO: Replace after completing, helpful for test
+  console.log(`*** Adding preload cache entry ${key}: ${JSON.stringify(result)}`)
+  return result
+}, { freshseconds: 30 })
+
+const promptFetchCache = new Cache(async (key: string, params: { requirementPrompt: RequirementPrompt, appRequest: AppRequest | undefined, config: any, data: any, allPeriodConfig: Record<string, any>, ctx: RQContext }) => {
+  const result = await params.requirementPrompt.definition.fetch?.(params.appRequest!, params.config, params.data, params.allPeriodConfig, params.ctx)
+  // TODO: Replace after completing, helpful for test
+  console.log(`*** Adding fetch cache entry ${key}: ${JSON.stringify(result)}`)
+  return result
+}, { freshseconds: 30 })
+
 export class RequirementPromptService extends AuthService<RequirementPrompt> {
   raw = this.svc(RequirementPromptServiceInternal)
 
@@ -119,9 +133,12 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     const [appRequest, allPeriodConfig, data] = await this.getRequirementPromptSupportDetail(requirementPrompt)
     const config = allPeriodConfig[requirementPrompt.key] ?? {}
     if (!appRequest) throw new Error('AppRequest not found')
-    // Todo; Debug check
-    if (requirementPrompt.definition.preload != null) console.log(`*** Get preload for ${requirementPrompt.key} `)
-    if (data[requirementPrompt.key] == null) return await requirementPrompt.definition.preload?.(appRequest, config, data, allPeriodConfig, this.ctx)
+    if (requirementPrompt.definition.preload != null && data[requirementPrompt.key] == null) { // only preload if no data already exists
+      const key = `${requirementPrompt.appRequestInternalId}_${requirementPrompt.key}`
+      const preloaded = await promptPreloadCache.get(key, { requirementPrompt, appRequest, config, data, allPeriodConfig, ctx: this.ctx })
+      if (preloaded != null) return preloaded
+      promptPreloadCache.invalidate(key) // must invalidate null responses as preloads contingent on other prompt data can fail ..don't keep fails
+    }
     return data[requirementPrompt.key]
   }
 
@@ -129,9 +146,12 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     const [appRequest, allPeriodConfig, data] = await this.getRequirementPromptSupportDetail(requirementPrompt)
     const config = allPeriodConfig[requirementPrompt.key] ?? {}
     if (!appRequest) throw new Error('AppRequest not found')
-      // Todo; Debug check
-    if (requirementPrompt.definition.fetch != null) console.log(`*** Get fetch for ${requirementPrompt.key} `)
-    return await requirementPrompt.definition.fetch?.(appRequest, config, data, allPeriodConfig, this.ctx)
+    if (requirementPrompt.definition.fetch != null) {
+      const key = `${requirementPrompt.appRequestInternalId}_${requirementPrompt.key}`
+      const fetched = await promptFetchCache.get(key, { requirementPrompt, appRequest, config, data, allPeriodConfig, ctx: this.ctx })
+      if (fetched != null) return fetched
+      promptFetchCache.invalidate(key) // must invalidate null responses as fetch contingent on other prompt data can fail ..don't keep fails
+    }
   }
 
   async getConfigData (requirementPrompt: RequirementPrompt) {
