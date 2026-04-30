@@ -116,14 +116,22 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
   }
 
   async getPreloadData (requirementPrompt: RequirementPrompt) {
-    const [appRequest, data] = await Promise.all([
-      this.svc(AppRequestServiceInternal).findByInternalId(requirementPrompt.appRequestInternalId),
-      this.svc(AppRequestServiceInternal).getData(requirementPrompt.appRequestInternalId)
-    ])
-    const allPeriodConfig = await periodConfigCache.get(appRequest!.periodId)
+    const [appRequest, allPeriodConfig, data] = await this.getRequirementPromptSupportDetail(requirementPrompt)
     const config = allPeriodConfig[requirementPrompt.key] ?? {}
-    if (data[requirementPrompt.key] == null) return await requirementPrompt.definition.preload?.(appRequest!, config, data, allPeriodConfig, this.ctx)
+    if (!appRequest) throw new Error('AppRequest not found')
+    // Todo; Debug check
+    if (requirementPrompt.definition.preload != null) console.log(`*** Get preload for ${requirementPrompt.key} `)
+    if (data[requirementPrompt.key] == null) return await requirementPrompt.definition.preload?.(appRequest, config, data, allPeriodConfig, this.ctx)
     return data[requirementPrompt.key]
+  }
+
+  async getFetchData (requirementPrompt: RequirementPrompt) {
+    const [appRequest, allPeriodConfig, data] = await this.getRequirementPromptSupportDetail(requirementPrompt)
+    const config = allPeriodConfig[requirementPrompt.key] ?? {}
+    if (!appRequest) throw new Error('AppRequest not found')
+      // Todo; Debug check
+    if (requirementPrompt.definition.fetch != null) console.log(`*** Get fetch for ${requirementPrompt.key} `)
+    return await requirementPrompt.definition.fetch?.(appRequest, config, data, allPeriodConfig, this.ctx)
   }
 
   async getConfigData (requirementPrompt: RequirementPrompt) {
@@ -135,6 +143,14 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     const allPeriodConfig = await periodConfigCache.get(requirementPrompt.periodId)
     const gatherConfig = promptRegistry.get(requirementPrompt.key)?.gatherConfig ?? promptRegistry.get(requirementPrompt.key)?.gatherConfigForApplicant
     return (this.mayViewUnredacted(requirementPrompt) ? gatherConfig?.(allPeriodConfig) : promptRegistry.get(requirementPrompt.key)?.gatherConfigForApplicant?.(allPeriodConfig)) ?? {}
+  }
+
+  async getRequirementPromptSupportDetail (requirementPrompt: RequirementPrompt) {
+    return await Promise.all([
+      this.svc(AppRequestServiceInternal).findByInternalId(requirementPrompt.appRequestInternalId), // appRequest
+      periodConfigCache.get(requirementPrompt.periodId), // allPeriodConfig
+      this.svc(AppRequestServiceInternal).getData(requirementPrompt.appRequestInternalId) // appRequestData
+    ])
   }
 
   isOwn (prompt: RequirementPrompt): boolean {

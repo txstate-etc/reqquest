@@ -224,7 +224,7 @@ class API extends APIBase {
 
   async getApplicantPrompt (appRequestId: string, promptId: string) {
     const response = await this.client.query({
-      __name: 'GetPromptData',
+      __name: 'GetApplicantPrompt',
       appRequests: {
         __args: { filter: { ids: [appRequestId] } },
         data: true,
@@ -236,6 +236,7 @@ class API extends APIBase {
             status: true,
             statusReason: true,
             prompts: {
+              __args: { ids: [promptId] },
               id: true,
               key: true,
               title: true,

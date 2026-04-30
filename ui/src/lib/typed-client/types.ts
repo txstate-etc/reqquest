@@ -796,7 +796,13 @@ export default {
                 78
             ],
             "prompts": [
-                73
+                73,
+                {
+                    "ids": [
+                        46,
+                        "[ID!]"
+                    ]
+                }
             ],
             "smartTitle": [
                 78
