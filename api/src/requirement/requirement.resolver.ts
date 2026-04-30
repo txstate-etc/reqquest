@@ -20,9 +20,7 @@ export class RequirementResolver {
 export class ApplicationRequirementResolver {
   @FieldResolver(returns => [RequirementPrompt])
   async prompts (@Ctx() ctx: Context, @Root() requirement: ApplicationRequirement, @Arg('ids', type => [ID], { nullable: true }) ids?: string[]) {
-    const requirementPrompts = await ctx.svc(RequirementPromptService).findByApplicationRequirement(requirement)
-    if (ids && ids.length > 0) return requirementPrompts.filter(rp => ids.includes(rp.id))
-    return requirementPrompts
+    return await ctx.svc(RequirementPromptService).findByApplicationRequirement(requirement, ids)
   }
 
   @FieldResolver(returns => Application)

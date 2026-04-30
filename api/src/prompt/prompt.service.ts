@@ -9,7 +9,8 @@ import {
   AppRequestStatus, ApplicationPhase, ApplicationService, setRequirementPromptsInvalid,
   AppRequestServiceInternal, AppRequestPhase, RequirementType, periodConfigCache, programRegistry,
   statusVisibleToApplicantPhases, applicantRequirementTypes, setRequirementPromptsValid,
-  RQContext
+  RQContext,
+  RequirementPromptFilter
 } from '../internal.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
@@ -18,9 +19,10 @@ const byInternalIdLoader = new PrimaryKeyLoader({
   },
   extractId: (row: RequirementPrompt) => row.internalId
 })
+
 const byRequirementIdLoader = new OneToManyLoader({
-  fetch: async (requirementIds: string[]) => {
-    return await getRequirementPrompts({ requirementIds })
+  fetch: async (requirementIds: string[], filters: RequirementPromptFilter) => {
+    return await getRequirementPrompts({ requirementIds, ...filters })
   },
   extractKey: row => row.requirementId,
   idLoader: byInternalIdLoader
@@ -87,8 +89,8 @@ export class RequirementPromptServiceInternal extends BaseService<RequirementPro
     return prompts
   }
 
-  async findByApplicationRequirement (requirement: ApplicationRequirement) {
-    const prompts = await this.loaders.get(byRequirementIdLoader).load(requirement.id)
+  async findByApplicationRequirement (requirement: ApplicationRequirement, ids?: string[]) {
+    const prompts = await this.loaders.get(byRequirementIdLoader, { ids }).load(requirement.id)
     for (const prompt of prompts) prompt.appRequestTags = requirement.appRequestTags
     return prompts
   }
@@ -121,8 +123,8 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     return this.removeUnauthorized(prompts)
   }
 
-  async findByApplicationRequirement (requirement: ApplicationRequirement) {
-    const prompts = await this.raw.findByApplicationRequirement(requirement)
+  async findByApplicationRequirement (requirement: ApplicationRequirement, ids?: string[]) {
+    const prompts = await this.raw.findByApplicationRequirement(requirement, ids)
     return this.removeUnauthorized(prompts)
   }
 
