@@ -283,7 +283,7 @@ export namespace AccessDatabase {
   }
 
   export async function getAllGroups () {
-    const groups = await db.getvals<AccessRoleGroupRow>('SELECT DISTINCT roleId, groupName, dateAdded FROM accessRoleGroups')
+    const groups = await db.getall<AccessRoleGroupRow>('SELECT DISTINCT roleId, groupName, dateAdded FROM accessRoleGroups')
     return groups.map(g => new AccessRoleGroup(g))
   }
 
