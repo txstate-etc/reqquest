@@ -7,6 +7,14 @@ export const have_yard_prompt: PromptDefinition<YardPromptData, YardPromptData> 
   title: 'Tell us about your yard',
   description: 'Applicants will enter information about their yard including how large it is and how many pets will share it.',
   schema: YardPromptSchema,
+  serverProcessData: {
+    recur: false,
+    presave: (appRequest, config, appRequestData, allPeriodConfig, ctx, db): YardPromptData => {
+      return {
+        squareFootage: 10001
+      }
+    }
+  },
   validate: (data, config) => {
     const messages: MutationMessage[] = []
     if (data.haveYard == null) {

@@ -392,9 +392,13 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    */
   preProcessData?: (data: InputDataType, ctx: RQContext, appRequest: AppRequest, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, db: Queryable) => Promise<DataType> | DataType
   /**
-   * Optionally provide a function that can perform server side operations, such as querying and storing data that is meant to be readonly to the applicant
+   * Optionally provide a function that can perform server side operations, such as querying and storing data that is meant to be readonly to the applicant.
+   * Process can be specified as recurring or one time only first time its called
    */
-  serverProcessData?: (data: InputDataType, ctx: RQContext, appRequest: AppRequest, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, db: Queryable) => Promise<DataType> | DataType
+  serverProcessData?: {
+    recur?: boolean
+    presave: (appRequest: AppRequest, config: ConfigurationDataType, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, ctx: RQContext, db: Queryable) => Promise<DataType> | DataType
+  }
   /**
    * Sometimes, you will want to allow application administrators to control various aspects of
    * how the prompt will be displayed or evaluated. For example, you might want administrators to
