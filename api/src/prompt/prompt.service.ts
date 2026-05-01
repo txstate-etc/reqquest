@@ -21,8 +21,8 @@ const byInternalIdLoader = new PrimaryKeyLoader({
 })
 
 const byRequirementIdLoader = new OneToManyLoader({
-  fetch: async (requirementIds: string[], filters: RequirementPromptFilter) => {
-    return await getRequirementPrompts({ requirementIds, ...filters })
+  fetch: async (requirementIds: string[]) => {
+    return await getRequirementPrompts({ requirementIds })
   },
   extractKey: row => row.requirementId,
   idLoader: byInternalIdLoader
@@ -89,22 +89,12 @@ export class RequirementPromptServiceInternal extends BaseService<RequirementPro
     return prompts
   }
 
-  async findByApplicationRequirement (requirement: ApplicationRequirement, ids?: string[]) {
-    const prompts = await this.loaders.get(byRequirementIdLoader, { ids }).load(requirement.id)
+  async findByApplicationRequirement (requirement: ApplicationRequirement) {
+    const prompts = await this.loaders.get(byRequirementIdLoader).load(requirement.id)
     for (const prompt of prompts) prompt.appRequestTags = requirement.appRequestTags
     return prompts
   }
 }
-
-const promptPreloadCache = new Cache(async (key: string, params: { requirementPrompt: RequirementPrompt, appRequest: AppRequest | undefined, config: any, data: any, allPeriodConfig: Record<string, any>, ctx: RQContext }) => {
-  const result = await params.requirementPrompt.definition.preload?.(params.appRequest!, params.config, params.data, params.allPeriodConfig, params.ctx)
-  return result
-}, { freshseconds: 30 })
-
-const promptFetchCache = new Cache(async (key: string, params: { requirementPrompt: RequirementPrompt, appRequest: AppRequest | undefined, config: any, data: any, allPeriodConfig: Record<string, any>, ctx: RQContext }) => {
-  const result = await params.requirementPrompt.definition.fetch?.(params.appRequest!, params.config, params.data, params.allPeriodConfig, params.ctx)
-  return result
-}, { freshseconds: 30 })
 
 export class RequirementPromptService extends AuthService<RequirementPrompt> {
   raw = this.svc(RequirementPromptServiceInternal)
@@ -123,8 +113,8 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     return this.removeUnauthorized(prompts)
   }
 
-  async findByApplicationRequirement (requirement: ApplicationRequirement, ids?: string[]) {
-    const prompts = await this.raw.findByApplicationRequirement(requirement, ids)
+  async findByApplicationRequirement (requirement: ApplicationRequirement) {
+    const prompts = await this.raw.findByApplicationRequirement(requirement)
     return this.removeUnauthorized(prompts)
   }
 
@@ -133,10 +123,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     const config = allPeriodConfig[requirementPrompt.key] ?? {}
     if (!appRequest) throw new Error('AppRequest not found')
     if (requirementPrompt.definition.preload != null && data[requirementPrompt.key] == null) { // only preload if no data already exists
-      const key = `${requirementPrompt.appRequestInternalId}_${requirementPrompt.key}`
-      const preloaded = await promptPreloadCache.get(key, { requirementPrompt, appRequest, config, data, allPeriodConfig, ctx: this.ctx })
-      if (preloaded != null) return preloaded
-      promptPreloadCache.invalidate(key) // must invalidate null responses as preloads contingent on other prompt data can fail ..don't keep fails
+      return requirementPrompt.definition.preload(appRequest!, config, data, allPeriodConfig, this.ctx)
     }
     return data[requirementPrompt.key]
   }
@@ -146,10 +133,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     const config = allPeriodConfig[requirementPrompt.key] ?? {}
     if (!appRequest) throw new Error('AppRequest not found')
     if (requirementPrompt.definition.fetch != null) {
-      const key = `${requirementPrompt.appRequestInternalId}_${requirementPrompt.key}`
-      const fetched = await promptFetchCache.get(key, { requirementPrompt, appRequest, config, data, allPeriodConfig, ctx: this.ctx })
-      if (fetched != null) return fetched
-      promptFetchCache.invalidate(key) // must invalidate null responses as fetch contingent on other prompt data can fail ..don't keep fails
+      return requirementPrompt.definition.fetch(appRequest!, config, data, allPeriodConfig, this.ctx)
     }
   }
 

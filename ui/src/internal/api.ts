@@ -229,14 +229,8 @@ class API extends APIBase {
         __args: { filter: { ids: [appRequestId] } },
         data: true,
         dataVersion: true,
-        applications: {
-          id: true,
-          requirements: {
-            type: true,
-            status: true,
-            statusReason: true,
-            prompts: {
-              __args: { ids: [promptId] },
+        prompt: {
+              __args: { promptId },
               id: true,
               key: true,
               title: true,
@@ -247,21 +241,10 @@ class API extends APIBase {
               fetchedData: true,
               configurationData: true,
               gatheredConfigData: true
-            }
-          }
         }
       }
-    })
-    if (response.appRequests.length === 0) return {}
-    const appRequest = response.appRequests[0]
-    for (const application of appRequest.applications) {
-      for (const requirement of application.requirements.filter(r => applicantRequirementTypes.has(r.type))) {
-        for (const prompt of requirement.prompts) {
-          if (prompt.id === promptId) return { prompt }
-        }
-      }
-    }
-    return {}
+    }) 
+    return { prompt: response.appRequests[0].prompt }
   }
 
   async updatePrompt (promptId: string, data: any, validateOnly: boolean, dataVersion?: number) {

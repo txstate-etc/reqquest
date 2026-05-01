@@ -10,8 +10,7 @@ export class RequirementResolver {
   }
 
   @FieldResolver(returns => [Prompt])
-  async prompts (@Ctx() ctx: Context, @Root() requirement: Requirement, @Arg('ids', type => [ID], { nullable: true }) ids?: string[]) {
-    // if (ids && ids.length > 0) return requirement.definition.promptKeys?.filter(key => ids.includes(key)).map(key => new Prompt(promptRegistry.get(key))) ?? []
+  async prompts (@Ctx() ctx: Context, @Root() requirement: Requirement) {
     return requirement.definition.promptKeys?.map(key => new Prompt(promptRegistry.get(key))) ?? []
   }
 }
@@ -19,8 +18,8 @@ export class RequirementResolver {
 @Resolver(of => ApplicationRequirement)
 export class ApplicationRequirementResolver {
   @FieldResolver(returns => [RequirementPrompt])
-  async prompts (@Ctx() ctx: Context, @Root() requirement: ApplicationRequirement, @Arg('ids', type => [ID], { nullable: true }) ids?: string[]) {
-    return await ctx.svc(RequirementPromptService).findByApplicationRequirement(requirement, ids)
+  async prompts (@Ctx() ctx: Context, @Root() requirement: ApplicationRequirement) {
+    return await ctx.svc(RequirementPromptService).findByApplicationRequirement(requirement)
   }
 
   @FieldResolver(returns => Application)
