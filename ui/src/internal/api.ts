@@ -456,7 +456,8 @@ class API extends APIBase {
               invalidated: true,
               invalidatedReason: true,
               configurationData: true,
-              gatheredConfigData: true
+              gatheredConfigData: true,
+              requiresServerProcessing: true
             }
           }
         },

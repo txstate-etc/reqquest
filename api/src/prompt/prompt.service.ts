@@ -156,6 +156,11 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     ])
   }
 
+  async getServerProcessingState (requirementPrompt: RequirementPrompt) {
+    const data = await this.svc(AppRequestServiceInternal).getData(requirementPrompt.appRequestInternalId)
+    return (requirementPrompt.definition.serverProcessData != null && (requirementPrompt.definition.serverProcessData?.recur === true || data[requirementPrompt.key] == null)) ? true : false
+  }
+
   isOwn (prompt: RequirementPrompt): boolean {
     return prompt.userInternalId === this.user?.internalId
   }
