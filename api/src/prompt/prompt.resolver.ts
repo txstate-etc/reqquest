@@ -51,9 +51,9 @@ export class RequirementPromptResolver {
     return requirementPrompt
   }
 
-  @FieldResolver(type => Boolean, { description: 'Smartly identifies if the prompt requires server processing.' })
-  async requiresServerProcessing (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt) {
-    return await ctx.svc(RequirementPromptService).getServerProcessingState(requirementPrompt)
+  @FieldResolver(type => Boolean, { description: 'Smartly identifies if the prompt requires presave processing.' })
+  async presave (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt) {
+    return await ctx.svc(RequirementPromptService).getPreSaveState(requirementPrompt)
   }
 }
 

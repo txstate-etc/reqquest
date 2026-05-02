@@ -724,6 +724,8 @@ export interface RequirementPrompt {
     navTitle: Scalars['String']
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
     preloadData: (Scalars['JsonData'] | null)
+    /** Smartly identifies if the prompt requires presave processing. */
+    presave: Scalars['Boolean']
     /** The requirement that this prompt is associated with. */
     requirement: ApplicationRequirement
     /** A human readable title for the prompt. This is what will be shown to users. */
@@ -1665,6 +1667,8 @@ export interface RequirementPromptGenqlSelection{
     preloadData?: { __args: {
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
+    /** Smartly identifies if the prompt requires presave processing. */
+    presave?: boolean | number
     /** The requirement that this prompt is associated with. */
     requirement?: ApplicationRequirementGenqlSelection
     /** A human readable title for the prompt. This is what will be shown to users. */
