@@ -156,9 +156,9 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     ])
   }
 
-  async getPreSaveState (requirementPrompt: RequirementPrompt) {
+  async getPreStageState (requirementPrompt: RequirementPrompt) {
     const data = await this.svc(AppRequestServiceInternal).getData(requirementPrompt.appRequestInternalId)
-    return (requirementPrompt.definition.presave != null && (requirementPrompt.definition.presave?.recur === true || data[requirementPrompt.key] == null)) ? true : false
+    return (requirementPrompt.definition.prestage != null && (!!requirementPrompt.definition.prestage.recur || data[requirementPrompt.key] == null)) ? true : false
   }
 
   isOwn (prompt: RequirementPrompt): boolean {
@@ -234,7 +234,6 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     data ??= {}
     if (!this.mayUpdate(prompt)) throw new Error('You are not allowed to update this prompt.')
     if (!promptRegistry.validate(prompt.key, data)) throw new Error('Invalid prompt data.')
-      // Todo: Strip out any properties listed as readonly in the schema from the data object before passing it to the preValidate, validate, and preProcessData functions, and also before saving it to the database. This will ensure that those properties are truly readonly and can't be manipulated by the client.
     const response = new ValidatedAppRequestResponse()
     const allConfigData = await periodConfigCache.get(prompt.periodId)
     let updated = false

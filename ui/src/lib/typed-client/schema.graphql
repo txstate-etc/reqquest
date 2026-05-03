@@ -1642,8 +1642,8 @@ type RequirementPrompt {
     schemaVersion: String
   ): JsonData
 
-  """Smartly identifies if the prompt requires presave processing."""
-  presave: Boolean!
+  """Smartly identifies if the prompt requires prestage processing."""
+  prestage: Boolean!
 
   """The requirement that this prompt is associated with."""
   requirement: ApplicationRequirement!

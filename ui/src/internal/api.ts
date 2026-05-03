@@ -457,7 +457,7 @@ class API extends APIBase {
               invalidatedReason: true,
               configurationData: true,
               gatheredConfigData: true,
-              presave: true
+              prestage: true
             }
           }
         },

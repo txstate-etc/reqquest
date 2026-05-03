@@ -7,7 +7,7 @@ export const have_yard_prompt: PromptDefinition<YardPromptData, YardPromptData> 
   title: 'Tell us about your yard',
   description: 'Applicants will enter information about their yard including how large it is and how many pets will share it.',
   schema: YardPromptSchema,
-  presave: {
+  prestage: {
     recur: false,
     process: (appRequest, config, appRequestData, allPeriodConfig, ctx, db): YardPromptData => {
       return {
