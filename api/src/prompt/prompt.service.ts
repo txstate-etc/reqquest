@@ -232,6 +232,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
 
   async update (prompt: RequirementPrompt, data: any, validateOnly = false, dataVersion?: number) {
     data ??= {}
+    if (await this.getPreStageState(prompt)) this.stage(prompt)
     if (!this.mayUpdate(prompt)) throw new Error('You are not allowed to update this prompt.')
     if (!promptRegistry.validate(prompt.key, data)) throw new Error('Invalid prompt data.')
     const response = new ValidatedAppRequestResponse()
@@ -293,6 +294,14 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
 
     response.appRequest = updatedAppRequest
     return response
+  }
+
+  async stage (prompt: RequirementPrompt): Promise<ValidatedAppRequestResponse> {
+    if (!this.mayUpdate(prompt)) throw new Error('You are not allowed to update this prompt.')
+    const response = new ValidatedAppRequestResponse()
+    if (await this.getPreStageState(prompt) === false) return (response.success = true, response)
+    const [appRequest, allConfigData, appRequestData] = await this.getRequirementPromptSupportDetail(prompt)
+    // Add your stage logic here, using appRequest, allConfigData, and appRequestData as needed.
   }
 }
 
