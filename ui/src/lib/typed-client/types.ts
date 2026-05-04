@@ -1221,6 +1221,18 @@ export default {
                     ]
                 }
             ],
+            "stagePrompt": [
+                79,
+                {
+                    "dataVersion": [
+                        50
+                    ],
+                    "promptId": [
+                        46,
+                        "ID!"
+                    ]
+                }
+            ],
             "submitAppRequest": [
                 79,
                 {

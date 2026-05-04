@@ -11,15 +11,16 @@
   import { Button } from 'carbon-components-svelte'
   import { getContext } from 'svelte'
   import type { Writable } from 'svelte/store'
-  import { afterNavigate, beforeNavigate, goto, invalidate } from '$app/navigation'
+  import { afterNavigate, beforeNavigate, goto, invalidate, invalidateAll } from '$app/navigation'
   import type { ResolvedPathname } from '$app/types'
   import { uiRegistry } from '../../local/index.js'
   import { api } from '../api.js'
+  import { stagedprompts } from '../prompt-utils.js'
   import type { PageData } from '../../routes/requests/[id]/apply/[promptId]/$types.js'
   import ButtonLoadingIcon from './ButtonLoadingIcon.svelte'
 
   export let data: PageData
-  $: ({ prompt, appRequestForExport } = data)
+  $: ({ prompt, appRequestForExport, dataVersion } = data)
   $: def = uiRegistry.getPrompt(prompt.key)
   const nextHref = getContext<Writable<{ nextHref: ResolvedPathname, prevHref: ResolvedPathname | undefined }>>('nextHref')
 
@@ -36,7 +37,7 @@
   }
 
   async function onSubmit (data: any) {
-    const { success, messages } = await api.updatePrompt(prompt.id, data, false, appRequestForExport.dataVersion)
+    const { success, messages } = await api.updatePrompt(prompt.id, data, false, dataVersion)
     return {
       success,
       messages,
@@ -45,13 +46,13 @@
   }
 
   async function onValidate (data: any) {
-    const { messages } = await api.updatePrompt(prompt.id, data, true, appRequestForExport.dataVersion)
+    const { messages } = await api.updatePrompt(prompt.id, data, true, dataVersion)
     return messages
   }
 
-  async function onSaved () {
-    await invalidate('request:apply')
-    if (continueAfterSave && prompt.answered) {
+  async function onSaved () { 
+    await invalidate('request:apply')    
+    if (continueAfterSave && prompt.answered) {      
       // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved
       await goto($nextHref.nextHref)
     } else await store?.setData(appRequestForExport.data[prompt.key] as object)
@@ -62,10 +63,12 @@
   let hideForm = false
   beforeNavigate(() => {
     hideForm = true
-    store = undefined // also clear out our bound store reference
+    store = undefined // also clear out our bound store reference     
+    stagedprompts.clear() // clear references to staged prompts since we may be navigating to a different prompt that needs staging
   })
-  afterNavigate(() => {
-    hideForm = false
+  afterNavigate(async () => {
+    hideForm = false 
+    await invalidate('request:apply') // required to redraw the nav tree if potential staged data affects prompt visibility or status
   })
 </script>
 

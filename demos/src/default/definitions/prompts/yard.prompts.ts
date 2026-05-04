@@ -8,11 +8,19 @@ export const have_yard_prompt: PromptDefinition<YardPromptData, YardPromptData> 
   description: 'Applicants will enter information about their yard including how large it is and how many pets will share it.',
   schema: YardPromptSchema,
   prestage: {
-    recur: false,
-    process: (appRequest, config, appRequestData, allPeriodConfig, ctx, db): YardPromptData => {
+    recur: true,
+    process: (appRequest, config, allPeriodConfig, ctx, db): YardPromptData => {
       return {
+        haveYard: true,
         squareFootage: 10001
       }
+    }
+  },
+  preload: (appRequest, config, data, allPeriodConfig, ctx) => {
+    return {
+      haveYard: false,
+      squareFootage: 6700,
+      totalPets: 67
     }
   },
   validate: (data, config) => {

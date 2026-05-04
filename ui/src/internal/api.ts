@@ -240,11 +240,28 @@ class API extends APIBase {
               preloadData: true,
               fetchedData: true,
               configurationData: true,
-              gatheredConfigData: true
+              gatheredConfigData: true,
+              prestage: true
         }
       }
     }) 
-    return { prompt: response.appRequests[0].prompt }
+    return { appRequest: response.appRequests[0], prompt: response.appRequests[0].prompt }
+  }
+
+  async stagePrompt (promptId: string, dataVersion?: number) {
+    const response = await this.graphqlWithUploads<{ stagePrompt: MutationResponseFromAPI }>(`
+      mutation StagePrompt($promptId: ID!, $dataVersion: Int) {
+        stagePrompt(promptId: $promptId, dataVersion: $dataVersion) {
+          success
+          messages {
+            message
+            type
+            arg
+          }
+        }
+      }
+    `, { promptId, dataVersion })
+    return this.mutationForDialog(response.stagePrompt)
   }
 
   async updatePrompt (promptId: string, data: any, validateOnly: boolean, dataVersion?: number) {

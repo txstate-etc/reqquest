@@ -1171,6 +1171,15 @@ type Mutation {
   roleUpdate(role: AccessRoleInput!, roleId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!
   roleUpdateGrant(grant: AccessRoleGrantUpdate!, grantId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!
 
+  """Stage the data for a prompt in this app request."""
+  stagePrompt(
+    """
+    The data version of the app request at the time this prompt was loaded. If provided, the API will perform an optimistic concurrency check and fail the update if someone else has updated the data in the meantime.
+    """
+    dataVersion: Int
+    promptId: ID!
+  ): ValidatedAppRequestResponse!
+
   """Submit the app request."""
   submitAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
 
@@ -1642,7 +1651,7 @@ type RequirementPrompt {
     schemaVersion: String
   ): JsonData
 
-  """Smartly identifies if the prompt requires prestage processing."""
+  """Smartly identifies if the prompt requires pre staging processing."""
   prestage: Boolean!
 
   """The requirement that this prompt is associated with."""
