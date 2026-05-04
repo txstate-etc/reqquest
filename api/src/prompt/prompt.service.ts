@@ -124,7 +124,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     if (!appRequest) throw new Error('AppRequest not found')
     if (requirementPrompt.definition.preload != null) {
       const preloadData = await requirementPrompt.definition.preload(appRequest!, config, data, allPeriodConfig, this.ctx)
-      const mergedData = { ...preloadData, ...data[requirementPrompt.key] }
+      const mergedData = (data[requirementPrompt.key] != null) ? { ...preloadData, ...data[requirementPrompt.key] } : preloadData
       return mergedData
     }
     return data[requirementPrompt.key]
