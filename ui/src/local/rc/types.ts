@@ -1,0 +1,108 @@
+export interface RCPreQual {
+  gpa: number
+  availability: boolean
+  acknowledgeExpectations: boolean
+}
+
+export interface WrittenAutomation {
+  hasWrittenAutomation: boolean
+  writtenAutomation: string
+}
+
+export interface EvidenceWrittenAutomation {
+  appropriateAutomation: boolean
+  comments: string
+}
+
+export interface InvestigatedFutureCareer {
+  interestInCareer: string
+}
+
+export interface RateFutureCareer {
+  scoreInterestInCareer: string
+}
+
+export interface DataRelatedPuzzle {
+  puzzleAnswer: string
+  additionalDocumentation: any
+}
+
+export interface AssessDataRelatedPuzzle {
+  score: string
+  explaination: string
+}
+
+export interface OutsideClassExample {
+  outsideClassExample: string
+  description: string
+}
+
+export interface AssessOutsideClassExample {
+  showCriticalThinking: string
+  explaination: string
+}
+
+export interface CriticalThinking {
+  criticalThinkingAnswer: string
+}
+
+export interface AssessCriticalThinking {
+  realIssue: boolean
+  feasable: string
+}
+
+export interface Organization {
+  describeOrganization: string
+}
+
+export interface AssessOrganization {
+  demonstrateOrganization: boolean
+}
+
+export interface Communication {
+  describeCommunication: string
+}
+
+export interface AssessCommunication {
+  demonstrateCommunication: boolean
+}
+
+export interface AssessAttentionDetail {
+  demonstrateAttentionDetail: boolean
+  grammarErrors: boolean
+}
+
+export interface TechnicalTroubleshooting {
+  describeTechincalTroubleshooting: string
+}
+
+export interface AssessTechnicalTroubleshooting {
+  demonstrateTechincalTroubleshooting: boolean
+  complexity: number
+}
+
+export interface SupportCommunication {
+  describeSupportCommunication: string
+}
+
+export interface AssessSupportCommunication {
+  clarity: string
+}
+
+export interface MaintainSysDocumentation {
+  maintainSysDocumentation: boolean
+  documentation: any
+}
+
+export interface AssessMaintainSysDocumentation {
+  clarity: boolean
+  comments: string
+}
+
+export interface ReccomendationLetter {
+  reccomendationLetter: any
+}
+
+export interface AssessReccomendationLetter {
+  score: string
+}

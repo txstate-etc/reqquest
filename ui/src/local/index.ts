@@ -107,6 +107,54 @@ import ComplexAcceptFosterPetPrompt from './complex/petOwner/AcceptFosterPetProm
 import ComplexAcceptFosterPetDisplayPrompt from './complex/petOwner/AcceptFosterPetDisplayPrompt.svelte'
 import ComplexConfirmCatMircochipServicePrompt from './complex/catOwner/ConfirmCatMircochipServicePrompt.svelte'
 import ComplexConfirmCatMircochipServiceDisplayPrompt from './complex/catOwner/ConfirmCatMircochipServiceDisplayPrompt.svelte'
+import PreQualPrompt from './rc/PreQualPrompt.svelte'
+import WrittenAutomatinoPrompt from './rc/WrittenAutomatinoPrompt.svelte'
+import EvidenceWrittenAutomationPrompt from './rc/EvidenceWrittenAutomationPrompt.svelte'
+import InvestigatedFutureCareerPrompt from './rc/InvestigatedFutureCareerPrompt.svelte'
+import RateFutureCareerPrompt from './rc/RateFutureCareerPrompt.svelte'
+import DataRelatedPuzzle from './rc/DataRelatedPuzzle.svelte'
+import AssessDataRelatedPuzzle from './rc/AssessDataRelatedPuzzle.svelte'
+import OutsideClassExample from './rc/OutsideClassExample.svelte'
+import AssessOutsideClassExample from './rc/AssessOutsideClassExample.svelte'
+import CriticalThinking from './rc/CriticalThinking.svelte'
+import AssessCriticalThinking from './rc/AssessCriticalThinking.svelte'
+import Communication from './rc/Communication.svelte'
+import AssessCommunication from './rc/AssessCommunication.svelte'
+import AssessAttentionDetail from './rc/AssessAttentionDetail.svelte'
+import Organization from './rc/Organization.svelte'
+import AssessOrganization from './rc/AssessOrganization.svelte'
+import CommunicationDisplay from './rc/CommunicationDisplay.svelte'
+import TechnicalTroubleshooting from './rc/TechnicalTroubleshooting.svelte'
+import AssessTechnicalTroubleshooting from './rc/AssessTechnicalTroubleshooting.svelte'
+import SupportCommunication from './rc/SupportCommunication.svelte'
+import AssessSupportCommunication from './rc/AssessSupportCommunication.svelte'
+import MaintainSysDocumentation from './rc/MaintainSysDocumentation.svelte'
+import AssessMaintainSysDocumentation from './rc/AssessMaintainSysDocumentation.svelte'
+import ReccomendationLetter from './rc/ReccomendationLetter.svelte'
+import AssessReccomendationLetter from './rc/AssessReccomendationLetter.svelte'
+import PreQualDisplay from './rc/PreQualDisplay.svelte'
+import WrittenAutomationDisplay from './rc/WrittenAutomationDisplay.svelte'
+import EvidenceWrittenAutomationDisplay from './rc/EvidenceWrittenAutomationDisplay.svelte'
+import InvestigatedFutureCareerDisplay from './rc/InvestigatedFutureCareerDisplay.svelte'
+import RateFutureCareerDisplay from './rc/RateFutureCareerDisplay.svelte'
+import AssessDataRelatedPuzzleDisplay from './rc/AssessDataRelatedPuzzleDisplay.svelte'
+import OutsideClassExampleDisplay from './rc/OutsideClassExampleDisplay.svelte'
+import AssessOutsideClassExampleDisplay from './rc/AssessOutsideClassExampleDisplay.svelte'
+import CriticalThinkingDisplay from './rc/CriticalThinkingDisplay.svelte'
+import AssessCriticalThinkingDisplay from './rc/AssessCriticalThinkingDisplay.svelte'
+import AssessCommunicationDisplay from './rc/AssessCommunicationDisplay.svelte'
+import AssessAttentionDetailDisplay from './rc/AssessAttentionDetailDisplay.svelte'
+import OrganizationDisplay from './rc/OrganizationDisplay.svelte'
+import AssessOrganizationDisplay from './rc/AssessOrganizationDisplay.svelte'
+import TechnicalTroubleshootingDisplay from './rc/TechnicalTroubleshootingDisplay.svelte'
+import AssessTechnicalTroubleshootingDisplay from './rc/AssessTechnicalTroubleshootingDisplay.svelte'
+import SupportCommunicationDisplay from './rc/SupportCommunicationDisplay.svelte'
+import AssessSupportCommunicationDisplay from './rc/AssessSupportCommunicationDisplay.svelte'
+import MaintainSysDocumentationDisplay from './rc/MaintainSysDocumentationDisplay.svelte'
+import AssessMaintainSysDocumentationDisplay from './rc/AssessMaintainSysDocumentationDisplay.svelte'
+import ReccomendationLetterDisplay from './rc/ReccomendationLetterDisplay.svelte'
+import AssessReccomendationLetterDisplay from './rc/AssessReccomendationLetterDisplay.svelte'
+import DataRelatedPuzzleDisplay from './rc/DataRelatedPuzzleDisplay.svelte'
 
 /** RC */
 
@@ -135,7 +183,7 @@ function configureDemoInstanceParams () {
    * depending on its value are optimized away. To avoid that, we do a little string manipulation
    * here to prevent vite/rollup from being able to tell what the value is at build time.
    */
-  let tmpDemoInstance = PUBLIC_DEMO_INSTANCE + ' '
+  let tmpDemoInstance = `${PUBLIC_DEMO_INSTANCE} `
   tmpDemoInstance = tmpDemoInstance.trim()
   if (tmpDemoInstance === 'simple') {
     return {
@@ -328,12 +376,161 @@ function configureDemoInstanceParams () {
         { key: 'confirm_cat_microchip_service_prompt', formComponent: ComplexConfirmCatMircochipServicePrompt, displayComponent: ComplexConfirmCatMircochipServiceDisplayPrompt }
       ]
     }
-  } /* RC TODO
-  else if (tmpDemoInstance === 'rc') {
+  } else if (tmpDemoInstance === 'rc') {
     return {
+      appName: 'MWS Technical Mentorship Experience',
+      applicantDashboardIntroHeader: 'Start your Pet Journey Here!',
+      applicantDashboardIntroDetail: 'Submitting an adoption application is the first step in adopting a pet. Based on your responses you will receive a list of "eligible benefits."',
+      applicantDashboardRecentDays: 30,
+      programs: [
+        { key: 'operations_infrastructure', icon: DogWalker },
+        { key: 'software_development', icon: DogWalker },
+        { key: 'project_management', icon: DogWalker },
+        { key: 'application_management_support', icon: DogWalker }
+      ],
+      requirements: [
+        { key: 'step1_prequal_req' },
+        { key: 'written_automation_req' },
+        { key: 'evidence_automation_req' },
+        { key: 'investigated_future_career_req' },
+        { key: 'rate_future_career_req' },
+        { key: 'data_related_puzzle_req' },
+        { key: 'assess_data_related_puzzle_req' },
+        { key: 'outside_class_example_req' },
+        { key: 'assess_outside_class_example_req' },
+        { key: 'critical_thinking_req' },
+        { key: 'assess_critical_thinking_req' },
+        { key: 'communication_req' },
+        { key: 'assess_communicationn_req' },
+        { key: 'assess_attention_detail_req' },
+        { key: 'organization_req' },
+        { key: 'assess_organization_req' },
+        { key: 'reccomendation_letter_req' },
+        { key: 'assess_reccomendation_letter_req' }
+      ],
+      prompts: [{
+        key: 'pre_qual_prompt',
+        formComponent: PreQualPrompt,
+        displayComponent: PreQualDisplay
+      },
+      {
+        key: 'written_automation_prompt',
+        formComponent: WrittenAutomatinoPrompt,
+        displayComponent: WrittenAutomationDisplay
+      },
+      {
+        key: 'evidence_automation_prompt',
+        formComponent: EvidenceWrittenAutomationPrompt,
+        displayComponent: EvidenceWrittenAutomationDisplay
+      },
+      {
+        key: 'investigated_future_career_prompt',
+        formComponent: InvestigatedFutureCareerPrompt,
+        displayComponent: InvestigatedFutureCareerDisplay
+      },
+      {
+        key: 'rate_future_career_prompt',
+        formComponent: RateFutureCareerPrompt,
+        displayComponent: RateFutureCareerDisplay
+      },
+      {
+        key: 'data_related_puzzle_prompt',
+        formComponent: DataRelatedPuzzle,
+        displayComponent: DataRelatedPuzzleDisplay
+      },
+      {
+        key: 'assess_data_related_puzzle_prompt',
+        formComponent: AssessDataRelatedPuzzle,
+        displayComponent: AssessDataRelatedPuzzleDisplay
+      },
+      {
+        key: 'outside_class_example_prompt',
+        formComponent: OutsideClassExample,
+        displayComponent: OutsideClassExampleDisplay
+      },
+      {
+        key: 'assess_outside_class_example_prompt',
+        formComponent: AssessOutsideClassExample,
+        displayComponent: AssessOutsideClassExampleDisplay
+      },
+      {
+        key: 'critical_thinking_prompt',
+        formComponent: CriticalThinking,
+        displayComponent: CriticalThinkingDisplay
+      },
+      {
+        key: 'assess_critical_thinking_prompt',
+        formComponent: AssessCriticalThinking,
+        displayComponent: AssessCriticalThinkingDisplay
+      },
+      {
+        key: 'communication_prompt',
+        formComponent: Communication,
+        displayComponent: CommunicationDisplay
+      },
+      {
+        key: 'assess_communication_prompt',
+        formComponent: AssessCommunication,
+        displayComponent: AssessCommunicationDisplay
+      },
+      {
+        key: 'assess_attention_detail_prompt',
+        formComponent: AssessAttentionDetail,
+        displayComponent: AssessAttentionDetailDisplay
+      },
+      {
+        key: 'organization_prompt',
+        formComponent: Organization,
+        displayComponent: OrganizationDisplay
+      },
+      {
+        key: 'assess_organization_prompt',
+        formComponent: AssessOrganization,
+        displayComponent: AssessOrganizationDisplay
+      },
+      {
+        key: 'technical_troubleshooting_prompt',
+        formComponent: TechnicalTroubleshooting,
+        displayComponent: TechnicalTroubleshootingDisplay
+      },
+      {
+        key: 'assess_technical_troubleshooting_prompt',
+        formComponent: AssessTechnicalTroubleshooting,
+        displayComponent: AssessTechnicalTroubleshootingDisplay
+      },
+      {
+        key: 'support_communication_prompt',
+        formComponent: SupportCommunication,
+        displayComponent: SupportCommunicationDisplay
+      },
+      {
+        key: 'assess_support_communication_prompt',
+        formComponent: AssessSupportCommunication,
+        displayComponent: AssessSupportCommunicationDisplay
+      },
+      {
+        key: 'maintain_sys_documentation_prompt',
+        formComponent: MaintainSysDocumentation,
+        displayComponent: MaintainSysDocumentationDisplay
+      },
+      {
+        key: 'assess_maintain_sys_documentation_prompt',
+        formComponent: AssessMaintainSysDocumentation,
+        displayComponent: AssessMaintainSysDocumentationDisplay
+      },
+      {
+        key: 'reccomendation_letter_prompt',
+        formComponent: ReccomendationLetter,
+        displayComponent: ReccomendationLetterDisplay
+      },
+      {
+        key: 'assess_reccomendation_letter_prompt',
+        formComponent: AssessReccomendationLetter,
+        displayComponent: AssessReccomendationLetterDisplay
+      }
+      ]
     }
   }
-  */
   return {
     appName: 'Adopt a Critter',
     applicantDashboardIntroHeader: 'Start your Pet Journey Here!',

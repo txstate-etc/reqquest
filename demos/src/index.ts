@@ -22,12 +22,10 @@ import * as complexPrograms from './complex/definitions/programs.js'
 import * as complexRequirements from './complex/definitions/requirements/index.js'
 import * as complexPrompts from './complex/definitions/prompts/index.js'
 
-/* RC TODO
 import { rcTestMigrations } from './rc/testdata.js'
 import * as rcPrograms from './rc/definitions/programs.js'
 import * as rcRequirements from './rc/definitions/requirements/index.js'
 import * as rcPrompts from './rc/definitions/prompts/index.js'
-*/
 
 interface UserOtherInfo {
   email: string
@@ -137,7 +135,6 @@ function configureDemoInstanceParams () {
     migrations: complexTestMigrations,
     multipleRequestsPerPeriod: false
   }
-  /* RC TODO
   else if (process.env.DEMO_INSTANCE === 'rc') return {
     programs: Object.values(rcPrograms),
     requirements: Object.values(rcRequirements),
@@ -145,7 +142,6 @@ function configureDemoInstanceParams () {
     migrations: rcTestMigrations,
     multipleRequestsPerPeriod: false
   }
-  */
   return {
     programs: Object.values(defaultPrograms),
     requirements: Object.values(defaultRequirements),

@@ -16,3 +16,7 @@ export function machineDateTime (dt: DateTime | string) {
   const dateTime = typeof dt === 'string' ? DateTime.fromISO(dt) : dt
   return dateTime.toISO({ suppressMilliseconds: true })
 }
+
+export function booleanToWord (bool: boolean) {
+  return bool ? 'Yes' : 'No'
+}

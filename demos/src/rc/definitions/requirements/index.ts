@@ -1,0 +1,6 @@
+export * from './prequal.requirements.js'
+export * from './operationsInfrastructure.requirements.js'
+export * from './softwareDevelopment.requirements.js'
+export * from './projectManagement.requirements.js'
+export * from './applicationManagement.requirements.js'
+export * from './shared.requirements.js'
