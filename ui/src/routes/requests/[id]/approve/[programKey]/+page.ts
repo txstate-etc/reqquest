@@ -5,7 +5,7 @@ import { getInlineReviewerEditPrompts, coalesceAppRequestPrompts } from '../../.
 
 export const load: PageLoad = async ({ params, depends }) => {
   const appRequest = await api.getReviewData(params.id)
-  //TODO: Implement prestage check and call if needed for prompts
+  //TODO: Implement prestage check and call if needed for prompts on reviewer screen
   const inlinePrompts = getInlineReviewerEditPrompts(appRequest)
   const inlinePromptsWithData = await api.getPromptDataLegion(params.id, inlinePrompts.map(prompt => prompt.id))
   const coalescedAppRequest = coalesceAppRequestPrompts(appRequest, inlinePromptsWithData)
