@@ -1,6 +1,6 @@
 import { Arg, Ctx, FieldResolver, ID, Mutation, Query, Resolver, Root } from 'type-graphql'
 import { Context, ValidatedResponse } from '@txstate-mws/graphql-server'
-import { requirementRegistry, Requirement, ApplicationRequirement, Prompt, promptRegistry, RequirementPrompt, RequirementPromptService, Application, ApplicationService, Configuration, ConfigurationService, RQContext, PeriodProgramRequirement, PromptService, JsonData, PeriodPromptService, PeriodPrompt, PeriodWorkflowStage, ProgramService, PeriodRequirementService, PeriodService, ApplicationRequirementService } from '../internal.js'
+import { requirementRegistry, Requirement, ApplicationRequirement, Prompt, promptRegistry, RequirementPrompt, RequirementPromptService, Application, ApplicationService, Configuration, ConfigurationService, RQContext, PeriodProgramRequirement, PromptService, JsonData, PeriodPromptService, PeriodPrompt, PeriodWorkflowStage, ProgramService, PeriodRequirementService, PeriodService, ApplicationRequirementService, RequirementPromptFilter } from '../internal.js'
 
 @Resolver(of => Requirement)
 export class RequirementResolver {
@@ -18,8 +18,8 @@ export class RequirementResolver {
 @Resolver(of => ApplicationRequirement)
 export class ApplicationRequirementResolver {
   @FieldResolver(returns => [RequirementPrompt])
-  async prompts (@Ctx() ctx: Context, @Root() requirement: ApplicationRequirement) {
-    return await ctx.svc(RequirementPromptService).findByApplicationRequirement(requirement)
+  async prompts (@Ctx() ctx: Context, @Root() requirement: ApplicationRequirement, @Arg('filter', { nullable: true }) filter?: RequirementPromptFilter) {
+    return await ctx.svc(RequirementPromptService).findByApplicationRequirement(requirement, filter)
   }
 
   @FieldResolver(returns => Application)

@@ -9,7 +9,7 @@ import {
   type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleGroup, type AccessRoleInput, type AccessUserFilter,
   type AppRequestActivityFilters, type AppRequestFilter, type IneligiblePhases, type Pagination, type PeriodUpdate, type PromptVisibility,
   type RequirementStatus, type RequirementType, type PhaseChangeMutations, type CompletionStatus,
-  type PeriodFilters
+  type PeriodFilters, type RequirementPromptFilter
 } from '$lib'
 import { applicantRequirementTypes } from './status-utils.js'
 
@@ -263,6 +263,24 @@ class API extends APIBase {
     `, { promptId, dataVersion })
     return this.mutationForDialog(response.stagePrompt)
   }
+
+  /* TODO: Future require to support staging prompts in bulk for supporting review data
+  async stagePrompts (promptIds: string[], dataVersion?: number) {
+    const response = await this.graphqlWithUploads<{ stagePrompt: MutationResponseFromAPI }>(`
+      mutation StagePrompts($promptIds: [ID!]!, $dataVersion: Int) {
+        stagePrompt(promptIds: $promptIds, dataVersion: $dataVersion) {
+          success
+          messages {
+            message
+            type
+            arg
+          }
+        }
+      }
+    `, { promptIds, dataVersion })
+    return this.mutationForDialog(response.stagePrompt)
+  }
+  */
 
   async updatePrompt (promptId: string, data: any, validateOnly: boolean, dataVersion?: number) {
     const response = await this.graphqlWithUploads<{ updatePrompt: MutationResponseFromAPI }>(`
@@ -837,8 +855,7 @@ class API extends APIBase {
               moot: true,
               invalidated: true,
               invalidatedReason: true,
-              preloadData: true,
-              fetchedData: true,
+              prestage: true,
               actions: {
                 update: true
               }
@@ -928,6 +945,30 @@ class API extends APIBase {
     })
     const appRequest = response.appRequests[0]
     return appRequest.prompt
+  }
+
+  async getPromptDataLegion (appRequestId: string, promptIds: string[]) {
+    const response = await this.client.query({
+      __name: 'GetPromptDataLegion',
+      appRequests: {
+        __args: { filter: { ids: [appRequestId] } },
+        applications: {
+          requirements: {
+            prompts: {
+              __args: { filter: { ids: promptIds } },
+              id: true,
+              data: true,
+              preloadData: true,
+              configurationData: true,
+              gatheredConfigData: true,
+              fetchedData: true
+            }
+          }
+        }        
+      }
+    })
+    const appRequest = response.appRequests[0]
+    return appRequest.applications.flatMap(req => req.requirements.flatMap(r => r.prompts))
   }
 
   async getPeriodList (filter?: PeriodFilters) {

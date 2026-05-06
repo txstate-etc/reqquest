@@ -16,6 +16,7 @@
   import { CommentCard, enumPromptVisibility, enumRequirementStatus, enumRequirementType, InfoCard } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../../local'
+  import { isInlineReviewerEditPrompt } from '../../../../../internal'
   import ApproveLayout from '../ApproveLayout.svelte'
 
   /**
@@ -253,7 +254,7 @@
               {@const def = uiRegistry.getPrompt(prompt.key)}
               {@const isReviewerQuestion = reviewerRequirementTypes.has(requirement.type) && !def?.automation}
               {@const isAutomation = !!def?.automation}
-              {@const editMode = def != null && isReviewerQuestion && prompt.actions.update && def.formMode !== 'full' && !(prompt.invalidated && prompt.preloadData)}
+              {@const editMode = isInlineReviewerEditPrompt(def, requirement, prompt)}
               {@const small = editMode && def.formMode !== 'full' ? def.formMode !== 'large' : def!.displayMode !== 'large'}
               {@const large = editMode && def.formMode !== 'full' ? def.formMode === 'large' : def!.displayMode === 'large'}
               {@const dtid = `dt-title-${prompt.id}`}

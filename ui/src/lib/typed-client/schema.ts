@@ -1242,7 +1242,7 @@ export interface ApplicationRequirementGenqlSelection{
     key?: boolean | number
     /** A human readable title for the requirement in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
     navTitle?: boolean | number
-    prompts?: RequirementPromptGenqlSelection
+    prompts?: (RequirementPromptGenqlSelection & { __args?: {filter?: (RequirementPromptFilter | null)} })
     /** The smart title for this requirement in the app request's period. For instance, might be "Applicant must have GPA over 3.4" instead of the regular title "Applicant must meet GPA requirement". Will fall back to the regular title for any requirement that does not provide a smart title. */
     smartTitle?: boolean | number
     /** The status of the requirement. This is what will be shown to users. */
@@ -1690,6 +1690,12 @@ export interface RequirementPromptActionsGenqlSelection{
     __typename?: boolean | number
     __scalar?: boolean | number
 }
+
+export interface RequirementPromptFilter {
+/** When true only returns answered prompts. */
+answered?: (Scalars['Boolean'] | null),appRequestIds?: (Scalars['ID'][] | null),applicationIds?: (Scalars['ID'][] | null),ids?: (Scalars['ID'][] | null),promptKeys?: (Scalars['String'][] | null),
+/** When true only returns reachable prompts. */
+reachable?: (Scalars['Boolean'] | null),requirementIds?: (Scalars['ID'][] | null)}
 
 export interface RoleActionsGenqlSelection{
     delete?: boolean | number

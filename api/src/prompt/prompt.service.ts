@@ -21,16 +21,16 @@ const byInternalIdLoader = new PrimaryKeyLoader({
 })
 
 const byRequirementIdLoader = new OneToManyLoader({
-  fetch: async (requirementIds: string[]) => {
-    return await getRequirementPrompts({ requirementIds })
+  fetch: async (requirementIds: string[], filters?: RequirementPromptFilter) => {
+    return await getRequirementPrompts({ ...filters, requirementIds })
   },
   extractKey: row => row.requirementId,
   idLoader: byInternalIdLoader
 })
 
 const byAppRequestInternalIdLoader = new OneToManyLoader({
-  fetch: async (appRequestIds: string[]) => {
-    return await getRequirementPrompts({ appRequestIds })
+  fetch: async (appRequestIds: string[], filters?: RequirementPromptFilter) => {
+    return await getRequirementPrompts({ ...filters, appRequestIds })
   },
   extractKey: (row: RequirementPrompt) => row.appRequestId,
   idLoader: [byInternalIdLoader]
@@ -83,14 +83,14 @@ export class RequirementPromptServiceInternal extends BaseService<RequirementPro
     return await this.findByInternalId(Number(id))
   }
 
-  async findByAppRequest (appRequest: AppRequest) {
-    const prompts = await this.loaders.get(byAppRequestInternalIdLoader).load(appRequest.id)
+  async findByAppRequest (appRequest: AppRequest, filters?: RequirementPromptFilter) {
+    const prompts = await this.loaders.get(byAppRequestInternalIdLoader, filters).load(appRequest.id)
     for (const prompt of prompts) prompt.appRequestTags = appRequest.tags
     return prompts
   }
 
-  async findByApplicationRequirement (requirement: ApplicationRequirement) {
-    const prompts = await this.loaders.get(byRequirementIdLoader).load(requirement.id)
+  async findByApplicationRequirement (requirement: ApplicationRequirement, filters?: RequirementPromptFilter) {
+    const prompts = await this.loaders.get(byRequirementIdLoader, filters).load(requirement.id)
     for (const prompt of prompts) prompt.appRequestTags = requirement.appRequestTags
     return prompts
   }
@@ -108,13 +108,13 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     return await this.findByInternalId(Number(id))
   }
 
-  async findByAppRequest (appRequest: AppRequest) {
-    const prompts = await this.raw.findByAppRequest(appRequest)
+  async findByAppRequest (appRequest: AppRequest, filters?: RequirementPromptFilter) {
+    const prompts = await this.raw.findByAppRequest(appRequest, filters)
     return this.removeUnauthorized(prompts)
   }
 
-  async findByApplicationRequirement (requirement: ApplicationRequirement) {
-    const prompts = await this.raw.findByApplicationRequirement(requirement)
+  async findByApplicationRequirement (requirement: ApplicationRequirement, filters?: RequirementPromptFilter) {
+    const prompts = await this.raw.findByApplicationRequirement(requirement, filters)
     return this.removeUnauthorized(prompts)
   }
 
