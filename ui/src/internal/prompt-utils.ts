@@ -16,3 +16,17 @@ export const isInlineReviewerEditPrompt = (def, req, prompt): boolean => {
   const isReviewerQuestion = reviewerRequirementTypes.has(req.type) && !def?.automation
   return def != null && isReviewerQuestion && prompt.actions.update && def.formMode !== 'full' && !(prompt.invalidated && prompt.answered)
 }
+
+export const coalesceAppRequestPrompts = (appRequest, prompts) => {
+  appRequest.applications.forEach(application => {
+    application.requirements.forEach(requirement => {
+      requirement.prompts.forEach(reqPrompt => {
+        const updatedPrompt = prompts.find(prompt => prompt.id === reqPrompt.id)
+        if (updatedPrompt) {
+          Object.assign(reqPrompt, updatedPrompt)
+        }
+      })
+    })
+  })
+  return appRequest
+} 
