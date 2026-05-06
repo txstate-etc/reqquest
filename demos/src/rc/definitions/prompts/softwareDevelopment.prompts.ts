@@ -81,8 +81,8 @@ export const critical_thinking_prompt: PromptDefinition<CriticalThinkingPromptDa
 }
 export const assess_critical_thinking_prompt: PromptDefinition<AssessCriticalThinkingPromptData> = {
   key: 'assess_critical_thinking_prompt',
-  title: 'Assess Outside Class Example',
-  description: 'Assess Outside Class Example',
+  title: 'Assess Critical Thinking',
+  description: 'Assess Critical Thinking',
   schema: AssessCriticalThinkingSchema,
   validate: (data, config) => {
     const messages = []

@@ -3,6 +3,8 @@
 
   export let data: AssessDataRelatedPuzzle
 </script>
-<p>{data?.explaination}</p>
+<p class="text-xs">Score</p>
 <p>{data?.score}</p>
+<p class="text-xs">Explaination</p>
+<p>{data?.explaination}</p>
 

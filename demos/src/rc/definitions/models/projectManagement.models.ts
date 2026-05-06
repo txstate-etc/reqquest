@@ -31,7 +31,8 @@ export type CommunicationData = FromSchema<typeof CommunicationSchema>
 export const AssessCommunicationSchema = {
   type: 'object',
   properties: {
-    demonstrateCommunication: { type: 'boolean' }
+    demonstrateCommunication: { type: 'boolean' },
+    comments: { type: 'string' }
   },
   additionalProperties: false
 } as const satisfies SchemaObject

@@ -17,6 +17,6 @@ export function machineDateTime (dt: DateTime | string) {
   return dateTime.toISO({ suppressMilliseconds: true })
 }
 
-export function booleanToWord (bool: boolean) {
+export function booleanToWord (bool?: boolean) {
   return bool ? 'Yes' : 'No'
 }

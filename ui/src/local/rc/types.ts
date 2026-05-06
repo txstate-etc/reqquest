@@ -48,7 +48,7 @@ export interface CriticalThinking {
 
 export interface AssessCriticalThinking {
   realIssue: boolean
-  feasable: string
+  feasable: boolean
 }
 
 export interface Organization {
@@ -65,6 +65,7 @@ export interface Communication {
 
 export interface AssessCommunication {
   demonstrateCommunication: boolean
+  comments?: string
 }
 
 export interface AssessAttentionDetail {

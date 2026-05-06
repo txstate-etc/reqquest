@@ -1,6 +1,6 @@
 export * from './prequal.models.js'
 export * from './operationsInfrastructure.models.js'
 export * from './softwareDevelopment.models.js'
-export * from './projectManagement.prompts.js'
+export * from './projectManagement.models.js'
 export * from './applicationManagement.models.js'
 export * from './shared.models.js'

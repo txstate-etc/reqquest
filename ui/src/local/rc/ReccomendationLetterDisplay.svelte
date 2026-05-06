@@ -4,6 +4,6 @@
   export let data: ReccomendationLetter
   console.log(data.reccomendationLetter)
 </script>
-<p>{data?.reccomendationLetter}</p>
+<p>{data?.reccomendationLetter?.name}</p>
 
 

@@ -1,9 +1,14 @@
 <script lang="ts">
+    import { booleanToWord } from "$internal"
   import type { MaintainSysDocumentation } from "./types"
 
   export let data: MaintainSysDocumentation
 </script>
-<p>{data?.maintainSysDocumentation}</p>
-<p>{data?.documentation}</p>
+<p class="text-xs">Has maintained system documentation</p>
+<p>{booleanToWord(data?.maintainSysDocumentation)}</p>
+
+{#if data.maintainSysDocumentation}
+  <p>Doc: {data?.documentation?.name}</p>
+{/if}
 
 
