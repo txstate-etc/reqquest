@@ -9,6 +9,8 @@
   import Time from 'carbon-icons-svelte/lib/Time.svelte'
   import type { LayoutData } from './$types.js'
   import { uiRegistry } from '../local/index.js'
+  import { navigating } from '$app/stores';
+  import { Loading } from "carbon-components-svelte";
   import '../app.css'
 
   api.recordNavigations()
@@ -16,6 +18,11 @@
   export let data: LayoutData
   $: ({ access } = data)
 </script>
+{#if $navigating}
+  {console.log('Root layout')}
+  {console.log({navigation}) }
+	<Loading />
+{/if}
 <UIShell appName={uiRegistry.config.appName} reverseWeights={!!PUBLIC_ENVIRONMENT} companyName={PUBLIC_ENVIRONMENT || 'TXST'} overlayText={PUBLIC_ENVIRONMENT} navRoot={{
   title: uiRegistry.config.appName,
   hideFromSideNav: true,

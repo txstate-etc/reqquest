@@ -6,6 +6,7 @@
   import { DateTime } from 'luxon'
   import { onMount } from 'svelte'
   import { toQuery } from 'txstate-utils'
+   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { api, REVIEWER_STATUS_CONFIG } from '$internal'
   import type { PageData } from './$types'
@@ -107,7 +108,7 @@
       {
         label: 'View',
         icon: View,
-        href: resolve(`/requests/${r.id}/approve`)
+        onClick: () => { goto(`/requests/${r.id}/approve`) }
       }
     ]}
   >

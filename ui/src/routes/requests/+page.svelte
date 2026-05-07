@@ -187,7 +187,7 @@
       { label: 'Download', icon: DocExport, onClick: async () => { await downloadCSV() } }
     ]}
     actions={row => [
-      { icon: View, label: 'View', href: `/requests/${row.id}/approve` }
+      { icon: View, label: 'View', onClick: () => { goto(`/requests/${row.id}/approve`) } }
     ]}
     rows={requests}
   />

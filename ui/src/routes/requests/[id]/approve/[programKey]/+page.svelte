@@ -18,6 +18,8 @@
   import { uiRegistry } from '../../../../../local'
   import { isInlineReviewerEditPrompt } from '../../../../../internal'
   import ApproveLayout from '../ApproveLayout.svelte'
+  import { Loading } from "carbon-components-svelte";
+  import { load } from '../+page';
 
   /**
    * This page is the primary reviewer screen, it will show all the prompt
@@ -122,6 +124,7 @@
     ...nonBlockingWorkflowStages
   ].filter(s => (!!s.requirements[0]?.workflowStage) || (s.requirements.length > 0 && s.requirements.some(r => r.prompts.length > 0)))
   $: applicationStatusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt)
+  $: loading = false // this is a placeholder for now, we may want to show a loading state while fetching prompt data for editing
 
   type PromptExtraData = Awaited<ReturnType<typeof api.getPromptData>>
   type Prompt = PageData['appRequest']['applications'][0]['requirements'][0]['prompts'][0]
@@ -142,6 +145,10 @@
       }
     }
   }
+  function hideEditModalPromptOnLoading() { // keep the dialog in the DOM so onSave fires, but remove from view
+    const editModalDialog = document.querySelector('.tcbs-dialog')
+    editModalDialog?.classList.add('invisible')   
+  }
 
   function closePromptDialog () {
     fetchingEditPrompt = false
@@ -150,7 +157,9 @@
   }
 
   function onPromptSubmit (id: string) {
-    return async (data: any) => {
+    return async (data: any) => {   
+      loading = true      
+      hideEditModalPromptOnLoading()  
       const response = await api.updatePrompt(id, data, false)
       return response
     }
@@ -163,9 +172,10 @@
     }
   }
 
-  async function onPromptSaved (data: any) {
-    await invalidateAll()
-    closePromptDialog()
+  async function onPromptSaved (data: any) {        
+    await invalidateAll()     
+    closePromptDialog ()
+    loading = false
   }
 
   let appAction: '' | 'advanceWorkflow' | 'reverseWorkflow' = ''
@@ -211,6 +221,9 @@
     await invalidateAll()
   }
 </script>
+{#if loading}  
+    <Loading />    
+{/if}
 
 <ApproveLayout {basicRequestData}>
   <svelte:fragment slot="sidebar">
@@ -333,6 +346,7 @@
     submit={onPromptSubmit(promptBeingEdited.id)}
     validate={onPromptValidate(promptBeingEdited.id)}
     on:saved={onPromptSaved}
+    disableSaveUntilChanged={true}
     centered
     preload={promptBeingEdited.preloadData}
     let:data
@@ -341,6 +355,7 @@
     <svelte:component this={def!.formComponent} appRequestId={appRequest.id} {data} appRequestData={promptBeingEdited.data} fetched={promptBeingEdited.fetchedData} configData={promptBeingEdited.configurationData} gatheredConfigData={promptBeingEdited.gatheredConfigData} />
   </PanelFormDialog>
 {/if}
+
 
 <PanelFormDialog
   title="Add Note"
