@@ -124,7 +124,7 @@
     ...nonBlockingWorkflowStages
   ].filter(s => (!!s.requirements[0]?.workflowStage) || (s.requirements.length > 0 && s.requirements.some(r => r.prompts.length > 0)))
   $: applicationStatusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt)
-  $: loading = false // this is a placeholder for now, we may want to show a loading state while fetching prompt data for editing
+  $: loading = false
 
   type PromptExtraData = Awaited<ReturnType<typeof api.getPromptData>>
   type Prompt = PageData['appRequest']['applications'][0]['requirements'][0]['prompts'][0]
@@ -146,6 +146,7 @@
     }
   }
   function hideEditModalPromptOnLoading() { // keep the dialog in the DOM so onSave fires, but remove from view
+    if (!showPromptDialog) return
     const editModalDialog = document.querySelector('.tcbs-dialog')
     editModalDialog?.classList.add('invisible')   
   }
@@ -188,7 +189,10 @@
   }
 
   async function advanceWorkflow () {
-    const response = await api.advanceWorkflow(application.id)
+    loading = true
+    const response = await api.advanceWorkflow(application.id) 
+    await invalidateAll()    
+    loading = false   
     if (!response.success) {
       toasts.add({
         type: 'error',
@@ -200,12 +204,14 @@
         type: 'success',
         message: 'Application advanced.'
       })
-    }
-    await invalidateAll()
+    }    
   }
 
   async function reverseWorkflow () {
-    const response = await api.reverseWorkflow(application.id)
+    loading = true
+    const response = await api.reverseWorkflow(application.id)     
+    await invalidateAll()    
+    loading = false   
     if (!response.success) {
       toasts.add({
         type: 'error',
@@ -218,7 +224,6 @@
         message: 'Application workflow reversed.'
       })
     }
-    await invalidateAll()
   }
 </script>
 {#if loading}  

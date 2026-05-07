@@ -8,6 +8,8 @@
   import { api, IntroPanel, applicantStatuses, REVIEWER_STATUS_CONFIG, longNumericTime } from '$internal'
   import { uiRegistry } from '../../../../local/index.js'
   import { enumAppRequestPhase, phaseChangeMutations, type PhaseChangeMutations } from '$lib'
+  import { Loading } from "carbon-components-svelte";
+    import { load } from '../+layout.js';
 
   export let data: LayoutData
   $: ({ basicRequestData, requestId } = data)
@@ -21,6 +23,7 @@
       href: resolve(`/requests/${requestId}/approve/activity`)
     }
   ]
+  $: loading = false
 
   const translateMutations = {
     submitAppRequest: 'submitted request for review.',
@@ -35,6 +38,7 @@
 
   let appRequestAction: '' | PhaseChangeMutations | 'reopen' | 'close' = ''
   async function onAppRequestAction () {
+    loading = true
     if ((phaseChangeMutations as readonly string[]).includes(appRequestAction)) {
       await appRequestPhaseChange(appRequestAction as PhaseChangeMutations)
     } else if (appRequestAction === 'close') {
@@ -43,10 +47,13 @@
       await reopenRequest()
     }
     appRequestAction = ''
+    loading = false
   }
 
   async function appRequestPhaseChange (action: PhaseChangeMutations) {
     const response = await api.appRequestPhaseChange(requestId, action)
+    await invalidateAll()
+    loading = false
     if (!response.success) {
       toasts.add({
         type: 'error',
@@ -64,6 +71,7 @@
 
   async function closeRequest () {
     const response = await api.closeAppRequest(requestId)
+    await invalidateAll()
     if (!response.success) {
       toasts.add({
         type: 'error',
@@ -76,11 +84,12 @@
         message: `${uiRegistry.getWord('appRequest')} closed.`
       })
     }
-    await invalidateAll()
+    
   }
 
   async function reopenRequest () {
     const response = await api.reopenAppRequest(requestId)
+    await invalidateAll()
     if (!response.success) {
       toasts.add({
         type: 'error',
@@ -93,9 +102,11 @@
         message: `${uiRegistry.getWord('appRequest')} reopened.`
       })
     }
-    await invalidateAll()
   }
 </script>
+{#if loading}  
+    <Loading />    
+{/if}
 
 <IntroPanel
   title={basicRequestData.period.name + (basicRequestData.period.code ? ` (${basicRequestData.period.code})` : '')}

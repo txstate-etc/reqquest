@@ -18,6 +18,7 @@
   import { stagedprompts } from '../prompt-utils.js'
   import type { PageData } from '../../routes/requests/[id]/apply/[promptId]/$types.js'
   import ButtonLoadingIcon from './ButtonLoadingIcon.svelte'
+  import { Loading } from "carbon-components-svelte";
 
   export let data: PageData
   $: ({ prompt, appRequestForExport, dataVersion } = data)
@@ -27,6 +28,7 @@
   let store: FormStore | undefined
   let continueAfterSave = false
   $: hasPreviousPrompt = $nextHref.prevHref != null
+  $: loading = false
 
   async function handleBack () {
     const previousHref = $nextHref.prevHref
@@ -37,6 +39,7 @@
   }
 
   async function onSubmit (data: any) {
+    loading = true
     const { success, messages } = await api.updatePrompt(prompt.id, data, false, dataVersion)
     return {
       success,
@@ -55,7 +58,10 @@
     if (continueAfterSave && prompt.answered) {      
       // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved
       await goto($nextHref.nextHref)
-    } else await store?.setData(appRequestForExport.data[prompt.key] as object)
+    } else {
+      await store?.setData(appRequestForExport.data[prompt.key] as object)      
+    }
+    loading = false
   }
 
   // Remove the form from the DOM when navigating between prompts
@@ -71,6 +77,9 @@
     await invalidate('request:apply') // required to redraw the nav tree if potential staged data affects prompt visibility or status
   })
 </script>
+{#if loading}  
+    <Loading />    
+{/if}
 
 {#if !hideForm}
   <div class="prompt-intro flow max-w-screen-md mx-auto pt-10 px-6">
