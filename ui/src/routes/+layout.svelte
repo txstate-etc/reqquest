@@ -19,8 +19,6 @@
   $: ({ access } = data)
 </script>
 {#if $navigating}
-  {console.log('Root layout')}
-  {console.log({navigation}) }
 	<Loading />
 {/if}
 <UIShell appName={uiRegistry.config.appName} reverseWeights={!!PUBLIC_ENVIRONMENT} companyName={PUBLIC_ENVIRONMENT || 'TXST'} overlayText={PUBLIC_ENVIRONMENT} navRoot={{
