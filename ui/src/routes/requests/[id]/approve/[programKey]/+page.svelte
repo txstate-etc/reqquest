@@ -138,7 +138,6 @@
       fetchingEditPrompt = true
       try {
         const extra = await api.getPromptData(appRequest.id, prompt.id)
-        console.log(prompt)
         promptBeingEdited = { ...prompt, ...extra }
         showPromptDialog = true
       } finally {
@@ -347,7 +346,6 @@
 {#if showPromptDialog && promptBeingEdited}
   <PanelFormDialog
     title={promptBeingEdited.invalidated ? `Review correction "${promptBeingEdited.title}"` : 'Edit Prompt'}
-    sub
     bind:open={showPromptDialog}
     on:cancel={closePromptDialog}
     submit={onPromptSubmit(promptBeingEdited.id)}
