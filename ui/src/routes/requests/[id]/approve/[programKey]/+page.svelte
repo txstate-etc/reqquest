@@ -138,6 +138,7 @@
       fetchingEditPrompt = true
       try {
         const extra = await api.getPromptData(appRequest.id, prompt.id)
+        console.log(prompt)
         promptBeingEdited = { ...prompt, ...extra }
         showPromptDialog = true
       } finally {
@@ -346,6 +347,7 @@
 {#if showPromptDialog && promptBeingEdited}
   <PanelFormDialog
     title={promptBeingEdited.invalidated ? `Review correction "${promptBeingEdited.title}"` : 'Edit Prompt'}
+    sub
     bind:open={showPromptDialog}
     on:cancel={closePromptDialog}
     submit={onPromptSubmit(promptBeingEdited.id)}
@@ -357,6 +359,9 @@
     let:data
   >
     {@const def = uiRegistry.getPrompt(promptBeingEdited.key)}
+    <div class='font-medium text-center mt-2'>
+      <p class="text-xl font-medium ">{promptBeingEdited.title}</p>
+    </div>
     <svelte:component this={def!.formComponent} appRequestId={appRequest.id} {data} appRequestData={promptBeingEdited.data} fetched={promptBeingEdited.fetchedData} configData={promptBeingEdited.configurationData} gatheredConfigData={promptBeingEdited.gatheredConfigData} />
   </PanelFormDialog>
 {/if}
