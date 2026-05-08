@@ -1,12 +1,23 @@
 import { PromptDefinition } from '@reqquest/api'
 import { MutationMessageType } from '@txstate-mws/graphql-server'
 import { AssessCriticalThinkingPromptData, AssessCriticalThinkingSchema, AssessOutsideClassExamplePromptData, AssessOutsideClassExampleSchema, AssessPuzzleSolutionPromptData, AssessPuzzleSolutionSchema, CriticalThinkingPromptData, CriticalThinkingSchema, DataRelatedPuzzlePromptData, DataRelatedPuzzleSchema, OutsideClassExamplePromptData, OutsideClassExampleSchema } from '../models/index.js'
+import { fileHandler } from 'fastify-txstate'
 
 export const data_related_puzzle_prompt: PromptDefinition<DataRelatedPuzzlePromptData> = {
   key: 'data_related_puzzle_prompt',
   title: 'Data related puzzle',
   description: 'Data related puzzle',
   schema: DataRelatedPuzzleSchema,
+  preProcessData: async (data, ctx) => {
+    if (data.additionalDocumentation) {
+      for await (const file of ctx.files()) {
+        const { checksum, size } = await fileHandler.put(file.stream)
+        data.additionalDocumentation.shasum = checksum
+        break // easy out for single file upload
+      }
+    }
+    return data
+  },
   validate: (data, config) => {
     const messages = []
     if (data.puzzleAnswer == null) {

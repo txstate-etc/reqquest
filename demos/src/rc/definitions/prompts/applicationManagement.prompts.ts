@@ -1,6 +1,7 @@
 import { MutationMessage, PromptDefinition } from '@reqquest/api'
 import { AssessMaintainSysDocumentationData, AssessMaintainSysDocumentationSchema, AssessSupportCommunicationData, AssessSupportCommunicationSchema, AssessTechincalTroubleshootingData, AssessTechincalTroubleshootingSchema, MaintainSysDocumentationData, MaintainSysDocumentationSchema, SupportCommunicationData, SupportCommunicationSchema, TechincalTroubleshootingData, TechincalTroubleshootingSchema } from '../models/index.js'
 import { MutationMessageType } from '@txstate-mws/graphql-server'
+import { fileHandler } from 'fastify-txstate'
 
 export const technical_troubleshooting_prompt: PromptDefinition<TechincalTroubleshootingData> = {
   key: 'technical_troubleshooting_prompt',
@@ -60,6 +61,16 @@ export const maintain_sys_documentation_prompt: PromptDefinition<MaintainSysDocu
   title: 'Maintain System Documentation',
   description: 'Maintain System Documentation',
   schema: MaintainSysDocumentationSchema,
+  preProcessData: async (data, ctx) => {
+    if (data.documentation) {
+      for await (const file of ctx.files()) {
+        const { checksum, size } = await fileHandler.put(file.stream)
+        data.documentation.shasum = checksum
+        break // easy out for single file upload
+      }
+    }
+    return data
+  },
   validate: (data, config) => {
     const messages: MutationMessage[] = []
     if (!data.maintainSysDocumentation) messages.push({ type: MutationMessageType.warning, message: 'Try yes', arg: 'maintainSysDocumentation' })
