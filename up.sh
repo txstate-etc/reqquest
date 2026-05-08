@@ -1,5 +1,5 @@
 
-DEMO_INSTANCE="rc"
+DEMO_INSTANCE="default"
 
 while getopts ":dsmcr" opt
 do
