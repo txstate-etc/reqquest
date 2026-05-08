@@ -379,8 +379,8 @@ function configureDemoInstanceParams () {
   } else if (tmpDemoInstance === 'rc') {
     return {
       appName: 'MWS Technical Mentorship Experience',
-      applicantDashboardIntroHeader: 'Start your Pet Journey Here!',
-      applicantDashboardIntroDetail: 'Submitting an adoption application is the first step in adopting a pet. Based on your responses you will receive a list of "eligible benefits."',
+      applicantDashboardIntroHeader: 'Apply for a technical mentorship here!',
+      applicantDashboardIntroDetail: 'After applying for a mentorship, eligibilty will be determined based on your responses',
       applicantDashboardRecentDays: 30,
       programs: [
         { key: 'operations_infrastructure', icon: DogWalker },
