@@ -18,16 +18,20 @@ prompts as needed and include clever functionality because each prompt is a Svel
 Let's talk about requirements in a little more detail for a second. It's natural to
 start thinking about requirements in a kind of general way. For instance, "applicant
 must have income below $50k/year". That requirement makes sense to read, but in ReqQuest
-requirements are more specific, and probably get broken down into pairs. For instance,
-"applicant must provide proof that they make less than $50k/year" and "reviewer must
-evaluate proof that applicant makes less than $50k/year". There is no need for reviewers
-to "check off" on the applicant's requirements, they simply fulfill their
-own set of requirements.
+requirements are more specific, and usually get broken down into pairs.
 
-Ideally, each requirement can be considered individually, without worrying too much about
-other requirements in the system and the information they have already collected.
+Think about it this way; two things actually have to happen in order for an applicant to
+receive this benefit. First, the applicant has to provide proof of their income, and the
+reviewer has to find that proof to be authentic and convincing. So our requirements are
+"applicant must provide proof that they make less than $50k/year" and "reviewer must evaluate
+proof that applicant makes less than $50k/year". Once the applicant provides proof, their
+requirement is met, regardless of whether the proof is convincing. The reviewer then
+evaluates the proof and fulfills the _second_ requirement.
 
 # Actors
+For the purposes of this document, we will refer to several types of actors that will use this
+system.
+
 * Applicant
 
   Submits an App Request stating eligibility to receive one or more benefits.
@@ -42,15 +46,13 @@ other requirements in the system and the information they have already collected
 
   Creates new application windows, manages roles, manages configurations.
 
-These are conceptual actors that we will use for the purposes of this document, but
-be aware that the role system allows the creation of other types of actor. For instance,
-each program might have its own set of reviewers, or you could have special "final
-approval" reviewers to enforce an approval workflow. Administrators might be divided
-into role management admins and configuration management admins.
+The role system allows the creation of many additional types of actors. For example, each program
+might have its own set of reviewers, or administrators might be divided into role management admins
+and configuration management admins.
 
 # Multiple programs
 One of ReqQuest's main distinguishing features is support for multiple programs in the same
-App Request. By the same App Request, we mean that applicants submit to all programs in a single
+"App Request". This means that applicants submit to all programs simultanesously, in a single
 submission.
 
 ReqQuest's multi-program support is NOT intended to support multiple programs with
@@ -70,7 +72,7 @@ you could absolutely create two ReqQuest projects and an overview webpage in you
 CMS linking to each one.
 
 ## Quick Definition: Application
-An application is the portion of an App Request that relates to a particular
+An "application" is the portion of an App Request that relates to a particular
 program. For instance, if you have 4 scholarship programs, an applicant will create an App
 Request that contains 4 applications - one for each scholarship.
 
@@ -78,6 +80,7 @@ Request that contains 4 applications - one for each scholarship.
 
 Each App Request goes through the following phases on its way through the system.
 
+## Apply (performed by the applicant)
 1. PREQUAL (optional) - In this phase, applicants do not know what programs are available or
 which ones they should apply to. They start answering prompts and at the end of PREQUAL,
 ReqQuest will help them understand which programs are relevant to them. A ReqQuest project may
@@ -104,6 +107,7 @@ is still eligible, the App Request becomes eligible to submit.
     prompts to appear and/or disappear, but they should never have a prompt appear or disappear
     behind the spot that they are working.
 
+## Review (performed by one or more reviewers)
 4. PREAPPROVAL (optional) - In some ReqQuest projects, there will be requirements that can
 be automatically evaluated instead of requiring a human reviewer. __If__ the reviewers would
 prefer to wait for automated evaluations before they begin their work, the team may add PREAPPROVAL
@@ -118,49 +122,76 @@ they will only receive data from automation processes.
 prompts (and depending on permissions, editing/correcting the applicant's prompts). This phase continues
 until the applications are all approved or denied.
 
-6. BLOCKING WORKFLOW (optional) - Each application can independently be configured for a second set
-of eyes to confirm the review _before_ the result is released to the applicant. This phase is not visible
-at the app request level, it just appears to be in the APPROVAL phase. Each application can be in its own
-workflow stage. A workflow stage contains requirements and prompts just like the rest of the review process,
-so it can be as simple as one prompt ("yes this all looks good") or many prompts (one for each major portion
-of the review).
+6. BLOCKING WORKFLOW (optional, per program) - Each application can independently be configured with additional
+requirements that must be satisfied _before_ the result is released to the applicant. For instance, you might
+want a process such that a second reviewer has to evaluate the work of the first reviewer.
+
+  Blocking workflow requirements MUST be met regardless of whether the application was accepted or rejected
+  during the APPROVAL stage. Think about it: if you want your first reviewer's work evaluated, you probably
+  want someone evaluating their rejections, not just their approvals.
+
+  Each application will move through their own workflow stages. For example, scholarship A might require formal
+  signoff while scholarship B does not, and scholarship C is competitive and has to get updated after the committee
+  decides on the top recipients.
+
+  A workflow stage contains requirements and prompts just like the rest of the review process, so it can be as
+  simple as one prompt ("yes this all looks good") or many prompts (one signoff for each major decision made by
+  the first reviewer).
+
+  Once all prompts are answered and the workflow is non-pending, any reviewer may push the application forward to the next phase.
 
 7. REVIEW_COMPLETE - Once the reviewer (and blocking workflow reviewers) have answered all appropriate prompts,
-each application will automatically be designated as ELIGIBLE or INELIGIBLE instead of PENDING. Once no
-applications are PENDING, the App Request as a whole will be marked as REVIEW_COMPLETE. A reviewer is now able
+each application will automatically be designated as ELIGIBLE or INELIGIBLE instead of PENDING. At this point the
+application can be marked (by a reviewer) as REVIEW_COMPLETE. Once all applications have been marked
+REVIEW_COMPLETE, the App Request as a whole will be marked as REVIEW_COMPLETE. A reviewer is now able
 to publish the results to the applicant.
 
-8. APPROVED / NOT_APPROVED - Once the app request results are published to the applicant, the app request
-will be marked as either APPROVED or NOT_APPROVED. It is APPROVED if at least one application was found
-to be ELIGIBLE. This is mostly for display purposes, the actual approvals at the application level are
-more important.
+## Acceptance (optional, performed by the applicant)
 
-9. ACCEPTANCE (optional) - In some projects, there may be an acceptance step where the approval
+8. ACCEPTANCE (optional) - In some projects, there may be an acceptance step where the approval
 is actually an offer of benefits, and the applicant must accept the offer. In these cases,
 there will be at least one Requirement with type ACCEPTANCE. ReqQuest will recognize this and set the app
 request status to ACCEPTANCE instead of APPROVED after the results are published to the applicant. From
 there, the applicant will have more prompts to answer (e.g. "yes, I accept" or perhaps "yes I accept $500
-out of the $1000 offered"). Automated integrations should wait on the ACCEPTED status instead of APPROVED.
+out of the $1000 offered").
 
-10. NON-BLOCKING WORKFLOW (optional) - In some systems, we will have a need for a second set of eyes to
-come into each app request and ensure that everything was done correctly. This could be for training purposes
-or to satisfy audit requirements, but does not interfere with the main app request process - the user will
-be awarded or denied the benefit before non-blocking workflow starts.
+## Released to applicant
 
-11. CLOSED - All App Requests are automatically CLOSED after their period's Archive date. They
-can also be manually closed by reviewers with the appropriate permission. Once marked as CLOSED, an
-App Request can no longer be updated without being re-opened (re-open is unavailable
-after the associated period's archive date). All collected data and determinations of eligibility
-are frozen in time. Changing the code for a requirement will not impact closed App Requests;
-however, an App Request that is re-opened must satisfy the current logic. We will not preserve and
-apply historical code, but we DO preserve and apply historical configurations (like an income
-threshold on an income-related requirement).
+9. APPROVED / NOT_APPROVED or ACCEPTED / REJECTED - If there was an acceptance phase, then once it is completed
+the app request will be marked as either ACCEPTED or REJECTED. It is ACCEPTED if at least one application's offer
+was accepted by the applicant.
+
+  If there was no acceptance phase, the app request will be marked as either APPROVED or NOT_APPROVED right after
+  the reviewer moves the app request forward from REVIEW_COMPLETE. It is APPROVED if at least one application
+  was found to be ELIGIBLE.
+
+  This status is mostly for display purposes, the actual approvals / acceptances at the application level are
+  more important.
+
+## Followup Tasks (optional, performed by one or more reviewers)
+
+10. NON-BLOCKING WORKFLOW (optional) - In some systems, we have a need for followup workflow after a request has been
+fully reviewed and the applicant has received the benefit. For instance, have a second set of eyes come into each
+app request and prepare a report for an auditor, or look for training opportunities based on how the request was
+handled. This stage works just like the review process - it has its own requirements and prompts. The only difference
+is that a failed requirement does not block the applicant from receiving the benefit. The only potential consequence
+of failure would be showing up on some kind of custom report.
+
+## Closure
+
+All App Requests are automatically closed after their period's Archive date. They can also be manually closed by
+reviewers with the appropriate permission. Once marked as closed, an App Request can no longer be updated without
+being re-opened (re-open is unavailable after the associated period's archive date). All collected data and
+determinations of eligibility are frozen in time. Changing the code for a requirement will not impact closed
+App Requests; however, an App Request that is re-opened must satisfy the current logic. We will not preserve and
+apply historical code, but we DO preserve and apply historical configurations (like an income threshold on an
+income-related requirement).
 
     Note: CLOSED is an independent status for the App Request. It does not change the status that the
     App Request had pre-closure. For instance, an App Request that was in the APPROVAL phase, still
     being reviewed, at the time of closure will keep its APPROVAL status forever. It will just also
-    be marked as closed. If we had CLOSED overwrite the status, we would have a hard time figuring out
-    whether the App Request was APPROVED or DISQUALIFIED or ACCEPTED before closure.
+    be marked as closed. If we overwrote the status with CLOSED, we would have a hard time figuring out
+    whether the App Request was APPROVED or ACCEPTED before closure.
 
 # Role Management
 ReqQuest has a rich role management system that allows administrators to create flexible
@@ -171,8 +202,9 @@ so you can make roles like "final approver", where most reviewers do not have pe
 
 Additionally, it is possible for developers to assign special "tags" to App Requests that can
 then be used to further restrict access. So for example, you could create a prompt that asks the applicant
-what state they live in, a developer could set up the system to use their answer to tag the App Request with
-their state, and you could create a role that only has final approval rights for applicants who live in Texas.
+what state they live in. A developer could then set up the system to tag the App Request with
+their answer, and you could create a role that only has final approval rights for applicants who
+live in Texas.
 
 # Detailed Definitions
 
@@ -191,7 +223,11 @@ represents the information Jennifer gave us to prove she's eligible for the gran
 status of her request.
 
 ### Application Status
-Application status represents the current state of the eligibility of the application.
+Application status represents the current state of the eligibility of the application. This status
+changes back and forth from PENDING several times throughout the process. For instance, when the applicant
+is about to submit, their application _so far_ is ELIGIBLE, so the status is ELIGIBLE, but once they submit,
+the application is being reviewed and goes back to PENDING until the reviewers finish their work.
+
 * PENDING
 
   The application is usually in this status while it is being entered or reviewed.
@@ -210,20 +246,15 @@ Application status represents the current state of the eligibility of the applic
 
   An offer was made to the applicant, but they rejected it.
 
-Occasionally when the application is ready to move to a new phase, the status will change
-temporarily to ELIGIBLE or INELIGIBLE, only to return to PENDING in the new phase. For example,
-when the application is READY_TO_SUBMIT, it may briefly become ELIGIBLE before being submitted,
-but then go back to PENDING while the reviewers are doing their part.
-
 ### Application Phase
-Application phase represents where the application is in the process, regardless of whether it is
-currently eligible or ineligible for the benefit. Even rejected applications continue to work through
-the phases, since we need to perform blocking and non-blocking workflow stages on all applications, not
+Application phase is where the application is in the process, regardless of whether it is
+currently eligible or ineligible for the benefit. Even rejected applications proceed through all
+the phases, since we need to perform blocking and non-blocking workflow on all applications, not
 just the ones that are awarded a benefit.
 
 * PREQUAL
 
-  The appRequest has not finished pre-qualification yet. Since pre-qualification determines which applications
+  The app request has not finished pre-qualification yet. Since pre-qualification determines which applications
   are relevant, this application is not yet relevant and should not appear in the applicant UI. This status is only
   possible if there is at least one PREQUAL requirement.
 * QUALIFICATION
@@ -277,7 +308,7 @@ just the ones that are awarded a benefit.
   There is nothing left to do on this application. Other applications may still be working through their own
   non-blocking workflow stages.
 
-## Requirements and ApplicationRequirements
+## Requirements
 Requirements are business rules that govern whether an applicant will be eligible for
 a program.
 
@@ -298,20 +329,23 @@ or two describing why the requirement was marked the way that it was, especially
 is marked as disqualifying). The developer is responsible for writing javascript
 code that implements a Requirement's logic.
 
-Requirements are allowed to share Prompts. The Prompt will appear in navigation under
+As long as the requirement is still pending, ReqQuest will continue collecting the next prompt
+in its list, one by one, until all prompts have been answered or the requirement is not pending.
+This way you can collect only as much information as you need to make a decision. For instance,
+the requirement might be that they must be over 18 years old or have parental consent. The first
+prompt could ask their age. If they answer over 18, the requirement is met and we're done. If they
+answer under 18, the next prompt could ask for proof of parental consent.
+
+Requirements are also allowed to share Prompts. The Prompt will appear in navigation under
 the first applicable Requirement that depends on it. For example, you might not do it
-this way, but you could create an "applicant is under 6 feet tall" requirement and a second
+this way, but you _could_ create an "applicant is under 6 feet tall" requirement and a second
 "applicant is over 5 feet tall" requirement, and both requirements could share a "how tall
 are you" prompt.
-
-Within the context of an individual Application, we have an ApplicationRequirement. The
-ApplicationRequirement represents the current status of a Requirement within a particular
-applicant's Application.
 
 ### Requirement Types
 Each requirement belongs to a certain phase of the application process. These phases were
 discussed in detail above, but the general idea is that some requirements are intended
-for the applicant to resolve, and some the reviewer(s).
+for the applicant to resolve, and some are for the reviewer(s).
 * PREQUAL
 * QUALIFICATION
 * POSTQUAL
@@ -320,20 +354,32 @@ for the applicant to resolve, and some the reviewer(s).
 * ACCEPTANCE
 * WORKFLOW
 
-### ApplicationRequirement Statuses
-Status is updated on each requirement, each time we collect new Prompt data. The status
-should be PENDING until we are confident about one of the other statuses. Collecting data
-from future prompts should not change the status, but of course changing answers in past
-prompts could change the status.
+### ApplicationRequirements
+Within the context of an individual program's application, we have an ApplicationRequirement. The
+ApplicationRequirement represents the current status of a requirement within a particular
+applicant's application. So if "applicant is over 6 feet tall" is a Requirement, then when James
+applies, his ApplicationRequirement object is set to MET when he answers that he's 6'2".
 
-* PENDING
-* MET
-* DISQUALIFYING
-* WARNING - This status gives us a little bit of wiggle room in our process. It's meant to
+The status is updated on each ApplicationRequirement each time we collect new Prompt data. The status
+should be PENDING until we are confident about one of the other statuses. This means our status is
+stable as we move forward in the application. Once our requirement is returning a non-pending status,
+future prompt data can't change its answer. Which is good, since having it change around behind us
+would be really confusing for the users.
+
+The possible statuses are:
+* _PENDING_ - The requirement logic MUST return this status until it is fully confident that no further
+information could change the result. It's particularly tempting to return WARNING too early, just remember
+that will make the system stop asking questions, questions that might clear up the warning.
+* _MET_ - The requirement is fully satisfied, there is no reason to ask further questions.
+* _DISQUALIFYING_ - The answers collected so far fully disqualify the applicant from receiving the benefit,
+there is no reason to ask further questions and the application will not be processed by reviewers. It may
+not even be possible to submit the application for review at all, unless another program is still eligible.
+* _WARNING_ - This status gives us a little bit of wiggle room in our process. It's meant to
 communicate to the user that they _probably_ do not qualify, but they can continue to enter
 information, and another requirement will allow a reviewer to make the final decision on their
-eligibility. The applicant will be shown a custom message describing the problem.
-* NOT_APPLICABLE - This requirement does not apply to the applicant. They will be allowed to
+eligibility. The applicant will be shown a custom message describing the problem. The system sees
+a WARNING status as passing, so it will not block submission.
+* _NOT_APPLICABLE_ - This requirement does not apply to the applicant. They will be allowed to
 proceed as if the requirement has been met.
 
 ### Requirement Order
@@ -343,17 +389,29 @@ Requirements are added to the system in a specific order, but this order is most
 first prompt from each requirement will be shown to the user, regardless of the status of any previous
 requirements.
 
-Some requirements will have `promptKeysAnyOrder`. All prompts listed this way will be treated as the
-first prompt and all will be displayed.
+The subsequent prompts a requirement depends on will not be shown until the first prompt is answered _and
+the requirement is still pending_. This way, if the first prompt is enough to qualify or disqualify the
+applicant, we can avoid showing them forms for irrelevant information.
 
-In situations where we have override prompts or other prompts that should not be shown until the user
-has answered another prompt, we can depend on that other prompt first. This way the later prompts will
-stay hidden until the first prompt is answered. The prompt will not appear twice on the same form just because
-two different requirements depended on it.
+Some requirements will have `promptKeysAnyOrder`. All prompts listed this way will be treated as the
+first prompt and all will be displayed. The requirement will not receive data from any of these prompts
+until all of them have been answered. This prevents a situation where the user leaves one prompt blank,
+moves forward into another requirement or program, and runs into a requirement that depends on a prompt
+they left blank. They'd have to backtrack to finish their application; it would be really confusing.
+
+In the most rare situations, requirements will depend on data from prompts that are not relevant in the
+current context. For this, requirements are able to depend on prompts with `promptKeysNoDisplay`. Here are
+some examples of why you'd want to do this:
+
+* An ACCEPTANCE phase requirement might depend on a prompt from the application phase in order to verify
+the applicant's response to their offer.
+* A requirement could be that the applicant did NOT get to the end of another
+program's application. We'd definitely not want to show another application's prompt, we just want to wait
+until they get to that point in the other application.
 
 ## Prompts and PromptAnswers
 Prompts represent the collection of data from our users (both applicants and reviewers). Each
-prompt defines a webform which fits on a single screen (though it could use a tabbed UI to feel
+prompt defines a single screen with fields to fill in (though it could use a tabbed UI to feel
 like multiple screens). It could be as simple as a yes-or-no question, or as complicated as
 uploading a document and answering a series of questions about its content.
 
@@ -362,42 +420,18 @@ a yes-or-no question and based on the answer the Prompt asks you a followup ques
 logic can also be handled with additional Requirements. It will be up to the developers and
 designers to decide what's most appropriate.
 
-Within the context of an individual application, we will store a PromptAnswer for each Prompt.
-This represents the information collected from the user, and has a status of "answered" or not.
+Within the context of an individual application, we will store what we call a `PromptAnswer` for
+each Prompt. This represents the information collected rather than the form that collects it. Each
+PromptAnswer is marked automatically as "answered" or not based on data entered in the form.
 
-The Requirement is not given the information from the Prompt until it has been
+The Requirement is not given the information from the Prompt until it has been marked as
 fully answered. We don't want requirements making decisions based on incomplete or invalid
 data. It is the responsibility of the project developer to write javascript code determining whether the
-prompt has been sufficiently answered or is still incomplete. Note: generally the user is allowed to
-save incomplete data and come back later. The project developer has discretion to disallow saving certain
-data, like a large invalid upload, since that could have consequences.
+prompt has been sufficiently answered or is still incomplete.
 
-## Workflow Stages
-A workflow stage is defined by a set of requirements. These requirements are oriented around reviewing
-the review process itself, so that each application can be evaluated by two people.
-
-One major distinguishing factor for workflow stages is that they will be completed regardless of
-whether the application was found to be eligible or ineligible. Even denied applications need to
-be reviewed for correctness.
-
-Each program can have as many workflow stages as needed, so we can set it up for multiple rounds
-of reviews. They are defined by the developer in a specific order.
-
-Once all the requirements in a workflow stage have been met, any reviewer can push a button to
-move the application to the next stage (or out of workflow and into acceptance or completion).
-
-### Blocking vs Non-Blocking Workflow Stages
-Each workflow stage may be designated as blocking or non-blocking. Blocking stages must be fully
-completed before the application result can be shown to the applicant, while non-blocking stages
-will be completed after the applicant has received the result and (if applicable) accepted or
-rejected the offer.
-
-So blocking workflow is for situations where the benefit should not be granted until the second
-person has evaluated the application for correctness, while non-blocking workflow is for situations
-where the correctness evaluation is only there for training and reporting purposes.
-
-Non-blocking workflow is ideal when the desire is not to slow down the overall process with reviews,
-and when it's not necessary to review every submission.
+Note: generally the user is allowed to save incomplete data and come back later. The project
+developer has discretion to disallow saving certain data, like a large invalid upload, since
+that could have consequences.
 
 ## Roles
 Roles represent a set of access privileges that can be assigned to a group of users. Each
