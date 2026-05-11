@@ -6,6 +6,8 @@ import { extractMergedFilters } from '@txstate-mws/carbon-svelte'
 import { sortby, unique } from 'txstate-utils'
 import { uiRegistry } from '../../../local/index.js'
 import type { PageLoad } from './$types'
+import { excludeAppsByReqTypesAndStatus } from '$internal'
+import { enumRequirementStatus, enumRequirementType } from '../../../lib/index.js'
 
 function statusLabelsToEnums (labels: string[]): AppRequestStatus[] {
   const keys = Object.keys(APP_REQUEST_STATUS_CONFIG) as AppRequestStatus[]
@@ -34,11 +36,14 @@ export const load: PageLoad = async ({ url, depends, parent }) => {
     return r.updatedAt < recentCutoffIso && pastStatuses.has(r.status)
   }
 
+
   // fetch for all own apps, then split
   const [allRequests, openPeriods] = await Promise.all([
     api.getApplicantRequests({ own: true }),
     api.getOpenPeriods()
   ])
+
+  excludeAppsByReqTypesAndStatus(allRequests, [enumRequirementType.PREQUAL,enumRequirementType.QUALIFICATION], [enumRequirementStatus.DISQUALIFYING])
 
   if (currentTab === 'past_applications') {
     const allPastRequests = allRequests.filter(isPastApp)

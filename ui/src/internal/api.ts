@@ -96,8 +96,7 @@ class API extends APIBase {
     return { users: response.accessUsers, pageInfo: response.pageInfo.accessUsers }
   }
 
-  async getApplicantRequests (additionalFilters: AppRequestFilter = {}) {
-    // const filter = { own: true, ...additionalFilters }
+  async getApplicantRequests (additionalFilters: AppRequestFilter = {}) {    
     const filter: AppRequestFilter = { ...additionalFilters }
     const response = await this.client.query({
       __name: 'GetApplicantRequests',
@@ -127,7 +126,6 @@ class API extends APIBase {
           title: true,
           status: true,
           statusReason: true,
-          ineligiblePhase: true, // TODO: Dashboard card check
           requirements: {
             id: true,
             type: true,
@@ -151,7 +149,6 @@ class API extends APIBase {
         }
       }
     })
-
     return response.appRequests
   }
 
@@ -776,7 +773,12 @@ class API extends APIBase {
           id: true,
           navTitle: true,
           programKey: true,
-          status: true
+          status: true,
+          ineligiblePhase: true,
+          requirements: {
+            type: true,
+            status: true
+          }
         },
         actions: {
           acceptOffer: true,

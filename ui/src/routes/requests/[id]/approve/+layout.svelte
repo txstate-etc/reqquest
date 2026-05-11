@@ -8,14 +8,16 @@
   import { api, IntroPanel, applicantStatuses, REVIEWER_STATUS_CONFIG, longNumericTime } from '$internal'
   import { uiRegistry } from '../../../../local/index.js'
   import { enumApplicationStatus } from '$lib'
-  import { enumAppRequestPhase, phaseChangeMutations, type PhaseChangeMutations,  } from '$lib'
+  import { enumAppRequestPhase, phaseChangeMutations, type PhaseChangeMutations, enumRequirementType, enumRequirementStatus } from '$lib'
   import { Loading } from "carbon-components-svelte";
     import { load } from '../+layout.js';
+    import { excludeAppsByReqTypesAndStatus } from '../../../../internal/app-utils.js';
 
   export let data: LayoutData
   $: ({ basicRequestData, requestId } = data)
+  $: excludeAppsByReqTypesAndStatus([basicRequestData], [enumRequirementType.PREQUAL, enumRequirementType.QUALIFICATION], [enumRequirementStatus.DISQUALIFYING])
   $: tabs = [
-    ...(basicRequestData.applications.filter(f => f.status != enumApplicationStatus.INELIGIBLE).map(a => ({
+    ...(basicRequestData.applications.map(a => ({
       label: a.navTitle,
       href: resolve(`/requests/${requestId}/approve/${a.programKey}`)
     }))),

@@ -11,6 +11,7 @@
   import { enumAppRequestStatus } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../../local'
+  import { enumIneligiblePhases } from '$lib'
 
   /**
    * This page will allow applicants to review all the information they've
@@ -51,7 +52,7 @@
 <div class:max-w-screen-md={uiRegistry.config.applicantReviewMaxWidth !== false} class:mx-auto={uiRegistry.config.applicantReviewMaxWidth !== false}>
   <ApplicationDetailsView
     appRequest={appRequestForExport}
-    applications={applicationsForNav}
+    applications={applicationsForNav.filter(a => a.ineligiblePhase !== enumIneligiblePhases.PREQUAL)}
     appData={appRequestForExport.data}
     {prequalPrompts}
     {postqualPrompts}
