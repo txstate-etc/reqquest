@@ -127,6 +127,7 @@ class API extends APIBase {
           title: true,
           status: true,
           statusReason: true,
+          ineligiblePhase: true, // TODO: Dashboard card check
           requirements: {
             id: true,
             type: true,

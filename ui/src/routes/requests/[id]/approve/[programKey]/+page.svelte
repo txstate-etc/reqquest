@@ -190,12 +190,7 @@
 
   async function advanceWorkflow () {
     loading = true
-    console.log('Advancing workflow for application', application.id  )
-    console.log(appRequest)
-    const response = await api.advanceWorkflow(application.id) 
-    // const 
-    // const responses: Promise<any>[] = []
-    
+    const response = await api.advanceWorkflow(application.id)     
     await invalidateAll()    
     loading = false   
     if (!response.success) {
