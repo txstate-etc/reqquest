@@ -714,7 +714,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
     if (applications.every(a => a.status === ApplicationStatus.INELIGIBLE || a.status === ApplicationStatus.REJECTED)) {
       if (appRequest.phase === AppRequestPhase.SUBMITTED) {
         if (applications.length === 1 && !workflowStages.filter(s => s.blocking).length && (applications[0].phase === ApplicationPhase.READY_FOR_WORKFLOW || applications[0].phase === ApplicationPhase.REVIEW_COMPLETE)) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
-        else if (applications.every(a => a.phase === ApplicationPhase.REVIEW_COMPLETE)) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
+        else if (applications.some(a => a.phase === ApplicationPhase.REVIEW_COMPLETE)) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
         else appRequest.status = AppRequestStatus.APPROVAL
       } else if (applications.some(a => a.ineligiblePhase === IneligiblePhases.ACCEPTANCE)) appRequest.status = AppRequestStatus.NOT_ACCEPTED
       else if (applications.some(a => a.ineligiblePhase === IneligiblePhases.APPROVAL || a.ineligiblePhase === IneligiblePhases.WORKFLOW)) appRequest.status = AppRequestStatus.NOT_APPROVED
