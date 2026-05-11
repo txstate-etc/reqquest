@@ -14,10 +14,8 @@
 
   export let data: LayoutData
   $: ({ basicRequestData, requestId } = data)
-   $: console.log('Basic request data', basicRequestData)
   $: tabs = [
     ...(basicRequestData.applications.filter(f => f.status != enumApplicationStatus.INELIGIBLE).map(a => ({
-    // ...(basicRequestData.applications.map(a => ({
       label: a.navTitle,
       href: resolve(`/requests/${requestId}/approve/${a.programKey}`)
     }))),

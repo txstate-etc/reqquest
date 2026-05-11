@@ -723,7 +723,8 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
     // special case for single-program systems with no blocking workflow stages - we set the appRequest to REVIEW_COMPLETE so
     // the reviewers can do the appRequest-level "Complete Review" right away instead of having to advance the application first
     else if (applications.length === 1 && !workflowStages.filter(s => s.blocking).length && (applications[0].phase === ApplicationPhase.READY_FOR_WORKFLOW || applications[0].phase === ApplicationPhase.REVIEW_COMPLETE)) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
-    else if (applications.some(a => a.phase === ApplicationPhase.READY_FOR_WORKFLOW)) appRequest.status = AppRequestStatus.APPROVAL
+    // exclude ineligible applications from affecting AppRequestStatus, since they never require approval to the next step and we don't want them blocking the appRequest from moving forward
+    else if (applications.filter(a => a.status !== ApplicationStatus.INELIGIBLE).some(a => a.phase === ApplicationPhase.READY_FOR_WORKFLOW)) appRequest.status = AppRequestStatus.APPROVAL
     else if (applications.some(a => a.phase === ApplicationPhase.REVIEW_COMPLETE) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
     else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_ACCEPT) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.READY_TO_ACCEPT
     else if (applications.some(a => a.phase === ApplicationPhase.ACCEPTANCE)) appRequest.status = AppRequestStatus.ACCEPTANCE
