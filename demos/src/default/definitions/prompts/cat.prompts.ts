@@ -40,12 +40,12 @@ export const applicant_seems_nice_prompt: PromptDefinition<NicePromptData> = {
   schema: NicePromptSchema,
   fetch: async (appRequest, config, data) => {
     // Simulate delayed fetching
-    await new Promise(resolve => setTimeout(resolve, 3000))
+    await new Promise(resolve => setTimeout(resolve, 1000))
     return { ratings: [0, 1, 2, 3, 4, 5] }
   },
   preload: async (appRequest, config, data) => {
     // Simulate delayed preloading
-    await new Promise(resolve => setTimeout(resolve, 3000))
+    await new Promise(resolve => setTimeout(resolve, 1000))
     return { seemsNice: false }
   },
   validate: (data, config) => {

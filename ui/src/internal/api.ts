@@ -774,7 +774,8 @@ class API extends APIBase {
         applications: {
           id: true,
           navTitle: true,
-          programKey: true
+          programKey: true,
+          status: true
         },
         actions: {
           acceptOffer: true,

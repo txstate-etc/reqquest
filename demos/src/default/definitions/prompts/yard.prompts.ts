@@ -17,7 +17,7 @@ export const have_yard_prompt: PromptDefinition<YardPromptData, YardPromptData> 
     }
   },
   preload: async (appRequest, config, data, allPeriodConfig, ctx) => {
-    await new Promise(resolve => setTimeout(resolve, 3000))
+    await new Promise(resolve => setTimeout(resolve, 1000))
     return {
       haveYard: false,
       squareFootage: 6700,
