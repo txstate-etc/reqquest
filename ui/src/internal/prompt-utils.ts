@@ -1,5 +1,6 @@
 import { uiRegistry } from '../local'
 import { reviewerRequirementTypes } from '$internal'
+import { deepEqual } from './util.js'
 
 export const stagedprompts = new Set<string>()
 
@@ -30,3 +31,8 @@ export const coalesceAppRequestPrompts = (appRequest, prompts) => {
   })
   return appRequest
 } 
+
+export const promptRequiresValidation = (prompt, data) => {
+  if (prompt.preloadData == null) return true // if there is no prompt data, validate to show required field errors
+  return (!deepEqual(prompt.preloadData, data)) ? true : false // if there is prompt data, only validate if the data has changed to avoid showing validation errors on load before the user has a chance to make any changes
+}

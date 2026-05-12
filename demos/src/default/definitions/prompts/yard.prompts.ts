@@ -21,7 +21,7 @@ export const have_yard_prompt: PromptDefinition<YardPromptData, YardPromptData> 
     return {
       haveYard: false,
       squareFootage: 6700,
-      totalPets: 67
+      //TODO: Test for missing data causing early validation --totalPets: 67
     }
   },
   validate: (data, config) => {

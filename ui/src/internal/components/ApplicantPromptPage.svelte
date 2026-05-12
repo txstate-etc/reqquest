@@ -19,6 +19,7 @@
   import type { PageData } from '../../routes/requests/[id]/apply/[promptId]/$types.js'
   import ButtonLoadingIcon from './ButtonLoadingIcon.svelte'
   import { Loading } from "carbon-components-svelte";
+  import { promptRequiresValidation } from '../prompt-utils.js'
 
   export let data: PageData
   $: ({ prompt, appRequestForExport, dataVersion } = data)
@@ -28,7 +29,7 @@
   let store: FormStore | undefined
   let continueAfterSave = false
   $: hasPreviousPrompt = $nextHref.prevHref != null
-  $: loading = false
+  $: loading = false  
 
   async function handleBack () {
     const previousHref = $nextHref.prevHref
@@ -49,6 +50,7 @@
   }
 
   async function onValidate (data: any) {
+    if (!promptRequiresValidation(prompt, data)) return { success: true, messages: []}
     const { messages } = await api.updatePrompt(prompt.id, data, true, dataVersion)
     return messages
   }
