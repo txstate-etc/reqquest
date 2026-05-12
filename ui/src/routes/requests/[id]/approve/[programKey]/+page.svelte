@@ -166,9 +166,10 @@
     }
   }
 
-  function onPromptValidate (id: string) {
+  function onPromptValidate (prompt: any) {
     return async (data: any) => {
-      const response = await api.updatePrompt(id, data, true)
+      if (!promptRequiresValidation(prompt, data)) return { success: true, messages: []}
+      const response = await api.updatePrompt(prompt.id, data, true)
       return response.messages
     }
   }
@@ -299,7 +300,7 @@
               </dt>
               <dd class="flow" class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
                 {#if editMode}
-                  <Form preload={prompt.preloadData} submit={onPromptSubmit(prompt.id)} validate={onPromptValidate(prompt.id)} autoSave on:autosaved={onPromptSaved} let:data let:messages>
+                  <Form preload={prompt.preloadData} submit={onPromptSubmit(prompt.id)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptSaved} let:data let:messages>
                     <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
                     {#each messages as message (message.message, message.type)}
                       <FormInlineNotification {message} />
@@ -349,7 +350,7 @@
     bind:open={showPromptDialog}
     on:cancel={closePromptDialog}
     submit={onPromptSubmit(promptBeingEdited.id)}
-    validate={onPromptValidate(promptBeingEdited.id)}
+    validate={onPromptValidate(promptBeingEdited)}
     on:saved={onPromptSaved}
     disableSaveUntilChanged={true}
     centered
