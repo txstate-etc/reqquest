@@ -15,9 +15,8 @@
 
   export let data: LayoutData
   $: ({ basicRequestData, requestId } = data)
-  $: excludeAppsByIneligibiltyPhase([basicRequestData], [enumApplicationPhase.PREQUAL, enumApplicationPhase.QUALIFICATION])
   $: tabs = [
-    ...(basicRequestData.applications.map(a => ({
+    ...(excludeAppsByIneligibiltyPhase([basicRequestData], [enumApplicationPhase.PREQUAL, enumApplicationPhase.QUALIFICATION])[0].applications.map(a => ({
       label: a.navTitle,
       href: resolve(`/requests/${requestId}/approve/${a.programKey}`)
     }))),
