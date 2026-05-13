@@ -716,7 +716,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
     for (const prompt of prompts) {
       prompt.locked = promptKeysLocked.has(prompt.key)
     }
-    
+
     if (applications.every(a => a.status === ApplicationStatus.INELIGIBLE || a.status === ApplicationStatus.REJECTED)) {
       if (appRequest.phase === AppRequestPhase.SUBMITTED) {
         if (applications.length === 1 && !workflowStages.filter(s => s.blocking).length && (applications[0].phase === ApplicationPhase.READY_FOR_WORKFLOW || applications[0].phase === ApplicationPhase.REVIEW_COMPLETE)) appRequest.status = AppRequestStatus.REVIEW_COMPLETE

@@ -43,9 +43,9 @@ export const load: PageLoad = async ({ url, depends, parent }) => {
     api.getOpenPeriods()
   ])
 
-  excludeAppsByIneligibiltyPhase(allRequests, [enumApplicationPhase.PREQUAL, enumApplicationPhase.QUALIFICATION])
+  const allRequestsSansIneligibleApps = excludeAppsByIneligibiltyPhase(allRequests, [enumApplicationPhase.PREQUAL, enumApplicationPhase.QUALIFICATION])
   if (currentTab === 'past_applications') {
-    const allPastRequests = allRequests.filter(isPastApp)
+    const allPastRequests = allRequestsSansIneligibleApps.filter(isPastApp)
 
     const hasActiveFilters = filters.periodIds?.length > 0 || filters.status?.length > 0 || !!filters.search
 
@@ -79,7 +79,7 @@ export const load: PageLoad = async ({ url, depends, parent }) => {
     }
   } else {
     return {
-      appRequests: allRequests.filter(r => !isPastApp(r)),
+      appRequests: allRequestsSansIneligibleApps.filter(r => !isPastApp(r)),
       openPeriods, access, recentCutoffIso, recentDays,
       availablePeriods: [] as { id: string, name: string }[],
       availableStatuses: [] as string[]
