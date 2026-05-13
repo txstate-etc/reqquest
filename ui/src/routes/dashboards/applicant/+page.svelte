@@ -10,6 +10,7 @@
   import { toasts } from '@txstate-mws/svelte-components'
   import { Button, Dropdown, InlineNotification, Modal, Tooltip } from 'carbon-components-svelte'
   import Close from 'carbon-icons-svelte/lib/Close.svelte'
+  import Reset from 'carbon-icons-svelte/lib/Reset.svelte'
   import DocumentExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
   import { uiRegistry } from '../../../local/index.js'
   import type { PageData } from './$types'
@@ -147,13 +148,13 @@
         onClick: () => { cancelConfirmation = { open: true, requestId: request.id, isWithdraw: submitted } },
         icon: Close,
         disabled: !request.actions.cancel
+      },
+      {
+        label: 'Reinstate Application',
+        onClick: async () => await reinstateApplication(request.id),
+        icon: Reset,
+        disabled: !request.actions.reopen
       }
-      // {
-      //   label: 'Reinstate Application',
-      //   onClick: async () => await reinstateApplication(request.id),
-      //   icon: Reset,
-      //   disabled: !request.actions.reopen
-      // }
     ]
   }
 
@@ -167,12 +168,12 @@
   //     'Appeal submitted successfully'
   //   )
 
-  // const reinstateApplication = async (requestId: string) =>
-  //   await handleApiAction(
-  //     async () => await api.reopenAppRequest(requestId),
-  //     'Failed to reinstate application',
-  //     'Application reinstated successfully'
-  //   )
+  const reinstateApplication = async (requestId: string) =>
+    await handleApiAction(
+      async () => await api.reopenAppRequest(requestId),
+      'Failed to reinstate application',
+      'Application reinstated successfully'
+    )
 
   // async function downloadOffer (requestId: string) {
   //   // TODO: Implement actual download logic
