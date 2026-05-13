@@ -30,7 +30,7 @@
   {@const eligibleApplicationsForNav = applicationsForNav.filter(a => a.ineligiblePhase !== enumIneligiblePhases.PREQUAL)}
   <div class="max-w-screen-md mx-auto">    
     <ApplicantProgramList applications={eligibleApplicationsForNav} appRequest={appRequestForExport} />
-    {#if applicationsForNav.some(a => a.status === enumApplicationStatus.INELIGIBLE)}
+    {#if eligibleApplicationsForNav.some(a => a.status === enumApplicationStatus.INELIGIBLE)}
       <div class="program-helptext">
         If you believe you should be eligible, read the tooltips above and review your answers. If you believe there is an error, please contact us.
       </div>
