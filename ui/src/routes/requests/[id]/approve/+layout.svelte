@@ -9,13 +9,13 @@
   import { uiRegistry } from '../../../../local/index.js'
   import { enumApplicationStatus } from '$lib'
   import { enumAppRequestPhase, phaseChangeMutations, type PhaseChangeMutations, enumRequirementType, enumRequirementStatus } from '$lib'
-  import { Loading } from "carbon-components-svelte";
-    import { load } from '../+layout.js';
-    import { excludeAppsByReqTypesAndStatus } from '../../../../internal/app-utils.js';
+  import { Loading } from "carbon-components-svelte"
+  import { enumApplicationPhase } from '$lib'
+  import { excludeAppsByIneligibiltyPhase } from '$internal'
 
   export let data: LayoutData
   $: ({ basicRequestData, requestId } = data)
-  $: excludeAppsByReqTypesAndStatus([basicRequestData], [enumRequirementType.PREQUAL, enumRequirementType.QUALIFICATION], [enumRequirementStatus.DISQUALIFYING])
+  $: excludeAppsByIneligibiltyPhase([basicRequestData], [enumApplicationPhase.PREQUAL, enumApplicationPhase.QUALIFICATION])
   $: tabs = [
     ...(basicRequestData.applications.map(a => ({
       label: a.navTitle,

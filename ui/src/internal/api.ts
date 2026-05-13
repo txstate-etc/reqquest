@@ -126,6 +126,7 @@ class API extends APIBase {
           title: true,
           status: true,
           statusReason: true,
+          ineligiblePhase: true,
           requirements: {
             id: true,
             type: true,
@@ -774,11 +775,7 @@ class API extends APIBase {
           navTitle: true,
           programKey: true,
           status: true,
-          ineligiblePhase: true,
-          requirements: {
-            type: true,
-            status: true
-          }
+          ineligiblePhase: true
         },
         actions: {
           acceptOffer: true,
