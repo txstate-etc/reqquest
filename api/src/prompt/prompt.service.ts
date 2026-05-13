@@ -294,6 +294,9 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
       }
       if (validateOnly) return
       response.success = true // if we got this far, it's saving the data, so that's a success even if the data isn't quite valid yet
+      // Always revalidate the current prompt on save — it may have been
+      // externally invalidated and re-saved with identical data (#165).
+      await setRequirementPromptsValid([prompt.key], db)
       if (!equal(appRequestData[prompt.key], processedData)) {
         updated = true
         previousAppRequestStatus = appRequest.status
