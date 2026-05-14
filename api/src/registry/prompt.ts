@@ -5,7 +5,7 @@ import addFormats from 'ajv-formats'
 import addErrors from 'ajv-errors'
 import db from 'mysql2-async/db'
 import { Cache, isNotBlank, isNotEmpty, sortby } from 'txstate-utils'
-import { AppRequest, getIndexesInUse, Period, programRegistry, requirementRegistry, RQContext, TagDefinition, type AppRequestData } from '../internal.js'
+import { AppRequest, getIndexesInUse, Period, programRegistry, requirementRegistry, RQContext, TagDefinition, type AppRequestData, type PromptPreStagingRecurrence } from '../internal.js'
 import type { Queryable } from 'mysql2-async'
 
 export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVersion'>> {
@@ -397,7 +397,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * If recur is false or not provided, the process function will only run on the first evaluation of the app request where there is no existing data for this prompt,
    */
   prestage?: ((appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext, db: Queryable) => Promise<DataType> | DataType) | {
-    recur?: boolean
+    recur?: PromptPreStagingRecurrence | boolean
     process: (appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext, db: Queryable) => Promise<DataType> | DataType
   }
   /**
