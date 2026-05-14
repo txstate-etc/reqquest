@@ -14,11 +14,11 @@ export const pre_qual_prompt: PromptDefinition<PreQualPromptData> = {
     const messages: MutationMessage[] = []
     if (data.acknowledgeExpectations == null) messages.push({ type: MutationMessageType.error, message: 'Please acknowledge participation expectations.', arg: 'acknowledgeExpectations' })
 
-    const minimumGPA = 3.0
+    const minimumGPA = 2.5
     if (data.gpa == null) {
       messages.push({ type: MutationMessageType.error, message: 'Please enter your GPA.', arg: 'gpa' })
     } else if (data.gpa < minimumGPA) {
-      messages.push({ type: MutationMessageType.warning, message: `Your GPA munt be a minimum of ${minimumGPA}`, arg: 'gpa' })
+      messages.push({ type: MutationMessageType.warning, message: `Your GPA must be a minimum of ${minimumGPA}`, arg: 'gpa' })
     }
 
     if (data.availability == null) messages.push({ type: MutationMessageType.error, message: 'Please acknowledge availability expectations.', arg: 'availability' })
