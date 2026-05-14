@@ -16,6 +16,7 @@ export const which_state_prompt: PromptDefinition = {
     } else if (data.stateName !== stateList.find(sl => sl.value === data.state)?.label) messages.push({ type: MutationMessageType.error, message: 'State abbreviation does not match state name.', arg: 'stateName' })
     return messages
   },
+  invalidUponChange: [{ promptKey: 'have_yard_prompt', reason: 'Need to test prestage with invalidated prompt' }],
   tags: [{
     category: 'state',
     categoryLabel: 'State',
