@@ -6,7 +6,7 @@
    * the app request since the prompt should only be visible in a single spot.
    */
 
-  import { Form } from '@txstate-mws/carbon-svelte'
+  import { Form, confirmationStore } from '@txstate-mws/carbon-svelte'
   import type { FormStore } from '@txstate-mws/svelte-forms'
   import { Button } from 'carbon-components-svelte'
   import { getContext } from 'svelte'
@@ -27,10 +27,11 @@
 
   let store: FormStore | undefined
   let continueAfterSave = false
+  let unsavedChangesHandled = false
   $: hasPreviousPrompt = $nextHref.prevHref != null
   $: loading = false
 
-  async function handleBack () {
+  async function handleBack () {  
     const previousHref = $nextHref.prevHref
     if (previousHref) {
       // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved
@@ -64,15 +65,28 @@
     loading = false
   }
 
+  async function leaveIfUnsavedChanges() {
+    return ($store?.hasUnsavedChanges) ? await confirmationStore.confirm('You have unsaved changes. Are you sure you want to leave?', { title: 'Unsaved Changes', yesText: 'Leave', noText: 'Stay', danger: true }) : true
+  }
+  
   // Remove the form from the DOM when navigating between prompts
   // to make sure state is reset
   let hideForm = false
-  beforeNavigate(() => {
-    hideForm = true
-    store = undefined // also clear out our bound store reference     
-    stagedprompts.clear() // clear references to staged prompts since we may be navigating to a different prompt that needs staging
-  })
+  beforeNavigate(async ({ cancel, to }) => {
+      if ($store.hasUnsavedChanges && !unsavedChangesHandled) {
+        cancel()
+        if (await leaveIfUnsavedChanges()) {
+          hideForm = true
+          store = undefined // also clear out our bound store reference     
+          stagedprompts.clear() // clear references to staged prompts since we may be navigating to a different prompt that needs staging
+          unsavedChangesHandled = true
+          goto(to.url.href)
+        }        
+      }      
+    }
+  )
   afterNavigate(async () => {
+    unsavedChangesHandled = false
     hideForm = false 
     await invalidate('request:apply') // required to redraw the nav tree if potential staged data affects prompt visibility or status
   })
@@ -80,7 +94,6 @@
 {#if loading}  
     <Loading />    
 {/if}
-
 {#if !hideForm}
   <div class="prompt-intro flow max-w-screen-md mx-auto pt-10 px-6">
     <!-- svelte-ignore a11y_autofocus -->
