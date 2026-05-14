@@ -10,7 +10,8 @@ import {
   AppRequestServiceInternal, AppRequestPhase, RequirementType, periodConfigCache, programRegistry,
   statusVisibleToApplicantPhases, applicantRequirementTypes, setRequirementPromptsValid,
   RQContext,
-  RequirementPromptFilter
+  RequirementPromptFilter,
+  PromptPreStagingRecurrence
 } from '../internal.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
@@ -160,9 +161,11 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
 
   async requiresStaging (requirementPrompt: RequirementPrompt) {
     if (requirementPrompt.definition.prestage != null) {
-      const recur = ('recur' in requirementPrompt.definition.prestage) ? requirementPrompt.definition.prestage.recur : false
       const data = await this.svc(AppRequestServiceInternal).getData(requirementPrompt.appRequestInternalId)
-      return (recur || data[requirementPrompt.key] == null) ? true : false
+      const recur = ('recur' in requirementPrompt.definition.prestage) ? requirementPrompt.definition.prestage.recur : false
+      if (data[requirementPrompt.key] == null) return true // first occurence should always run no matter the recur setting, since there is no existing data
+      if (recur === true || recur === PromptPreStagingRecurrence.ALWAYS) return true
+      if (recur === PromptPreStagingRecurrence.INVALID && requirementPrompt.invalidated) return true
     }
     return false
   }
