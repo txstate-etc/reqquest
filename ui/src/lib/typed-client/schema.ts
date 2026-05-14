@@ -2243,3 +2243,9 @@ export const enumRequirementType = {
    QUALIFICATION: 'QUALIFICATION' as const,
    WORKFLOW: 'WORKFLOW' as const
 }
+
+export const enumPromptPreStagingRecurrence = {
+  NEVER: 'NEVER' as const,
+  ALWAYS: 'ALWAYS' as const,
+  INVALID: 'INVALID' as const
+}
