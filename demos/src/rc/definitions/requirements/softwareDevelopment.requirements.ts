@@ -52,7 +52,7 @@ export const assess_outside_class_example_req: RequirementDefinition = {
   promptKeys: ['assess_outside_class_example_prompt'],
   resolve: (data, config) => {
     const writtenAutomationData = data['assess_outside_class_example_prompt'] as AssessOutsideClassExamplePromptData
-    if (writtenAutomationData?.explaination == null) return { status: RequirementStatus.PENDING }
+    if (writtenAutomationData?.explanation == null) return { status: RequirementStatus.PENDING }
     if (writtenAutomationData?.showCriticalThinking == null) return { status: RequirementStatus.PENDING }
     return { status: RequirementStatus.MET }
   }

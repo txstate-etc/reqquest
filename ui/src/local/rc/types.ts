@@ -29,7 +29,7 @@ export interface DataRelatedPuzzle {
 
 export interface AssessDataRelatedPuzzle {
   score: string
-  explaination: string
+  explanation: string
 }
 
 export interface OutsideClassExample {
@@ -39,7 +39,7 @@ export interface OutsideClassExample {
 
 export interface AssessOutsideClassExample {
   showCriticalThinking: string
-  explaination: string
+  explanation: string
 }
 
 export interface CriticalThinking {
