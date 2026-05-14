@@ -1,6 +1,22 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
 import { ApplicationPhase, AppRequestPhase, AppRequestStatusDB, PromptDefinition, promptRegistry, PromptRow, RequirementType } from '../internal.js'
 
+export enum PromptPreStagingRecurrence {
+  NEVER = 'NEVER',
+  ALWAYS = 'ALWAYS',
+  INVALID = 'INVALID'
+}
+
+registerEnumType(PromptPreStagingRecurrence, {
+  name: 'PromptPreStagingRecurrence',
+  description: 'Determines how often the prestage prompt operation recurs.',
+  valuesConfig: {
+    NEVER: { description: 'The prestage prompt operation never recurs, only runs on first load of prompt when no prompt data exists. This is the default.' },
+    ALWAYS: { description: 'The prestage prompt operation recurs every time the prompt is loaded.' },
+    INVALID: { description: 'The prestage prompt operation recurs every time the prompt is loaded and has previously been invalidated by another prompt.' }
+  }
+})
+
 export enum PromptVisibility {
   UNREACHABLE = 'UNREACHABLE',
   APPLICATION_DUPE = 'APPLICATION_DUPE',
