@@ -41,6 +41,7 @@ export class Prompt {
     this.title = definition.title
     this.navTitle = definition.navTitle ?? definition.title
     this.authorizationKeys = { prompt: promptRegistry.authorizationKeys[definition.key] ?? [] }
+    this.optOut = !!definition.optOut
   }
 
   @Field({ description: 'A human and machine readable identifier for the prompt. Will be used to match prompt data with UI and API code that handles it.' })
@@ -56,6 +57,8 @@ export class Prompt {
   description?: string
 
   authorizationKeys?: Record<string, string[]>
+
+  optOut: boolean
 }
 
 @ObjectType({ description: 'A RequestPrompt is an instance of a Prompt on a particular request. Once the user has answered the prompt, it contains the answer and the prompt status on that request.' })
@@ -83,6 +86,7 @@ export class RequirementPrompt extends Prompt {
     this.invalidatedReason = row.invalidatedReason ?? undefined
     this.visibility = row.visibility
     this.moot = !!row.moot
+    this.optOut = !!row.optOut
     this.locked = !!row.locked
     this.workflowStage = row.workflowStage ?? undefined
     this.applicationWorkflowStage = row.applicationWorkflowStage ?? undefined
@@ -107,6 +111,7 @@ export class RequirementPrompt extends Prompt {
       moot: prompt.moot ? 1 : 0,
       locked: prompt.locked ? 1 : 0,
       invalidated: prompt.invalidated ? 1 : 0,
+      optOut: prompt.optOut ? 1 : 0,
       invalidatedReason: prompt.invalidatedReason ?? null,
       visibility: prompt.visibility,
       applicationPhase: prompt.applicationPhase,
@@ -122,6 +127,9 @@ export class RequirementPrompt extends Prompt {
 
   @Field({ description: 'When true, this prompt has been invalidated by the answer to another prompt. The `answered` field will remain true so be sure to check this field as well when determining whether the prompt is complete.' })
   invalidated: boolean
+
+  @Field({ description: 'When true, this makes the parent program optional for opt out.' })
+  optOut: boolean
 
   @Field({ nullable: true, description: 'If the prompt has been invalidated, this may contain a reason why. It should be displayed to the user.' })
   invalidatedReason?: string

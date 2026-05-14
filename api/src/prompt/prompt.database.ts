@@ -19,6 +19,7 @@ export interface PromptRow {
   moot: 0 | 1
   locked: 0 | 1
   invalidated: 0 | 1
+  optOut: 0 | 1
   invalidatedReason: string | null
   visibility: PromptVisibility
   workflowStage?: string
@@ -67,7 +68,15 @@ export async function getRequirementPrompts (filter: RequirementPromptFilter, td
     WHERE (${where.join(') AND (')})
     ORDER BY evaluationOrder
   `, binds)
-  return rows.map(row => new RequirementPrompt(row))
+  // console.log(rows)
+  return rows.map(row => {
+    const r = new RequirementPrompt(row)
+    if (row.promptKey === 'opt_out_prompt') {
+      console.log(row)
+      console.log(r)
+    }
+    return r
+  })
 }
 
 export async function setRequirementPromptValid (prompt: RequirementPrompt, tdb: Queryable = db) {
@@ -111,7 +120,7 @@ export async function syncPromptRecords (requirement: ApplicationRequirement, db
 
 export async function updatePromptComputed (prompts: RequirementPrompt[], db: Queryable) {
   for (const prompt of prompts) {
-    await db.update('UPDATE requirement_prompts SET visibility = ?, answered = ?, moot = ?, locked = ? WHERE id = ?', [prompt.visibility, prompt.answered, prompt.moot, prompt.locked, prompt.internalId])
+    await db.update('UPDATE requirement_prompts SET visibility = ?, answered = ?, optOut = ?, moot = ?, locked = ? WHERE id = ?', [prompt.visibility, prompt.answered, !!prompt.definition.optOut, prompt.moot, prompt.locked, prompt.internalId])
   }
 }
 
