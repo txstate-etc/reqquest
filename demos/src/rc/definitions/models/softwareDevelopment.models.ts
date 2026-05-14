@@ -15,7 +15,7 @@ export const AssessPuzzleSolutionSchema = {
   type: 'object',
   properties: {
     score: { type: 'string' },
-    explaination: { type: 'string' }
+    explanation: { type: 'string' }
   },
   additionalProperties: false
 } as const satisfies SchemaObject
@@ -35,7 +35,7 @@ export const AssessOutsideClassExampleSchema = {
   type: 'object',
   properties: {
     showCriticalThinking: { type: 'boolean' },
-    explaination: { type: 'string' }
+    explanation: { type: 'string' }
   },
   additionalProperties: false
 } as const satisfies SchemaObject

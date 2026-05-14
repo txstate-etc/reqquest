@@ -17,4 +17,4 @@
   ]}
 />
 
-<FieldTextArea path='explaination' labelText="Explain your score." />
+<FieldTextArea path='explanation' labelText="Explain your score." />
