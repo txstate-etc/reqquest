@@ -16,7 +16,7 @@ export const step1_prequal_req: RequirementDefinition<PreQualPromptData> = {
     if (preQualPromptData?.gpa == null) return { status: RequirementStatus.PENDING }
     if (preQualPromptData?.acknowledgeExpectations == null) return { status: RequirementStatus.PENDING }
 
-    if (preQualPromptData.gpa < 3.0) return { status: RequirementStatus.DISQUALIFYING }
+    if (preQualPromptData.gpa < 2.5) return { status: RequirementStatus.DISQUALIFYING }
 
     return { status: RequirementStatus.MET }
   }

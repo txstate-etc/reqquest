@@ -67,12 +67,8 @@ export const assess_outside_class_example_prompt: PromptDefinition<AssessOutside
   schema: AssessOutsideClassExampleSchema,
   validate: (data, config) => {
     const messages = []
-    if (data.showCriticalThinking) {
-      messages.push({ type: MutationMessageType.error, message: 'Please score the applicants response.', arg: 'appropriateAutomation' })
-    }
-    if (data.explaination == null) {
-      messages.push({ type: MutationMessageType.error, message: 'Please score the applicants response.', arg: 'appropriateAutomation' })
-    }
+    if (data.showCriticalThinking == null) messages.push({ type: MutationMessageType.error, message: 'Please indicate if the applicant shows interest in building or creating technical solutions.', arg: 'showCriticalThinking' })
+    if (data.explanation == null) messages.push({ type: MutationMessageType.error, message: 'Please provide an explanation for your assessment.', arg: 'explanation' })
     return messages
   }
 }
