@@ -70,7 +70,7 @@ export const assess_outside_class_example_prompt: PromptDefinition<AssessOutside
     if (data.showCriticalThinking) {
       messages.push({ type: MutationMessageType.error, message: 'Please score the applicants response.', arg: 'appropriateAutomation' })
     }
-    if (data.explaination == null) {
+    if (data.explanation == null) {
       messages.push({ type: MutationMessageType.error, message: 'Please score the applicants response.', arg: 'appropriateAutomation' })
     }
     return messages

@@ -7,4 +7,4 @@
 
 <FieldRadio boolean path="showCriticalThinking" legendText="Does the applicant show interest in building or creating technical solutions?" items={[{ label: 'Yes', value: true }, { label: 'No', value: false }]} />
 
-<FieldTextArea path='explaination' labelText='Explain your score' />
+<FieldTextArea path='explanation' labelText='Explain your score' />
