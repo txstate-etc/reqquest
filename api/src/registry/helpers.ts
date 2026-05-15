@@ -18,12 +18,17 @@ function isJavascriptUrl (value: string) {
 // Ensure valid html and closed tags
 export function cleanHTML (html: string) {
   const $ = cheerio.load(html)
-  // WARN: we may want to also remove <object>, <embed>
-  // and instead of filtering formaction, remove <form> as well.
+  // <embed> SVG files may contain executable <script> tags,
+  //   which run when the browser parses the embedded document.Data URI Exploitation:
+  //   Using data:text/html;base64,... inside the src attribute, which can allow for
+  //   direct malicious HTML/JS code injection, rather than linking to a file.
   // <iframe> may include srcdoc attribute which can have script tags;
   // so remove for safety as notes should not have iframes.
+  // <object> may act as iframe or embed so remove
+  // NOTE: Instead of filtering formaction, we may wish to remove <form> completely.
   $('iframe').remove()
-  $('script, style, link[rel="stylesheet"]').remove()
+  $('object').remove()
+  $('embed, script, style, link[rel="stylesheet"]').remove()
   $('[style]').removeAttr('style')
   $('*').each(function () {
     const attrs = $(this).attr()
@@ -46,6 +51,8 @@ export function validateHTML (html: string, arg: string) {
   const warnings: MutationMessage[] = []
   const $ = cheerio.load(html)
   if ($('iframe').length > 0) warnings.push({ type: MutationMessageType.warning, message: '<iframe> tags will be removed.', arg })
+  if ($('embed').length > 0) warnings.push({ type: MutationMessageType.warning, message: '<embed> tags will be removed.', arg })
+  if ($('object').length > 0) warnings.push({ type: MutationMessageType.warning, message: '<object> tags will be removed.', arg })
   if ($('script').length > 0) warnings.push({ type: MutationMessageType.warning, message: '<script> tags will be removed.', arg })
   if ($('style').length > 0) warnings.push({ type: MutationMessageType.warning, message: '<style> tags will be removed.', arg })
   if ($('link[rel="stylesheet"]').length > 0) warnings.push({ type: MutationMessageType.warning, message: 'Stylesheet <link> tags will be removed.', arg })
