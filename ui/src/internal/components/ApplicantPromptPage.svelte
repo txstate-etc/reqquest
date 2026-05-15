@@ -53,41 +53,38 @@
     return messages
   }
 
-  async function onSaved () { 
-    await invalidate('request:apply')    
-    if (continueAfterSave && prompt.answered) {      
+  async function onSaved () {
+    await invalidate('request:apply')
+    if (continueAfterSave && prompt.answered) {
       // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved
       await goto($nextHref.nextHref)
     } else {
-      await store?.setData(appRequestForExport.data[prompt.key] as object)      
+      await store?.setData(appRequestForExport.data[prompt.key] as object)
     }
     loading = false
   }
 
-  // Remove the form from the DOM when navigating between prompts
-  // to make sure state is reset
-  let hideForm = false
-  beforeNavigate(() => {
-    hideForm = true
-    store = undefined // also clear out our bound store reference     
-    stagedprompts.clear() // clear references to staged prompts since we may be navigating to a different prompt that needs staging
-  })
+  let lastPromptId: string | undefined
+  $: if (prompt.id !== lastPromptId) {
+    lastPromptId = prompt.id
+    store = undefined
+  }
   afterNavigate(async () => {
-    hideForm = false 
+    stagedprompts.clear() // clear references to staged prompts since we may be navigating to a different prompt that needs staging
     await invalidate('request:apply') // required to redraw the nav tree if potential staged data affects prompt visibility or status
   })
 </script>
-{#if loading}  
-    <Loading />    
+{#if loading}
+  <Loading />
 {/if}
 
-{#if !hideForm}
+{#key prompt.id}
   <div class="prompt-intro flow max-w-screen-md mx-auto pt-10 px-6">
     <!-- svelte-ignore a11y_autofocus -->
     <h2 id="prompt-title" tabindex="-1" autofocus class="font-medium text-xl text-center">{prompt.title}</h2>
     <p class="text-center"> {prompt.description}</p>
   </div>
-  <Form bind:store hideFallbackMessage submit={onSubmit} validate={onValidate} preload={prompt.preloadData} on:saved={onSaved} let:data>
+  <Form bind:store hideFallbackMessage unsavedWarning submit={onSubmit} validate={onValidate} preload={prompt.preloadData} on:saved={onSaved} let:data>
     <svelte:component this={def!.formComponent} {data} appRequestId={appRequestForExport.id} appRequestData={appRequestForExport.data} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
     <svelte:fragment slot="submit" let:submitting>
       <div class='form-submit flex gap-12 justify-center mt-16'>
@@ -99,4 +96,4 @@
       </div>
     </svelte:fragment>
   </Form>
-{/if}
+{/key}
