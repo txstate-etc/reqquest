@@ -18,6 +18,8 @@ function isJavascriptUrl (value: string) {
 // Ensure valid html and closed tags
 export function cleanHTML (html: string) {
   const $ = cheerio.load(html)
+  // WARN: we may want to also remove <iframe>, <object>, <embed>
+  // and instead of filtering formaction, remove <form> as well.
   $('script, style, link[rel="stylesheet"]').remove()
   $('[style]').removeAttr('style')
   $('*').each(function () {
