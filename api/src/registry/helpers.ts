@@ -18,8 +18,11 @@ function isJavascriptUrl (value: string) {
 // Ensure valid html and closed tags
 export function cleanHTML (html: string) {
   const $ = cheerio.load(html)
-  // WARN: we may want to also remove <iframe>, <object>, <embed>
+  // WARN: we may want to also remove <object>, <embed>
   // and instead of filtering formaction, remove <form> as well.
+  // <iframe> may include srcdoc attribute which can have script tags;
+  // so remove for safety as notes should not have iframes.
+  $('iframe').remove()
   $('script, style, link[rel="stylesheet"]').remove()
   $('[style]').removeAttr('style')
   $('*').each(function () {
@@ -42,6 +45,7 @@ export function cleanHTML (html: string) {
 export function validateHTML (html: string, arg: string) {
   const warnings: MutationMessage[] = []
   const $ = cheerio.load(html)
+  if ($('iframe').length > 0) warnings.push({ type: MutationMessageType.warning, message: '<iframe> tags will be removed.', arg })
   if ($('script').length > 0) warnings.push({ type: MutationMessageType.warning, message: '<script> tags will be removed.', arg })
   if ($('style').length > 0) warnings.push({ type: MutationMessageType.warning, message: '<style> tags will be removed.', arg })
   if ($('link[rel="stylesheet"]').length > 0) warnings.push({ type: MutationMessageType.warning, message: 'Stylesheet <link> tags will be removed.', arg })
