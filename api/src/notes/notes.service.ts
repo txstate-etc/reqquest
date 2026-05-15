@@ -113,6 +113,7 @@ export class NoteService extends AuthService<Note> {
 
   async addNote (appRequest: AppRequest, content: string, persistent?: boolean, validateOnly?: boolean) {
     if (!this.mayAddNote(appRequest)) throw new Error('You may not add a note to this app request.')
+    if (!!persistent && !this.mayCreatePersistent(appRequest)) throw new Error('You may not add a peristent note to this app request.')
     const response = new ValidatedNoteResponse()
     const cleanContent = cleanHTML(content)
     if (isBlank(cleanContent)) response.addMessage('Message is required.', 'content', MutationMessageType.error)
