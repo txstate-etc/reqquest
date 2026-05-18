@@ -168,7 +168,6 @@
 
   function onPromptValidate (prompt: any) {
     return async (data: any) => {
-      if (!promptRequiresValidation(prompt, data)) return { success: true, messages: []}
       const response = await api.updatePrompt(prompt.id, data, true)
       return response.messages
     }
