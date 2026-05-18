@@ -19,7 +19,6 @@
   import type { PageData } from '../../routes/requests/[id]/apply/[promptId]/$types.js'
   import ButtonLoadingIcon from './ButtonLoadingIcon.svelte'
   import { Loading } from "carbon-components-svelte";
-  import { promptRequiresValidation } from '../prompt-utils.js'
 
   export let data: PageData
   $: ({ prompt, appRequestForExport, dataVersion } = data)
@@ -50,7 +49,6 @@
   }
 
   async function onValidate (data: any) {
-    if (!promptRequiresValidation(prompt, data)) return { success: true, messages: []}
     const { messages } = await api.updatePrompt(prompt.id, data, true, dataVersion)
     return messages
   }
@@ -86,7 +84,7 @@
     <h2 id="prompt-title" tabindex="-1" autofocus class="font-medium text-xl text-center">{prompt.title}</h2>
     <p class="text-center"> {prompt.description}</p>
   </div>
-  <Form bind:store hideFallbackMessage unsavedWarning submit={onSubmit} validate={onValidate} preload={prompt.preloadData} on:saved={onSaved} let:data>
+  <Form bind:store hideFallbackMessage unsavedWarning submit={onSubmit} validate={onValidate} preloadAsDraft={!prompt.hasSavedData} preload={prompt.preloadData} on:saved={onSaved} let:data>
     <svelte:component this={def!.formComponent} {data} appRequestId={appRequestForExport.id} appRequestData={appRequestForExport.data} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
     <svelte:fragment slot="submit" let:submitting>
       <div class='form-submit flex gap-12 justify-center mt-16'>
