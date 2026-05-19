@@ -622,11 +622,11 @@ class API extends APIBase {
     return this.mutationForDialog(response.reverseWorkflow)
   }
 
-  async addNote (content: string, persistent?: boolean, validateOnly?: boolean) {
+  async addNote (appRequestId: string, content: string, persistent?: boolean, validateOnly?: boolean) {
     const response = await this.client.mutation({
       __name: 'AddNote',
       addNote: {
-        __args: { content, persistent, validateOnly },
+        __args: { appRequestId, content, persistent, validateOnly },
         success: true,
         messages: {
           message: true,

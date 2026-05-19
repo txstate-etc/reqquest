@@ -36,12 +36,12 @@
   let showAddNoteDialog = false
 
   async function onAddNoteValidate (data: { content: string, persistent?: boolean }) {
-    const response = await api.addNote(data.content, data.persistent, true)
+    const response = await api.addNote(appRequest.id, data.content, data.persistent, true)
     return response.messages
   }
 
   async function onAddNoteSubmit (data: { content: string, persistent?: boolean }) {
-    const response = await api.addNote(data.content, data.persistent, false)
+    const response = await api.addNote(appRequest.id, data.content, data.persistent, false)
     return { ...response, data }
   }
 
