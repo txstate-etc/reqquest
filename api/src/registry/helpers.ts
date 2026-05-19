@@ -6,7 +6,9 @@ export { MutationMessage } from '@txstate-mws/graphql-server'
 // NOTE: Finding that there are so many places where links may reside
 // so adding to a list, hopefully this is all of them.
 // xlink:href may exist in SVG links
-const URL_ATTRS = ['href', 'src', 'action', 'formaction', 'xlink:href']
+// NOTE cheerio's selector parser treats `:` as a pseudo-class boundary,
+// so namespaced attributes like `xlink:href` must be escaped in the selector.
+const URL_ATTRS = ['href', 'src', 'action', 'formaction', 'xlink\\:href']
 
 // Browsers strip ASCII control chars (incl. tab/newline) from URL schemes before parsing,
 // so `j\tavascript:` is treated as `javascript:`. Strip those before testing.
