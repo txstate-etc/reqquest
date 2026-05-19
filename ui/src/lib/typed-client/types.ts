@@ -970,6 +970,10 @@ export default {
             "addNote": [
                 82,
                 {
+                    "appRequestId": [
+                        46,
+                        "ID!"
+                    ],
                     "content": [
                         79,
                         "String!"
