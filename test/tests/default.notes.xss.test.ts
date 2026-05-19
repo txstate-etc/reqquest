@@ -264,6 +264,13 @@ test.describe.serial('Notes - XSS sanitization', { tag: '@default' }, () => {
     expect(warningMessages(addNote.messages)).toContain('javascript: URLs will be removed.')
   })
 
+  test('Reviewer - broken obfuscated script tag is left broken and properly closed without warning', async ({ reviewerRequest }) => {
+    const content = '<scrip<script>const fake=1</script>t>alert("test")</script>'
+    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+    expect(addNote.success).toEqual(true)
+    expect(addNote.note?.content).toContain('<scrip<script>const fake=1t&gt;alert(\"test\")</scrip<script>')
+  })
+
   test('Reviewer - javascript: URL in formaction is stripped with warning', async ({ reviewerRequest }) => {
     const content = '<form><button formaction="javascript:alert(1)">go</button></form>'
     const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
