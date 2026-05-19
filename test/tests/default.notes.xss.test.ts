@@ -6,7 +6,7 @@ interface AddNoteResponse {
   addNote: {
     success: boolean
     messages: { message: string, type: string, arg: string | null }[]
-    note: { id: string, content: string } | null
+    note: { id: string, content: string, persistent: boolean } | null
   }
 }
 
@@ -18,12 +18,20 @@ interface UpdateNoteResponse {
   }
 }
 
+interface TogglePersistenceResponse {
+  togglePersistence: {
+    success: boolean
+    messages: { message: string, type: string, arg: string | null }[]
+    note: { id: string, persistent: boolean } | null
+  }
+}
+
 const ADD_NOTE_MUTATION = `
   mutation AddNote($appRequestId: ID!, $content: String!, $persistent: Boolean, $validateOnly: Boolean) {
     addNote(appRequestId: $appRequestId, content: $content, persistent: $persistent, validateOnly: $validateOnly) {
       success
       messages { message type arg }
-      note { id content }
+      note { id content persistent }
     }
   }
 `
@@ -34,6 +42,16 @@ const UPDATE_NOTE_MUTATION = `
       success
       messages { message type arg }
       note { id content }
+    }
+  }
+`
+
+const TOGGLE_PERSISTENCE_MUTATION = `
+  mutation TogglePersistence($noteId: ID!) {
+    togglePersistence(noteId: $noteId) {
+      success
+      messages { message type arg }
+      note { id persistent }
     }
   }
 `
@@ -330,6 +348,53 @@ test.describe.serial('Notes - XSS sanitization', { tag: '@default' }, () => {
     const warnings = warningMessages(updateNote.messages)
     expect(warnings).toContain('<script> tags will be removed.')
     expect(warnings).toContain('javascript: URLs will be removed.')
+  })
+
+  test('Reviewer - can add a persistent note', async ({ reviewerRequest }) => {
+    const content = '<p>persistent reviewer note</p>'
+    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content, persistent: true })
+    expect(addNote.success).toEqual(true)
+    expect(addNote.note?.persistent).toEqual(true)
+    expect(addNote.note?.content).toContain('persistent reviewer note')
+  })
+
+  test('Reviewer - can toggle note persistence on and off', async ({ reviewerRequest }) => {
+    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content: '<p>note for toggle cycle</p>' })
+    expect(addNote.success).toEqual(true)
+    expect(addNote.note?.persistent).toEqual(false)
+    const noteId = addNote.note!.id
+
+    const first = await reviewerRequest.graphql<TogglePersistenceResponse>(TOGGLE_PERSISTENCE_MUTATION, { noteId })
+    expect(first.togglePersistence.success).toEqual(true)
+    expect(first.togglePersistence.note?.persistent).toEqual(true)
+
+    const second = await reviewerRequest.graphql<TogglePersistenceResponse>(TOGGLE_PERSISTENCE_MUTATION, { noteId })
+    expect(second.togglePersistence.success).toEqual(true)
+    expect(second.togglePersistence.note?.persistent).toEqual(false)
+  })
+
+  test('Commentator - can add a regular non-persistent note', async ({ commentatorRequest }) => {
+    const content = '<p>commentator non-persistent note</p>'
+    const { addNote } = await commentatorRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+    expect(addNote.success).toEqual(true)
+    expect(addNote.note?.id).toBeTruthy()
+    expect(addNote.note?.content).toContain('commentator non-persistent note')
+  })
+
+  test('Commentator - cannot add a persistent note', async ({ commentatorRequest }) => {
+    const content = '<p>commentator persistent attempt</p>'
+    const resp = await commentatorRequest.graphql<any>(ADD_NOTE_MUTATION, { appRequestId, content, persistent: true })
+    expect(resp.errors).toBeDefined()
+    expect(resp.errors[0].message).toMatch(/may not add a persistent note/i)
+  })
+
+  test('Commentator - cannot toggle persistence on an existing note', async ({ reviewerRequest, commentatorRequest }) => {
+    const created = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content: '<p>note created by reviewer for toggle test</p>' })
+    const noteId = created.addNote.note!.id
+
+    const resp = await commentatorRequest.graphql<any>(TOGGLE_PERSISTENCE_MUTATION, { noteId })
+    expect(resp.errors).toBeDefined()
+    expect(resp.errors[0].message).toMatch(/may not update this note's persistence/i)
   })
 
 })
