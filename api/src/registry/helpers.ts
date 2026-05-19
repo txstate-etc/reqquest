@@ -3,12 +3,20 @@ import * as cheerio from 'cheerio'
 
 export { MutationMessage } from '@txstate-mws/graphql-server'
 
+// Attributes that may carry URLs, mapped from the raw DOM attribute name
+// (used with .attr / .removeAttr) to its CSS-escaped form (used in selectors,
+// since cheerio's selector parser treats `:` as a pseudo-class boundary, so
+// namespaced attributes like `xlink:href` must be escaped).
 // NOTE: Finding that there are so many places where links may reside
 // so adding to a list, hopefully this is all of them.
-// xlink:href may exist in SVG links
-// NOTE cheerio's selector parser treats `:` as a pseudo-class boundary,
-// so namespaced attributes like `xlink:href` must be escaped in the selector.
-const URL_ATTRS = ['href', 'src', 'action', 'formaction', 'xlink\\:href']
+// xlink:href may exist in SVG links.
+const URL_ATTRS: Record<string, string> = {
+  href: 'href',
+  src: 'src',
+  action: 'action',
+  formaction: 'formaction',
+  'xlink:href': 'xlink\\:href'
+}
 
 // Browsers strip ASCII control chars (incl. tab/newline) from URL schemes before parsing,
 // so `j\tavascript:` is treated as `javascript:`. Strip those before testing.
@@ -40,8 +48,8 @@ export function cleanHTML (html: string) {
       if (attrName.startsWith('on')) $(this).removeAttr(attrName)
     }
   })
-  for (const attr of URL_ATTRS) {
-    $(`[${attr}]`).each(function () {
+  for (const [attr, selector] of Object.entries(URL_ATTRS)) {
+    $(`[${selector}]`).each(function () {
       const value = $(this).attr(attr)
       if (value != null && isJavascriptUrl(value)) $(this).removeAttr(attr)
     })
@@ -72,8 +80,8 @@ export function validateHTML (html: string, arg: string) {
   })
   if (hasEventHandler) warnings.push({ type: MutationMessageType.warning, message: 'Inline event handlers (e.g. onclick) will be removed.', arg })
   let hasJavascriptUrl = false
-  for (const attr of URL_ATTRS) {
-    $(`[${attr}]`).each(function () {
+  for (const [attr, selector] of Object.entries(URL_ATTRS)) {
+    $(`[${selector}]`).each(function () {
       const value = $(this).attr(attr)
       if (value != null && isJavascriptUrl(value)) {
         hasJavascriptUrl = true
