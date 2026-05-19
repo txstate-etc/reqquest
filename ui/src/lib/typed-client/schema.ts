@@ -713,6 +713,8 @@ export interface RequirementPrompt {
     fetchedData: (Scalars['JsonData'] | null)
     /** Extra configuration data that is relevant for this prompt. This configuration is explicitly gathered from related requirements and prompts by the gatherConfig function in the prompt definition. */
     gatheredConfigData: Scalars['JsonData']
+    /** Identifies if the prompt already has saved data.  Assists in determining if the user has previously interacted with this prompt. */
+    hasSavedData: Scalars['Boolean']
     id: Scalars['ID']
     /** When true, this prompt has been invalidated by the answer to another prompt. The `answered` field will remain true so be sure to check this field as well when determining whether the prompt is complete. */
     invalidated: Scalars['Boolean']
@@ -1658,6 +1660,8 @@ export interface RequirementPromptGenqlSelection{
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
     /** Extra configuration data that is relevant for this prompt. This configuration is explicitly gathered from related requirements and prompts by the gatherConfig function in the prompt definition. */
     gatheredConfigData?: boolean | number
+    /** Identifies if the prompt already has saved data.  Assists in determining if the user has previously interacted with this prompt. */
+    hasSavedData?: boolean | number
     id?: boolean | number
     /** When true, this prompt has been invalidated by the answer to another prompt. The `answered` field will remain true so be sure to check this field as well when determining whether the prompt is complete. */
     invalidated?: boolean | number
@@ -2242,10 +2246,4 @@ export const enumRequirementType = {
    PREQUAL: 'PREQUAL' as const,
    QUALIFICATION: 'QUALIFICATION' as const,
    WORKFLOW: 'WORKFLOW' as const
-}
-
-export const enumPromptPreStagingRecurrence = {
-  NEVER: 'NEVER' as const,
-  ALWAYS: 'ALWAYS' as const,
-  INVALID: 'INVALID' as const
 }

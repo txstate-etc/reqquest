@@ -236,6 +236,7 @@ class API extends APIBase {
               description: true,
               answered: true,
               visibility: true,
+              hasSavedData: true,
               preloadData: true,
               fetchedData: true,
               configurationData: true,

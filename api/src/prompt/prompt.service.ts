@@ -119,6 +119,11 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     return this.removeUnauthorized(prompts)
   }
 
+  async hasSavedData (requirementPrompt: RequirementPrompt) {
+    const data = await this.svc(AppRequestServiceInternal).getData(requirementPrompt.appRequestInternalId)
+    return data[requirementPrompt.key] != null
+  }
+
   async getPreloadData (requirementPrompt: RequirementPrompt) {
     const [appRequest, allPeriodConfig, data] = await this.getRequirementPromptSupportDetail(requirementPrompt)
     const config = allPeriodConfig[requirementPrompt.key] ?? {}

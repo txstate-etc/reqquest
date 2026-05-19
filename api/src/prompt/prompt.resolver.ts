@@ -18,6 +18,11 @@ export class RequirementPromptResolver {
     return appRequestData[requirementPrompt.definition.key]
   }
 
+  @FieldResolver(type => Boolean, { description: 'Identifies if the prompt already has saved data.  Assists in determining if the user has previously interacted with this prompt.' })
+  async hasSavedData (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt) {
+    return await ctx.svc(RequirementPromptService).hasSavedData(requirementPrompt)
+  }
+
   @FieldResolver(type => JsonData, { nullable: true, description: 'Any data that the API needs to provide to the UI to build the prompt form properly. For instance, it could pull reference information from an external system, e.g. a student\'s course schedule, for display in the prompt dialog. Null if the user is not currently allowed to update the prompt.' })
   async fetchedData (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt, @Arg('schemaVersion', { nullable: true, description: 'Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh.' }) savedAtVersion?: string) {
     if (savedAtVersion && savedAtVersion < promptRegistry.latestMigration()) throw new Error('Client is out of date. Please refresh.')

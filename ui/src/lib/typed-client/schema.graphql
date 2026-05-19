@@ -1614,6 +1614,11 @@ type RequirementPrompt {
   Extra configuration data that is relevant for this prompt. This configuration is explicitly gathered from related requirements and prompts by the gatherConfig function in the prompt definition.
   """
   gatheredConfigData: JsonData!
+
+  """
+  Identifies if the prompt already has saved data.  Assists in determining if the user has previously interacted with this prompt.
+  """
+  hasSavedData: Boolean!
   id: ID!
 
   """
