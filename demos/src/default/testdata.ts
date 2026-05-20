@@ -52,11 +52,24 @@ export const defaultTestMigrations: DatabaseMigration[] = [
             { controlGroup: 'PromptAnswer', controls: ['view', 'update'], allow: true },
             { controlGroup: 'ApplicationRequirement', controls: ['view'], allow: true },
             { controlGroup: 'Application', controls: ['view'], allow: true },
+            { controlGroup: 'Notes', controls: ['view', 'create', 'edit', 'delete', 'make_persistent'], allow: true },
             { controlGroup: 'Period', controls: ['view', 'view_configuration', 'create', 'update', 'delete'], allow: true },
             { controlGroup: 'Program', controls: ['view', 'configure', 'disable'], allow: true },
             { controlGroup: 'Prompt', controls: ['view', 'configure'], allow: true },
             { controlGroup: 'Requirement', controls: ['view', 'configure', 'disable'], allow: true },
             { controlGroup: 'Role', controls: ['view', 'create', 'update', 'delete'], allow: true }
+          ]
+        },
+        Commentator: {
+          description: 'Reviewer-equivalent role with full Notes access except make_persistent (seeded via testdata.ts to support negative-permission test cases).',
+          groups: ['commentators'],
+          grants: [
+            { controlGroup: 'AppRequest', controls: ['review', 'return', 'reopen', 'close', 'offer'], allow: true },
+            { controlGroup: 'AppRequestPreReview', controls: ['create', 'uncancel'], allow: true },
+            { controlGroup: 'PromptAnswer', controls: ['view', 'update'], allow: true },
+            { controlGroup: 'ApplicationRequirement', controls: ['view'], allow: true },
+            { controlGroup: 'Application', controls: ['view'], allow: true },
+            { controlGroup: 'Notes', controls: ['view', 'create', 'edit', 'edit_own', 'delete', 'delete_own'], allow: true }
           ]
         }
       }

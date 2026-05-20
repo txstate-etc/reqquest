@@ -1,6 +1,6 @@
 import { MutationMessageType, UnimplementedError } from '@txstate-mws/graphql-server'
 import { isBlank } from 'txstate-utils'
-import { AccessUserService, addAppRequestNote, AppRequest, AppRequestNoteFilters, AppRequestService, AuthService, cleanHTML, deleteAppRequestNote, getAppRequestNotes, Note, RQContext, toggleNotePersistence, updateAppRequestNote, ValidatedAppRequestResponse, ValidatedNoteResponse } from '../internal.js'
+import { AccessUserService, addAppRequestNote, AppRequest, AppRequestNoteFilters, AppRequestService, AuthService, cleanHTML, deleteAppRequestNote, getAppRequestNotes, Note, RQContext, toggleNotePersistence, updateAppRequestNote, validateHTML, ValidatedAppRequestResponse, ValidatedNoteResponse } from '../internal.js'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 
 const notesById = new PrimaryKeyLoader({
@@ -113,7 +113,9 @@ export class NoteService extends AuthService<Note> {
 
   async addNote (appRequest: AppRequest, content: string, persistent?: boolean, validateOnly?: boolean) {
     if (!this.mayAddNote(appRequest)) throw new Error('You may not add a note to this app request.')
+    if (!!persistent && !this.mayCreatePersistent(appRequest)) throw new Error('You may not add a persistent note to this app request.')
     const response = new ValidatedNoteResponse()
+    for (const m of validateHTML(content, 'content')) response.addMessage(m.message, m.arg, m.type)
     const cleanContent = cleanHTML(content)
     if (isBlank(cleanContent)) response.addMessage('Message is required.', 'content', MutationMessageType.error)
     if (response.hasErrors() || validateOnly) return response
@@ -129,6 +131,7 @@ export class NoteService extends AuthService<Note> {
     if (!note) throw new Error('Note not found.')
     if (!this.mayUpdate(note)) throw new Error('You may not update this note.')
     const response = new ValidatedNoteResponse()
+    for (const m of validateHTML(content, 'content')) response.addMessage(m.message, m.arg, m.type)
     const cleanContent = cleanHTML(content)
     if (isBlank(cleanContent)) response.addMessage('Note content may not be blank. Delete the note instead.', 'content', MutationMessageType.error)
     if (response.hasErrors()) return response
@@ -161,5 +164,6 @@ export class NoteService extends AuthService<Note> {
     await deleteAppRequestNote(noteId)
     await this.svc(AppRequestService).recordActivity(note.appRequestId, 'Deleted Note', { description: cleanHTML(note.content), data: { id: note.id, author: authorLogin, createdAt: note.createdAt.toISO() } })
     this.loaders.clear()
+    return true
   }
 }

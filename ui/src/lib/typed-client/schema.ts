@@ -772,7 +772,8 @@ export interface ValidatedConfigurationResponse {
 
 export interface ValidatedNoteResponse {
     messages: MutationMessage[]
-    note: Note
+    /** The created or updated note. Null when validateOnly was true or when validation errors prevented the operation. */
+    note: (Note | null)
     /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
     success: Scalars['Boolean']
     __typename: 'ValidatedNoteResponse'
@@ -1347,7 +1348,7 @@ export interface MutationGenqlSelection{
     /** This is for the applicant to accept or reject the offer that was made based on their app request. The difference between accept and reject is determined by the status of the acceptance requirements. They will still "accept offer" after they answer that they do not want the offer. If there is non-blocking workflow on any applications, the first one in each will begin. Applications without non-blocking workflow will be advanced to the COMPLETE phase. If all applications are complete, the app request will be closed. */
     acceptOffer?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Add a note to the app request. */
-    addNote?: (ValidatedNoteResponseGenqlSelection & { __args: {
+    addNote?: (ValidatedNoteResponseGenqlSelection & { __args: {appRequestId: Scalars['ID'], 
     /** The content of the note. HTML is expected. */
     content: Scalars['String'], persistent?: (Scalars['Boolean'] | null), validateOnly?: (Scalars['Boolean'] | null)} })
     /** Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation. */
@@ -1728,6 +1729,7 @@ export interface ValidatedConfigurationResponseGenqlSelection{
 
 export interface ValidatedNoteResponseGenqlSelection{
     messages?: MutationMessageGenqlSelection
+    /** The created or updated note. Null when validateOnly was true or when validation errors prevented the operation. */
     note?: NoteGenqlSelection
     /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
     success?: boolean | number

@@ -58,6 +58,6 @@ export class AppRequestNoteFilters {
 
 @ObjectType()
 export class ValidatedNoteResponse extends ValidatedResponse {
-  @Field(type => Note)
-  note!: Note
+  @Field(type => Note, { nullable: true, description: 'The created or updated note. Null when validateOnly was true or when validation errors prevented the operation.' })
+  note?: Note
 }
