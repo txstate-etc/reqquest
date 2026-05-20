@@ -17,6 +17,7 @@ export * from './notes/notes.model.js'
 export * from './program/program.model.js'
 export * from './prompt/prompt.model.js'
 export * from './requirement/requirement.model.js'
+export * from './metrics/metrics.model.js'
 
 /** Registry */
 export * from './registry/index.js'

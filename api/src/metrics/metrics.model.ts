@@ -1,0 +1,125 @@
+import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
+import { DateTimeScalar, Period } from '../internal.js'
+
+@ObjectType({ description: 'This is the generic definition of a prompt. It is not attached to an appRequest. We will use this type for the administration interface to allow administrators to grant access to prompts and edit their configuration.' })
+export class ApplicationMetric {
+  constructor (row: any) {
+    this.internalApplicationId = row.applicationInternalId
+    this.applicationId = String(row.applicationId)
+    this.createdAt = row.createdAt
+    this.submittedAt = row.submittedAt
+    this.closedAt = row.closedAt
+    this.archivedAt = row.archivedAt
+    this.updatedAt = row.updatedAt
+    this.computedStatus = row.computedStatus
+    this.computedPhase = row.computedPhase
+    this.computedIneligiblePhase = row.computedIneligiblePhase
+    this.periodName = row.periodName
+    this.periodCode = row.periodCode
+    this.applicantLogin = row.applicantLogin
+    this.applicantFullname = row.applicantFullname
+    this.reviewerLogin = row.reviewerLogin
+    this.reviewerFullname = row.reviewerFullname
+  }
+
+  internalApplicationId: number
+
+  @Field(type => ID, { description: 'Metric application ID' })
+  applicationId: string
+
+  @Field(type => DateTimeScalar, { description: 'The date and time when the application was created.' })
+  createdAt: typeof DateTimeScalar
+
+  @Field(type => DateTimeScalar, { description: 'The date and time when the application was submitted.' })
+  submittedAt: typeof DateTimeScalar
+
+  @Field(type => DateTimeScalar, { description: 'The date and time when the application was closed.' })
+  closedAt: typeof DateTimeScalar
+
+  @Field(type => DateTimeScalar, { description: 'The date and time when the application was archived.' })
+  archivedAt: typeof DateTimeScalar
+
+  @Field(type => DateTimeScalar, { description: 'The date and time when the application was last updated.' })
+  updatedAt: typeof DateTimeScalar
+
+  @Field(type => String, { description: 'The current status of the application' })
+  computedStatus: string
+
+  @Field(type => String, { description: 'The current phase of the application' })
+  computedPhase: string
+
+  @Field(type => String, { nullable: true, description: 'The phase in which the application became ineligible' })
+  computedIneligiblePhase?: string
+
+  @Field(type => String, { description: 'The name of the period in which the application was created' })
+  periodName: string
+
+  @Field(type => String, { description: 'The code of the period in which the application was created' })
+  periodCode: string
+
+  @Field(type => String, { description: 'The login ID of the applicant who created the application' })
+  applicantLogin: string
+
+  @Field(type => String, { description: 'The full name of the applicant who created the application' })
+  applicantFullname: string
+
+  @Field(type => String, { description: 'The login ID of the reviewer who reviewed the application' })
+  reviewerLogin: string
+
+  @Field(type => String, { description: 'The full name of the reviewer who reviewed the application' })
+  reviewerFullname: string
+}
+
+@InputType()
+export class MetricRequestFilter {
+  @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that started after this date.' })
+  startAfterDateTime?: typeof DateTimeScalar
+
+  @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that started before this date.' })
+  startBeforeDateTime?: typeof DateTimeScalar
+
+  @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that were submitted after this date.' })
+  submittedAfterDateTime?: typeof DateTimeScalar
+
+  @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that were submitted before this date.' })
+  submittedBeforeDateTime?: typeof DateTimeScalar
+
+  @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that were closed after this date.' })
+  closedAfterDateTime?: typeof DateTimeScalar
+
+  @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that were closed before this date.' })
+  closedBeforeDateTime?: typeof DateTimeScalar
+
+  @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that were archived after this date.' })
+  archivedAfterDateTime?: typeof DateTimeScalar
+
+  @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that were archived before this date.' })
+  archivedBeforeDateTime?: typeof DateTimeScalar
+
+  @Field(type => [MetricPeriodFilter], { nullable: true, description: 'Return requests from periods that match any of these filters.' })
+  periods?: MetricPeriodFilter[]
+
+  @Field(type => [MetricAccessUserFilter], { nullable: true, description: 'Return requests from applicants that match any of these filters.' })
+  applicants?: MetricAccessUserFilter[]
+
+  @Field(type => [MetricAccessUserFilter], { nullable: true, description: 'Return requests from reviewers that match any of these filters.' })
+  reviewers?: MetricAccessUserFilter[]
+}
+
+@InputType()
+export class MetricPeriodFilter {
+  @Field(() => [String], { nullable: true, description: 'Return requests from periods that have any of these names.' })
+  names?: string[]
+
+  @Field(() => [String], { nullable: true, description: 'Return requests from periods that have any of these codes.' })
+  codes?: string[]
+}
+
+@InputType()
+export class MetricAccessUserFilter {
+  @Field(type => [String], { nullable: true, description: 'Return requests from users that have any of these logins.' })
+  logins?: string[]
+
+  @Field(type => [String], { nullable: true, description: 'Return requests from users that have any of these fullnames.' })
+  fullnames?: string[]
+}

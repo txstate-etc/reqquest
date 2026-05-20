@@ -259,7 +259,7 @@ export async function initAccess () {
   controlGroups.Metrics = {
     title: 'Admin - View Metrics',
     controls: {
-      view: { description: 'View the metrics interface and see all the metrics data.' }
+      view: { description: 'View metrics data.' }
     }
   }
   for (const controlGroup of Object.keys(controlGroups)) {
