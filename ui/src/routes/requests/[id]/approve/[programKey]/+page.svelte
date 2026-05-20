@@ -125,6 +125,21 @@
   ].filter(s => (!!s.requirements[0]?.workflowStage) || (s.requirements.length > 0 && s.requirements.some(r => r.prompts.length > 0)))
   $: applicationStatusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt)
   $: loading = false
+  let showLoading = false
+  let loadingTimer: NodeJS.Timeout | undefined
+  $: {
+    if (loading) {
+      if (!loadingTimer) {
+        loadingTimer = setTimeout(() => {
+          showLoading = true
+        }, 500)
+      }
+    } else {
+      clearTimeout(loadingTimer)
+      loadingTimer = undefined
+      showLoading = false
+    }
+  }
 
   type PromptExtraData = Awaited<ReturnType<typeof api.getPromptData>>
   type Prompt = PageData['appRequest']['applications'][0]['requirements'][0]['prompts'][0]
@@ -226,7 +241,7 @@
     }
   }
 </script>
-{#if loading}  
+{#if showLoading}  
     <Loading />    
 {/if}
 
