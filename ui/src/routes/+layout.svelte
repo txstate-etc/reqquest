@@ -1,7 +1,7 @@
 <script lang="ts">
   import { PUBLIC_ENVIRONMENT } from '$env/static/public'
   import { api } from '$internal'
-  import { UIShell } from '@txstate-mws/carbon-svelte'
+  import { UIShell, ErrorPage } from '@txstate-mws/carbon-svelte'
   import { unifiedAuth } from '@txstate-mws/sveltekit-utils'
   import Dashboard from 'carbon-icons-svelte/lib/Dashboard.svelte'
   import DocumentMultiple_01 from 'carbon-icons-svelte/lib/DocumentMultiple_01.svelte'
@@ -10,13 +10,15 @@
   import type { LayoutData } from './$types.js'
   import { uiRegistry } from '../local/index.js'
   import { navigating } from '$app/stores';
+  import { invalidateAll } from '$app/navigation'
   import { Loading } from "carbon-components-svelte";
   import '../app.css'
 
   api.recordNavigations()
 
   export let data: LayoutData
-  $: ({ access } = data)
+  $: ({ access, layoutError, canImpersonate } = data)
+  const userProfileName = [access?.user?.fullname.slice(0, access?.user?.fullname.indexOf(' ')), access?.user?.fullname.slice(access?.user?.fullname.indexOf(' ') + 1)]
 </script>
 {#if $navigating}
 	<Loading />
@@ -30,7 +32,7 @@
       title: uiRegistry.config.applicantDashboardTitle ?? 'Applicant Dashboard',
       navTitle: uiRegistry.config.applicantDashboardNavTitle ?? uiRegistry.config.applicantDashboardTitle ?? 'Applicant',
       group: 'Dashboards',
-      hideFromSideNav: !access.viewApplicantDashboard,
+      hideFromSideNav: !access?.viewApplicantDashboard,
       icon: Dashboard,
       routeId: '/dashboards/applicant',
       children: [{
@@ -51,14 +53,14 @@
     {
       title: 'Reviewer',
       group: 'Dashboards',
-      hideFromSideNav: !access.viewReviewerInterface,
+      hideFromSideNav: !access?.viewReviewerInterface,
       icon: Dashboard,
       routeId: '/dashboards/reviewer'
     },
     {
       title: uiRegistry.getPlural('appRequest'),
       group: 'Administration',
-      hideFromSideNav: !access.viewAppRequestList,
+      hideFromSideNav: !access?.viewAppRequestList,
       icon: DocumentMultiple_01,
       routeId: '/requests',
       children: [{
@@ -77,7 +79,7 @@
     {
       title: 'Admin Settings',
       group: 'Administration',
-      hideFromSideNav: !access.viewRoleManagement,
+      hideFromSideNav: !access?.viewRoleManagement,
       icon: Settings,
       routeId: '/roles',
       children: [{
@@ -91,7 +93,7 @@
     {
       title: `Manage ${uiRegistry.getPlural('period')}`,
       group: 'Administration',
-      hideFromSideNav: !access.viewPeriodManagement,
+      hideFromSideNav: !access?.viewPeriodManagement,
       icon: Time,
       routeId: '/periods',
       children: [
@@ -103,6 +105,27 @@
     },
     ...(uiRegistry.config.extraNavItems ?? [])
   ]
-}} profilelinks={[{ label: 'Logout', onClick: () => unifiedAuth.logout(api) }]}>
+}}
+profilelinks={[{ label: 'Logout', onClick: () => unifiedAuth.logout(api) }]}
+userProfile={{firstName: userProfileName?.[0] ?? access?.user?.login ?? '', lastName: userProfileName?.[1] ?? ''}}
+impersonate={{
+  canImpersonate: !!canImpersonate && !!uiRegistry.config.userLookup, // only show impersonation option if user has permission and userLookup function is provided
+  userLookup: async (login) => (uiRegistry.config.userLookup) ? await uiRegistry.config.userLookup(login) : undefined, // use the userLookup function from the registry to find the user profile based on login
+  impersonate: async (login) => {
+    if (!login) return
+    await unifiedAuth.impersonate(api, login)
+    invalidateAll()
+  },
+  endImpersonate: async () => {
+    unifiedAuth.exitImpersonation(api)
+    await invalidateAll()
+  },
+  isImpersonating: unifiedAuth.getImpersonationStatus(api).isImpersonating
+}}
+>
+  {#if layoutError}
+    <ErrorPage error={layoutError} />
+  {:else}
     <slot />
+  {/if}
 </UIShell>
