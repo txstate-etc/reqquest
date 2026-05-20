@@ -164,5 +164,6 @@ export class NoteService extends AuthService<Note> {
     await deleteAppRequestNote(noteId)
     await this.svc(AppRequestService).recordActivity(note.appRequestId, 'Deleted Note', { description: cleanHTML(note.content), data: { id: note.id, author: authorLogin, createdAt: note.createdAt.toISO() } })
     this.loaders.clear()
+    return true
   }
 }
