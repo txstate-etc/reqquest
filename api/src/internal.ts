@@ -32,6 +32,7 @@ export * from './period/period.resolver.js'
 export * from './program/program.resolver.js'
 export * from './prompt/prompt.resolver.js'
 export * from './requirement/requirement.resolver.js'
+// export * from './metrics/metrics.resolver.js'
 
 /** db queries */
 export * from './access/access.database.js'
@@ -42,6 +43,7 @@ export * from './period/period.database.js'
 export * from './program/program.database.js'
 export * from './prompt/prompt.database.js'
 export * from './requirement/requirement.database.js'
+// export * from './metrics/metrics.database.js'
 
 /** Services */
 export * from './access/access.user.service.js'
@@ -53,6 +55,7 @@ export * from './period/period.service.js'
 export * from './program/program.service.js'
 export * from './prompt/prompt.service.js'
 export * from './requirement/requirement.service.js'
+// export * from './metrics/metrics.service.js'
 
 /** Routes */
 export * from './appRequest/appRequest.routes.js'
