@@ -56,6 +56,12 @@ const TOGGLE_PERSISTENCE_MUTATION = `
   }
 `
 
+const DELETE_NOTE_MUTATION = `
+  mutation DeleteNote($noteId: ID!) {
+    deleteNote(noteId: $noteId)
+  }
+`
+
 const NOTES_QUERY = `
   query AppRequestNotes($appRequestIds: [ID!]) {
     appRequests(filter: { ids: $appRequestIds }) {
@@ -357,6 +363,45 @@ test.describe.serial('Notes - XSS sanitization', { tag: '@default' }, () => {
     expect(warnings).toContain('javascript: URLs will be removed.')
   })
 
+  test('Reviewer - updateNote with clean HTML persists changes without warnings', async ({ reviewerRequest }) => {
+    const created = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content: '<p>original content</p>' })
+    expect(created.addNote.success).toEqual(true)
+    const noteId = created.addNote.note!.id
+
+    const newContent = '<p>edited content with <strong>bold</strong></p>'
+    const { updateNote } = await reviewerRequest.graphql<UpdateNoteResponse>(UPDATE_NOTE_MUTATION, { noteId, content: newContent })
+    expect(updateNote.success).toEqual(true)
+    expect(updateNote.note?.id).toEqual(noteId)
+    expect(updateNote.note?.content).toContain('edited content')
+    expect(updateNote.note?.content).toContain('<strong>bold</strong>')
+    expect(warningMessages(updateNote.messages)).toEqual([])
+  })
+
+  test('Reviewer - updateNote with blank content returns error', async ({ reviewerRequest }) => {
+    const created = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content: '<p>note to attempt blanking</p>' })
+    const noteId = created.addNote.note!.id
+
+    const { updateNote } = await reviewerRequest.graphql<UpdateNoteResponse>(UPDATE_NOTE_MUTATION, { noteId, content: '   ' })
+    expect(updateNote.success).toEqual(false)
+    const errors = updateNote.messages.filter(m => m.type === 'error').map(m => m.message)
+    expect(errors).toContain('Note content may not be blank. Delete the note instead.')
+  })
+
+  test('Reviewer - deleteNote removes the note', async ({ reviewerRequest }) => {
+    const created = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content: '<p>note to be deleted</p>' })
+    expect(created.addNote.success).toEqual(true)
+    const noteId = created.addNote.note!.id
+
+    const before = await reviewerRequest.graphql<{ appRequests: { notes: { id: string }[] }[] }>(NOTES_QUERY, { appRequestIds: [appRequestId] })
+    expect(before.appRequests[0].notes.find(n => n.id === noteId)).toBeTruthy()
+
+    const { deleteNote } = await reviewerRequest.graphql<{ deleteNote: boolean }>(DELETE_NOTE_MUTATION, { noteId })
+    expect(deleteNote).toEqual(true)
+
+    const after = await reviewerRequest.graphql<{ appRequests: { notes: { id: string }[] }[] }>(NOTES_QUERY, { appRequestIds: [appRequestId] })
+    expect(after.appRequests[0].notes.find(n => n.id === noteId)).toBeUndefined()
+  })
+
   test('Reviewer - can add a persistent note', async ({ reviewerRequest }) => {
     const content = '<p>persistent reviewer note</p>'
     const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content, persistent: true })
@@ -402,6 +447,31 @@ test.describe.serial('Notes - XSS sanitization', { tag: '@default' }, () => {
     const resp = await commentatorRequest.graphql<any>(TOGGLE_PERSISTENCE_MUTATION, { noteId })
     expect(resp.errors).toBeDefined()
     expect(resp.errors[0].message).toMatch(/may not update this note's persistence/i)
+  })
+
+  test('Applicant - cannot update an existing note', async ({ reviewerRequest, applicantRequest }) => {
+    const created = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content: '<p>note for applicant update attempt</p>' })
+    const noteId = created.addNote.note!.id
+
+    const resp = await applicantRequest.graphql<any>(UPDATE_NOTE_MUTATION, { noteId, content: '<p>applicant tried to edit</p>' })
+    expect(resp.errors).toBeDefined()
+    expect(resp.errors[0].message).toMatch(/may not update this note|note not found/i)
+
+    const after = await reviewerRequest.graphql<{ appRequests: { notes: { id: string, content: string }[] }[] }>(NOTES_QUERY, { appRequestIds: [appRequestId] })
+    const note = after.appRequests[0].notes.find(n => n.id === noteId)
+    expect(note?.content).toContain('note for applicant update attempt')
+  })
+
+  test('Applicant - cannot delete an existing note', async ({ reviewerRequest, applicantRequest }) => {
+    const created = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content: '<p>note for applicant delete attempt</p>' })
+    const noteId = created.addNote.note!.id
+
+    const resp = await applicantRequest.graphql<any>(DELETE_NOTE_MUTATION, { noteId })
+    expect(resp.errors).toBeDefined()
+    expect(resp.errors[0].message).toMatch(/may not delete this note|note not found/i)
+
+    const after = await reviewerRequest.graphql<{ appRequests: { notes: { id: string }[] }[] }>(NOTES_QUERY, { appRequestIds: [appRequestId] })
+    expect(after.appRequests[0].notes.find(n => n.id === noteId)).toBeTruthy()
   })
 
 })
