@@ -1,17 +1,38 @@
 <script lang="ts">
   import { TagSet } from '@txstate-mws/carbon-svelte'
   import { Button } from 'carbon-components-svelte'
-  import { Close, InProgress, CheckmarkFilled, Information } from 'carbon-icons-svelte'
+  import { Close, InProgress, CheckmarkFilled, Information, SubtractAlt } from 'carbon-icons-svelte'
   import { ucfirst } from 'txstate-utils'
-  import { type ApplicationForDetails, enumApplicationStatus, enumIneligiblePhases, enumRequirementType } from '$lib'
+  import { type AnsweredPrompt, type ApplicationForDetails, enumApplicationStatus, enumIneligiblePhases, enumRequirementStatus, enumRequirementType, type PromptDefinition } from '$lib'
   import { getApplicationStatusInfo } from '../status-utils.js'
   import ApplicantProgramListTooltip from './ApplicantProgramListTooltip.svelte'
   import WarningIconYellow from './WarningIconYellow.svelte'
+  import { api } from '$internal/api.js'
+  import { stagedprompts } from '$internal/prompt-utils.js'
+  import ApplicantOptOutModal from './ApplicantOptOutModal.svelte'
 
-  export let appRequest: { phase: string, closedAt?: string | null }
+  export let appRequest: { phase: string, closedAt?: string | null, id: string, dataVersion: number }
   export let applications: ApplicationForDetails[]
   export let viewMode = false
   export let showTooltipsAsText = false
+  export let promptsById: Record<string, any> = {}
+
+  let open = false
+  let optIn = false
+
+  let optOutPrompt: Omit<PromptDefinition, 'displayComponent'> | undefined
+
+  type OptOutApplication = ApplicationForDetails & { prompt: AnsweredPrompt }
+
+  let optOutSelected: OptOutApplication | undefined
+
+
+  async function openOptOutModal (programId: string, openOptIn = false) {
+    optOutSelected = optOutPrograms[programId]
+    optIn = openOptIn
+    open = true
+    loadOptOutPrompt()
+  }
 
   $: promptsByApplicationId = applications.reduce<Record<string, typeof applications[0]['requirements'][0]['prompts'] | undefined>>((acc, curr) => ({
     ...acc,
@@ -33,11 +54,46 @@
           ? 'ineligible'
           : 'revisit'
         : 'complete'
-  }), {})
+  }), {} as Record<string, string>)
+
   $: programFirstPromptId = applications.reduce((acc, curr) => ({
     ...acc,
     [curr.id]: (promptsByApplicationId[curr.id]?.find(p => !p.answered || p.invalidated) ?? promptsByApplicationId[curr.id]?.[0])?.id
-  }), {})
+  }), {} as Record<string, string | undefined>)
+
+  $: optOutPrograms = applications.reduce((acc, curr) => {
+    const optOut = curr.requirements.flat().flatMap(r => r.prompts).find(r => r.optOut)
+
+    if (!optOut) return acc
+
+    return {
+      ...acc,
+      [curr.id]: {
+        ...curr,
+        prompt: optOut
+      }
+    }
+  }, {} as Record<string, OptOutApplication | undefined>)
+
+  $: optedOutPrograms = applications.filter(curr => curr.requirements.flat().flatMap(r => r.prompts).find(r => r.optOut)).reduce((acc, c) => {
+    const optOutRequirement = c.requirements.flat().find(r => r.prompts.find(p => p.optOut))
+    return {
+      ...acc,
+      [c.id]: optOutRequirement?.status === enumRequirementStatus.DISQUALIFYING
+    }
+  }, {} as Record<string, boolean>)
+
+  async function loadOptOutPrompt () {
+    const promptId = optOutSelected?.prompt?.id
+    if (!promptId) return
+    if (promptsById[promptId]?.prestage && !stagedprompts.has(promptId)) {    
+      const response = await api.stagePrompt(promptId, appRequest.dataVersion) 
+      if (response.success) stagedprompts.add(promptId)
+    }     
+    const { prompt } = await api.getApplicantPrompt(appRequest.id, promptId)
+    optOutPrompt = prompt
+  }
+
 </script>
 
 <section class="programs-container">
@@ -48,11 +104,20 @@
   {#each applications as application (application.id)}
     {@const programStatus = programButtonStatus[application.id]}
     {@const programFirstPrompt = programFirstPromptId[application.id]}
-    <div class="program column">{application.title}</div>
+    <div class="program column [ flex-col ]" style='align-items: start;'>
+      <span>{application.title}</span>
+      {#if optedOutPrograms[application.id]}
+        <Button on:click={() => openOptOutModal(application.id, true)} kind='ghost' style='padding: 0; min-height: 0;' class='[ p-0 justify-start ]'>Opt In</Button>
+      {:else if optOutPrograms[application.id]}
+        <Button on:click={() => openOptOutModal(application.id)} kind='ghost' style='padding: 0; min-height: 0;' class='[ p-0 justify-start ]'>Opt out</Button>
+      {/if}
+    </div>
     <div class="status column" class:no-tooltip={!application.statusReason?.length}>
       {#if !viewMode}
         <div class="icon-and-tooltip" class:wide-icon={application.completionStatus === enumApplicationStatus.INELIGIBLE}>
-          {#if application.completionStatus === enumApplicationStatus.INELIGIBLE}
+          {#if optedOutPrograms[application.id]}
+            <SubtractAlt size={24} fill='#dd3b46'/>
+          {:else if application.completionStatus === enumApplicationStatus.INELIGIBLE}
             <Close size={32} class="status-icon-ineligible" />
           {:else if ['start', 'continue'].includes(programStatus)}
             <InProgress size={24} class="status-icon-pending" />
@@ -63,7 +128,9 @@
           {/if}
           <ApplicantProgramListTooltip {application} />
         </div>
-        {#if programFirstPrompt && programStatus !== 'ineligible'}
+        {#if optedOutPrograms[application.id]}
+          <p>Opted out</p>
+        {:else if programFirstPrompt && programStatus !== 'ineligible'}
           <Button size="small" kind={programStatus === 'complete' ? 'ghost' : programStatus === 'revisit' ? 'secondary' : 'primary'} href={programFirstPrompt}>{ucfirst(programStatus)}</Button>
         {/if}
       {:else}
@@ -88,6 +155,11 @@
     {/if}
   {/each}
 </section>
+
+
+{#if optOutPrompt?.key}
+  <ApplicantOptOutModal bind:open bind:optIn bind:prompt={optOutPrompt} {appRequest} />
+{/if}
 
 <style>
   .programs-container {
@@ -179,5 +251,9 @@
     .tooltip-text-row {
       display: block !important;
     }
+  }
+
+  :global(.opt-out-modal .bx--modal-content) {
+    margin-bottom: 1rem;
   }
 </style>
