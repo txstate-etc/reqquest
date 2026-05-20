@@ -9,7 +9,6 @@ export const step1_prequal_req: RequirementDefinition<PreQualPromptData> = {
   description: 'Pre qualification requirements',
   promptKeys: ['pre_qual_prompt'],
   resolve: (data, config) => {
-    console.log(data)
     const preQualPromptData = data['pre_qual_prompt'] as PreQualPromptData
 
     if (preQualPromptData?.availability == null) return { status: RequirementStatus.PENDING }
