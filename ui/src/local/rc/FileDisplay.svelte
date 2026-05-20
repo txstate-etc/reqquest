@@ -38,7 +38,6 @@
 
       const imgBlob: Blob = await res.blob()
       objURL = URL.createObjectURL(imgBlob);
-      console.log(objURL)
       modalOpen = true
     }
     catch (err) {

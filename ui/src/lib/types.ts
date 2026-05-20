@@ -12,6 +12,7 @@ export interface AnsweredPrompt {
   invalidatedReason: string | null
   moot: boolean | null
   visibility: string
+  optOut?: boolean | null
   configurationData: Record<string, any>
   gatheredConfigData: Record<string, any>
   statusReasons: {

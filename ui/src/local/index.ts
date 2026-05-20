@@ -156,6 +156,8 @@ import ReccomendationLetterDisplay from './rc/ReccomendationLetterDisplay.svelte
 import AssessReccomendationLetterDisplay from './rc/AssessReccomendationLetterDisplay.svelte'
 import DataRelatedPuzzleDisplay from './rc/DataRelatedPuzzleDisplay.svelte'
 import { api } from '$internal/api'
+import OptOut from './rc/OptOut.svelte'
+import OptOutDisplay from './rc/OptOutDisplay.svelte'
 
 /** RC */
 
@@ -553,6 +555,11 @@ function configureDemoInstanceParams () {
         key: 'assess_reccomendation_letter_prompt',
         formComponent: AssessReccomendationLetter,
         displayComponent: AssessReccomendationLetterDisplay
+      },
+      {
+        key: 'opt_out_prompt',
+        formComponent: OptOut,
+        displayComponent: OptOutDisplay
       }
       ]
     }
