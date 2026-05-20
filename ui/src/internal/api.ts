@@ -506,7 +506,8 @@ class API extends APIBase {
               invalidatedReason: true,
               configurationData: true,
               gatheredConfigData: true,
-              prestage: true
+              prestage: true,
+              optOut: true
             }
           }
         },
