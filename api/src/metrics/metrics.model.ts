@@ -14,10 +14,13 @@ export class ApplicationMetric {
     this.computedStatus = row.computedStatus
     this.computedPhase = row.computedPhase
     this.computedIneligiblePhase = row.computedIneligiblePhase
+    this.periodId = row.periodId
     this.periodName = row.periodName
     this.periodCode = row.periodCode
+    this.applicantId = row.applicantId
     this.applicantLogin = row.applicantLogin
     this.applicantFullname = row.applicantFullname
+    this.reviewerId = row.reviewerId
     this.reviewerLogin = row.reviewerLogin
     this.reviewerFullname = row.reviewerFullname
   }
@@ -54,14 +57,23 @@ export class ApplicationMetric {
   @Field(type => String, { description: 'The name of the period in which the application was created' })
   periodName: string
 
+  @Field(type => ID, { description: 'The ID of the period in which the application was created' })
+  periodId: string
+
   @Field(type => String, { description: 'The code of the period in which the application was created' })
   periodCode: string
+
+  @Field(type => ID, { description: 'The ID of the applicant who created the application' })
+  applicantId: string
 
   @Field(type => String, { description: 'The login ID of the applicant who created the application' })
   applicantLogin: string
 
   @Field(type => String, { description: 'The full name of the applicant who created the application' })
   applicantFullname: string
+
+  @Field(type => ID, { nullable: true, description: 'The ID of the reviewer who reviewed the application' })
+  reviewerId?: string
 
   @Field(type => String, { description: 'The login ID of the reviewer who reviewed the application' })
   reviewerLogin: string
@@ -108,6 +120,9 @@ export class MetricRequestFilter {
 
 @InputType()
 export class MetricPeriodFilter {
+  @Field(() => [ID], { nullable: true, description: 'Return requests from periods that have any of these IDs.' })
+  ids?: string[]
+
   @Field(() => [String], { nullable: true, description: 'Return requests from periods that have any of these names.' })
   names?: string[]
 
@@ -117,6 +132,9 @@ export class MetricPeriodFilter {
 
 @InputType()
 export class MetricAccessUserFilter {
+  @Field(() => [ID], { nullable: true, description: 'Return requests from users that have any of these IDs.' })
+  ids?: string[]
+
   @Field(type => [String], { nullable: true, description: 'Return requests from users that have any of these logins.' })
   logins?: string[]
 
