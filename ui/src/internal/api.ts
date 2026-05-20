@@ -638,6 +638,48 @@ class API extends APIBase {
     return this.mutationForDialog(response.addNote, { dataName: 'note' })
   }
 
+  async updateNote (noteId: string, content: string) {
+    const response = await this.client.mutation({
+      __name: 'UpdateNote',
+      updateNote: {
+        __args: { noteId, content },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.updateNote, { dataName: 'note' })
+  }
+
+  async togglePersistence (noteId: string) {
+    const response = await this.client.mutation({
+      __name: 'TogglePersistence',
+      togglePersistence: {
+        __args: { noteId },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.togglePersistence, { dataName: 'note' })
+  }
+
+  async deleteNote (noteId: string) {
+    const response = await this.client.mutation({
+      __name: 'DeleteNote',
+      deleteNote: {
+        __args: { noteId }
+      }
+    })
+    return response.deleteNote
+  }
+
   async closeAppRequest (appRequestId: string) {
     const response = await this.client.mutation({
       __name: 'CloseAppRequest',
@@ -867,6 +909,7 @@ class API extends APIBase {
         notes: {
           id: true,
           content: true,
+          persistent: true,
           createdAt: true,
           author: {
             login: true,
