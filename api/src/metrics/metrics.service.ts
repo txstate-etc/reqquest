@@ -81,9 +81,10 @@ export class ApplicationMetricService extends AuthService<ApplicationMetricEntry
     const completed = [...this.getApproved(applicationMetric), ...this.getDenied(applicationMetric)]
     const decisionTimes: number[] = []
     for (const c of completed) {
-      let lastAt = Math.max(...completed.filter(entry => entry.internalAppRequestId === c.internalAppRequestId).map(entry => entry.updatedAt!.toMillis()))
-      lastAt = (lastAt != c.updatedAt!.toMillis()) ? lastAt : c.submittedAt!.toMillis()
-      decisionTimes.push((c.updatedAt!.toMillis() - lastAt) / 1000)
+      let lastMaxAt = Math.max(...completed.filter(entry => entry.internalAppRequestId === c.internalAppRequestId && entry.internalApplicationId !== c.internalApplicationId).map(entry => entry.updatedAt!.toMillis()))
+      console.log('lastMaxAt', lastMaxAt)
+      lastMaxAt = (Number.isFinite(lastMaxAt) && lastMaxAt < c.updatedAt!.toMillis()) ? lastMaxAt : c.submittedAt!.toMillis()
+      decisionTimes.push((c.updatedAt!.toMillis() - lastMaxAt) / 1000)
     }
     if (!decisionTimes.length) return {}
     const avg = decisionTimes.reduce((sum, time) => sum + time, 0) / decisionTimes.length
