@@ -64,7 +64,7 @@ export class ApplicationMetricService extends AuthService<ApplicationMetricEntry
   }
 
   getDenied (applicationMetric: ApplicationMetric): ApplicationMetricEntry[] {
-    return applicationMetric.entries?.filter(entry => entry.phase === ApplicationPhase.COMPLETE && entry.status === ApplicationStatus.INELIGIBLE) ?? []
+    return applicationMetric.entries?.filter(entry => entry.phase === ApplicationPhase.COMPLETE && entry.status === ApplicationStatus.INELIGIBLE && (entry.ineligiblePhase !== IneligiblePhases.PREQUAL && entry.ineligiblePhase !== IneligiblePhases.QUALIFICATION)) ?? []
   }
 
   getSubmissionTimings (applicationMetric: ApplicationMetric): ApplicationMetricTiming {
