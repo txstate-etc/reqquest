@@ -61,7 +61,7 @@ export async function getApplicationMetricEntries (filters?: MetricApplicationFi
   const { where, binds } = metricApplicationFilters(filters)
   const rows = await db.getall<ApplicationMetricEntry>(`
     SELECT app.id as applicationId, app.createdAt, app.updatedAt, app.computedStatus , app.computedPhase , app.computedIneligiblePhase, app.programKey,
-    ar.submittedAt, ar.closedAt,
+    ar.submittedAt, ar.closedAt, ar.id as appRequestId,
     au.id as applicantId, au.login as applicantLogin, au.fullname as applicantFullname,
     per.id as periodId, per.name as periodName, per.code as periodCode
     from applications as app

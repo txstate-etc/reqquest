@@ -7,6 +7,7 @@ export class ApplicationMetricEntry {
   constructor (row: any) {
     this.internalApplicationId = row.applicationId
     this.applicationId = String(row.applicationId)
+    this.appRequestId = String(row.appRequestId)
     this.createdAt = DateTime.fromJSDate(row.createdAt)
     this.updatedAt = DateTime.fromJSDate(row.updatedAt)
     this.submittedAt = row.submittedAt != null ? DateTime.fromJSDate(row.submittedAt) : undefined
@@ -24,8 +25,12 @@ export class ApplicationMetricEntry {
   }
 
   internalApplicationId: number
+
   @Field(type => ID)
   applicationId: string
+
+  @Field(type => ID)
+  appRequestId: string
 
   @Field()
   createdAt: DateTime
