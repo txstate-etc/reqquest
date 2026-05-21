@@ -84,60 +84,63 @@ export class ApplicationMetric {
 
 @InputType()
 export class MetricApplicationFilters {
-  @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that started after this date.' })
+  @Field(() => [ID], { nullable: true, description: 'Return application metrics for applications that have any of these IDs.' })
+  applicationIds?: string[]
+
+  @Field(type => DateTimeScalar, { nullable: true, description: 'Return application metrics for applications that started after this date.' })
   startAfterDateTime?: typeof DateTimeScalar
 
-  @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that started before this date.' })
+  @Field(type => DateTimeScalar, { nullable: true, description: 'Return application metrics for applications that started before this date.' })
   startBeforeDateTime?: typeof DateTimeScalar
 
-  @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that were submitted after this date.' })
+  @Field(type => DateTimeScalar, { nullable: true, description: 'Return application metrics for applications that were submitted after this date.' })
   submittedAfterDateTime?: typeof DateTimeScalar
 
-  @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that were submitted before this date.' })
+  @Field(type => DateTimeScalar, { nullable: true, description: 'Return application metrics for applications that were submitted before this date.' })
   submittedBeforeDateTime?: typeof DateTimeScalar
 
-  @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that were closed after this date.' })
+  @Field(type => DateTimeScalar, { nullable: true, description: 'Return application metrics for applications that were closed after this date.' })
   closedAfterDateTime?: typeof DateTimeScalar
 
-  @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that were closed before this date.' })
+  @Field(type => DateTimeScalar, { nullable: true, description: 'Return application metrics for applications that were closed before this date.' })
   closedBeforeDateTime?: typeof DateTimeScalar
 
-  @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that were archived after this date.' })
+  @Field(type => DateTimeScalar, { nullable: true, description: 'Return application metrics for applications that were archived after this date.' })
   archivedAfterDateTime?: typeof DateTimeScalar
 
-  @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that were archived before this date.' })
+  @Field(type => DateTimeScalar, { nullable: true, description: 'Return application metrics for applications that were archived before this date.' })
   archivedBeforeDateTime?: typeof DateTimeScalar
 
-  @Field(type => MetricPeriodFilters, { nullable: true, description: 'Return requests from periods that match any of these filters.' })
+  @Field(type => MetricPeriodFilters, { nullable: true, description: 'Return application metrics from periods that match any of these filters.' })
   periods?: MetricPeriodFilters
 
-  @Field(type => MetricAccessUserFilters, { nullable: true, description: 'Return requests from applicants that match any of these filters.' })
+  @Field(type => MetricAccessUserFilters, { nullable: true, description: 'Return application metrics from applicants that match any of these filters.' })
   applicants?: MetricAccessUserFilters
 
-  @Field(type => MetricAccessUserFilters, { nullable: true, description: 'Return requests from reviewers that match any of these filters.' })
+  @Field(type => MetricAccessUserFilters, { nullable: true, description: 'Return application metrics from reviewers that match any of these filters.' })
   reviewers?: MetricAccessUserFilters
 }
 
 @InputType()
 export class MetricPeriodFilters {
-  @Field(() => [ID], { nullable: true, description: 'Return requests from periods that have any of these IDs.' })
+  @Field(() => [ID], { nullable: true, description: 'Return application metrics from periods that have any of these IDs.' })
   ids?: string[]
 
-  @Field(() => [String], { nullable: true, description: 'Return requests from periods that have any of these names.' })
+  @Field(() => [String], { nullable: true, description: 'Return rapplication metrics from periods that have any of these names.' })
   names?: string[]
 
-  @Field(() => [String], { nullable: true, description: 'Return requests from periods that have any of these codes.' })
+  @Field(() => [String], { nullable: true, description: 'Return application metrics from periods that have any of these codes.' })
   codes?: string[]
 }
 
 @InputType()
 export class MetricAccessUserFilters {
-  @Field(() => [ID], { nullable: true, description: 'Return requests from users that have any of these IDs.' })
+  @Field(() => [ID], { nullable: true, description: 'Return application metrics from users that have any of these IDs.' })
   ids?: string[]
 
-  @Field(type => [String], { nullable: true, description: 'Return requests from users that have any of these logins.' })
+  @Field(type => [String], { nullable: true, description: 'Return application metrics from users that have any of these logins.' })
   logins?: string[]
 
-  @Field(type => [String], { nullable: true, description: 'Return requests from users that have any of these fullnames.' })
+  @Field(type => [String], { nullable: true, description: 'Return application metrics from users that have any of these fullnames.' })
   fullnames?: string[]
 }
