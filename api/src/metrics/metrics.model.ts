@@ -27,7 +27,7 @@ export class ApplicationMetric {
 
   internalApplicationId: number
 
-  @Field(type => ID, { description: 'Metric application ID' })
+  @Field(type => ID, { description: 'Application ID' })
   applicationId: string
 
   @Field(type => DateTimeScalar, { description: 'The date and time when the application was created.' })
@@ -83,7 +83,7 @@ export class ApplicationMetric {
 }
 
 @InputType()
-export class MetricRequestFilter {
+export class MetricRequestFilters {
   @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that started after this date.' })
   startAfterDateTime?: typeof DateTimeScalar
 
@@ -108,18 +108,18 @@ export class MetricRequestFilter {
   @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that were archived before this date.' })
   archivedBeforeDateTime?: typeof DateTimeScalar
 
-  @Field(type => [MetricPeriodFilter], { nullable: true, description: 'Return requests from periods that match any of these filters.' })
-  periods?: MetricPeriodFilter[]
+  @Field(type => MetricPeriodFilters, { nullable: true, description: 'Return requests from periods that match any of these filters.' })
+  periods?: MetricPeriodFilters
 
-  @Field(type => [MetricAccessUserFilter], { nullable: true, description: 'Return requests from applicants that match any of these filters.' })
-  applicants?: MetricAccessUserFilter[]
+  @Field(type => MetricAccessUserFilters, { nullable: true, description: 'Return requests from applicants that match any of these filters.' })
+  applicants?: MetricAccessUserFilters
 
-  @Field(type => [MetricAccessUserFilter], { nullable: true, description: 'Return requests from reviewers that match any of these filters.' })
-  reviewers?: MetricAccessUserFilter[]
+  @Field(type => MetricAccessUserFilters, { nullable: true, description: 'Return requests from reviewers that match any of these filters.' })
+  reviewers?: MetricAccessUserFilters
 }
 
 @InputType()
-export class MetricPeriodFilter {
+export class MetricPeriodFilters {
   @Field(() => [ID], { nullable: true, description: 'Return requests from periods that have any of these IDs.' })
   ids?: string[]
 
@@ -131,7 +131,7 @@ export class MetricPeriodFilter {
 }
 
 @InputType()
-export class MetricAccessUserFilter {
+export class MetricAccessUserFilters {
   @Field(() => [ID], { nullable: true, description: 'Return requests from users that have any of these IDs.' })
   ids?: string[]
 
