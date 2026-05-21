@@ -1,11 +1,11 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { MetricRequestFilter } from '../internal.js'
+import { MetricApplicationFilters } from '../internal.js'
 
-function metricFilters (filter: MetricRequestFilter) {
+function metricApplicationFilters (filter: MetricApplicationFilters) {
   const where: string[] = []
   const binds: any[] = []
-  if (filter.ids?.length) {
+  if (filter.applicationIds?.length) {
     where.push(`p.id IN (${db.in(binds, filter.ids)})`)
   }
   if (filter.appRequestIds?.length) {

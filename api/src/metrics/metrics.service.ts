@@ -1,6 +1,6 @@
 import { BaseService } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { AuthService, ApplicationMetric, MetricRequestFilters } from '../internal.js'
+import { AuthService, ApplicationMetric, MetricApplicationFilters } from '../internal.js'
 
 const byInternalApplicationIdLoader = new PrimaryKeyLoader({
   fetch: async (applicationIds: number[]) => {
@@ -18,7 +18,7 @@ export class ApplicationMetricServiceInternal extends BaseService<ApplicationMet
     return await this.findByInternalApplicationId(Number(id))
   }
 
-  async find (filters?: MetricRequestFilters) {
+  async find (filters?: MetricApplicationFilters) {
     const applicationMetrics = await getApplicationMetrics(filters)
     for (const applicationMetric of applicationMetrics) {
       this.loaders.get(byInternalApplicationIdLoader).prime(applicationMetric.internalApplicationId, applicationMetric)

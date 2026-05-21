@@ -83,7 +83,7 @@ export class ApplicationMetric {
 }
 
 @InputType()
-export class MetricRequestFilters {
+export class MetricApplicationFilters {
   @Field(type => DateTimeScalar, { nullable: true, description: 'Return requests that started after this date.' })
   startAfterDateTime?: typeof DateTimeScalar
 
