@@ -129,12 +129,6 @@ export class MetricApplicationFilters {
   @Field(type => DateTimeScalar, { nullable: true, description: 'Return application metrics for applications that were closed before this date.' })
   closedBeforeDateTime?: typeof DateTimeScalar
 
-  @Field(type => DateTimeScalar, { nullable: true, description: 'Return application metrics for applications that were archived after this date.' })
-  archivedAfterDateTime?: typeof DateTimeScalar
-
-  @Field(type => DateTimeScalar, { nullable: true, description: 'Return application metrics for applications that were archived before this date.' })
-  archivedBeforeDateTime?: typeof DateTimeScalar
-
   @Field(type => MetricPeriodFilters, { nullable: true, description: 'Return application metrics from periods that match any of these filters.' })
   periods?: MetricPeriodFilters
 

@@ -32,14 +32,6 @@ function metricApplicationFilters (filters?: MetricApplicationFilters) {
     where.push('ar.closedAt <= ?')
     binds.push(filters.closedBeforeDateTime)
   }
-  if (filters?.archivedAfterDateTime != null) {
-    where.push('ar.archivedAt >= ?')
-    binds.push(filters.archivedAfterDateTime)
-  }
-  if (filters?.archivedBeforeDateTime != null) {
-    where.push('ar.archivedAt <= ?')
-    binds.push(filters.archivedBeforeDateTime)
-  }
   if (filters?.periods != null) {
     if (filters.periods.ids?.length) {
       where.push(`per.id IN (${db.in(binds, filters.periods.ids)})`)
