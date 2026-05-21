@@ -28,6 +28,9 @@ type Access {
   """Current user is permitted to view the applicant dashboard."""
   viewApplicantDashboard: Boolean!
 
+  """Current user is permitted to view the metrics UI."""
+  viewMetrics: Boolean!
+
   """Current user is permitted to view the period management UI."""
   viewPeriodManagement: Boolean!
 
@@ -786,6 +789,35 @@ type ApplicationActions {
   viewAsReviewer: Boolean!
 }
 
+"""Calculated application metrics"""
+type ApplicationMetric {
+  approved: Float!
+  closed: Float!
+  denied: Float!
+  entries: [ApplicationMetricEntry!]!
+  started: Float!
+  submitted: Float!
+}
+
+"""Individual application metric entry"""
+type ApplicationMetricEntry {
+  applicantFullname: String!
+  applicantId: ID!
+  applicantLogin: String!
+  applicationId: ID!
+  closedAt: DateTime
+  createdAt: DateTime!
+  ineligiblePhase: String
+  periodCode: String!
+  periodId: ID!
+  periodName: String!
+  phase: String!
+  programKey: String!
+  status: String!
+  submittedAt: DateTime
+  updatedAt: DateTime!
+}
+
 "\n    The phase of the application. This is usually a computed field, not stored in the database. The phase\n    is computed based on the status of the appRequest and of the requirements for the program.\n  "
 enum ApplicationPhase {
   """
@@ -1081,6 +1113,77 @@ enum IneligiblePhases {
 
 """Unstructured JSON data."""
 scalar JsonData
+
+input MetricAccessUserFilters {
+  """
+  Return application metrics from users that have any of these fullnames.
+  """
+  fullnames: [String!]
+
+  """Return application metrics from users that have any of these IDs."""
+  ids: [ID!]
+
+  """Return application metrics from users that have any of these logins."""
+  logins: [String!]
+}
+
+input MetricApplicationFilters {
+  """
+  Return application metrics from applicants that match any of these filters.
+  """
+  applicants: MetricAccessUserFilters
+
+  """
+  Return application metrics for applications that have any of these IDs.
+  """
+  applicationIds: [ID!]
+
+  """
+  Return application metrics for applications that were closed after this date.
+  """
+  closedAfterDateTime: DateTime
+
+  """
+  Return application metrics for applications that were closed before this date.
+  """
+  closedBeforeDateTime: DateTime
+
+  """
+  Return application metrics from periods that match any of these filters.
+  """
+  periods: MetricPeriodFilters
+
+  """
+  Return application metrics for applications that started after this date.
+  """
+  startedAfterDateTime: DateTime
+
+  """
+  Return application metrics for applications that started before this date.
+  """
+  startedBeforeDateTime: DateTime
+
+  """
+  Return application metrics for applications that were submitted after this date.
+  """
+  submittedAfterDateTime: DateTime
+
+  """
+  Return application metrics for applications that were submitted before this date.
+  """
+  submittedBeforeDateTime: DateTime
+}
+
+input MetricPeriodFilters {
+  """Return application metrics from periods that have any of these codes."""
+  codes: [String!]
+
+  """Return application metrics from periods that have any of these IDs."""
+  ids: [ID!]
+
+  """Return rapplication metrics from periods that have any of these names."""
+  names: [String!]
+}
 
 type Mutation {
   """
@@ -1547,6 +1650,7 @@ type Query {
     for: AppRequestIndexDestination
   ): [IndexCategory!]!
   appRequests(filter: AppRequestFilter, paged: Pagination): [AppRequest!]!
+  applicationMetrics(filter: MetricApplicationFilters): ApplicationMetric!
 
   """
   This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant.

@@ -1,6 +1,6 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { ApplicationMetric, MetricApplicationFilters } from '../internal.js'
+import { ApplicationMetricEntry, MetricApplicationFilters } from '../internal.js'
 
 function metricApplicationFilters (filters?: MetricApplicationFilters) {
   const where: string[] = []
@@ -8,13 +8,13 @@ function metricApplicationFilters (filters?: MetricApplicationFilters) {
   if (filters?.applicationIds?.length) {
     where.push(`app.applicationId IN (${db.in(binds, filters.applicationIds)})`)
   }
-  if (filters?.startAfterDateTime != null) {
-    where.push('ar.createdAt >= ?')
-    binds.push(filters.startAfterDateTime)
+  if (filters?.startedAfterDateTime != null) {
+    where.push('app.createdAt >= ?')
+    binds.push(filters.startedAfterDateTime)
   }
-  if (filters?.startBeforeDateTime != null) {
-    where.push('ar.createdAt <= ?')
-    binds.push(filters.startBeforeDateTime)
+  if (filters?.startedBeforeDateTime != null) {
+    where.push('app.createdAt <= ?')
+    binds.push(filters.startedBeforeDateTime)
   }
   if (filters?.submittedAfterDateTime != null) {
     where.push('ar.submittedAt >= ?')
@@ -45,25 +45,31 @@ function metricApplicationFilters (filters?: MetricApplicationFilters) {
   }
   if (filters?.applicants != null) {
     if (filters.applicants.ids?.length) {
-      where.push(`applicant.id IN (${db.in(binds, filters.applicants.ids)})`)
+      where.push(`au.id IN (${db.in(binds, filters.applicants.ids)})`)
     }
     if (filters.applicants.logins?.length) {
-      where.push(`applicant.login IN (${db.in(binds, filters.applicants.logins)})`)
+      where.push(`au.login IN (${db.in(binds, filters.applicants.logins)})`)
     }
     if (filters.applicants.fullnames?.length) {
-      where.push(`applicant.fullname IN (${db.in(binds, filters.applicants.fullnames)})`)
+      where.push(`au.fullname IN (${db.in(binds, filters.applicants.fullnames)})`)
     }
   }
   return { where, binds }
 }
 
-export async function getApplicationMetrics (filters?: MetricApplicationFilters) {
+export async function getApplicationMetricEntries (filters?: MetricApplicationFilters) {
   const { where, binds } = metricApplicationFilters(filters)
-  const rows = await db.getall<ApplicationMetric>(`
-    SELECT p.*
-    FROM periods p
+  const rows = await db.getall<ApplicationMetricEntry>(`
+    SELECT app.id as applicationId, app.createdAt, app.updatedAt, app.computedStatus , app.computedPhase , app.computedIneligiblePhase, app.programKey,
+    ar.submittedAt, ar.closedAt,
+    au.id as applicantId, au.login as applicantLogin, au.fullname as applicantFullname,
+    per.id as periodId, per.name as periodName, per.code as periodCode
+    from applications as app
+    left join app_requests ar on app.appRequestId = ar.id
+    left join accessUsers au on ar.userId = au.id 
+    left join periods per on ar.periodId = per.id
     ${where.length ? `WHERE (${where.join(') AND (')})` : ''}
-    ORDER BY p.openDate DESC
+    ORDER BY app.id ASC
   `, binds)
-  return rows.map(row => new ApplicationMetric(row))
+  return rows.map(row => new ApplicationMetricEntry(row))
 }

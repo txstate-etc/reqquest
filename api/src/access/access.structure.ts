@@ -257,7 +257,7 @@ export async function initAccess () {
     }
   }
   controlGroups.Metrics = {
-    title: 'Admin - View Metrics',
+    title: 'Metrics',
     controls: {
       view: { description: 'View metrics data.' }
     }

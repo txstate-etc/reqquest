@@ -1,85 +1,94 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
 import { DateTimeScalar, Period } from '../internal.js'
+import { DateTime } from 'luxon'
 
-@ObjectType({ description: 'This is the generic definition of a prompt. It is not attached to an appRequest. We will use this type for the administration interface to allow administrators to grant access to prompts and edit their configuration.' })
-export class ApplicationMetric {
+@ObjectType({ description: 'Individual application metric entry' })
+export class ApplicationMetricEntry {
   constructor (row: any) {
-    this.internalApplicationId = row.applicationInternalId
+    this.internalApplicationId = row.applicationId
     this.applicationId = String(row.applicationId)
-    this.createdAt = row.createdAt
-    this.submittedAt = row.submittedAt
-    this.closedAt = row.closedAt
-    this.archivedAt = row.archivedAt
-    this.updatedAt = row.updatedAt
-    this.computedStatus = row.computedStatus
-    this.computedPhase = row.computedPhase
-    this.computedIneligiblePhase = row.computedIneligiblePhase
+    this.createdAt = DateTime.fromJSDate(row.createdAt)
+    this.updatedAt = DateTime.fromJSDate(row.updatedAt)
+    this.submittedAt = row.submittedAt != null ? DateTime.fromJSDate(row.submittedAt) : undefined
+    this.closedAt = row.closedAt != null ? DateTime.fromJSDate(row.closedAt) : undefined
+    this.status = row.computedStatus
+    this.phase = row.computedPhase
+    this.ineligiblePhase = row.computedIneligiblePhase
+    this.programKey = row.programKey
     this.periodId = row.periodId
     this.periodName = row.periodName
     this.periodCode = row.periodCode
     this.applicantId = row.applicantId
     this.applicantLogin = row.applicantLogin
     this.applicantFullname = row.applicantFullname
-    this.reviewerId = row.reviewerId
-    this.reviewerLogin = row.reviewerLogin
-    this.reviewerFullname = row.reviewerFullname
   }
 
   internalApplicationId: number
-
-  @Field(type => ID, { description: 'Application ID' })
+  @Field(type => ID)
   applicationId: string
 
-  @Field(type => DateTimeScalar, { description: 'The date and time when the application was created.' })
-  createdAt: typeof DateTimeScalar
+  @Field()
+  createdAt: DateTime
 
-  @Field(type => DateTimeScalar, { description: 'The date and time when the application was submitted.' })
-  submittedAt: typeof DateTimeScalar
+  @Field()
+  updatedAt: DateTime
 
-  @Field(type => DateTimeScalar, { description: 'The date and time when the application was closed.' })
-  closedAt: typeof DateTimeScalar
+  @Field({ nullable: true })
+  submittedAt?: DateTime
 
-  @Field(type => DateTimeScalar, { description: 'The date and time when the application was archived.' })
-  archivedAt: typeof DateTimeScalar
+  @Field({ nullable: true })
+  closedAt?: DateTime
 
-  @Field(type => DateTimeScalar, { description: 'The date and time when the application was last updated.' })
-  updatedAt: typeof DateTimeScalar
+  @Field(type => String)
+  status: string
 
-  @Field(type => String, { description: 'The current status of the application' })
-  computedStatus: string
+  @Field(type => String)
+  phase: string
 
-  @Field(type => String, { description: 'The current phase of the application' })
-  computedPhase: string
+  @Field(type => String, { nullable: true })
+  ineligiblePhase?: string
 
-  @Field(type => String, { nullable: true, description: 'The phase in which the application became ineligible' })
-  computedIneligiblePhase?: string
+  @Field(type => String)
+  programKey: string
 
-  @Field(type => String, { description: 'The name of the period in which the application was created' })
-  periodName: string
-
-  @Field(type => ID, { description: 'The ID of the period in which the application was created' })
+  @Field(type => ID)
   periodId: string
 
-  @Field(type => String, { description: 'The code of the period in which the application was created' })
+  @Field(type => String)
+  periodName: string
+
+  @Field(type => String)
   periodCode: string
 
-  @Field(type => ID, { description: 'The ID of the applicant who created the application' })
+  @Field(type => ID)
   applicantId: string
 
-  @Field(type => String, { description: 'The login ID of the applicant who created the application' })
+  @Field(type => String)
   applicantLogin: string
 
-  @Field(type => String, { description: 'The full name of the applicant who created the application' })
+  @Field(type => String)
   applicantFullname: string
+}
 
-  @Field(type => ID, { nullable: true, description: 'The ID of the reviewer who reviewed the application' })
-  reviewerId?: string
+@ObjectType({ description: 'Calculated application metrics' })
+export class ApplicationMetric {
+  @Field(type => [ApplicationMetricEntry])
+  entries?: ApplicationMetricEntry[]
 
-  @Field(type => String, { description: 'The login ID of the reviewer who reviewed the application' })
-  reviewerLogin: string
+  @Field(type => Number)
+  started?: number
 
-  @Field(type => String, { description: 'The full name of the reviewer who reviewed the application' })
-  reviewerFullname: string
+  @Field(type => Number)
+  submitted?: number
+
+  @Field(type => Number)
+  closed?: number
+
+  @Field(type => Number)
+  approved?: number
+
+  @Field(type => Number)
+  denied?: number
 }
 
 @InputType()
@@ -112,10 +121,10 @@ export class MetricApplicationFilters {
   applicationIds?: string[]
 
   @Field(type => DateTimeScalar, { nullable: true, description: 'Return application metrics for applications that started after this date.' })
-  startAfterDateTime?: typeof DateTimeScalar
+  startedAfterDateTime?: typeof DateTimeScalar
 
   @Field(type => DateTimeScalar, { nullable: true, description: 'Return application metrics for applications that started before this date.' })
-  startBeforeDateTime?: typeof DateTimeScalar
+  startedBeforeDateTime?: typeof DateTimeScalar
 
   @Field(type => DateTimeScalar, { nullable: true, description: 'Return application metrics for applications that were submitted after this date.' })
   submittedAfterDateTime?: typeof DateTimeScalar
