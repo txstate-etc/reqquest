@@ -10,7 +10,6 @@ export const communication_req: RequirementDefinition = {
   promptKeys: ['communication_prompt'],
   resolve: (data, config) => {
     const writtenAutomationData = data['communication_prompt'] as CommunicationData
-    console.log(writtenAutomationData, '🚀🚀🚀🚀🚀🚀')
     if (writtenAutomationData?.describeCommunication == null) return { status: RequirementStatus.PENDING }
     return { status: RequirementStatus.MET }
   }

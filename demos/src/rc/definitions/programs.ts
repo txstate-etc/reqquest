@@ -17,6 +17,7 @@ export const softwareDevelopment: ProgramDefinition = {
   key: 'software_development',
   title: 'Software Development',
   requirementKeys: [
+    'opt_out_req',
     'step1_prequal_req',
     'data_related_puzzle_req',
     'assess_data_related_puzzle_req',

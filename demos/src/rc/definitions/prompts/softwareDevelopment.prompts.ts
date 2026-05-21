@@ -2,6 +2,21 @@ import { PromptDefinition } from '@reqquest/api'
 import { MutationMessageType } from '@txstate-mws/graphql-server'
 import { AssessCriticalThinkingPromptData, AssessCriticalThinkingSchema, AssessOutsideClassExamplePromptData, AssessOutsideClassExampleSchema, AssessPuzzleSolutionPromptData, AssessPuzzleSolutionSchema, CriticalThinkingPromptData, CriticalThinkingSchema, DataRelatedPuzzlePromptData, DataRelatedPuzzleSchema, OutsideClassExamplePromptData, OutsideClassExampleSchema } from '../models/index.js'
 import { fileHandler } from 'fastify-txstate'
+import { OptOutData, OptOutSchema } from '../models/optOut.models.js'
+
+export const opt_out_prompt: PromptDefinition<OptOutData> = {
+  key: 'opt_out_prompt',
+  title: 'Software development',
+  description: 'Opt Out',
+  schema: OptOutSchema,
+  optOut: true,
+  prestage: () => ({
+    optOut: false
+  }),
+  validate: (data, config) => {
+    return []
+  }
+}
 
 export const data_related_puzzle_prompt: PromptDefinition<DataRelatedPuzzlePromptData> = {
   key: 'data_related_puzzle_prompt',
@@ -48,15 +63,12 @@ export const outside_class_example_prompt: PromptDefinition<OutsideClassExampleP
   schema: OutsideClassExampleSchema,
   validate: (data, config) => {
     const messages = []
-    console.log(data)
-    console.log(!data.outsideClassExample)
     if (!data.outsideClassExample) {
       messages.push({ type: MutationMessageType.warning, message: 'Might want to make something up', arg: 'outsideClassExample' })
     }
     if (data.description && data.description == null) {
       messages.push({ type: MutationMessageType.error, message: 'Please add description.', arg: 'description' })
     }
-    console.log(messages)
     return messages
   }
 }

@@ -97,6 +97,10 @@ export interface PromptDefinition {
    * An icon for the navigation.
    */
   icon?: Component
+  /**
+   * Ability for user to opt out
+   */
+  optOut?: boolean
 }
 
 export interface Terminologies {

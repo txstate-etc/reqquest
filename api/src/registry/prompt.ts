@@ -412,6 +412,10 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * make decisions.
    */
   configuration?: ConfigurationDefinition
+  /**
+   * Ability for user to opt out
+   */
+  optOut?: boolean
 }
 
 export interface InvalidatedResponse {

@@ -60,6 +60,11 @@ export class RequirementPromptResolver {
   async prestage (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt) {
     return await ctx.svc(RequirementPromptService).requiresStaging(requirementPrompt)
   }
+
+  @FieldResolver(type => Boolean)
+  async optOut (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt) {
+    return !!promptRegistry.get(requirementPrompt.key).optOut
+  }
 }
 
 @Resolver(of => RequirementPromptActions)

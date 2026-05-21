@@ -3,7 +3,6 @@
   import type { RCPreQual } from './types.js'
   export let fetched: string[]
   export let data: Partial<RCPreQual>
-  console.log(fetched)
 </script>
 
 <FieldNumber path='gpa' labelText='GPA' step={0.1} />

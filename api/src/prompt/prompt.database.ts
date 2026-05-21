@@ -19,6 +19,7 @@ export interface PromptRow {
   moot: 0 | 1
   locked: 0 | 1
   invalidated: 0 | 1
+  optOut: 0 | 1
   invalidatedReason: string | null
   visibility: PromptVisibility
   workflowStage?: string
