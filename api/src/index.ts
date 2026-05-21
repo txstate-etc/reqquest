@@ -17,7 +17,7 @@ import {
   PeriodRequirementResolver, PeriodPromptResolver, initAccess, AppRequestIndexCategoryResolver,
   AccessRoleGroupResolver, AccessRoleGrantResolver, AccessGrantTagResolver, IndexCategoryResolver,
   AccessRoleGrantActionsResolver, AccessTagCategoryResolver, logMutation, installDownloadRoutes,
-  AppRequestActivityResolver, PaginationResolver, noteMigrations, NoteResolver, NoteActionsResolver
+  AppRequestActivityResolver, PaginationResolver, noteMigrations, NoteResolver, NoteActionsResolver, ApplicationMetricResolver
 } from './internal.js'
 import { scheduler, schedulerMigration } from './util/scheduler.js'
 import { FastifyTxStateOptions } from 'fastify-txstate'
@@ -76,6 +76,7 @@ export class RQServer extends GQLServer {
       ApplicationActionsResolver,
       ApplicationResolver,
       ApplicationRequirementResolver,
+      ApplicationMetricResolver,
       AppRequestAccessResolver,
       AppRequestActivityResolver,
       IndexCategoryResolver,
