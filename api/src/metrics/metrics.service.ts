@@ -78,10 +78,13 @@ export class ApplicationMetricService extends AuthService<ApplicationMetricEntry
   }
 
   getDecisionTimings (applicationMetric: ApplicationMetric): ApplicationMetricTiming {
-    const approved = this.getApproved(applicationMetric)
-    const denied = this.getDenied(applicationMetric)
-    const merged = [...approved, ...denied]
-    const decisionTimes = merged.map(entry => ((entry.updatedAt!.toMillis() - entry.submittedAt!.toMillis()) / (merged.filter(m => m.appRequestId === entry.appRequestId).length)) / 1000)
+    const completed = [...this.getApproved(applicationMetric), ...this.getDenied(applicationMetric)]
+    const decisionTimes: number[] = []
+    for (const c of completed) {
+      let lastAt = Math.max(...completed.filter(entry => entry.internalAppRequestId === c.internalAppRequestId).map(entry => entry.updatedAt!.toMillis()))
+      lastAt = (lastAt != c.updatedAt!.toMillis()) ? lastAt : c.submittedAt!.toMillis()
+      decisionTimes.push((c.updatedAt!.toMillis() - lastAt) / 1000)
+    }
     if (!decisionTimes.length) return {}
     const avg = decisionTimes.reduce((sum, time) => sum + time, 0) / decisionTimes.length
     const max = Math.max(...decisionTimes)

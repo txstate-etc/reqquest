@@ -69,7 +69,7 @@ export async function getApplicationMetricEntries (filters?: MetricApplicationFi
     left join accessUsers au on ar.userId = au.id 
     left join periods per on ar.periodId = per.id
     ${where.length ? `WHERE (${where.join(') AND (')})` : ''}
-    ORDER BY app.id ASC
+    ORDER BY ar.id ASC
   `, binds)
   return rows.map(row => new ApplicationMetricEntry(row))
 }
