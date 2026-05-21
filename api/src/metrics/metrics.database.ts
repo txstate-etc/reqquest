@@ -62,17 +62,6 @@ function metricApplicationFilters (filters?: MetricApplicationFilters) {
       where.push(`applicant.fullname IN (${db.in(binds, filters.applicants.fullnames)})`)
     }
   }
-  if (filters?.reviewers != null) {
-    if (filters.reviewers.ids?.length) {
-      where.push(`reviewer.id IN (${db.in(binds, filters.reviewers.ids)})`)
-    }
-    if (filters.reviewers.logins?.length) {
-      where.push(`reviewer.login IN (${db.in(binds, filters.reviewers.logins)})`)
-    }
-    if (filters.reviewers.fullnames?.length) {
-      where.push(`reviewer.fullname IN (${db.in(binds, filters.reviewers.fullnames)})`)
-    }
-  }
   return { where, binds }
 }
 

@@ -83,6 +83,30 @@ export class ApplicationMetric {
 }
 
 @InputType()
+export class MetricPeriodFilters {
+  @Field(() => [ID], { nullable: true, description: 'Return application metrics from periods that have any of these IDs.' })
+  ids?: string[]
+
+  @Field(() => [String], { nullable: true, description: 'Return rapplication metrics from periods that have any of these names.' })
+  names?: string[]
+
+  @Field(() => [String], { nullable: true, description: 'Return application metrics from periods that have any of these codes.' })
+  codes?: string[]
+}
+
+@InputType()
+export class MetricAccessUserFilters {
+  @Field(() => [ID], { nullable: true, description: 'Return application metrics from users that have any of these IDs.' })
+  ids?: string[]
+
+  @Field(type => [String], { nullable: true, description: 'Return application metrics from users that have any of these logins.' })
+  logins?: string[]
+
+  @Field(type => [String], { nullable: true, description: 'Return application metrics from users that have any of these fullnames.' })
+  fullnames?: string[]
+}
+
+@InputType()
 export class MetricApplicationFilters {
   @Field(() => [ID], { nullable: true, description: 'Return application metrics for applications that have any of these IDs.' })
   applicationIds?: string[]
@@ -116,31 +140,4 @@ export class MetricApplicationFilters {
 
   @Field(type => MetricAccessUserFilters, { nullable: true, description: 'Return application metrics from applicants that match any of these filters.' })
   applicants?: MetricAccessUserFilters
-
-  @Field(type => MetricAccessUserFilters, { nullable: true, description: 'Return application metrics from reviewers that match any of these filters.' })
-  reviewers?: MetricAccessUserFilters
-}
-
-@InputType()
-export class MetricPeriodFilters {
-  @Field(() => [ID], { nullable: true, description: 'Return application metrics from periods that have any of these IDs.' })
-  ids?: string[]
-
-  @Field(() => [String], { nullable: true, description: 'Return rapplication metrics from periods that have any of these names.' })
-  names?: string[]
-
-  @Field(() => [String], { nullable: true, description: 'Return application metrics from periods that have any of these codes.' })
-  codes?: string[]
-}
-
-@InputType()
-export class MetricAccessUserFilters {
-  @Field(() => [ID], { nullable: true, description: 'Return application metrics from users that have any of these IDs.' })
-  ids?: string[]
-
-  @Field(type => [String], { nullable: true, description: 'Return application metrics from users that have any of these logins.' })
-  logins?: string[]
-
-  @Field(type => [String], { nullable: true, description: 'Return application metrics from users that have any of these fullnames.' })
-  fullnames?: string[]
 }
