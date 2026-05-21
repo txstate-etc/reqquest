@@ -1,5 +1,5 @@
 import { Arg, Ctx, FieldResolver, Int, Query, Resolver, Root } from 'type-graphql'
-import { RQContext, ApplicationMetric, ApplicationMetricEntry, ApplicationMetricService, MetricApplicationFilters, ApplicationPhase, IneligiblePhases, ApplicationStatus } from '../internal.js'
+import { RQContext, ApplicationMetric, ApplicationMetricEntry, ApplicationMetricService, MetricApplicationFilters, ApplicationPhase, IneligiblePhases, ApplicationStatus, ApplicationMetricTiming } from '../internal.js'
 
 @Resolver(of => ApplicationMetric)
 export class ApplicationMetricResolver {
@@ -9,27 +9,37 @@ export class ApplicationMetricResolver {
   }
 
   @FieldResolver(returns => Number, { description: 'The count of applications started.' })
-  async started (@Root() applicationMetric: ApplicationMetric): Promise<Number> {
-    return applicationMetric.entries?.filter(entry => entry.createdAt != null && (entry.phase !== ApplicationPhase.PREQUAL && entry.ineligiblePhase !== IneligiblePhases.PREQUAL)).length ?? 0
+  async started (@Ctx() ctx: RQContext, @Root() applicationMetric: ApplicationMetric): Promise<Number> {
+    return (await ctx.svc(ApplicationMetricService).getStarted(applicationMetric)).length
   }
 
   @FieldResolver(returns => Number, { description: 'The count of applications submitted.' })
-  async submitted (@Root() applicationMetric: ApplicationMetric): Promise<Number> {
-    return applicationMetric.entries?.filter(entry => entry.submittedAt != null && (entry.ineligiblePhase !== IneligiblePhases.PREQUAL && entry.ineligiblePhase !== IneligiblePhases.QUALIFICATION)).length ?? 0
+  async submitted (@Ctx() ctx: RQContext, @Root() applicationMetric: ApplicationMetric): Promise<Number> {
+    return (await ctx.svc(ApplicationMetricService).getSubmitted(applicationMetric)).length
   }
 
   @FieldResolver(returns => Number, { description: 'The count of applications closed.' })
-  async closed (@Root() applicationMetric: ApplicationMetric): Promise<Number> {
-    return applicationMetric.entries?.filter(entry => entry.closedAt != null && (entry.ineligiblePhase !== IneligiblePhases.PREQUAL && entry.ineligiblePhase !== IneligiblePhases.QUALIFICATION)).length ?? 0
+  async closed (@Ctx() ctx: RQContext, @Root() applicationMetric: ApplicationMetric): Promise<Number> {
+    return (await ctx.svc(ApplicationMetricService).getClosed(applicationMetric)).length
   }
 
   @FieldResolver(returns => Number, { description: 'The count of applications approved.' })
-  async approved (@Root() applicationMetric: ApplicationMetric): Promise<Number> {
-    return applicationMetric.entries?.filter(entry => entry.phase === ApplicationPhase.COMPLETE && entry.status === ApplicationStatus.ELIGIBLE).length ?? 0
+  async approved (@Ctx() ctx: RQContext, @Root() applicationMetric: ApplicationMetric): Promise<Number> {
+    return (await ctx.svc(ApplicationMetricService).getApproved(applicationMetric)).length
   }
 
   @FieldResolver(returns => Number, { description: 'The count of applications denied.' })
-  async denied (@Root() applicationMetric: ApplicationMetric): Promise<Number> {
-    return applicationMetric.entries?.filter(entry => entry.phase === ApplicationPhase.COMPLETE && entry.status === ApplicationStatus.INELIGIBLE).length ?? 0
+  async denied (@Ctx() ctx: RQContext, @Root() applicationMetric: ApplicationMetric): Promise<Number> {
+    return (await ctx.svc(ApplicationMetricService).getDenied(applicationMetric)).length
+  }
+
+  @FieldResolver(returns => ApplicationMetricTiming, { description: 'Timings (seconds), for applications from started to submitted.' })
+  async toSubmit (@Ctx() ctx: RQContext, @Root() applicationMetric: ApplicationMetric): Promise<ApplicationMetricTiming> {
+    return await ctx.svc(ApplicationMetricService).getSubmissionTimings(applicationMetric)
+  }
+
+  @FieldResolver(returns => ApplicationMetricTiming, { description: 'Timings (seconds), for applications from submitted to completed.' })
+  async toDecision (@Ctx() ctx: RQContext, @Root() applicationMetric: ApplicationMetric): Promise<ApplicationMetricTiming> {
+    return await ctx.svc(ApplicationMetricService).getDecisionTimings(applicationMetric)
   }
 }

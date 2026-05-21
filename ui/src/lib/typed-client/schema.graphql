@@ -797,9 +797,11 @@ type ApplicationMetric {
   entries: [ApplicationMetricEntry!]!
   started: Float!
   submitted: Float!
+  toDecision: ApplicationMetricTiming!
+  toSubmit: ApplicationMetricTiming!
 }
 
-"""Individual application metric entry"""
+"""Application metric entry"""
 type ApplicationMetricEntry {
   applicantFullname: String!
   applicantId: ID!
@@ -816,6 +818,13 @@ type ApplicationMetricEntry {
   status: String!
   submittedAt: DateTime
   updatedAt: DateTime!
+}
+
+"""Application metric timings"""
+type ApplicationMetricTiming {
+  avg: Float
+  max: Float
+  min: Float
 }
 
 "\n    The phase of the application. This is usually a computed field, not stored in the database. The phase\n    is computed based on the status of the appRequest and of the requirements for the program.\n  "

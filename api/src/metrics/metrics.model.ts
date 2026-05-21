@@ -2,7 +2,7 @@ import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql
 import { DateTimeScalar, Period } from '../internal.js'
 import { DateTime } from 'luxon'
 
-@ObjectType({ description: 'Individual application metric entry' })
+@ObjectType({ description: 'Application metric entry' })
 export class ApplicationMetricEntry {
   constructor (row: any) {
     this.internalApplicationId = row.applicationId
@@ -70,6 +70,18 @@ export class ApplicationMetricEntry {
   applicantFullname: string
 }
 
+@ObjectType({ description: 'Application metric timings' })
+export class ApplicationMetricTiming {
+  @Field(type => Number, { nullable: true })
+  avg?: number
+
+  @Field(type => Number, { nullable: true })
+  min?: number
+
+  @Field(type => Number, { nullable: true })
+  max?: number
+}
+
 @ObjectType({ description: 'Calculated application metrics' })
 export class ApplicationMetric {
   @Field(type => [ApplicationMetricEntry])
@@ -89,6 +101,12 @@ export class ApplicationMetric {
 
   @Field(type => Number)
   denied?: number
+
+  @Field(type => ApplicationMetricTiming)
+  toSubmit?: ApplicationMetricTiming
+
+  @Field(type => ApplicationMetricTiming)
+  toDecision?: ApplicationMetricTiming
 }
 
 @InputType()

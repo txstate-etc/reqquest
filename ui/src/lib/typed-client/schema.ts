@@ -349,11 +349,13 @@ export interface ApplicationMetric {
     entries: ApplicationMetricEntry[]
     started: Scalars['Float']
     submitted: Scalars['Float']
+    toDecision: ApplicationMetricTiming
+    toSubmit: ApplicationMetricTiming
     __typename: 'ApplicationMetric'
 }
 
 
-/** Individual application metric entry */
+/** Application metric entry */
 export interface ApplicationMetricEntry {
     applicantFullname: Scalars['String']
     applicantId: Scalars['ID']
@@ -371,6 +373,15 @@ export interface ApplicationMetricEntry {
     submittedAt: (Scalars['DateTime'] | null)
     updatedAt: Scalars['DateTime']
     __typename: 'ApplicationMetricEntry'
+}
+
+
+/** Application metric timings */
+export interface ApplicationMetricTiming {
+    avg: (Scalars['Float'] | null)
+    max: (Scalars['Float'] | null)
+    min: (Scalars['Float'] | null)
+    __typename: 'ApplicationMetricTiming'
 }
 
 
@@ -1278,12 +1289,14 @@ export interface ApplicationMetricGenqlSelection{
     entries?: ApplicationMetricEntryGenqlSelection
     started?: boolean | number
     submitted?: boolean | number
+    toDecision?: ApplicationMetricTimingGenqlSelection
+    toSubmit?: ApplicationMetricTimingGenqlSelection
     __typename?: boolean | number
     __scalar?: boolean | number
 }
 
 
-/** Individual application metric entry */
+/** Application metric entry */
 export interface ApplicationMetricEntryGenqlSelection{
     applicantFullname?: boolean | number
     applicantId?: boolean | number
@@ -1300,6 +1313,16 @@ export interface ApplicationMetricEntryGenqlSelection{
     status?: boolean | number
     submittedAt?: boolean | number
     updatedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Application metric timings */
+export interface ApplicationMetricTimingGenqlSelection{
+    avg?: boolean | number
+    max?: boolean | number
+    min?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -2035,6 +2058,14 @@ export interface ValidatedResponseGenqlSelection{
     export const isApplicationMetricEntry = (obj?: { __typename?: any } | null): obj is ApplicationMetricEntry => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isApplicationMetricEntry"')
       return ApplicationMetricEntry_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ApplicationMetricTiming_possibleTypes: string[] = ['ApplicationMetricTiming']
+    export const isApplicationMetricTiming = (obj?: { __typename?: any } | null): obj is ApplicationMetricTiming => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isApplicationMetricTiming"')
+      return ApplicationMetricTiming_possibleTypes.includes(obj.__typename)
     }
     
 
