@@ -1,6 +1,6 @@
 import { BaseService } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { AuthService, ApplicationMetric, MetricApplicationFilters } from '../internal.js'
+import { AuthService, ApplicationMetric, MetricApplicationFilters, getApplicationMetrics } from '../internal.js'
 
 const byInternalApplicationIdLoader = new PrimaryKeyLoader({
   fetch: async (applicationIds: number[]) => {

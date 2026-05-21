@@ -43,7 +43,7 @@ export * from './period/period.database.js'
 export * from './program/program.database.js'
 export * from './prompt/prompt.database.js'
 export * from './requirement/requirement.database.js'
-// export * from './metrics/metrics.database.js'
+export * from './metrics/metrics.database.js'
 
 /** Services */
 export * from './access/access.user.service.js'
