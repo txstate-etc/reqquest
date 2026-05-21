@@ -82,7 +82,6 @@ export class ApplicationMetricService extends AuthService<ApplicationMetricEntry
     const decisionTimes: number[] = []
     for (const c of completed) {
       let lastMaxAt = Math.max(...completed.filter(entry => entry.internalAppRequestId === c.internalAppRequestId && entry.internalApplicationId !== c.internalApplicationId).map(entry => entry.updatedAt!.toMillis()))
-      console.log('lastMaxAt', lastMaxAt)
       lastMaxAt = (Number.isFinite(lastMaxAt) && lastMaxAt < c.updatedAt!.toMillis()) ? lastMaxAt : c.submittedAt!.toMillis()
       decisionTimes.push((c.updatedAt!.toMillis() - lastMaxAt) / 1000)
     }
