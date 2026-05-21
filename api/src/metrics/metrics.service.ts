@@ -34,7 +34,7 @@ export class ApplicationMetricService extends AuthService<ApplicationMetric> {
     return this.hasAnyControl('Metrics', 'view')
   }
 
-  async find (filters?: MetricRequestFilters) {
+  async find (filters?: MetricApplicationFilters) {
     if (!this.mayViewMetrics()) throw new Error('You are not allowed to view metrics.')
     return await this.raw.find(filters)
   }
