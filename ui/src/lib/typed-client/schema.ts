@@ -28,6 +28,8 @@ export interface Access {
     viewAppRequestList: Scalars['Boolean']
     /** Current user is permitted to view the applicant dashboard. */
     viewApplicantDashboard: Scalars['Boolean']
+    /** Current user is permitted to view the metrics UI. */
+    viewMetrics: Scalars['Boolean']
     /** Current user is permitted to view the period management UI. */
     viewPeriodManagement: Scalars['Boolean']
     /** Current user is permitted to view the reviewer dashboard. */
@@ -336,6 +338,50 @@ export interface ApplicationActions {
     reverseWorkflow: Scalars['Boolean']
     viewAsReviewer: Scalars['Boolean']
     __typename: 'ApplicationActions'
+}
+
+
+/** Calculated application metrics */
+export interface ApplicationMetric {
+    approved: Scalars['Float']
+    closed: Scalars['Float']
+    denied: Scalars['Float']
+    entries: ApplicationMetricEntry[]
+    started: Scalars['Float']
+    submitted: Scalars['Float']
+    toDecision: ApplicationMetricTiming
+    toSubmit: ApplicationMetricTiming
+    __typename: 'ApplicationMetric'
+}
+
+
+/** Application metric entry */
+export interface ApplicationMetricEntry {
+    applicantFullname: Scalars['String']
+    applicantId: Scalars['ID']
+    applicantLogin: Scalars['String']
+    applicationId: Scalars['ID']
+    closedAt: (Scalars['DateTime'] | null)
+    createdAt: Scalars['DateTime']
+    ineligiblePhase: (Scalars['String'] | null)
+    periodCode: Scalars['String']
+    periodId: Scalars['ID']
+    periodName: Scalars['String']
+    phase: Scalars['String']
+    programKey: Scalars['String']
+    status: Scalars['String']
+    submittedAt: (Scalars['DateTime'] | null)
+    updatedAt: Scalars['DateTime']
+    __typename: 'ApplicationMetricEntry'
+}
+
+
+/** Application metric timings */
+export interface ApplicationMetricTiming {
+    avg: (Scalars['Float'] | null)
+    max: (Scalars['Float'] | null)
+    min: (Scalars['Float'] | null)
+    __typename: 'ApplicationMetricTiming'
 }
 
 
@@ -683,6 +729,7 @@ export interface Query {
     appRequestActivity: AppRequestActivity[]
     appRequestIndexes: IndexCategory[]
     appRequests: AppRequest[]
+    applicationMetrics: ApplicationMetric
     /** This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant. */
     controlGroups: AccessControlGroup[]
     countAppRequests: Scalars['Int']
@@ -772,7 +819,8 @@ export interface ValidatedConfigurationResponse {
 
 export interface ValidatedNoteResponse {
     messages: MutationMessage[]
-    note: Note
+    /** The created or updated note. Null when validateOnly was true or when validation errors prevented the operation. */
+    note: (Note | null)
     /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
     success: Scalars['Boolean']
     __typename: 'ValidatedNoteResponse'
@@ -808,6 +856,8 @@ export interface AccessGenqlSelection{
     viewAppRequestList?: boolean | number
     /** Current user is permitted to view the applicant dashboard. */
     viewApplicantDashboard?: boolean | number
+    /** Current user is permitted to view the metrics UI. */
+    viewMetrics?: boolean | number
     /** Current user is permitted to view the period management UI. */
     viewPeriodManagement?: boolean | number
     /** Current user is permitted to view the reviewer dashboard. */
@@ -1232,6 +1282,53 @@ export interface ApplicationActionsGenqlSelection{
 }
 
 
+/** Calculated application metrics */
+export interface ApplicationMetricGenqlSelection{
+    approved?: boolean | number
+    closed?: boolean | number
+    denied?: boolean | number
+    entries?: ApplicationMetricEntryGenqlSelection
+    started?: boolean | number
+    submitted?: boolean | number
+    toDecision?: ApplicationMetricTimingGenqlSelection
+    toSubmit?: ApplicationMetricTimingGenqlSelection
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Application metric entry */
+export interface ApplicationMetricEntryGenqlSelection{
+    applicantFullname?: boolean | number
+    applicantId?: boolean | number
+    applicantLogin?: boolean | number
+    applicationId?: boolean | number
+    closedAt?: boolean | number
+    createdAt?: boolean | number
+    ineligiblePhase?: boolean | number
+    periodCode?: boolean | number
+    periodId?: boolean | number
+    periodName?: boolean | number
+    phase?: boolean | number
+    programKey?: boolean | number
+    status?: boolean | number
+    submittedAt?: boolean | number
+    updatedAt?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** Application metric timings */
+export interface ApplicationMetricTimingGenqlSelection{
+    avg?: boolean | number
+    max?: boolean | number
+    min?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
 /** The specific instance of a requirement on a particular application. Stores the status of the requirement, e.g. being satisfied or not. */
 export interface ApplicationRequirementGenqlSelection{
     application?: ApplicationGenqlSelection
@@ -1343,11 +1440,47 @@ export interface IndexValueGenqlSelection{
     __scalar?: boolean | number
 }
 
+export interface MetricAccessUserFilters {
+/** Return application metrics from users that have any of these fullnames. */
+fullnames?: (Scalars['String'][] | null),
+/** Return application metrics from users that have any of these IDs. */
+ids?: (Scalars['ID'][] | null),
+/** Return application metrics from users that have any of these logins. */
+logins?: (Scalars['String'][] | null)}
+
+export interface MetricApplicationFilters {
+/** Return application metrics from applicants that match any of these filters. */
+applicants?: (MetricAccessUserFilters | null),
+/** Return application metrics for applications that have any of these IDs. */
+applicationIds?: (Scalars['ID'][] | null),
+/** Return application metrics for applications that were closed after this date. */
+closedAfterDateTime?: (Scalars['DateTime'] | null),
+/** Return application metrics for applications that were closed before this date. */
+closedBeforeDateTime?: (Scalars['DateTime'] | null),
+/** Return application metrics from periods that match any of these filters. */
+periods?: (MetricPeriodFilters | null),
+/** Return application metrics for applications that started after this date. */
+startedAfterDateTime?: (Scalars['DateTime'] | null),
+/** Return application metrics for applications that started before this date. */
+startedBeforeDateTime?: (Scalars['DateTime'] | null),
+/** Return application metrics for applications that were submitted after this date. */
+submittedAfterDateTime?: (Scalars['DateTime'] | null),
+/** Return application metrics for applications that were submitted before this date. */
+submittedBeforeDateTime?: (Scalars['DateTime'] | null)}
+
+export interface MetricPeriodFilters {
+/** Return application metrics from periods that have any of these codes. */
+codes?: (Scalars['String'][] | null),
+/** Return application metrics from periods that have any of these IDs. */
+ids?: (Scalars['ID'][] | null),
+/** Return rapplication metrics from periods that have any of these names. */
+names?: (Scalars['String'][] | null)}
+
 export interface MutationGenqlSelection{
     /** This is for the applicant to accept or reject the offer that was made based on their app request. The difference between accept and reject is determined by the status of the acceptance requirements. They will still "accept offer" after they answer that they do not want the offer. If there is non-blocking workflow on any applications, the first one in each will begin. Applications without non-blocking workflow will be advanced to the COMPLETE phase. If all applications are complete, the app request will be closed. */
     acceptOffer?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Add a note to the app request. */
-    addNote?: (ValidatedNoteResponseGenqlSelection & { __args: {
+    addNote?: (ValidatedNoteResponseGenqlSelection & { __args: {appRequestId: Scalars['ID'], 
     /** The content of the note. HTML is expected. */
     content: Scalars['String'], persistent?: (Scalars['Boolean'] | null), validateOnly?: (Scalars['Boolean'] | null)} })
     /** Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation. */
@@ -1623,6 +1756,7 @@ export interface QueryGenqlSelection{
     /** Returns indexes that are flagged to appear in this destination. Also sorts for this destination. */
     for?: (AppRequestIndexDestination | null)} })
     appRequests?: (AppRequestGenqlSelection & { __args?: {filter?: (AppRequestFilter | null), paged?: (Pagination | null)} })
+    applicationMetrics?: (ApplicationMetricGenqlSelection & { __args?: {filter?: (MetricApplicationFilters | null)} })
     /** This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant. */
     controlGroups?: AccessControlGroupGenqlSelection
     countAppRequests?: { __args: {filter?: (AppRequestFilter | null)} } | boolean | number
@@ -1728,6 +1862,7 @@ export interface ValidatedConfigurationResponseGenqlSelection{
 
 export interface ValidatedNoteResponseGenqlSelection{
     messages?: MutationMessageGenqlSelection
+    /** The created or updated note. Null when validateOnly was true or when validation errors prevented the operation. */
     note?: NoteGenqlSelection
     /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
     success?: boolean | number
@@ -1909,6 +2044,30 @@ export interface ValidatedResponseGenqlSelection{
     export const isApplicationActions = (obj?: { __typename?: any } | null): obj is ApplicationActions => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isApplicationActions"')
       return ApplicationActions_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ApplicationMetric_possibleTypes: string[] = ['ApplicationMetric']
+    export const isApplicationMetric = (obj?: { __typename?: any } | null): obj is ApplicationMetric => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isApplicationMetric"')
+      return ApplicationMetric_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ApplicationMetricEntry_possibleTypes: string[] = ['ApplicationMetricEntry']
+    export const isApplicationMetricEntry = (obj?: { __typename?: any } | null): obj is ApplicationMetricEntry => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isApplicationMetricEntry"')
+      return ApplicationMetricEntry_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ApplicationMetricTiming_possibleTypes: string[] = ['ApplicationMetricTiming']
+    export const isApplicationMetricTiming = (obj?: { __typename?: any } | null): obj is ApplicationMetricTiming => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isApplicationMetricTiming"')
+      return ApplicationMetricTiming_possibleTypes.includes(obj.__typename)
     }
     
 

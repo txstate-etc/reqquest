@@ -12,6 +12,9 @@ export const load: LayoutLoad = async input => {
   } catch (e: any) {
     return { layoutError: { status: e.status, message: e.message } }
   }
+  input.depends('api:getAccess')
+  const access = await api.getAccess()
+  return { access }
 }
 
 export const ssr = false

@@ -256,6 +256,12 @@ export async function initAccess () {
       delete: { description: 'Delete existing roles.' }
     }
   }
+  controlGroups.Metrics = {
+    title: 'Metrics',
+    controls: {
+      view: { description: 'View metrics data.' }
+    }
+  }
   for (const controlGroup of Object.keys(controlGroups)) {
     const def = controlGroups[controlGroup] as ControlGroupDefinitionProcessed
     def.tagCategoryLookup = keyby(def.tags ?? [], 'category')

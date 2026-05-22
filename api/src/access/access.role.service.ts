@@ -113,6 +113,10 @@ export class AccessRoleService extends AuthService<AccessRole> {
     return this.hasControl('Role', 'view')
   }
 
+  mayViewMetrics () {
+    return this.hasAnyControl('Metrics', 'view')
+  }
+
   mayViewRoleManagement () {
     return this.hasAnyControl('Role', 'view')
   }

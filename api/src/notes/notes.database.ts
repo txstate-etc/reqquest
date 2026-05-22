@@ -1,5 +1,5 @@
 import db from 'mysql2-async/db'
-import { AppRequestNoteFilters, cleanHTML, Note } from '../internal.js'
+import { AppRequestNoteFilters, Note } from '../internal.js'
 
 export interface NoteRow {
   id: number

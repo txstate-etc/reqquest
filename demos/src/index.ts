@@ -49,6 +49,7 @@ async function main () {
     su: { groups: ['sudoers'] },
     admin: { groups: ['administrators'] },
     reviewer: { groups: ['reviewers'] },
+    commentator: { groups: ['commentators'] },
     applicant: { groups: ['applicants'] },
     tester: { groups: ['testers'] }
   }
@@ -59,7 +60,7 @@ async function main () {
       userLookups: {
         byLogins: async (logins: string[], applicableGroups: string[]) => {
           const pseudoInstitutionalRoles = (login: string) => {
-            if (login.startsWith('su') || login.startsWith('tester')) return ['STAFF']
+            if (login.startsWith('su') || login.startsWith('tester') || login.startsWith('commentator')) return ['STAFF']
             if (login.startsWith('admin')) return ['STAFF', 'FACULTY']
             if (login.startsWith('review')) return ['FACULTY']
             return ['STUDENT']
