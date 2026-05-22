@@ -115,12 +115,12 @@ export class NoteService extends AuthService<Note> {
     if (!this.mayAddNote(appRequest)) throw new Error('You may not add a note to this app request.')
     if (!!persistent && !this.mayCreatePersistent(appRequest)) throw new Error('You may not add a persistent note to this app request.')
     const response = new ValidatedNoteResponse()
-    for (const m of validateHTML(content, 'content')) response.addMessage(m.message, m.arg, m.type)
-    const cleanContent = cleanHTML(content)
-    if (isBlank(cleanContent)) response.addMessage('Message is required.', 'content', MutationMessageType.error)
+    // for (const m of validateHTML(content, 'content')) response.addMessage(m.message, m.arg, m.type)
+    // const cleanContent = cleanHTML(content)
+    if (isBlank(content)) response.addMessage('Message is required.', 'content', MutationMessageType.error)
     if (response.hasErrors() || validateOnly) return response
-    const noteId = await addAppRequestNote(appRequest.internalId, this.user!.internalId, cleanContent, persistent)
-    await this.svc(AppRequestService).recordActivity(appRequest.internalId, 'Added Note', { description: cleanContent })
+    const noteId = await addAppRequestNote(appRequest.internalId, this.user!.internalId, content, persistent)
+    await this.svc(AppRequestService).recordActivity(appRequest.internalId, 'Added Note', { description: content })
     this.loaders.clear()
     response.note = (await this.findByInternalId(noteId))!
     return response
@@ -131,13 +131,13 @@ export class NoteService extends AuthService<Note> {
     if (!note) throw new Error('Note not found.')
     if (!this.mayUpdate(note)) throw new Error('You may not update this note.')
     const response = new ValidatedNoteResponse()
-    for (const m of validateHTML(content, 'content')) response.addMessage(m.message, m.arg, m.type)
-    const cleanContent = cleanHTML(content)
-    if (isBlank(cleanContent)) response.addMessage('Note content may not be blank. Delete the note instead.', 'content', MutationMessageType.error)
+    // for (const m of validateHTML(content, 'content')) response.addMessage(m.message, m.arg, m.type)
+    // const cleanContent = cleanHTML(content)
+    if (isBlank(content)) response.addMessage('Note content may not be blank. Delete the note instead.', 'content', MutationMessageType.error)
     if (response.hasErrors()) return response
     const authorLogin = (await this.svc(AccessUserService).findByInternalId(note.authorId))?.login
-    await updateAppRequestNote(noteId, cleanContent)
-    await this.svc(AppRequestService).recordActivity(note.appRequestId, 'Updated Note', { data: { id: note.id, author: authorLogin, createdAt: note.createdAt.toISO() }, description: cleanContent })
+    await updateAppRequestNote(noteId, content)
+    await this.svc(AppRequestService).recordActivity(note.appRequestId, 'Updated Note', { data: { id: note.id, author: authorLogin, createdAt: note.createdAt.toISO() }, description: content })
     this.loaders.clear()
     response.note = (await this.findById(note.id))!
     return response

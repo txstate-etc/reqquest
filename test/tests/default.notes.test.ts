@@ -184,123 +184,123 @@ test.describe.serial('Notes - XSS sanitization', { tag: '@default' }, () => {
     expect(submitAppRequest.success).toEqual(true)
   })
 
-  test('Reviewer - script tag is stripped with warning', async ({ reviewerRequest }) => {
-    const content = '<p>safe</p><script>alert(1)</script>'
-    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
-    expect(addNote.success).toEqual(true)
-    expect(addNote.note?.content).toContain('<p>safe</p>')
-    expect(addNote.note?.content).not.toContain('<script')
-    expect(warningMessages(addNote.messages)).toContain('<script> tags will be removed.')
-  })
+  // test('Reviewer - script tag is stripped with warning', async ({ reviewerRequest }) => {
+  //   const content = '<p>safe</p><script>alert(1)</script>'
+  //   const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+  //   expect(addNote.success).toEqual(true)
+  //   expect(addNote.note?.content).toContain('<p>safe</p>')
+  //   expect(addNote.note?.content).not.toContain('<script')
+  //   expect(warningMessages(addNote.messages)).toContain('<script> tags will be removed.')
+  // })
 
-  test('Reviewer - iframe is stripped with warning', async ({ reviewerRequest }) => {
-    const content = '<p>before</p><iframe srcdoc="<script>alert(1)</script>"></iframe><p>after</p>'
-    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
-    expect(addNote.success).toEqual(true)
-    expect(addNote.note?.content).not.toContain('<iframe')
-    expect(addNote.note?.content).not.toContain('srcdoc')
-    expect(warningMessages(addNote.messages)).toContain('<iframe> tags will be removed.')
-  })
+  // test('Reviewer - iframe is stripped with warning', async ({ reviewerRequest }) => {
+  //   const content = '<p>before</p><iframe srcdoc="<script>alert(1)</script>"></iframe><p>after</p>'
+  //   const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+  //   expect(addNote.success).toEqual(true)
+  //   expect(addNote.note?.content).not.toContain('<iframe')
+  //   expect(addNote.note?.content).not.toContain('srcdoc')
+  //   expect(warningMessages(addNote.messages)).toContain('<iframe> tags will be removed.')
+  // })
 
-  test('Reviewer - object tag is stripped with warning', async ({ reviewerRequest }) => {
-    const content = '<p>ok</p><object data="x.svg"></object>'
-    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
-    expect(addNote.success).toEqual(true)
-    expect(addNote.note?.content).not.toContain('<object')
-    expect(warningMessages(addNote.messages)).toContain('<object> tags will be removed.')
-  })
+  // test('Reviewer - object tag is stripped with warning', async ({ reviewerRequest }) => {
+  //   const content = '<p>ok</p><object data="x.svg"></object>'
+  //   const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+  //   expect(addNote.success).toEqual(true)
+  //   expect(addNote.note?.content).not.toContain('<object')
+  //   expect(warningMessages(addNote.messages)).toContain('<object> tags will be removed.')
+  // })
 
-  test('Reviewer - embed tag is stripped with warning', async ({ reviewerRequest }) => {
-    const content = '<p>ok</p><embed src="x.svg">'
-    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
-    expect(addNote.success).toEqual(true)
-    expect(addNote.note?.content).not.toContain('<embed')
-    expect(warningMessages(addNote.messages)).toContain('<embed> tags will be removed.')
-  })
+  // test('Reviewer - embed tag is stripped with warning', async ({ reviewerRequest }) => {
+  //   const content = '<p>ok</p><embed src="x.svg">'
+  //   const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+  //   expect(addNote.success).toEqual(true)
+  //   expect(addNote.note?.content).not.toContain('<embed')
+  //   expect(warningMessages(addNote.messages)).toContain('<embed> tags will be removed.')
+  // })
 
-  test('Reviewer - style tag is stripped with warning', async ({ reviewerRequest }) => {
-    const content = '<style>body{display:none}</style><p>visible</p>'
-    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
-    expect(addNote.success).toEqual(true)
-    expect(addNote.note?.content).not.toContain('<style')
-    expect(addNote.note?.content).toContain('<p>visible</p>')
-    expect(warningMessages(addNote.messages)).toContain('<style> tags will be removed.')
-  })
+  // test('Reviewer - style tag is stripped with warning', async ({ reviewerRequest }) => {
+  //   const content = '<style>body{display:none}</style><p>visible</p>'
+  //   const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+  //   expect(addNote.success).toEqual(true)
+  //   expect(addNote.note?.content).not.toContain('<style')
+  //   expect(addNote.note?.content).toContain('<p>visible</p>')
+  //   expect(warningMessages(addNote.messages)).toContain('<style> tags will be removed.')
+  // })
 
-  test('Reviewer - stylesheet link is stripped with warning', async ({ reviewerRequest }) => {
-    const content = '<link rel="stylesheet" href="evil.css"><p>ok</p>'
-    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
-    expect(addNote.success).toEqual(true)
-    expect(addNote.note?.content).not.toMatch(/<link[^>]*stylesheet/i)
-    expect(warningMessages(addNote.messages)).toContain('Stylesheet <link> tags will be removed.')
-  })
+  // test('Reviewer - stylesheet link is stripped with warning', async ({ reviewerRequest }) => {
+  //   const content = '<link rel="stylesheet" href="evil.css"><p>ok</p>'
+  //   const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+  //   expect(addNote.success).toEqual(true)
+  //   expect(addNote.note?.content).not.toMatch(/<link[^>]*stylesheet/i)
+  //   expect(warningMessages(addNote.messages)).toContain('Stylesheet <link> tags will be removed.')
+  // })
 
-  test('Reviewer - inline style attribute is stripped with warning', async ({ reviewerRequest }) => {
-    const content = '<p style="color:red">red text</p>'
-    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
-    expect(addNote.success).toEqual(true)
-    expect(addNote.note?.content).not.toContain('style=')
-    expect(addNote.note?.content).toContain('red text')
-    expect(warningMessages(addNote.messages)).toContain('Inline style attributes will be removed.')
-  })
+  // test('Reviewer - inline style attribute is stripped with warning', async ({ reviewerRequest }) => {
+  //   const content = '<p style="color:red">red text</p>'
+  //   const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+  //   expect(addNote.success).toEqual(true)
+  //   expect(addNote.note?.content).not.toContain('style=')
+  //   expect(addNote.note?.content).toContain('red text')
+  //   expect(warningMessages(addNote.messages)).toContain('Inline style attributes will be removed.')
+  // })
 
-  test('Reviewer - onclick attribute is stripped with warning', async ({ reviewerRequest }) => {
-    const content = '<a href="https://example.com" onclick="alert(1)">link</a>'
-    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
-    expect(addNote.success).toEqual(true)
-    expect(addNote.note?.content).not.toContain('onclick')
-    expect(addNote.note?.content).toContain('href="https://example.com"')
-    expect(warningMessages(addNote.messages)).toContain('Inline event handlers (e.g. onclick) will be removed.')
-  })
+  // test('Reviewer - onclick attribute is stripped with warning', async ({ reviewerRequest }) => {
+  //   const content = '<a href="https://example.com" onclick="alert(1)">link</a>'
+  //   const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+  //   expect(addNote.success).toEqual(true)
+  //   expect(addNote.note?.content).not.toContain('onclick')
+  //   expect(addNote.note?.content).toContain('href="https://example.com"')
+  //   expect(warningMessages(addNote.messages)).toContain('Inline event handlers (e.g. onclick) will be removed.')
+  // })
 
-  test('Reviewer - javascript: URL in href is stripped with warning', async ({ reviewerRequest }) => {
-    const content = '<a href="javascript:alert(1)">click me</a>'
-    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
-    expect(addNote.success).toEqual(true)
-    expect(addNote.note?.content).not.toContain('javascript:')
-    expect(addNote.note?.content).toContain('click me')
-    expect(warningMessages(addNote.messages)).toContain('javascript: URLs will be removed.')
-  })
+  // test('Reviewer - javascript: URL in href is stripped with warning', async ({ reviewerRequest }) => {
+  //   const content = '<a href="javascript:alert(1)">click me</a>'
+  //   const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+  //   expect(addNote.success).toEqual(true)
+  //   expect(addNote.note?.content).not.toContain('javascript:')
+  //   expect(addNote.note?.content).toContain('click me')
+  //   expect(warningMessages(addNote.messages)).toContain('javascript: URLs will be removed.')
+  // })
 
-  test('Reviewer - control-char obfuscated javascript: URL is stripped with warning', async ({ reviewerRequest }) => {
-    const content = '<a href="j\tavascript:alert(1)">click me</a>'
-    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
-    expect(addNote.success).toEqual(true)
-    expect(addNote.note?.content).not.toMatch(/href=["'][^"']*avascript:/i)
-    expect(warningMessages(addNote.messages)).toContain('javascript: URLs will be removed.')
-  })
+  // test('Reviewer - control-char obfuscated javascript: URL is stripped with warning', async ({ reviewerRequest }) => {
+  //   const content = '<a href="j\tavascript:alert(1)">click me</a>'
+  //   const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+  //   expect(addNote.success).toEqual(true)
+  //   expect(addNote.note?.content).not.toMatch(/href=["'][^"']*avascript:/i)
+  //   expect(warningMessages(addNote.messages)).toContain('javascript: URLs will be removed.')
+  // })
 
-  test('Reviewer - broken obfuscated script tag is left broken and properly closed without warning', async ({ reviewerRequest }) => {
-    const content = '<scrip<script>const fake=1</script>t>alert("test")</script>'
-    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
-    expect(addNote.success).toEqual(true)
-    expect(addNote.note?.content).toContain('<scrip<script>const fake=1t&gt;alert(\"test\")</scrip<script>')
-  })
+  // test('Reviewer - broken obfuscated script tag is left broken and properly closed without warning', async ({ reviewerRequest }) => {
+  //   const content = '<scrip<script>const fake=1</script>t>alert("test")</script>'
+  //   const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+  //   expect(addNote.success).toEqual(true)
+  //   expect(addNote.note?.content).toContain('<scrip<script>const fake=1t&gt;alert(\"test\")</scrip<script>')
+  // })
 
-  test('Reviewer - javascript: URL in formaction is stripped with warning', async ({ reviewerRequest }) => {
-    const content = '<form><button formaction="javascript:alert(1)">go</button></form>'
-    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
-    expect(addNote.success).toEqual(true)
-    expect(addNote.note?.content).not.toContain('javascript:')
-    expect(warningMessages(addNote.messages)).toContain('javascript: URLs will be removed.')
-  })
+  // test('Reviewer - javascript: URL in formaction is stripped with warning', async ({ reviewerRequest }) => {
+  //   const content = '<form><button formaction="javascript:alert(1)">go</button></form>'
+  //   const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+  //   expect(addNote.success).toEqual(true)
+  //   expect(addNote.note?.content).not.toContain('javascript:')
+  //   expect(warningMessages(addNote.messages)).toContain('javascript: URLs will be removed.')
+  // })
 
-  test('Reviewer - mixed XSS payload triggers multiple warnings', async ({ reviewerRequest }) => {
-    const content = '<style>x{}</style><p style="color:red" onclick="alert(1)"><a href="javascript:alert(1)">x</a></p><script>alert(1)</script>'
-    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
-    expect(addNote.success).toEqual(true)
-    const warnings = warningMessages(addNote.messages)
-    expect(warnings).toContain('<script> tags will be removed.')
-    expect(warnings).toContain('<style> tags will be removed.')
-    expect(warnings).toContain('Inline style attributes will be removed.')
-    expect(warnings).toContain('Inline event handlers (e.g. onclick) will be removed.')
-    expect(warnings).toContain('javascript: URLs will be removed.')
-    expect(addNote.note?.content).not.toContain('<script')
-    expect(addNote.note?.content).not.toContain('<style')
-    expect(addNote.note?.content).not.toContain('style=')
-    expect(addNote.note?.content).not.toContain('onclick')
-    expect(addNote.note?.content).not.toContain('javascript:')
-  })
+  // test('Reviewer - mixed XSS payload triggers multiple warnings', async ({ reviewerRequest }) => {
+  //   const content = '<style>x{}</style><p style="color:red" onclick="alert(1)"><a href="javascript:alert(1)">x</a></p><script>alert(1)</script>'
+  //   const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+  //   expect(addNote.success).toEqual(true)
+  //   const warnings = warningMessages(addNote.messages)
+  //   expect(warnings).toContain('<script> tags will be removed.')
+  //   expect(warnings).toContain('<style> tags will be removed.')
+  //   expect(warnings).toContain('Inline style attributes will be removed.')
+  //   expect(warnings).toContain('Inline event handlers (e.g. onclick) will be removed.')
+  //   expect(warnings).toContain('javascript: URLs will be removed.')
+  //   expect(addNote.note?.content).not.toContain('<script')
+  //   expect(addNote.note?.content).not.toContain('<style')
+  //   expect(addNote.note?.content).not.toContain('style=')
+  //   expect(addNote.note?.content).not.toContain('onclick')
+  //   expect(addNote.note?.content).not.toContain('javascript:')
+  // })
 
   test('Reviewer - clean HTML persists unchanged with no warnings', async ({ reviewerRequest }) => {
     const content = '<p>This is a perfectly normal note with <strong>bold</strong> and <em>italic</em> text.</p>'
@@ -311,59 +311,67 @@ test.describe.serial('Notes - XSS sanitization', { tag: '@default' }, () => {
     expect(warningMessages(addNote.messages)).toEqual([])
   })
 
-  test('Reviewer - validateOnly returns warnings without persisting note', async ({ reviewerRequest }) => {
-    const before = await reviewerRequest.graphql<{ appRequests: { notes: { id: string }[] }[] }>(NOTES_QUERY, { appRequestIds: [appRequestId] })
-    const beforeCount = before.appRequests[0].notes.length
+  // test('Reviewer - validateOnly returns warnings without persisting note', async ({ reviewerRequest }) => {
+  //   const before = await reviewerRequest.graphql<{ appRequests: { notes: { id: string }[] }[] }>(NOTES_QUERY, { appRequestIds: [appRequestId] })
+  //   const beforeCount = before.appRequests[0].notes.length
 
-    const content = '<script>alert(1)</script><p style="color:red">x</p>'
-    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content, validateOnly: true })
-    const warnings = warningMessages(addNote.messages)
-    expect(warnings).toContain('<script> tags will be removed.')
-    expect(warnings).toContain('Inline style attributes will be removed.')
+  //   const content = '<script>alert(1)</script><p style="color:red">x</p>'
+  //   const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content, validateOnly: true })
+  //   const warnings = warningMessages(addNote.messages)
+  //   expect(warnings).toContain('<script> tags will be removed.')
+  //   expect(warnings).toContain('Inline style attributes will be removed.')
 
-    const after = await reviewerRequest.graphql<{ appRequests: { notes: { id: string }[] }[] }>(NOTES_QUERY, { appRequestIds: [appRequestId] })
-    expect(after.appRequests[0].notes.length).toEqual(beforeCount)
-  })
+  //   const after = await reviewerRequest.graphql<{ appRequests: { notes: { id: string }[] }[] }>(NOTES_QUERY, { appRequestIds: [appRequestId] })
+  //   expect(after.appRequests[0].notes.length).toEqual(beforeCount)
+  // })
 
-  test('Reviewer - validateOnly returns svg javacript link warnings without persisting note', async ({ reviewerRequest }) => {
-    const before = await reviewerRequest.graphql<{ appRequests: { notes: { id: string }[] }[] }>(NOTES_QUERY, { appRequestIds: [appRequestId] })
-    const beforeCount = before.appRequests[0].notes.length
+  // test('Reviewer - validateOnly returns svg javacript link warnings without persisting note', async ({ reviewerRequest }) => {
+  //   const before = await reviewerRequest.graphql<{ appRequests: { notes: { id: string }[] }[] }>(NOTES_QUERY, { appRequestIds: [appRequestId] })
+  //   const beforeCount = before.appRequests[0].notes.length
 
-    const content = '<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><use xlink:href="javascript:alert(1)" x="10" y="10" /></svg><p>x</p>'
-    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content, validateOnly: true })
-    const warnings = warningMessages(addNote.messages)
-    expect(warnings).toContain('javascript: URLs will be removed.')
+  //   const content = '<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><use xlink:href="javascript:alert(1)" x="10" y="10" /></svg><p>x</p>'
+  //   const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content, validateOnly: true })
+  //   const warnings = warningMessages(addNote.messages)
+  //   expect(warnings).toContain('javascript: URLs will be removed.')
 
-    const after = await reviewerRequest.graphql<{ appRequests: { notes: { id: string }[] }[] }>(NOTES_QUERY, { appRequestIds: [appRequestId] })
-    expect(after.appRequests[0].notes.length).toEqual(beforeCount)
-  })
+  //   const after = await reviewerRequest.graphql<{ appRequests: { notes: { id: string }[] }[] }>(NOTES_QUERY, { appRequestIds: [appRequestId] })
+  //   expect(after.appRequests[0].notes.length).toEqual(beforeCount)
+  // })
 
-  test('Reviewer - blank-after-clean payload returns error, not warning', async ({ reviewerRequest }) => {
-    const content = '<script>alert(1)</script>'
+  // test('Reviewer - blank-after-clean payload returns error, not warning', async ({ reviewerRequest }) => {
+  //   const content = '<script>alert(1)</script>'
+  //   const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+  //   expect(addNote.success).toEqual(false)
+  //   const errors = addNote.messages.filter(m => m.type === 'error').map(m => m.message)
+  //   expect(errors).toContain('Message is required.')
+  // })
+
+  test('Reviewer - only whitespace payload returns error, not warning', async ({ reviewerRequest }) => {
+    const content = '\n\n  \n\n'
     const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
     expect(addNote.success).toEqual(false)
     const errors = addNote.messages.filter(m => m.type === 'error').map(m => m.message)
     expect(errors).toContain('Message is required.')
   })
 
-  test('Reviewer - updateNote sanitizes XSS and returns warnings', async ({ reviewerRequest }) => {
-    const cleanContent = '<p>original clean note</p>'
-    const created = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content: cleanContent })
-    expect(created.addNote.success).toEqual(true)
-    const noteId = created.addNote.note!.id
+  // test('Reviewer - updateNote sanitizes XSS and returns warnings', async ({ reviewerRequest }) => {
+  //   const cleanContent = '<p>original clean note</p>'
+  //   const created = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content: cleanContent })
+  //   expect(created.addNote.success).toEqual(true)
+  //   const noteId = created.addNote.note!.id
 
-    const xssContent = '<p>updated</p><script>alert(1)</script><a href="javascript:alert(1)">x</a>'
-    const { updateNote } = await reviewerRequest.graphql<UpdateNoteResponse>(UPDATE_NOTE_MUTATION, { noteId, content: xssContent })
-    expect(updateNote.success).toEqual(true)
-    expect(updateNote.note?.content).toContain('<p>updated</p>')
-    expect(updateNote.note?.content).not.toContain('<script')
-    expect(updateNote.note?.content).not.toContain('javascript:')
-    const warnings = warningMessages(updateNote.messages)
-    expect(warnings).toContain('<script> tags will be removed.')
-    expect(warnings).toContain('javascript: URLs will be removed.')
-  })
+  //   const xssContent = '<p>updated</p><script>alert(1)</script><a href="javascript:alert(1)">x</a>'
+  //   const { updateNote } = await reviewerRequest.graphql<UpdateNoteResponse>(UPDATE_NOTE_MUTATION, { noteId, content: xssContent })
+  //   expect(updateNote.success).toEqual(true)
+  //   expect(updateNote.note?.content).toContain('<p>updated</p>')
+  //   expect(updateNote.note?.content).not.toContain('<script')
+  //   expect(updateNote.note?.content).not.toContain('javascript:')
+  //   const warnings = warningMessages(updateNote.messages)
+  //   expect(warnings).toContain('<script> tags will be removed.')
+  //   expect(warnings).toContain('javascript: URLs will be removed.')
+  // })
 
-  test('Reviewer - updateNote with clean HTML persists changes without warnings', async ({ reviewerRequest }) => {
+  test('Reviewer - updateNote with clean HTML/TEXT persists changes without warnings', async ({ reviewerRequest }) => {
     const created = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content: '<p>original content</p>' })
     expect(created.addNote.success).toEqual(true)
     const noteId = created.addNote.note!.id

@@ -3,7 +3,7 @@
   import { DateTime } from 'luxon'
 
   /**
-   * The HTML content of the comment.
+   * The TEXT content of the comment.
    * @type {string}
    */
   export let content: string
@@ -44,7 +44,7 @@
 
 <div class="comment-card">
   <div class="comment-box" class:noborder class:hasactions={actions.length > 0}>
-    <div class="comment-content">{@html content}</div>
+    <div class="comment-content"><p>{content}</p></div>
     {#if actions.length}
       <div class="comment-actions">
         <ActionSet {actions} noPrimaryAction small forceOverflow />
@@ -81,6 +81,7 @@
   .comment-content :global(p) {
     margin: 0;
     font-size: 100%;
+    white-space: pre-line;
   }
   .comment-actions {
     position: absolute;
