@@ -34,20 +34,67 @@
 
   let showNotesDialog = false
   let showAddNoteDialog = false
+  let showUpdateNoteDialog = false
+  let noteBeingEdited: { id: string, content: string, persistent: boolean } | undefined = undefined
 
   async function onAddNoteValidate (data: { content: string, persistent?: boolean }) {
-    const response = await api.addNote(data.content, data.persistent, true)
+    const response = await api.addNote(appRequest.id, data.content, data.persistent, true)
     return response.messages
   }
 
   async function onAddNoteSubmit (data: { content: string, persistent?: boolean }) {
-    const response = await api.addNote(data.content, data.persistent, false)
+    const response = await api.addNote(appRequest.id, data.content, data.persistent, false)
     return { ...response, data }
   }
 
   async function onAddNoteSaved () {
     showAddNoteDialog = false
     await invalidateAll()
+  }
+
+  // NOTE: addNote and updateNote should always share validation rules.
+  // As long as we do not set persistent flag, then we can reuse addNote
+  // to validate.
+  async function onUpdateNoteValidate (data: { content: string }) {
+    const response = await api.addNote(appRequest.id, data.content, undefined, true)
+    return response.messages
+  }
+
+  async function onUpdateNoteSubmit (data: { content: string, persistent: boolean }) {
+    if (!noteBeingEdited) return { success: false, messages: [], data }
+    if (data.persistent !== noteBeingEdited.persistent) {
+      const response = await api.togglePersistence(noteBeingEdited.id)
+      if (!response.success) return { ...response, data }
+    }
+    if (data.content !== noteBeingEdited.content) {
+      const response = await api.updateNote(noteBeingEdited.id, data.content)
+      return { ...response, data }
+    }
+    return { success: true, messages: [], data }
+  }
+
+  async function onUpdateNoteSaved () {
+    showUpdateNoteDialog = false
+    noteBeingEdited = undefined
+    await invalidateAll()
+  }
+
+  function editNote (note: { id: string, content: string, persistent?: boolean | null }) {
+    noteBeingEdited = {
+      id: note.id,
+      content: note.content,
+      persistent: note.persistent ?? false
+    }
+    showNotesDialog = false
+    showUpdateNoteDialog = true
+  }
+
+  async function deleteNote (noteId: string) {
+    const success = await api.deleteNote(noteId)
+    if (success) {
+      toasts.add({ type: 'success', message: 'Note deleted.' })
+      await invalidateAll()
+    }
   }
 
   type ApplicationRequirement = (typeof appRequest)['applications'][number]['requirements'][number]
@@ -379,6 +426,28 @@
   </PanelFormDialog>
 {/if}
 
+{#if showUpdateNoteDialog && noteBeingEdited}
+  <PanelFormDialog
+    title="Update Note"
+    bind:open={showUpdateNoteDialog}
+    on:cancel={() => { showUpdateNoteDialog = false; noteBeingEdited = undefined }}
+    on:saved={onUpdateNoteSaved}
+    validate={onUpdateNoteValidate}
+    submit={onUpdateNoteSubmit}
+    submitText="Save"
+    disableSaveUntilChanged={true}
+    centered
+    preload={{
+      content: noteBeingEdited.content,
+      persistent: noteBeingEdited.persistent
+    }}
+  >
+    <FieldTextArea path="content" labelText="Note" required notNull rows={6} />
+    {#if appRequest.actions.createPersistentNote}
+      <FieldCheckbox path="persistent" labelText="Persistent (show on the applicant's profile)" />
+    {/if}
+  </PanelFormDialog>
+{/if}
 
 <PanelFormDialog
   title="Add Note"
@@ -413,8 +482,8 @@
         authorLogin={note.author.login}
         createdAt={note.createdAt}
         actions={[
-          { label: 'Edit', icon: Edit, onClick: () => {} },
-          { label: 'Delete', icon: TrashCan, onClick: () => {} }
+          { label: 'Edit', icon: Edit, onClick: () => editNote(note) },
+          { label: 'Delete', icon: TrashCan, onClick: () => deleteNote(note.id) }
         ]}
       />
     {:else}

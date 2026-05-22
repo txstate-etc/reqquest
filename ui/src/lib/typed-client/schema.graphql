@@ -1090,6 +1090,8 @@ type Mutation {
 
   """Add a note to the app request."""
   addNote(
+    appRequestId: ID!
+
     """The content of the note. HTML is expected."""
     content: String!
     persistent: Boolean
@@ -1779,7 +1781,11 @@ type ValidatedConfigurationResponse {
 
 type ValidatedNoteResponse {
   messages: [MutationMessage!]!
-  note: Note!
+
+  """
+  The created or updated note. Null when validateOnly was true or when validation errors prevented the operation.
+  """
+  note: Note
 
   """
   True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings.
