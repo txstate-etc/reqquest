@@ -55,6 +55,20 @@ class API extends APIBase {
     return response.access
   }
 
+  async getAccessUser (login: string) {
+    const filter: AccessUserFilter =  { logins: [login] }
+    const response = await this.client.query({
+      __name: 'GetAccessUser',
+      accessUsers: {
+        __args: { filter },
+        login: true,
+        fullname: true,
+        otherInfo: true
+      }
+    })
+    return response.accessUsers[0]
+  }
+  
   async getAccessUsers (accessUsersFilter: AccessUserFilter, pageFilter: Pagination) {
     const filter = accessUsersFilter
     const paged = pageFilter
