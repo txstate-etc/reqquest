@@ -38,9 +38,10 @@
     }
   }
 
-  async function onSubmit (data: any) {
+ async function onSubmit (data: any) {
     loading = true
-    const { success, messages } = await api.updatePrompt(prompt.id, data, false, dataVersion)
+    const { success, messages } = await api.updatePrompt(prompt.id, data, false, dataVersion)   
+    if (!success) loading = false    
     return {
       success,
       messages,
