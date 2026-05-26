@@ -442,7 +442,7 @@ const tagListCache = new Cache(async (key: { category: string, search?: string }
 export const registryAjv = new Ajv({
   allErrors: true,
   strictSchema: false,
-  coerceTypes: true
+  coerceTypes: false
 })
 
 addFormats(registryAjv)
