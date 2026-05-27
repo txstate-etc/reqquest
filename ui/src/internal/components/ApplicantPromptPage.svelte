@@ -58,6 +58,7 @@
     await invalidate('request:apply')
     if (continueAfterSave && prompt.answered) {
       // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved
+      stagedprompts.clear()
       await goto($nextHref.nextHref)
     } else {
       await store?.setData(appRequestForExport.data[prompt.key] as object)
@@ -70,12 +71,14 @@
     lastPromptId = prompt.id
     store = undefined
   }
-  afterNavigate(async () => {
-    stagedprompts.clear() // clear references to staged prompts since we may be navigating to a different prompt that needs staging
-    await invalidate('request:apply') // required to redraw the nav tree if potential staged data affects prompt visibility or status
+  afterNavigate(async (navigation) => { 
+    if (!continueAfterSave) { // navigating away from current prompt without using the continue button ... remove prompt staging and invalidate to ensure any changes are reflected in nav
+      stagedprompts.clear()
+      await invalidate('request:apply')
+    }    
   })
 </script>
-{#if loading}
+{#if loading} 
   <Loading />
 {/if}
 
