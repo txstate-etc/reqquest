@@ -12,8 +12,7 @@ export const opt_out_req: RequirementDefinition = {
   resolve: (data, config) => {
     const promptData = data['opt_out_prompt'] as OptOutData
     if (promptData?.optOut) return { status: RequirementStatus.DISQUALIFYING }
-    if (promptData?.optOut == null) return { status: RequirementStatus.PENDING }
-    return { status: RequirementStatus.MET }
+    return { status: RequirementStatus.NOT_APPLICABLE }
   }
 }
 
