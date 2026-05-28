@@ -10,6 +10,7 @@
   import { api } from '$internal/api.js'
   import { stagedprompts } from '$internal/prompt-utils.js'
   import ApplicantOptOutModal from './ApplicantOptOutModal.svelte'
+  import { uiRegistry } from '../../local/index.js'
 
   export let appRequest: { phase: string, closedAt?: string | null, id: string, dataVersion: number }
   export let applications: ApplicationForDetails[]
@@ -62,8 +63,12 @@
   }), {} as Record<string, string | undefined>)
 
   $: optOutPrograms = applications.reduce((acc, curr) => {
-    const optOut = curr.requirements.flat().flatMap(r => r.prompts).find(r => r.optOut)
-
+    const optOut = curr.requirements.flat().flatMap(r => r.prompts).find(p => {
+      const prompt = uiRegistry.getPrompt(p.key)
+      // console.log(prompt)
+      return prompt?.optOut
+    })
+    // console.log(optOut)
     if (!optOut) return acc
 
     return {
@@ -75,8 +80,13 @@
     }
   }, {} as Record<string, OptOutApplication | undefined>)
 
-  $: optedOutPrograms = applications.filter(curr => curr.requirements.flat().flatMap(r => r.prompts).find(r => r.optOut)).reduce((acc, c) => {
-    const optOutRequirement = c.requirements.flat().find(r => r.prompts.find(p => p.optOut))
+  $: optedOutPrograms = applications.reduce((acc, c) => {
+    const optOutRequirement = c.requirements.flat().find(p => {
+      return p.prompts.find(p => {
+        const prompt = uiRegistry.getPrompt(p.key)
+        return prompt?.optOut
+      })
+    })
     return {
       ...acc,
       [c.id]: optOutRequirement?.status === enumRequirementStatus.DISQUALIFYING
