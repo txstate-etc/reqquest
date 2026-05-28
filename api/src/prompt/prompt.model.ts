@@ -86,7 +86,6 @@ export class RequirementPrompt extends Prompt {
     this.invalidatedReason = row.invalidatedReason ?? undefined
     this.visibility = row.visibility
     this.moot = !!row.moot
-    this.optOut = !!row.optOut
     this.locked = !!row.locked
     this.workflowStage = row.workflowStage ?? undefined
     this.applicationWorkflowStage = row.applicationWorkflowStage ?? undefined
@@ -111,7 +110,6 @@ export class RequirementPrompt extends Prompt {
       moot: prompt.moot ? 1 : 0,
       locked: prompt.locked ? 1 : 0,
       invalidated: prompt.invalidated ? 1 : 0,
-      optOut: prompt.optOut ? 1 : 0,
       invalidatedReason: prompt.invalidatedReason ?? null,
       visibility: prompt.visibility,
       applicationPhase: prompt.applicationPhase,
@@ -127,9 +125,6 @@ export class RequirementPrompt extends Prompt {
 
   @Field({ description: 'When true, this prompt has been invalidated by the answer to another prompt. The `answered` field will remain true so be sure to check this field as well when determining whether the prompt is complete.' })
   invalidated: boolean
-
-  @Field({ description: 'When true, this makes the parent program optional for opt out.' })
-  optOut: boolean
 
   @Field({ nullable: true, description: 'If the prompt has been invalidated, this may contain a reason why. It should be displayed to the user.' })
   invalidatedReason?: string
