@@ -7,21 +7,21 @@ export const have_yard_prompt: PromptDefinition<YardPromptData, YardPromptData> 
   title: 'Tell us about your yard',
   description: 'Applicants will enter information about their yard including how large it is and how many pets will share it.',
   schema: YardPromptSchema,
-  /* prestage: {
-    recur: PromptPreStagingRecurrence.INVALID,
+  prestage: {
+    recur: PromptPreStagingRecurrence.ALWAYS,
     fetch: (appRequest, config, allPeriodConfig, ctx, db): YardPromptData => {
       return {
         haveYard: true,
         squareFootage: 10001
       }
     }
-  },*/
+  },
   preload: async (appRequest, config, data, allPeriodConfig, ctx) => {
     await new Promise(resolve => setTimeout(resolve, 1000))
     return {
       haveYard: true,
       squareFootage: 6700,
-      //TODO: Test for missing data causing early validation --totalPets: 67
+      totalPets: 67
     }
   },
   validate: (data, config) => {
