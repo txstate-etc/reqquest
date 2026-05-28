@@ -58,7 +58,7 @@
 
   $: programFirstPromptId = applications.reduce((acc, curr) => ({
     ...acc,
-    [curr.id]: (promptsByApplicationId[curr.id]?.find(p => !p.answered || p.invalidated) ?? promptsByApplicationId[curr.id]?.[0])?.id
+    [curr.id]: (promptsByApplicationId[curr.id]?.find(p => (!p.answered || p.invalidated) && !p.optOut) ?? promptsByApplicationId[curr.id]?.[0])?.id
   }), {} as Record<string, string | undefined>)
 
   $: optOutPrograms = applications.reduce((acc, curr) => {
