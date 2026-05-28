@@ -1,10 +1,11 @@
 <script lang="ts">
   import { FieldCheckbox } from "@txstate-mws/carbon-svelte"
-  import type { FormStore } from '@txstate-mws/svelte-forms'
+  import { FORM_CONTEXT, type FormStore } from '@txstate-mws/svelte-forms'
   import { Checkbox } from "carbon-components-svelte"
+  import { getContext } from "svelte"
   export let data: any
   export let gatheredData: any
-  export let store: FormStore
+  const store = getContext<FormStore>(FORM_CONTEXT)
 
   const initialData = Object.assign({}, data)
 
