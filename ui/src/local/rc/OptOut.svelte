@@ -1,8 +1,5 @@
 <script lang="ts">
   import { FieldCheckbox, FieldHidden } from "@txstate-mws/carbon-svelte"
-  import { FORM_CONTEXT, type FormStore } from '@txstate-mws/svelte-forms'
-  import { Checkbox } from "carbon-components-svelte"
-  import { getContext } from "svelte"
   export let data: { optOut?: boolean, optOutUnderstand?: boolean, optInUnderstand?: boolean }
   const wasOptedOut = data.optOut
   const wasOptedIn = !wasOptedOut
