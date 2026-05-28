@@ -254,8 +254,7 @@ class API extends APIBase {
               preloadData: true,
               fetchedData: true,
               configurationData: true,
-              gatheredConfigData: true,
-              prestage: true
+              gatheredConfigData: true
         }
       }
     }) 
@@ -505,8 +504,7 @@ class API extends APIBase {
               invalidated: true,
               invalidatedReason: true,
               configurationData: true,
-              gatheredConfigData: true,
-              prestage: true
+              gatheredConfigData: true
             }
           }
         },
@@ -912,8 +910,7 @@ class API extends APIBase {
               gatheredConfigData: true,
               moot: true,
               invalidated: true,
-              invalidatedReason: true,
-              prestage: true,
+              invalidatedReason: true
               actions: {
                 update: true
               }
