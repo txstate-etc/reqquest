@@ -1,17 +1,18 @@
 <script lang="ts">
   import { Form, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import type { FormStore } from '@txstate-mws/svelte-forms'
-  import { Modal } from 'carbon-components-svelte'
   import { afterNavigate, invalidate, invalidateAll } from '$app/navigation'
   import { uiRegistry } from '../../local/index.js'
   import { api } from '../api.js'
   import { stagedprompts } from '../prompt-utils.js'
   import { Loading } from "carbon-components-svelte";
+  import type { OptOutApplication } from '$lib'
 
   export let open = false
   export let optIn = false
   export let prompt: any
   export let appRequest: any
+  export let optOutSelected: OptOutApplication | undefined
 
   $: def = uiRegistry.getPrompt(prompt.key)
   $: loading = false
@@ -62,7 +63,7 @@
   on:cancel={() => { open = false }}
   on:validate={onValidate}
   {submit}
-  title={`${optIn ? 'Opt in to' : 'Opt out of'} ${prompt?.title}?`}
+  title={`${optIn ? 'Opt in to' : 'Opt out of'} ${optOutSelected?.title}?`}
   submitText={optIn ? 'Opt in' : 'Opt out'}
   cancelText="Cancel"
   preload={prompt.preloadData}
