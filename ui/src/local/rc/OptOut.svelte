@@ -1,26 +1,19 @@
 <script lang="ts">
-  import { FieldCheckbox } from "@txstate-mws/carbon-svelte"
+  import { FieldCheckbox, FieldHidden } from "@txstate-mws/carbon-svelte"
   import { FORM_CONTEXT, type FormStore } from '@txstate-mws/svelte-forms'
   import { Checkbox } from "carbon-components-svelte"
   import { getContext } from "svelte"
-  export let data: any
-  export let gatheredData: any
-  const store = getContext<FormStore>(FORM_CONTEXT)
-
-  const initialData = Object.assign({}, data)
-
-  let checked = !store?.getField('optOut')
-
-  function updateOpposite () {
-    store?.setField('optOut', checked)
-  }
+  export let data: { optOut?: boolean, optOutUnderstand?: boolean, optInUnderstand?: boolean }
+  const wasOptedOut = data.optOut
+  const wasOptedIn = !wasOptedOut
 </script>
+{#if wasOptedOut}
+  <p>By opting back in, you will be eligible for this program.</p>
+{:else}
+  <p>By opting-out, you will not be eligible for this program unless you opt back in before submitting your request.</p>
+{/if}
 <div class="gap-4 flex flex-col">
-  {#if initialData.optOut}
-    <p>By opting back in, you will be eligible for this program.</p>
-    <Checkbox labelText='I understand and would like to opt in' on:click={updateOpposite} />
-    {:else}
-    <p>By opting-out, you will not be eligible for this program unless you opt back in before submitting your request.</p>
-    {/if}
-    <FieldCheckbox path='optOut' labelText='I understand and would like to opt out' hidden={initialData.optOut}/>
+    <FieldCheckbox path="optInUnderstand" labelText="I understand opt in" conditional={!!wasOptedOut} />
+    <FieldCheckbox path="optOutUnderstand" labelText="I understand opt out" conditional={!!wasOptedIn} />
+    <FieldHidden path="optOut" value={(wasOptedOut && !data.optInUnderstand) || (wasOptedIn && data.optOutUnderstand)} />
 </div>

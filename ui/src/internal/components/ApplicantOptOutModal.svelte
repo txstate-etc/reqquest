@@ -22,7 +22,7 @@
 
   async function submit (data: any) {
     loading = true
-    const { success, messages } = await api.updatePrompt(prompt.id, data, false)
+    const { success, messages } = await api.updatePrompt(prompt.id, { optOut: data?.optOut }, false)
     data = {}
     open = false
     loading = false
