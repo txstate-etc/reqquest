@@ -399,7 +399,8 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
   prestage?: ((appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext, db: Queryable) => Promise<DataType> | DataType) | {
     recur?: PromptPreStagingRecurrence | boolean
     fetch: (appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext, db: Queryable) => Promise<DataType> | DataType
-  
+    schema?: SchemaObject // defaults to { type: 'object', additionalProperties: true } if not specified
+  }
   /**
    * Sometimes, you will want to allow application administrators to control various aspects of
    * how the prompt will be displayed or evaluated. For example, you might want administrators to
