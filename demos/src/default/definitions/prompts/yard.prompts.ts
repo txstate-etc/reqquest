@@ -9,7 +9,7 @@ export const have_yard_prompt: PromptDefinition<YardPromptData, YardPromptData> 
   schema: YardPromptSchema,
   /* prestage: {
     recur: PromptPreStagingRecurrence.INVALID,
-    process: (appRequest, config, allPeriodConfig, ctx, db): YardPromptData => {
+    fetch: (appRequest, config, allPeriodConfig, ctx, db): YardPromptData => {
       return {
         haveYard: true,
         squareFootage: 10001
