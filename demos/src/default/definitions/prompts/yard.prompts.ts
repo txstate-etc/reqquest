@@ -1,6 +1,6 @@
 import { type PromptDefinition, PromptPreStagingRecurrence } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { YardPromptData, YardPromptSchema } from '../models/index.js'
+import { YardPromptData, YardPromptPreStageData, YardPromptPreStageSchema, YardPromptSchema } from '../models/index.js'
 
 export const have_yard_prompt: PromptDefinition<YardPromptData, YardPromptData> = {
   key: 'have_yard_prompt',
@@ -9,12 +9,14 @@ export const have_yard_prompt: PromptDefinition<YardPromptData, YardPromptData> 
   schema: YardPromptSchema,
   prestage: {
     recur: PromptPreStagingRecurrence.ALWAYS,
-    fetch: (appRequest, config, allPeriodConfig, ctx, db): YardPromptData => {
+    schema: YardPromptPreStageSchema,
+    fetch: (appRequest, config, allPeriodConfig, ctx, db): YardPromptData & YardPromptPreStageData  => {
       return {
-        haveYard: true,
-        squareFootage: 10001
+        haveCityWater: false,
+        haveYard: true, // test overlap of prestage and data properties
+        squareFootage: 10001 // test overlap of prestage and data properties
       }
-    }
+    }    
   },
   preload: async (appRequest, config, data, allPeriodConfig, ctx) => {
     await new Promise(resolve => setTimeout(resolve, 1000))
