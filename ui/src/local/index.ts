@@ -559,7 +559,8 @@ function configureDemoInstanceParams () {
       {
         key: 'opt_out_prompt',
         formComponent: OptOut,
-        displayComponent: OptOutDisplay
+        displayComponent: OptOutDisplay,
+        optOut: true
       }
       ]
     }

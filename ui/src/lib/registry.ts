@@ -98,7 +98,7 @@ export interface PromptDefinition {
    */
   icon?: Component
   /**
-   * Ability for user to opt out
+   * Updating UI to show opt out
    */
   optOut?: boolean
 }
