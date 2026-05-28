@@ -62,3 +62,5 @@ export interface ApplicationForDetails {
 
 export const phaseChangeMutations = ['submitAppRequest', 'returnToApplicant', 'completeReview', 'returnToReview', 'acceptOffer', 'returnToOffer', 'completeRequest', 'returnToNonBlocking'] as const
 export type PhaseChangeMutations = typeof phaseChangeMutations[number]
+
+export type OptOutApplication = ApplicationForDetails & { prompt: AnsweredPrompt }

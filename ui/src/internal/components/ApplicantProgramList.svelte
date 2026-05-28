@@ -3,7 +3,7 @@
   import { Button } from 'carbon-components-svelte'
   import { Close, InProgress, CheckmarkFilled, Information, SubtractAlt } from 'carbon-icons-svelte'
   import { ucfirst } from 'txstate-utils'
-  import { type AnsweredPrompt, type ApplicationForDetails, enumApplicationStatus, enumIneligiblePhases, enumRequirementStatus, enumRequirementType, type PromptDefinition } from '$lib'
+  import { type AnsweredPrompt, type ApplicationForDetails, enumApplicationStatus, enumIneligiblePhases, enumRequirementStatus, enumRequirementType, type OptOutApplication, type PromptDefinition } from '$lib'
   import { getApplicationStatusInfo } from '../status-utils.js'
   import ApplicantProgramListTooltip from './ApplicantProgramListTooltip.svelte'
   import WarningIconYellow from './WarningIconYellow.svelte'
@@ -23,7 +23,6 @@
 
   let optOutPrompt: Omit<PromptDefinition, 'displayComponent'> | undefined
 
-  type OptOutApplication = ApplicationForDetails & { prompt: AnsweredPrompt }
 
   let optOutSelected: OptOutApplication | undefined
 
@@ -168,7 +167,7 @@
 
 
 {#if optOutPrompt?.key}
-  <ApplicantOptOutModal bind:open bind:optIn bind:prompt={optOutPrompt} {appRequest} />
+  <ApplicantOptOutModal bind:open bind:optIn bind:prompt={optOutPrompt} {optOutSelected} {appRequest} />
 {/if}
 
 <style>
