@@ -603,7 +603,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
         hasUnanswered ||= !anyOrderAllAnswered
         for (const prompt of regularPrompts) {
           prompt.moot = applicationIsIneligible && requirement.type !== RequirementType.WORKFLOW
-          if (hasUnanswered || resolveInfo.status !== RequirementStatus.PENDING) prompt.visibility = PromptVisibility.UNREACHABLE
+          if ((hasUnanswered || resolveInfo.status !== RequirementStatus.PENDING) && !promptRegistry.get(prompt.key).optOut) prompt.visibility = PromptVisibility.UNREACHABLE
           else {
             if (promptsSeenInApplication.has(prompt.key)) prompt.visibility = PromptVisibility.APPLICATION_DUPE
             else if (promptsSeenInRequest.has(prompt.key)) prompt.visibility = PromptVisibility.REQUEST_DUPE
@@ -683,13 +683,15 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
         if (phase === 'acceptance') application.ineligiblePhase = IneligiblePhases.ACCEPTANCE
         else if (phase === 'applicant') application.ineligiblePhase = firstFailingRequirement?.type === RequirementType.PREQUAL ? IneligiblePhases.PREQUAL : IneligiblePhases.QUALIFICATION
         else if (phase === 'review') {
-          application.ineligiblePhase =
-            firstFailingRequirement?.type === RequirementType.PREQUAL ? IneligiblePhases.PREQUAL :
-            firstFailingRequirement?.type === RequirementType.QUALIFICATION ? IneligiblePhases.QUALIFICATION :
-            firstFailingRequirement?.type === RequirementType.PREAPPROVAL ? IneligiblePhases.PREAPPROVAL :
-            IneligiblePhases.APPROVAL
-        }
-        else if (phase === 'blocking') application.ineligiblePhase ??= IneligiblePhases.WORKFLOW
+          application.ineligiblePhase
+            = firstFailingRequirement?.type === RequirementType.PREQUAL
+              ? IneligiblePhases.PREQUAL
+              : firstFailingRequirement?.type === RequirementType.QUALIFICATION
+                ? IneligiblePhases.QUALIFICATION
+                : firstFailingRequirement?.type === RequirementType.PREAPPROVAL
+                  ? IneligiblePhases.PREAPPROVAL
+                  : IneligiblePhases.APPROVAL
+        } else if (phase === 'blocking') application.ineligiblePhase ??= IneligiblePhases.WORKFLOW
       } else if (phase !== 'nonblocking' && phase !== 'blocking' && phase !== 'complete') {
         application.ineligiblePhase = undefined
       }
