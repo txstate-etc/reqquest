@@ -55,11 +55,6 @@ export class RequirementPromptResolver {
   actions (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt) {
     return requirementPrompt
   }
-
-  @FieldResolver(type => Boolean, { description: 'Smartly identifies if the prompt requires pre staging processing.' })
-  async prestage (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt) {
-    return await ctx.svc(RequirementPromptService).requiresStaging(requirementPrompt)
-  }
 }
 
 @Resolver(of => RequirementPromptActions)
