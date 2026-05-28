@@ -9,6 +9,7 @@ export const opt_out_prompt: PromptDefinition<OptOutData> = {
   title: 'Software development',
   description: 'Opt Out',
   schema: OptOutSchema,
+  optOut: true,
   validate: (data, config) => {
     return []
   }

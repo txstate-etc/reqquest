@@ -62,12 +62,8 @@
   }), {} as Record<string, string | undefined>)
 
   $: optOutPrograms = applications.reduce((acc, curr) => {
-    const optOut = curr.requirements.flat().flatMap(r => r.prompts).find(p => {
-      const prompt = uiRegistry.getPrompt(p.key)
-      // console.log(prompt)
-      return prompt?.optOut
-    })
-    // console.log(optOut)
+    const optOut = curr.requirements.flat().flatMap(r => r.prompts).find(r => r.optOut)
+
     if (!optOut) return acc
 
     return {
@@ -79,13 +75,8 @@
     }
   }, {} as Record<string, OptOutApplication | undefined>)
 
-  $: optedOutPrograms = applications.reduce((acc, c) => {
-    const optOutRequirement = c.requirements.flat().find(p => {
-      return p.prompts.find(p => {
-        const prompt = uiRegistry.getPrompt(p.key)
-        return prompt?.optOut
-      })
-    })
+ $: optedOutPrograms = applications.filter(curr => curr.requirements.flatMap(r => r.prompts).find(r => r.optOut)).reduce((acc, c) => {
+    const optOutRequirement = c.requirements.flat().find(r => r.prompts.find(p => p.optOut))
     return {
       ...acc,
       [c.id]: optOutRequirement?.status === enumRequirementStatus.DISQUALIFYING
