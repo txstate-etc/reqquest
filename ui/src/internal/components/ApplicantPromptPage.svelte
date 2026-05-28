@@ -15,7 +15,6 @@
   import type { ResolvedPathname } from '$app/types'
   import { uiRegistry } from '../../local/index.js'
   import { api } from '../api.js'
-  import { stagedprompts } from '../prompt-utils.js'
   import type { PageData } from '../../routes/requests/[id]/apply/[promptId]/$types.js'
   import ButtonLoadingIcon from './ButtonLoadingIcon.svelte'
   import { Loading } from "carbon-components-svelte";
@@ -70,10 +69,6 @@
     lastPromptId = prompt.id
     store = undefined
   }
-  afterNavigate(async () => {
-    stagedprompts.clear() // clear references to staged prompts since we may be navigating to a different prompt that needs staging
-    await invalidate('request:apply') // required to redraw the nav tree if potential staged data affects prompt visibility or status
-  })
 </script>
 {#if loading}
   <Loading />
