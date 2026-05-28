@@ -41,7 +41,6 @@ export class Prompt {
     this.title = definition.title
     this.navTitle = definition.navTitle ?? definition.title
     this.authorizationKeys = { prompt: promptRegistry.authorizationKeys[definition.key] ?? [] }
-    this.optOut = !!definition.optOut
   }
 
   @Field({ description: 'A human and machine readable identifier for the prompt. Will be used to match prompt data with UI and API code that handles it.' })
@@ -57,8 +56,6 @@ export class Prompt {
   description?: string
 
   authorizationKeys?: Record<string, string[]>
-
-  optOut: boolean
 }
 
 @ObjectType({ description: 'A RequestPrompt is an instance of a Prompt on a particular request. Once the user has answered the prompt, it contains the answer and the prompt status on that request.' })
