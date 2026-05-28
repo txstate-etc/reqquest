@@ -29,9 +29,9 @@
 
   async function openOptOutModal (programId: string, openOptIn = false) {
     optOutSelected = optOutPrograms[programId]
+    await loadOptOutPrompt()
     optIn = openOptIn
     open = true
-    loadOptOutPrompt()
   }
 
   $: promptsByApplicationId = applications.reduce<Record<string, typeof applications[0]['requirements'][0]['prompts'] | undefined>>((acc, curr) => ({
