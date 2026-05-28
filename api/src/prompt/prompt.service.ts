@@ -244,37 +244,6 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     return newPrompt
   }
 
-  async stage (prompt: RequirementPrompt, dataVersion?: number): Promise<ValidatedAppRequestResponse> {
-    if (!this.mayUpdate(prompt)) throw new Error('You are not allowed to stage this prompt.')
-    const response = new ValidatedAppRequestResponse()
-    response.success = false // default to fail
-    if (await this.requiresStaging(prompt) === false) return (response.success = true, response)
-    await appRequestTransaction(prompt.appRequestInternalId, async db => {
-      const [[appRequest], [appRequestDataPair]] = await Promise.all([
-        getAppRequests({ internalIds: [prompt.appRequestInternalId] }, db),
-        getAppRequestData([prompt.appRequestInternalId], db)
-      ])
-      if (!appRequest) throw new Error('AppRequest not found')
-      if (dataVersion != null && appRequest.dataVersion !== dataVersion) {
-        throw new Error('Someone else is working on the same request and made changes since you loaded. Copy any unsaved work into another document and reload the page to see what has changed.')
-      }
-      const appRequestData = appRequestDataPair?.data ?? {}
-      const allConfigData = await periodConfigCache.get(prompt.periodId)
-      const stagedData = (typeof prompt.definition.prestage === 'function') ? prompt.definition.prestage(appRequest, allConfigData[prompt.key] ?? {}, allConfigData, this.ctx, db) : prompt.definition.prestage!.process!(appRequest, allConfigData[prompt.key] ?? {}, allConfigData, this.ctx, db)
-      response.success = true
-      if (!equal(appRequestData[prompt.key], stagedData)) {
-        appRequestData[prompt.key] = stagedData
-        const promptsToInvalidate = promptRegistry.getInvalidatedPrompts(prompt.key, appRequestData, allConfigData)
-        await setRequirementPromptsInvalid(promptsToInvalidate, db)
-        const promptsToRevalidate = promptRegistry.getRevalidatedPrompts(prompt.key, appRequestData, allConfigData)
-        await setRequirementPromptsValid(promptsToRevalidate.concat([prompt.key]), db)
-        await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion, db)!
-        recordAppRequestActivity(appRequest.internalId, this.user!.internalId, `${programRegistry.get(prompt.programKey)?.navTitle ?? 'Prompt'} Updated`, { data: stagedData, description: prompt.title, impersonatedBy: this.impersonationUser?.internalId }, db)
-      }
-    })
-    return response
-  }
-
   async update (prompt: RequirementPrompt, data: any, validateOnly = false, dataVersion?: number) {
     data ??= {}
     if (!this.mayUpdate(prompt)) throw new Error('You are not allowed to update this prompt.')
