@@ -15,6 +15,7 @@
     "@stylistic/eslint-plugin": "^4.0.0",
     "@types/luxon": "^3.3.1",
     "@types/node": "^24.3.1",
+    "@types/nodemailer": "^8.0.0",
     "eslint-config-love": "^119.0.0",
     "typescript": "^5.1.6"
   },
@@ -25,8 +26,10 @@
     "dataloader-factory": "^4.5.0",
     "fastify": "^4.24.3",
     "file-type": "^21.0.0",
+    "handlebars": "^4.7.9",
     "luxon": "^3.3.0",
     "mysql2-async": "^2.0.0",
+    "nodemailer": "^8.0.9",
     "txstate-utils": "^1.8.13",
     "type-graphql": "^1.1.1"
   },

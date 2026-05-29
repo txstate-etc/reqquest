@@ -16,9 +16,12 @@ services:
       MYSQL_DATABASE: default_database
       MYSQL_USER: user
       MYSQL_PASS: password
+      SMTP_SERVER: fakesmtp
       JWT_TRUSTED_ISSUERS: '[{ "iss": "unified-auth", "url": "http://fakeauth/jwks" }, { "iss": "reqquest", "secret": "reqquest" }]'
       RESET_DB_ON_STARTUP: 'true'
       DEMO_INSTANCE: '${DEMO_INSTANCE:-default}'
+    links:
+      - fakesmtp
     volumes:
       - ./api/src:/usr/app/api/src
       - ./api/dist:/usr/app/api/dist
@@ -45,6 +48,11 @@ services:
     attach: false
     ports:
       - 127.0.0.1:3001:80
+  fakesmtp:
+    build:
+      context: fake-smtp-server
+    ports:
+      - 1080:80
   mysql:
     image: percona/percona-server:8.4
     ports:
