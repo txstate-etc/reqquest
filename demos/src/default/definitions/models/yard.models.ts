@@ -18,6 +18,6 @@ export const YardPromptPreStageSchema = {
   properties: {
     haveCityWater: { type: 'boolean' },
   },
-  additionalProperties: false // FOR TEST leave false:  Will be overriden to true for additional props
+  additionalProperties: false // FOR TEST leave false:  Will be overriden automatically to true for additional props as needed for signing
 } as const satisfies SchemaObject
 export type YardPromptPreStageData = FromSchema<typeof YardPromptPreStageSchema>
