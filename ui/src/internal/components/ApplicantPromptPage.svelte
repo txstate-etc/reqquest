@@ -23,6 +23,7 @@
   export let data: PageData
   $: ({ prompt, appRequestForExport, dataVersion } = data)
   $: def = uiRegistry.getPrompt(prompt.key)
+  $: unsavedWarningCheck = true // TODO: Temp fix to prevent unsavedWarn check from triggering after save and continue
   const nextHref = getContext<Writable<{ nextHref: ResolvedPathname, prevHref: ResolvedPathname | undefined }>>('nextHref')
 
   let store: FormStore | undefined
@@ -55,6 +56,7 @@
   }
 
   async function onSaved () {
+    unsavedWarningCheck = false
     await invalidate('request:apply')
     if (continueAfterSave && prompt.answered) {
       // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved
@@ -64,6 +66,7 @@
       await store?.setData(appRequestForExport.data[prompt.key] as object)
     }
     loading = false
+    unsavedWarningCheck = true
   }
 
   let lastPromptId: string | undefined
@@ -88,7 +91,7 @@
     <h2 id="prompt-title" tabindex="-1" autofocus class="font-medium text-xl text-center">{prompt.title}</h2>
     <p class="text-center"> {prompt.description}</p>
   </div>
-  <Form bind:store hideFallbackMessage unsavedWarning submit={onSubmit} validate={onValidate} preloadAsDraft={!prompt.hasSavedData} preload={prompt.preloadData}  on:saved={onSaved} let:data>
+  <Form bind:store hideFallbackMessage unsavedWarning={unsavedWarningCheck} submit={onSubmit} validate={onValidate} preloadAsDraft={!prompt.hasSavedData} preload={prompt.preloadData}  on:saved={onSaved} let:data>
     <svelte:component this={def!.formComponent} {data} appRequestId={appRequestForExport.id} appRequestData={appRequestForExport.data} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
     <svelte:fragment slot="submit" let:submitting>
       <div class='form-submit flex gap-12 justify-center mt-16'>
