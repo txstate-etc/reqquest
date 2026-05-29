@@ -1,11 +1,12 @@
 import { SchemaObject } from '@txstate-mws/fastify-shared'
 import { FromSchema } from 'json-schema-to-ts'
+import { UploadInfoWithSumSchema } from './shared.models.js'
 
 export const DataRelatedPuzzleSchema = {
   type: 'object',
   properties: {
     puzzleAnswer: { type: 'string' },
-    additionalDocumentation: { type: 'object' }
+    additionalDocumentation: UploadInfoWithSumSchema
   },
   additionalProperties: false
 } as const satisfies SchemaObject
