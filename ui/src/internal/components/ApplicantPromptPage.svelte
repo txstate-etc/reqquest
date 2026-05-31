@@ -72,11 +72,6 @@
     lastPromptId = prompt.id
     store = undefined
   }
-  afterNavigate(async (navigation) => { 
-    if (!continueAfterSave) { // navigating away from current prompt without using the continue button ... remove prompt staging and invalidate to ensure any changes are reflected in nav
-      await invalidate('request:apply')
-    }    
-  })
 </script>
 {#if loading} 
   <Loading />
