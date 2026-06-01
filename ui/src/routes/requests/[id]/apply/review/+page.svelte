@@ -22,12 +22,12 @@
   $: ({ appRequestForExport, prequalPrompts, postqualPrompts, applicationsForNav } = data)
 
   const nextHref = getContext<Writable<{ nextHref?: ResolvedPathname, prevHref?: ResolvedPathname }>>('nextHref')
-  $: hasPreviousPrompt = !!$nextHref.prevHref
+  $: previousHref = nextHref ? $nextHref.prevHref : undefined
 
   async function handleBack () {
-    if ($nextHref.prevHref) {
+    if (previousHref) {
       // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved
-      await goto($nextHref.prevHref)
+      await goto(previousHref)
     }
   }
 
@@ -41,7 +41,8 @@
     }
   }
 
-  afterNavigate(() => {
+  afterNavigate(({ from }) => {
+    if (from?.url.pathname) previousHref = from.url.pathname + from.url.search
     const h2 = document.querySelector('h2')
     if (h2) {
       h2.tabIndex = -1
@@ -57,8 +58,8 @@
     {prequalPrompts}
     {postqualPrompts}
     {uiRegistry}
-    title="Review Your Submission"
-    subtitle="Please review all information before submitting."
+    title="Review your application"
+    subtitle="Confirm the benefits shown are the ones you are requesting and that your responses are correct, or make changes before submitting."
     expandable={false}
     showWarningsInline={true}
     showAppRequestStatus={false}
@@ -70,14 +71,14 @@
           <p class="text-center">If you think this was a mistake please review your answers or reach out through the support page.</p>
         {/if}
         <div class="footer-actions">
-          {#if hasPreviousPrompt}
+          {#if previousHref}
               <Button kind="ghost" on:click={handleBack}>Back</Button>
           {/if}
           {#if uiRegistry.config.supportUrl}
               <Button kind="ghost" href={uiRegistry.config.supportUrl}>Support</Button>
           {/if}
           {#if appRequestForExport.status === enumAppRequestStatus.READY_TO_SUBMIT}
-            <Button icon={Touch_1} on:click={onSubmit}>Submit For Review</Button>
+            <Button icon={Touch_1} on:click={onSubmit}>Submit application</Button>
           {/if}
         </div>
       </footer>
