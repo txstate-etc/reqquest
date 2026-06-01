@@ -37,7 +37,7 @@
 
     // General Questions === PREQUAL prompts
     if (prequalPrompts?.length) {
-      sections.push({ title: 'General Questions', prompts: prequalPrompts })
+      sections.push({ title: 'Eligibility screening questions', prompts: prequalPrompts })
     }
 
     // Application-Specific Questions with nested Reviewer Questions
@@ -117,12 +117,7 @@
     {:else if sections.length > 0}
       {#each sections as section (section.title)}
         {@const applicationStatusInfo = section.applicationStatus ? getApplicationStatusInfo(section.applicationStatus, appRequest.phase, appRequest.closedAt) : undefined}
-        <Panel title={section.title} {expandable} expanded>
-          <svelte:fragment slot="headerLeft">
-            {#if applicationStatusInfo}
-              <TagSet tags={[{ label: applicationStatusInfo.label, type: applicationStatusInfo.color }]} />
-            {/if}
-          </svelte:fragment>
+        <Panel title={section.title} {expandable} expanded>         
           {#if section.prompts.length}
             <dl class="prompt-list">
               {#each section.prompts as prompt (prompt.id)}
@@ -269,9 +264,11 @@
     grid-template-columns: 1fr 1fr;
     align-items: stretch;
     row-gap: 0.5rem;
+    background-color: #F2F2F2;
+    padding-top: 0.5rem;
   }
   .prompt-list dt, .prompt-list dd {
-    padding-bottom: 0.5rem;
+    padding-top: 0.25rem;
   }
 
   .prompt-term {
@@ -279,6 +276,7 @@
     gap:1em;
     color: var(--cds-text-01);
     border-bottom: 1px solid var(--cds-border-subtle);
+    padding: 0.5rem 10px;
   }
   .prompt-term:has(+ .prompt-answer.large) {
     border-bottom: none;
@@ -287,6 +285,7 @@
   .prompt-answer {
     color: var(--cds-text-02);
     border-bottom: 1px solid var(--cds-border-subtle);
+    padding: 0.5rem 10px;
   }
   .prompt-answer.large {
     grid-column: span 2;
