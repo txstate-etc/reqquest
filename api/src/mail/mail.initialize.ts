@@ -5,19 +5,17 @@ export const mailMigrations: DatabaseMigration[] = [
     id: '20250114094100',
     async execute (db) {
       await db.execute(`
-        CREATE TABLE IF NOT EXISTS mail_template (
+        CREATE TABLE IF NOT EXISTS mail_templates (
           id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-          key VARCHAR(255) NOT NULL,
+          templateKey VARCHAR(255) NOT NULL,
           description VARCHAR(255) NOT NULL,
           audience VARCHAR(255) NOT NULL,
-          description VARCHAR(255) NOT NULL,
           variables TEXT NOT NULL,
           subject VARCHAR(255) NOT NULL,
           body TEXT NOT NULL,
           created DATETIME NOT NULL,
-          enabled TINYINT(1) NOT NULL DEFAULT 0
-          UNIQUE (key),
-          INDEX (openDate),
+          enabled TINYINT(1) NOT NULL DEFAULT 0,
+          UNIQUE (templateKey)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `)
       await db.execute(`
@@ -30,7 +28,7 @@ export const mailMigrations: DatabaseMigration[] = [
           status VARCHAR(255) NOT NULL,
           attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
           lastError DATETIME NOT NULL,
-          INDEX (openDate),
+          updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `)
     }
