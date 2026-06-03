@@ -21,7 +21,7 @@ export const mailMigrations: DatabaseMigration[] = [
       await db.execute(`
         CREATE TABLE IF NOT EXISTS mail_outbox (
           id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-          template_key VARCHAR(255) NOT NULL,
+          templateKey VARCHAR(255) NOT NULL,
           recipients VARCHAR(255) NOT NULL,
           variables TEXT NOT NULL,
           sent DATETIME NOT NULL,
