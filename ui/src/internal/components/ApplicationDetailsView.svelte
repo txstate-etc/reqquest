@@ -4,7 +4,7 @@
   import { Button, InlineNotification, Tooltip } from 'carbon-components-svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import type { AnsweredPrompt, PromptSection, AppRequestForDetails, ApplicationForDetails, Scalars } from '$lib'
-  import { enumRequirementType } from '$lib'
+  import { enumRequirementType, enumIneligiblePhases, enumApplicationStatus } from '$lib'
   import type { UIRegistry } from '../../lib/registry.js'
   import RenderDisplayComponent from './RenderDisplayComponent.svelte'
   import ApplicantProgramList from './ApplicantProgramList.svelte'
@@ -30,7 +30,9 @@
   const CORRECTABLE_STATUSES = ['STARTED', 'READY_TO_SUBMIT', 'DISQUALIFIED']
 
   $: canMakeCorrections = CORRECTABLE_STATUSES.includes(appRequest.status)
-
+  $: eligibleApplications = applications.filter(a => a.ineligiblePhase == null)
+  $: ineligibleApplications = applications.filter(a => a.ineligiblePhase === enumIneligiblePhases.PREQUAL || a.ineligiblePhase === enumIneligiblePhases.QUALIFICATION)
+  
   // Group prompts by sections, with reviewer prompts nested within application sections
   $: sections = (() => {
     const sections: PromptSection[] = []
@@ -105,7 +107,15 @@
         {/if}
 
         <!-- Application Status List -->
-        <ApplicantProgramList {applications} {appRequest} viewMode={statusDisplay === 'tags'} {showTooltipsAsText} />
+        {#if eligibleApplications.length > 0}
+          <ApplicantProgramList applications={eligibleApplications} {appRequest} viewMode={statusDisplay === 'tags'} {showTooltipsAsText} />
+        {/if}
+        <!-- Ineligible Status List -->
+         {#if ineligibleApplications.length > 0}
+            <Panel title="Ineligible programs" expandable={true} expanded={(eligibleApplications.length === 0)}>
+              <ApplicantProgramList applications={ineligibleApplications} {appRequest} viewMode={statusDisplay === 'tags'} {showTooltipsAsText} />
+            </Panel>
+         {/if}         
       </div>
     </section>
 
