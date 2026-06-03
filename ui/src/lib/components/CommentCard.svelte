@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ActionSet, type ActionItem } from '@txstate-mws/carbon-svelte'
   import { DateTime } from 'luxon'
+  import { htmlEncode } from 'txstate-utils'
 
   /**
    * The TEXT content of the comment.
@@ -44,7 +45,7 @@
 
 <div class="comment-card">
   <div class="comment-box" class:noborder class:hasactions={actions.length > 0}>
-    <div class="comment-content"><p>{content}</p></div>
+    <div class="comment-content"><p>{@html htmlEncode(content)}</p></div>
     {#if actions.length}
       <div class="comment-actions">
         <ActionSet {actions} noPrimaryAction small forceOverflow />
