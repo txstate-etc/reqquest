@@ -69,6 +69,7 @@ async function main () {
             login => ({
               login,
               fullname: `${login} Full Name`,
+              email: `${login}@txstate.edu`,
               groups: userTypes[userTypePrefixes.find(p => login.startsWith(p))!].groups,
               otherInfo: {
                 email: `${login}@txstate.edu`,

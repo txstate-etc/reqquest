@@ -11,6 +11,7 @@ export interface ReqquestUser {
   login: string
   fullname: string
   groups: string[]
+  email?: string
   otherInfo?: any
   /**
    * Provide any alternate unique identifiers aside from the user's login. Perhaps they also
