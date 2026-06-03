@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ActionSet, type ActionItem } from '@txstate-mws/carbon-svelte'
   import { DateTime } from 'luxon'
-  import { htmlEncode } from 'txstate-utils'
+  import { htmlEncode, isBlank } from 'txstate-utils'
 
   /**
    * The TEXT content of the comment.
@@ -41,11 +41,30 @@
   export let noborder = false
 
   $: createdAtDt = typeof createdAt === 'string' ? DateTime.fromISO(createdAt) : createdAt
+
+  // NOTE: Noticed that htmlEncode doesn't encode equal signs,
+  // but included here just in case that changes as unencoding doesn't cause issues.
+  function unencodeUrl (str: string) {
+    if (isBlank(str)) return ''
+    const map = new Map<string, string>([
+      ['&amp;', '&'],
+      ['&#x3D;', '=']
+    ])
+    return str.trim().replace(/&(amp|#x3D);/g, (m: string) => map.get(m) ?? '')
+  }
+
+  // People often put punctuation at the end or enclose url's in parentheses or quotes so do not include
+  // https://www.youtube.com/watch?v&#x3D;pYBrK1O4UEQ&amp;list&#x3D;UUHdD1ujwX1fCB0CiamefSWA.
+  //   => href="https://www.youtube.com/watch?v=pYBrK1O4UEQ&list=UUHdD1ujwX1fCB0CiamefSWA"
+  function clickableUrl(str: string) {
+    return str.replace(/(\bhttps?:\/\/([^.,!?:)\n\r\t '"]+|[.,!?:)][^\n\r\t '")])+)/g, (m: string) => `<a href="${unencodeUrl(m)}" target="_blank">${m}</a>`)
+  }
+
 </script>
 
 <div class="comment-card">
   <div class="comment-box" class:noborder class:hasactions={actions.length > 0}>
-    <div class="comment-content"><p>{@html htmlEncode(content)}</p></div>
+    <div class="comment-content"><p>{@html clickableUrl(htmlEncode(content))}</p></div>
     {#if actions.length}
       <div class="comment-actions">
         <ActionSet {actions} noPrimaryAction small forceOverflow />
