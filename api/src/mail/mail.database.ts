@@ -1,3 +1,6 @@
+import { DateTime } from 'luxon'
+import db from 'mysql2-async/db'
+
 export interface MailTemplateRow {
   id: number
   templateKey: string
@@ -20,4 +23,22 @@ export interface MailOutboxRow {
   sent: Date
   lastError?: Date
   updatedAt: Date
+}
+
+export const createMailTemplate = async ({ templateKey, description, audience, variables, subject, body }: Pick<MailTemplateRow, 'templateKey' | 'description' | 'audience' | 'variables' | 'subject' | 'body'>) => {
+  return await db.insert(`
+    INSERT INTO mail_templates (templateKey, description, audience, variables, subject, body, enabled)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `, [templateKey, description, audience, variables, subject, body, true])
+}
+
+export const createMailOutbox = async ({ templateKey, recipients, variables, status }: Pick<MailOutboxRow, 'templateKey' | 'recipients' | 'variables' | 'status'>) => {
+  return await db.insert(`
+    INSERT INTO mail_outbox (templateKey, recipients, variables, status, lastError)
+    VALUES (?, ?, ?, ?, ?)
+  `, [templateKey, recipients, variables, status, DateTime.now().toSQLDate()])
+}
+
+export const getMailTemplate = async (templateKey: string): Promise<MailTemplateRow | undefined> => {
+  return await db.getrow(`SELECT * FROM mail_templates WHERE templateKey = '${templateKey}'`)
 }

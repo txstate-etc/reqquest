@@ -44,6 +44,7 @@ export * from './program/program.database.js'
 export * from './prompt/prompt.database.js'
 export * from './requirement/requirement.database.js'
 export * from './metrics/metrics.database.js'
+export * from './mail/mail.database.js'
 
 /** Services */
 export * from './access/access.user.service.js'
@@ -56,6 +57,7 @@ export * from './program/program.service.js'
 export * from './prompt/prompt.service.js'
 export * from './requirement/requirement.service.js'
 export * from './metrics/metrics.service.js'
+export * from './mail/mail.service.js'
 
 /** Routes */
 export * from './appRequest/appRequest.routes.js'
