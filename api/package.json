@@ -26,6 +26,7 @@
     "dataloader-factory": "^4.5.0",
     "fastify": "^4.24.3",
     "file-type": "^21.0.0",
+    "glob": "^13.0.6",
     "handlebars": "^4.7.9",
     "luxon": "^3.3.0",
     "mysql2-async": "^2.0.0",
