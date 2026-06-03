@@ -30,7 +30,7 @@ class Mailer {
     }))
   }
 
-  async sendsingle ({ from, to, template }: { from?: string, to: string, template: any }) {
+  private async sendsingle ({ from, to, template }: { from?: string, to: string, template: any }) {
     const message = template({ to, from, link_base: 'helpers.absolute()' })
     const idx = message.indexOf('\n')
     const [subject, body] = [message.slice(0, idx), message.slice(idx + 1)]
@@ -48,7 +48,7 @@ class Mailer {
   }
 
   async sendmulti ({ from, users, modelName, action }: { from?: string, users: string[], modelName: string, action: string }) {
-    const templatepath = `mail/${modelName}/${action}.handlebars`
+    const templatepath = `/usr/app/api/src/mail/${modelName}/${action}.handlebars`
     const template = this.templates[templatepath]
     await Promise.all(
       users.map(to => this.sendsingle({ from, to, template }))
