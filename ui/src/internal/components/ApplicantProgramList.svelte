@@ -3,16 +3,15 @@
   import { Button } from 'carbon-components-svelte'
   import { Close, InProgress, CheckmarkFilled, Information, SubtractAlt } from 'carbon-icons-svelte'
   import { ucfirst } from 'txstate-utils'
-  import { type AnsweredPrompt, type ApplicationForDetails, enumApplicationStatus, enumIneligiblePhases, enumRequirementStatus, enumRequirementType, type OptOutApplication, type PromptDefinition } from '$lib'
+  import { type ApplicationForDetails, type AppRequestForDetails, enumApplicationStatus, enumIneligiblePhases, enumRequirementStatus, enumRequirementType, type OptOutApplication, type PromptDefinition } from '$lib'
   import { getApplicationStatusInfo } from '../status-utils.js'
   import ApplicantProgramListTooltip from './ApplicantProgramListTooltip.svelte'
   import WarningIconYellow from './WarningIconYellow.svelte'
   import { api } from '$internal/api.js'
   import { stagedprompts } from '$internal/prompt-utils.js'
   import ApplicantOptOutModal from './ApplicantOptOutModal.svelte'
-  import { uiRegistry } from '../../local/index.js'
 
-  export let appRequest: { phase: string, closedAt?: string | null, id: string, dataVersion: number }
+  export let appRequest: AppRequestForDetails
   export let applications: ApplicationForDetails[]
   export let viewMode = false
   export let showTooltipsAsText = false
@@ -58,11 +57,11 @@
 
   $: programFirstPromptId = applications.reduce((acc, curr) => ({
     ...acc,
-    [curr.id]: (promptsByApplicationId[curr.id]?.find(p => (!p.answered || p.invalidated) && !p.optOut) ?? promptsByApplicationId[curr.id]?.[0].optOut ? promptsByApplicationId[curr.id]?.[1] : promptsByApplicationId[curr.id]?.[0])?.id
+    [curr.id]: (promptsByApplicationId[curr.id]?.find(p => (!p.answered || p.invalidated) && !p.optOut) ?? (promptsByApplicationId[curr.id]?.[0]?.optOut ? promptsByApplicationId[curr.id]?.[1] : promptsByApplicationId[curr.id]?.[0]))?.id
   }), {} as Record<string, string | undefined>)
 
   $: optOutPrograms = applications.reduce((acc, curr) => {
-    const optOut = curr.requirements.flat().flatMap(r => r.prompts).find(r => r.optOut)
+    const optOut = curr.requirements.flatMap(r => r.prompts).find(({ optOut: optOutPrompt }) => optOutPrompt)
 
     if (!optOut) return acc
 
@@ -75,13 +74,15 @@
     }
   }, {} as Record<string, OptOutApplication | undefined>)
 
- $: optedOutPrograms = applications.filter(curr => curr.requirements.flatMap(r => r.prompts).find(r => r.optOut)).reduce((acc, c) => {
-    const optOutRequirement = c.requirements.flat().find(r => r.prompts.find(p => p.optOut))
-    return {
-      ...acc,
-      [c.id]: optOutRequirement?.status === enumRequirementStatus.DISQUALIFYING
-    }
-  }, {} as Record<string, boolean>)
+ $: optedOutPrograms = applications
+    .filter(curr => curr.requirements.flatMap(r => r.prompts).find(r => r.optOut))
+    .reduce((acc, c) => {
+      const optOutRequirement = c.requirements.find(r => r.prompts.some(p => p.optOut))
+      return {
+        ...acc,
+        [c.id]: optOutRequirement?.status === enumRequirementStatus.DISQUALIFYING
+      }
+    }, {} as Record<string, boolean>)
 
   async function loadOptOutPrompt () {
     const promptId = optOutSelected?.prompt?.id

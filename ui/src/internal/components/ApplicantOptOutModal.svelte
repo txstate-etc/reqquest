@@ -3,15 +3,15 @@
   import type { FormStore } from '@txstate-mws/svelte-forms'
   import { afterNavigate, invalidate, invalidateAll } from '$app/navigation'
   import { uiRegistry } from '../../local/index.js'
-  import { api } from '../api.js'
+  import { api, type PromptForEditing } from '../api.js'
   import { stagedprompts } from '../prompt-utils.js'
   import { Loading } from "carbon-components-svelte";
-  import type { OptOutApplication } from '$lib'
+  import type { AppRequestForDetails, OptOutApplication } from '$lib'
 
   export let open = false
   export let optIn = false
-  export let prompt: any
-  export let appRequest: any
+  export let prompt: PromptForEditing
+  export let appRequest: AppRequestForDetails
   export let optOutSelected: OptOutApplication | undefined
 
   $: def = uiRegistry.getPrompt(prompt.key)
@@ -22,16 +22,18 @@
 
   async function submit (data: any) {
     loading = true
-    const { success, messages } = await api.updatePrompt(prompt.id, { optOut: data?.optOut }, false)
-    data = {}
-    open = false
-    loading = false
-    invalidateAll()
+    const { success, messages } = await api.updatePrompt(prompt.id, data, false)
     return {
       success,
       messages,
       data
     }
+  }
+
+  async function saved () {
+    open = false
+    loading = false
+    invalidateAll()
   }
 
   async function onValidate (data: any) {
@@ -62,6 +64,7 @@
   open={open}
   on:cancel={() => { open = false }}
   on:validate={onValidate}
+  on:saved={saved}
   {submit}
   title={`${optIn ? 'Opt in to' : 'Opt out of'} ${optOutSelected?.title}?`}
   submitText={optIn ? 'Opt in' : 'Opt out'}

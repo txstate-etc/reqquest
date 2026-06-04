@@ -16,6 +16,7 @@ import { applicantRequirementTypes } from './status-utils.js'
 export const showDupePrompts = PUBLIC_SHOW_DUPLICATE_PROMPTS.trim() === 'true'
 export type DashboardAppRequest = Awaited<ReturnType<typeof api.getApplicantRequests>>[number]
 export type AppRequestForExportResponse = Awaited<ReturnType<typeof api.getAppRequestForExport>>
+export type PromptForEditing = Awaited<ReturnType<typeof api.getApplicantPrompt>>['prompt']
 
 class API extends APIBase {
   baseUrl = PUBLIC_API_BASE

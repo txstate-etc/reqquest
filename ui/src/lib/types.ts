@@ -39,6 +39,8 @@ export interface AppRequestForDetails {
   updatedAt?: string
   closedAt?: string | null
   actions?: any
+  dataVersion?: number
+  data?: any
 }
 
 export interface ApplicationForDetails {
