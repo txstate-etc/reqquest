@@ -4,6 +4,7 @@ export const operationsInfrastructure: ProgramDefinition = {
   key: 'operations_infrastructure',
   title: 'Operations & Infrastructure',
   requirementKeys: [
+    'operations_infrastructure_opt_out_req',
     'step1_prequal_req',
     'written_automation_req',
     'evidence_automation_req',
@@ -17,7 +18,7 @@ export const softwareDevelopment: ProgramDefinition = {
   key: 'software_development',
   title: 'Software Development',
   requirementKeys: [
-    'opt_out_req',
+    'software_dev_opt_out_req',
     'step1_prequal_req',
     'data_related_puzzle_req',
     'assess_data_related_puzzle_req',
@@ -33,6 +34,7 @@ export const projectManagement: ProgramDefinition = {
   key: 'project_management',
   title: 'Project Management',
   requirementKeys: [
+    'project_management_opt_out_req',
     'step1_prequal_req',
     'communication_req',
     'assess_communicationn_req',
@@ -48,6 +50,7 @@ export const applicationManagement: ProgramDefinition = {
   key: 'application_management_support',
   title: 'Application Management & Support',
   requirementKeys: [
+    'application_management_opt_out_req',
     'step1_prequal_req',
     'technical_troubleshooting_req',
     'assess_technical_troubleshootingn_req',

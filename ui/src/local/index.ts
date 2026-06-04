@@ -557,7 +557,22 @@ function configureDemoInstanceParams () {
         displayComponent: AssessReccomendationLetterDisplay
       },
       {
-        key: 'opt_out_prompt',
+        key: 'software_dev_opt_out_prompt',
+        formComponent: OptOut,
+        displayComponent: OptOutDisplay
+      },
+      {
+        key: 'application_management_opt_out_prompt',
+        formComponent: OptOut,
+        displayComponent: OptOutDisplay
+      },
+      {
+        key: 'operations_infrastructure_opt_out_prompt',
+        formComponent: OptOut,
+        displayComponent: OptOutDisplay
+      },
+      {
+        key: 'project_management_opt_out_prompt',
         formComponent: OptOut,
         displayComponent: OptOutDisplay
       }

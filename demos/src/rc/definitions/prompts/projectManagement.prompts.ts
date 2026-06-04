@@ -1,6 +1,18 @@
 import { MutationMessage, PromptDefinition } from '@reqquest/api'
 import { MutationMessageType } from '@txstate-mws/graphql-server'
-import { AssessAttentionDetailData, AssessAttentionDetailSchema, AssessCommunicationData, AssessCommunicationSchema, AssessOrganizationData, AssessOrganizationSchema, AttentionDetailData, AttentionDetailSchema, CommunicationData, CommunicationSchema, OrganizationData, OrganizationSchema } from '../models/index.js'
+import { AssessAttentionDetailData, AssessAttentionDetailSchema, AssessCommunicationData, AssessCommunicationSchema, AssessOrganizationData, AssessOrganizationSchema, CommunicationData, CommunicationSchema, OrganizationData, OrganizationSchema } from '../models/index.js'
+import { OptOutData, OptOutSchema } from '../models/optOut.models.js'
+
+export const project_management_opt_out_prompt: PromptDefinition<OptOutData> = {
+  key: 'project_management_opt_out_prompt',
+  title: 'Project management',
+  description: 'Opt Out',
+  schema: OptOutSchema,
+  optOut: true,
+  validate: (data, config) => {
+    return []
+  }
+}
 
 export const communication_prompt: PromptDefinition<CommunicationData> = {
   key: 'communication_prompt',

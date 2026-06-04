@@ -4,8 +4,8 @@ import { AssessCriticalThinkingPromptData, AssessCriticalThinkingSchema, AssessO
 import { fileHandler } from 'fastify-txstate'
 import { OptOutData, OptOutSchema } from '../models/optOut.models.js'
 
-export const opt_out_prompt: PromptDefinition<OptOutData> = {
-  key: 'opt_out_prompt',
+export const software_dev_opt_out_prompt: PromptDefinition<OptOutData> = {
+  key: 'software_dev_opt_out_prompt',
   title: 'Software development',
   description: 'Opt Out',
   schema: OptOutSchema,

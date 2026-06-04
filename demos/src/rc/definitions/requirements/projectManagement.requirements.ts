@@ -1,5 +1,19 @@
 import { RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
-import { AssessAttentionDetailData, AssessCommunicationData, AssessOrganizationData, AttentionDetailData, CommunicationData, OrganizationData } from '../models'
+import { AssessAttentionDetailData, AssessCommunicationData, AssessOrganizationData, CommunicationData, OrganizationData, OptOutData } from '../models'
+
+export const project_management_opt_out_req: RequirementDefinition = {
+  type: RequirementType.QUALIFICATION,
+  key: 'project_management_opt_out_req',
+  title: 'Opt Out',
+  navTitle: 'Opt Out',
+  description: 'Opt Out',
+  promptKeys: ['project_management_opt_out_prompt'],
+  resolve: (data, config) => {
+    const promptData = data['project_management_opt_out_prompt'] as OptOutData
+    if (promptData?.optOut) return { status: RequirementStatus.DISQUALIFYING }
+    return { status: RequirementStatus.NOT_APPLICABLE }
+  }
+}
 
 export const communication_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
