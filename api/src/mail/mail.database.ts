@@ -39,10 +39,10 @@ export const createMailOutbox = async ({ templateKey, recipients, variables, sta
   `, [templateKey, recipients, variables, status])
 }
 
-export const updateMailOutbox = async (id: number, { status }: Pick<MailOutboxRow, 'status'>) => {
+export const updateMailOutbox = async (id: number, { status, lastError }: Pick<MailOutboxRow, 'status' | 'lastError'>) => {
   return await db.insert(`
-    UPDATE mail_outbox SET status = ? WHERE id = ?
-  `, [status, id])
+    UPDATE mail_outbox SET status = ?, lastError = ? WHERE id = ?
+  `, [status, lastError, id])
 }
 
 export const getMailTemplate = async (templateKey: string): Promise<MailTemplateRow | undefined> => {

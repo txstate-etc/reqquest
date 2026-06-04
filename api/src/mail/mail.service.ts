@@ -3,6 +3,7 @@ import Handlebars from 'handlebars'
 import SMTPPool from 'nodemailer/lib/smtp-pool'
 import { BaseService, Context } from '@txstate-mws/graphql-server'
 import { createMailOutbox, getMailTemplate, updateMailOutbox } from '../internal.js'
+import { DateTime } from 'luxon'
 
 export class MailService extends BaseService {
   transporter: Transporter<SMTPPool.SentMessageInfo, SMTPPool.Options>
@@ -41,13 +42,15 @@ export class MailService extends BaseService {
     if (!templateRow) throw new Error('No mail template found')
     const template = Handlebars.compile(templateRow.subject + '\n' + templateRow.body)
 
-    const outbox = await createMailOutbox({ templateKey, recipients: users.join(', '), variables: JSON.stringify(extra), status: 'sent' })
-    await Promise.all(
-      users.map(async to => {
-        this.sendsingle({ from, to, template, extra })
-      })
-    )
-    await updateMailOutbox(outbox, { status: 'delivered' })
+    for await (const to of users) {
+      const outbox = await createMailOutbox({ templateKey, recipients: users.join(', '), variables: JSON.stringify(extra), status: 'sent' })
+      try {
+        await this.sendsingle({ from, to, template, extra })
+        await updateMailOutbox(outbox, { status: 'delivered' })
+      } catch (e) {
+        await updateMailOutbox(outbox, { status: 'error', lastError: DateTime.now().toJSDate() })
+      }
+    }
   }
 
   async disconnect () {
