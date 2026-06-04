@@ -438,12 +438,13 @@ export class AppRequestService extends AuthService<AppRequest> {
     response.appRequest = (await this.findById(appRequest.id))!
     try {
       await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, appRequest.status)
+      await Promise.all(internalNotifications.map(n => n(this.ctx, response.appRequest!, appRequest.status)))
       const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
+      console.log(applications)
       for (const app of applications) {
         const oldPhase = beforeAppsByProgramKey[app.programKey]?.phase
         if (app.phase !== oldPhase) {
           await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, oldPhase)
-          await Promise.all(internalNotifications.map(n => n(this.ctx, response.appRequest!, app.programKey, oldPhase)))
         }
       }
     } catch (err) {
@@ -506,6 +507,7 @@ export class AppRequestService extends AuthService<AppRequest> {
   }
 
   async returnToApplicant (appRequest: AppRequest, dataVersion?: number) {
+    console.log('return back to applicant', '🚀🚀🚀🚀🚀')
     return await this.phaseChange(appRequest,
       async () => {
         if (!this.mayReturnToApplicant(appRequest)) throw new Error('You may not return this app request.')
