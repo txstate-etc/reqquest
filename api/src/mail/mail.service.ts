@@ -43,7 +43,7 @@ export class MailService extends BaseService {
     const template = Handlebars.compile(templateRow.subject + '\n' + templateRow.body)
 
     for await (const to of users) {
-      const outbox = await createMailOutbox({ templateKey, recipients: users.join(', '), variables: JSON.stringify(extra), status: 'sent' })
+      const outbox = await createMailOutbox({ templateKey, recipients: to, variables: JSON.stringify(extra), status: 'sent' })
       try {
         await this.sendsingle({ from, to, template, extra })
         await updateMailOutbox(outbox, { status: 'delivered' })
