@@ -34,9 +34,15 @@ export const createMailTemplate = async ({ templateKey, description, audience, v
 
 export const createMailOutbox = async ({ templateKey, recipients, variables, status }: Pick<MailOutboxRow, 'templateKey' | 'recipients' | 'variables' | 'status'>) => {
   return await db.insert(`
-    INSERT INTO mail_outbox (templateKey, recipients, variables, status, lastError)
-    VALUES (?, ?, ?, ?, ?)
-  `, [templateKey, recipients, variables, status, DateTime.now().toSQLDate()])
+    INSERT INTO mail_outbox (templateKey, recipients, variables, status)
+    VALUES (?, ?, ?, ?)
+  `, [templateKey, recipients, variables, status])
+}
+
+export const updateMailOutbox = async (id: number, { status }: Pick<MailOutboxRow, 'status'>) => {
+  return await db.insert(`
+    UPDATE mail_outbox SET status = ? WHERE id = ?
+  `, [status, id])
 }
 
 export const getMailTemplate = async (templateKey: string): Promise<MailTemplateRow | undefined> => {
