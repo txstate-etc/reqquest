@@ -167,6 +167,7 @@
     display: grid;
     grid-template-columns: 2fr 1fr;
     margin-bottom: 1.5rem;
+    background-color: #F2F2F2;
   }
 
   .programs-container header {
@@ -175,12 +176,12 @@
   }
 
   .programs-container header .column {
-    padding: 0.5rem 8px;
+    padding: 0.75rem 10px;
   }
 
   .programs-container .column {
     border-bottom: 1px solid var(--cds-ui-03, #e0e0e0);
-    padding: 1rem 8px;
+    padding: .5rem 10px;
   }
 
   .programs-container :global(.status-column) {

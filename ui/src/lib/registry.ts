@@ -1,4 +1,4 @@
-import type { LayoutStructureNode, LayoutStructureNodeRoot } from '@txstate-mws/carbon-svelte'
+import type { LayoutStructureNode, LayoutStructureNodeRoot, UserProfile } from '@txstate-mws/carbon-svelte'
 import type { Component } from 'svelte'
 import { plural } from 'txstate-utils'
 
@@ -131,6 +131,14 @@ export interface UIConfig {
   programs: ProgramDefinition[]
   requirements: RequirementDefinition[]
   prompts: PromptDefinition[]
+  /**
+   * 
+   * @param login 
+   * @returns UserProfile | undefined
+   * UserLookup is required to support impersonation search functionality. If you want to support impersonation, 
+   * provide a function here that takes a login and returns the user's profile. If you don't need impersonation, you can leave this out.
+   */
+  userLookup?: (login: string) => Promise<UserProfile | undefined>
   appName: string
   applicantDashboardTitle?: string
   applicantDashboardNavTitle?: string
@@ -199,7 +207,7 @@ export interface UIConfig {
      * - `api` which is an instance of the API client, import the ReqquestAPI type from `@reqquest/ui`. This allows you to make
      * additional API calls if you need information not included in the other props.
      */
-    reviewerSidebar?: Component
+    reviewerSidebar?: Component   
   }
 }
 
@@ -212,12 +220,14 @@ export class UIRegistry {
   protected promptMap: Record<string, PromptDefinition> = {}
   protected requirementMap: Record<string, RequirementDefinition> = {}
   protected programMap: Record<string, ProgramDefinition> = {}
+  protected userLookup?: (login: string) => Promise<UserProfile | undefined>
   protected lang: Required<Terminologies>
   protected plural: Required<Terminologies>
   constructor (public config: UIConfig) {
     for (const prompt of config.prompts) this.promptMap[prompt.key] = prompt
     for (const requirement of config.requirements) this.requirementMap[requirement.key] = requirement
     for (const program of config.programs) this.programMap[program.key] = program
+    this.userLookup = config.userLookup    
     this.lang = {
       appRequest: config.terminology?.appRequest ?? (config.programs.length > 1 ? 'App Request' : 'Application'),
       login: config.terminology?.login ?? 'Login',

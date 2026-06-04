@@ -157,10 +157,11 @@ import AssessReccomendationLetterDisplay from './rc/AssessReccomendationLetterDi
 import DataRelatedPuzzleDisplay from './rc/DataRelatedPuzzleDisplay.svelte'
 import OptOut from './rc/OptOut.svelte'
 import OptOutDisplay from './rc/OptOutDisplay.svelte'
+import { api } from '$internal/api'
 
 /** RC */
 
-const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts } = configureDemoInstanceParams()
+const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts, userLookup } = configureDemoInstanceParams()
 
 export const uiRegistry = new UIRegistry({
   appName,
@@ -169,7 +170,8 @@ export const uiRegistry = new UIRegistry({
   applicantDashboardRecentDays,
   programs,
   requirements,
-  prompts
+  prompts,
+  userLookup
 })
 
 function configureDemoInstanceParams () {
@@ -185,7 +187,7 @@ function configureDemoInstanceParams () {
    * depending on its value are optimized away. To avoid that, we do a little string manipulation
    * here to prevent vite/rollup from being able to tell what the value is at build time.
    */
-  let tmpDemoInstance = `${PUBLIC_DEMO_INSTANCE} `
+  let tmpDemoInstance = `${PUBLIC_DEMO_INSTANCE}`
   tmpDemoInstance = tmpDemoInstance.trim()
   if (tmpDemoInstance === 'simple') {
     return {
@@ -196,6 +198,12 @@ function configureDemoInstanceParams () {
       programs: [{ key: 'adopt_a_pet_program', icon: DogWalker },
         { key: 'thanks_or_no_thanks_program', icon: Gamification }
       ],
+      userLookup: async (login) => {
+        const accessUser = await api.getAccessUser(login)
+        if (!accessUser) return
+        const userProfileName = [accessUser?.fullname.slice(0, accessUser?.fullname.indexOf(' ')), accessUser?.fullname.slice(accessUser?.fullname.indexOf(' ') + 1)]
+        return { firstName: userProfileName[0], lastName: userProfileName[1], username: login }
+      },
       requirements: [
         { key: 'state_residence_req', configureComponent: ResidenceConfig },
         { key: 'state_residence_confirmation_req' },
@@ -256,6 +264,12 @@ function configureDemoInstanceParams () {
       applicantDashboardIntroHeader: 'Start your Pet Journey Here!',
       applicantDashboardIntroDetail: 'Submitting an adoption application is the first step in adopting a cat or dog. Based on your responses you will receive a list of "eligible benefits."',
       applicantDashboardRecentDays: 30,
+      userLookup: async (login) => {
+        const accessUser = await api.getAccessUser(login)
+        if (!accessUser) return
+        const userProfileName = [accessUser?.fullname.slice(0, accessUser?.fullname.indexOf(' ')), accessUser?.fullname.slice(accessUser?.fullname.indexOf(' ') + 1)]
+        return { firstName: userProfileName[0], lastName: userProfileName[1], username: login }
+      },
       programs: [{
         key: 'adopt_a_dog_program',
         icon: DogWalker
@@ -315,6 +329,12 @@ function configureDemoInstanceParams () {
       applicantDashboardIntroHeader: 'Keep your love of pets alive!',
       applicantDashboardIntroDetail: 'Submitting an application is the first step in making the life of a pet better! Based on your responses you will receive a list of "eligible benefits."',
       applicantDashboardRecentDays: 30,
+      userLookup: async (login) => {
+        const accessUser = await api.getAccessUser(login)
+        if (!accessUser) return
+        const userProfileName = [accessUser?.fullname.slice(0, accessUser?.fullname.indexOf(' ')), accessUser?.fullname.slice(accessUser?.fullname.indexOf(' ') + 1)]
+        return { firstName: userProfileName[0], lastName: userProfileName[1], username: login }
+      },
       programs: [{ key: 'adopt_a_dog_program', icon: DogWalker },
         { key: 'adopt_a_cat_program', icon: PedestrianFamily },
         { key: 'foster_a_pet_program', icon: Gamification }
@@ -384,6 +404,12 @@ function configureDemoInstanceParams () {
       applicantDashboardIntroHeader: 'Apply for a technical mentorship here!',
       applicantDashboardIntroDetail: 'After applying for a mentorship, eligibilty will be determined based on your responses',
       applicantDashboardRecentDays: 30,
+      userLookup: async (login) => {
+        const accessUser = await api.getAccessUser(login)
+        if (!accessUser) return
+        const userProfileName = [accessUser?.fullname.slice(0, accessUser?.fullname.indexOf(' ')), accessUser?.fullname.slice(accessUser?.fullname.indexOf(' ') + 1)]
+        return { firstName: userProfileName[0], lastName: userProfileName[1], username: login }
+      },
       programs: [
         { key: 'operations_infrastructure', icon: DogWalker },
         { key: 'software_development', icon: DogWalker },
@@ -543,6 +569,12 @@ function configureDemoInstanceParams () {
     applicantDashboardIntroHeader: 'Start your Pet Journey Here!',
     applicantDashboardIntroDetail: 'Submitting an adoption application is the first step in adopting a cat or dog. Based on your responses you will receive a list of "eligible benefits."',
     applicantDashboardRecentDays: 30,
+    userLookup: async (login) => {
+      const accessUser = await api.getAccessUser(login)
+      if (!accessUser) return
+      const userProfileName = [accessUser?.fullname.slice(0, accessUser?.fullname.indexOf(' ')), accessUser?.fullname.slice(accessUser?.fullname.indexOf(' ') + 1)]
+      return { firstName: userProfileName[0], lastName: userProfileName[1], username: login }
+    },
     programs: [{
       key: 'adopt_a_dog_program',
       icon: DogWalker

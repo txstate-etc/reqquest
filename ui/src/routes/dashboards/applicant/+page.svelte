@@ -266,6 +266,7 @@
   }
 
   async function onSaved () {
+    await invalidate('api:getAccess')
     await goto(resolve(`/requests/${lastInsertedId}/apply`))
   }
 

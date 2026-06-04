@@ -56,6 +56,20 @@ class API extends APIBase {
     return response.access
   }
 
+  async getAccessUser (login: string) {
+    const filter: AccessUserFilter =  { logins: [login] }
+    const response = await this.client.query({
+      __name: 'GetAccessUser',
+      accessUsers: {
+        __args: { filter },
+        login: true,
+        fullname: true,
+        otherInfo: true
+      }
+    })
+    return response.accessUsers[0]
+  }
+  
   async getAccessUsers (accessUsersFilter: AccessUserFilter, pageFilter: Pagination) {
     const filter = accessUsersFilter
     const paged = pageFilter
@@ -624,11 +638,11 @@ class API extends APIBase {
     return this.mutationForDialog(response.reverseWorkflow)
   }
 
-  async addNote (content: string, persistent?: boolean, validateOnly?: boolean) {
+  async addNote (appRequestId: string, content: string, persistent?: boolean, validateOnly?: boolean) {
     const response = await this.client.mutation({
       __name: 'AddNote',
       addNote: {
-        __args: { content, persistent, validateOnly },
+        __args: { appRequestId, content, persistent, validateOnly },
         success: true,
         messages: {
           message: true,
@@ -638,6 +652,48 @@ class API extends APIBase {
       }
     })
     return this.mutationForDialog(response.addNote, { dataName: 'note' })
+  }
+
+  async updateNote (noteId: string, content: string) {
+    const response = await this.client.mutation({
+      __name: 'UpdateNote',
+      updateNote: {
+        __args: { noteId, content },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.updateNote, { dataName: 'note' })
+  }
+
+  async togglePersistence (noteId: string) {
+    const response = await this.client.mutation({
+      __name: 'TogglePersistence',
+      togglePersistence: {
+        __args: { noteId },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.togglePersistence, { dataName: 'note' })
+  }
+
+  async deleteNote (noteId: string) {
+    const response = await this.client.mutation({
+      __name: 'DeleteNote',
+      deleteNote: {
+        __args: { noteId }
+      }
+    })
+    return response.deleteNote
   }
 
   async closeAppRequest (appRequestId: string) {
@@ -869,6 +925,7 @@ class API extends APIBase {
         notes: {
           id: true,
           content: true,
+          persistent: true,
           createdAt: true,
           author: {
             login: true,

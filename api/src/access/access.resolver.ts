@@ -40,6 +40,11 @@ export class AccessResolver {
     return await ctx.svc(AppRequestService).canCreateOther()
   }
 
+  @FieldResolver(returns => Boolean, { description: 'Current user is permitted to view the metrics UI.' })
+  async viewMetrics (@Ctx() ctx: Context) {
+    return ctx.svc(AccessRoleService).mayViewMetrics()
+  }
+
   @FieldResolver(returns => Boolean, { description: 'Current user is permitted to view the role management UI.' })
   async viewRoleManagement (@Ctx() ctx: Context) {
     return ctx.svc(AccessRoleService).mayViewRoleManagement()
