@@ -1,7 +1,5 @@
 import { createTransport, Transporter } from 'nodemailer'
 import Handlebars from 'handlebars'
-import path from 'path'
-import { readFile } from 'fs/promises'
 import SMTPPool from 'nodemailer/lib/smtp-pool'
 import { BaseService, Context } from '@txstate-mws/graphql-server'
 import { createMailOutbox, getMailTemplate } from '../internal.js'
