@@ -14,6 +14,7 @@ export interface AccessUserRow {
   login: string
   fullname: string
   otherInfo?: string
+  email?: string
   stillValid: 0 | 1
 }
 
