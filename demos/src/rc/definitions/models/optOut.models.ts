@@ -4,7 +4,9 @@ import type { FromSchema } from 'json-schema-to-ts'
 export const OptOutSchema = {
   type: 'object',
   properties: {
-    optOut: { type: 'boolean' }
+    optOut: { type: 'boolean' },
+    optInUnderstand: { type: 'boolean' },
+    optOutUnderstand: { type: 'boolean' }
   },
   additionalProperties: false
 } as const satisfies SchemaObject
