@@ -13,6 +13,7 @@ import {
   PaginationInfoWithTotalItems, Pagination, appRequestComplete, appRequestReturnToNonBlocking,
   countAppRequests
 } from '../internal.js'
+import { internalNotifications } from '../util/notifications.js'
 
 const phaseNames = {
   [AppRequestPhase.ACCEPTANCE]: 'offer acceptance',
@@ -440,7 +441,10 @@ export class AppRequestService extends AuthService<AppRequest> {
       const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
       for (const app of applications) {
         const oldPhase = beforeAppsByProgramKey[app.programKey]?.phase
-        if (app.phase !== oldPhase) await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, oldPhase)
+        if (app.phase !== oldPhase) {
+          await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, oldPhase)
+          await Promise.all(internalNotifications.map(n => n(this.ctx, response.appRequest!, app.programKey, oldPhase)))
+        }
       }
     } catch (err) {
       console.error(err)
