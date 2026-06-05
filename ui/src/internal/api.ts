@@ -305,10 +305,13 @@ class API extends APIBase {
             type
             arg
           }
+          appRequest {
+            data
+          }
         }
       }
     `, { promptId, data, validateOnly, dataVersion })
-    return this.mutationForDialog(response.updatePrompt)
+    return { ...this.mutationForDialog(response.updatePrompt), data: response.updatePrompt.appRequest.data }
   }
 
   async updateConfiguration (periodId: string, definitionKey: string, data: any, validateOnly: boolean) {
