@@ -53,7 +53,7 @@
 <div class:max-w-screen-md={uiRegistry.config.applicantReviewMaxWidth !== false} class:mx-auto={uiRegistry.config.applicantReviewMaxWidth !== false}>
   <ApplicationDetailsView
     appRequest={appRequestForExport}
-    applications={applicationsForNav.filter(a => a.ineligiblePhase !== enumIneligiblePhases.PREQUAL)}
+    applications={applicationsForNav}
     appData={appRequestForExport.data}
     {prequalPrompts}
     {postqualPrompts}

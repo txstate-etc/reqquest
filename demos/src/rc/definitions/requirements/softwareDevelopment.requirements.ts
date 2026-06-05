@@ -1,5 +1,20 @@
 import { RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { DataRelatedPuzzlePromptData, AssessPuzzleSolutionPromptData, OutsideClassExamplePromptData, AssessOutsideClassExamplePromptData, CriticalThinkingPromptData, AssessCriticalThinkingPromptData } from '../models'
+import { OptOutData } from '../models/optOut.models'
+
+export const software_dev_opt_out_req: RequirementDefinition = {
+  type: RequirementType.QUALIFICATION,
+  key: 'software_dev_opt_out_req',
+  title: 'Opt Out',
+  navTitle: 'Opt Out',
+  description: 'Opt Out',
+  promptKeys: ['software_dev_opt_out_prompt'],
+  resolve: (data, config) => {
+    const promptData = data['software_dev_opt_out_prompt'] as OptOutData
+    if (promptData?.optOut) return { status: RequirementStatus.DISQUALIFYING }
+    return { status: RequirementStatus.NOT_APPLICABLE }
+  }
+}
 
 export const data_related_puzzle_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,

@@ -2,6 +2,18 @@ import { MutationMessage, PromptDefinition } from '@reqquest/api'
 import { AssessMaintainSysDocumentationData, AssessMaintainSysDocumentationSchema, AssessSupportCommunicationData, AssessSupportCommunicationSchema, AssessTechincalTroubleshootingData, AssessTechincalTroubleshootingSchema, MaintainSysDocumentationData, MaintainSysDocumentationSchema, SupportCommunicationData, SupportCommunicationSchema, TechincalTroubleshootingData, TechincalTroubleshootingSchema } from '../models/index.js'
 import { MutationMessageType } from '@txstate-mws/graphql-server'
 import { fileHandler } from 'fastify-txstate'
+import { OptOutData, OptOutSchema } from '../models/optOut.models.js'
+
+export const application_management_opt_out_prompt: PromptDefinition<OptOutData> = {
+  key: 'application_management_opt_out_prompt',
+  title: 'Application management',
+  description: 'Opt Out',
+  schema: OptOutSchema,
+  optOut: true,
+  validate: (data, config) => {
+    return []
+  }
+}
 
 export const technical_troubleshooting_prompt: PromptDefinition<TechincalTroubleshootingData> = {
   key: 'technical_troubleshooting_prompt',

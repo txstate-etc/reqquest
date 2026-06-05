@@ -75,6 +75,7 @@
         for (const requirement of application.requirements) {
           if (!submissionRequirementTypes.has(requirement.type)) continue
           for (const prompt of requirement.prompts) {
+            if (prompt.optOut) continue
             if (foundCurrent) {
               nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${prompt.id}`)
               foundCurrent = false
