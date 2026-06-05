@@ -1,5 +1,19 @@
 import { RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
-import { AssessMaintainSysDocumentationData, AssessSupportCommunicationData, AssessTechincalTroubleshootingData, MaintainSysDocumentationData, SupportCommunicationData, TechincalTroubleshootingData } from '../models'
+import { AssessMaintainSysDocumentationData, AssessSupportCommunicationData, AssessTechincalTroubleshootingData, MaintainSysDocumentationData, OptOutData, SupportCommunicationData, TechincalTroubleshootingData } from '../models'
+
+export const application_management_opt_out_req: RequirementDefinition = {
+  type: RequirementType.QUALIFICATION,
+  key: 'application_management_opt_out_req',
+  title: 'Opt Out',
+  navTitle: 'Opt Out',
+  description: 'Opt Out',
+  promptKeys: ['application_management_opt_out_prompt'],
+  resolve: (data, config) => {
+    const promptData = data['application_management_opt_out_prompt'] as OptOutData
+    if (promptData?.optOut) return { status: RequirementStatus.DISQUALIFYING }
+    return { status: RequirementStatus.NOT_APPLICABLE }
+  }
+}
 
 export const technical_troubleshooting_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,

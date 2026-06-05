@@ -155,6 +155,8 @@ import AssessMaintainSysDocumentationDisplay from './rc/AssessMaintainSysDocumen
 import ReccomendationLetterDisplay from './rc/ReccomendationLetterDisplay.svelte'
 import AssessReccomendationLetterDisplay from './rc/AssessReccomendationLetterDisplay.svelte'
 import DataRelatedPuzzleDisplay from './rc/DataRelatedPuzzleDisplay.svelte'
+import OptOut from './rc/OptOut.svelte'
+import OptOutDisplay from './rc/OptOutDisplay.svelte'
 import { api } from '$internal/api'
 
 /** RC */
@@ -553,6 +555,26 @@ function configureDemoInstanceParams () {
         key: 'assess_reccomendation_letter_prompt',
         formComponent: AssessReccomendationLetter,
         displayComponent: AssessReccomendationLetterDisplay
+      },
+      {
+        key: 'software_dev_opt_out_prompt',
+        formComponent: OptOut,
+        displayComponent: OptOutDisplay
+      },
+      {
+        key: 'application_management_opt_out_prompt',
+        formComponent: OptOut,
+        displayComponent: OptOutDisplay
+      },
+      {
+        key: 'operations_infrastructure_opt_out_prompt',
+        formComponent: OptOut,
+        displayComponent: OptOutDisplay
+      },
+      {
+        key: 'project_management_opt_out_prompt',
+        formComponent: OptOut,
+        displayComponent: OptOutDisplay
       }
       ]
     }

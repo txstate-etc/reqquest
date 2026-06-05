@@ -12,6 +12,7 @@ export interface AnsweredPrompt {
   invalidatedReason: string | null
   moot: boolean | null
   visibility: string
+  optOut?: boolean | null
   configurationData: Record<string, any>
   gatheredConfigData: Record<string, any>
   statusReasons: {
@@ -38,6 +39,8 @@ export interface AppRequestForDetails {
   updatedAt?: string
   closedAt?: string | null
   actions?: any
+  dataVersion?: number
+  data?: any
 }
 
 export interface ApplicationForDetails {
@@ -61,3 +64,5 @@ export interface ApplicationForDetails {
 
 export const phaseChangeMutations = ['submitAppRequest', 'returnToApplicant', 'completeReview', 'returnToReview', 'acceptOffer', 'returnToOffer', 'completeRequest', 'returnToNonBlocking'] as const
 export type PhaseChangeMutations = typeof phaseChangeMutations[number]
+
+export type OptOutApplication = ApplicationForDetails & { prompt: AnsweredPrompt }
