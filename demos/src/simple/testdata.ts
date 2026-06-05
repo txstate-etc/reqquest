@@ -108,7 +108,7 @@ export const simpleTestMigrations: DatabaseMigration[] = [
       const reviewer2 = await AccessDatabase.upsertAccessUser({ login: 'reviewer2', fullname: 'Robert Reviewer', groups: ['sudoers'] })
       const reviewers = [reviewer1, reviewer2]
       const noteTexts = [
-        'Applicant submitted all required documentation on time.',
+        'Applicant submitted all required documentation on time. <b>Bold</b>. https://www.txst.edu/.',
         'Residency verification looks good — ID matches the address provided.',
         'Had a phone conversation with applicant to clarify employment details.',
         "Supervisor confirmed applicant's work history via email.",
@@ -120,7 +120,7 @@ export const simpleTestMigrations: DatabaseMigration[] = [
         'All checks passed. This application is ready for final approval.'
       ]
       for (let i = 0; i < noteTexts.length; i++) {
-        await addAppRequestNote(1, reviewers[i % 2].internalId, `<p>${noteTexts[i]}</p>`)
+        await addAppRequestNote(1, reviewers[i % 2].internalId, `${noteTexts[i]}`)
       }
     }
   }
