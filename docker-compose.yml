@@ -16,7 +16,7 @@ services:
       MYSQL_DATABASE: default_database
       MYSQL_USER: user
       MYSQL_PASS: password
-      SIGNING_KEY: default_signing_key
+      PROMPT_SIGNING_KEY: default_signing_key
       JWT_TRUSTED_ISSUERS: '[{ "iss": "unified-auth", "url": "http://fakeauth/jwks" }, { "iss": "reqquest", "secret": "reqquest" }]'
       RESET_DB_ON_STARTUP: 'true'
       DEMO_INSTANCE: '${DEMO_INSTANCE:-default}'
