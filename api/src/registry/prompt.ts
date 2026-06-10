@@ -396,9 +396,9 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * Process can be specified as recurring or run on first call only. If recur is true, the process function will run on every stage of the prompt.
    * If recur is false, NEVER or not provided, the process function will only run on the first evaluation of the app request where there is no existing data for this prompt,
    */
-  prestage?: ((appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext, db: Queryable) => Promise<DataType> | DataType) | {
+  prestage?: ((appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext) => Promise<DataType> | DataType) | {
     recur?: PromptPreStagingRecurrence | boolean
-    fetch: (appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext, db: Queryable) => Promise<DataType> | DataType
+    fetch: (appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext) => Promise<DataType> | DataType
     schema?: SchemaObject // defaults to { type: 'object', additionalProperties: true } if not specified
   }
   /**

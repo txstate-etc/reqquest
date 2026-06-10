@@ -10,7 +10,7 @@ export const have_yard_prompt: PromptDefinition<YardPromptData, YardPromptData> 
   prestage: {
     recur: PromptPreStagingRecurrence.ALWAYS,
     schema: YardPromptPreStageSchema,
-    fetch: (appRequest, config, allPeriodConfig, ctx, db): YardPromptData & YardPromptPreStageData  => {
+    fetch: (appRequest, config, allPeriodConfig, ctx): YardPromptData & YardPromptPreStageData  => {
       return {
         haveCityWater: false,
         haveYard: true, // test overlap of prestage and data properties

@@ -215,3 +215,52 @@ export class PeriodPromptFilters {
 
 @ObjectType()
 export class PeriodPromptActions {}
+
+ObjectType()
+
+export class PromptPrestageServerData {
+  @Field(type => Number, { nullable: true, description: 'Prompt prestage server appRequestId' })
+  appRequestId?: number
+
+  @Field(type => String, { nullable: true, description: 'Prompt prestage server appRequestId' })
+  promptKey?: string
+}
+
+export class PromptPrestageClientData {
+  constructor (dataVersion: number) {
+    this.__iat = Math.floor(Date.now() / 1000)
+    this.__exp = this.__iat + 3600
+    this.__dv = dataVersion
+  }
+
+  @Field(type => Number, { description: 'Prompt prestage package issued at' })
+  __iat: number
+
+  @Field(type => Number, { description: 'Prompt prestage package expiration' })
+  __exp: number
+
+  @Field(type => Number, { description: 'Prompt prestage package data version' })
+  __dv: number
+}
+
+export class PromptPrestageData {
+  @Field(type => PromptPrestageServerData, { nullable: true, description: 'Prompt prestage server side fields, used for for data signing.' })
+  server?: PromptPrestageServerData
+
+  @Field(type => PromptPrestageClientData, { description: 'Prompt prestage client fields.' })
+  client?: PromptPrestageServerData
+}
+
+@ObjectType()
+export class PromptPrestage {
+  constructor (signature: string, data: PromptPrestageData) {
+    this.signature = signature
+    this.data = data
+  }
+
+  @Field(type => String, { description: 'Prestage data signature' })
+  signature: string
+
+  @Field(type => PromptPrestageData, { description: 'Prestage data content' })
+  data: PromptPrestageData
+}

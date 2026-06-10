@@ -164,7 +164,25 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     ])
   }
 
-  async requiresStaging (requirementPrompt: RequirementPrompt) {
+  async getPrestageData (requirementPrompt: RequirementPrompt) {
+    const [appRequest, allPeriodConfig, data] = await this.getRequirementPromptSupportDetail(requirementPrompt)
+    const config = allPeriodConfig[requirementPrompt.key] ?? {}
+    if (!appRequest) throw new Error('AppRequest not found')
+    if (await this.requiresPrestaging(requirementPrompt)) {
+      const fetch = ('fetch' in requirementPrompt.definition.prestage!) ? requirementPrompt.definition.prestage.fetch : requirementPrompt.definition.prestage
+      const prestageData = await fetch!(appRequest, config, allPeriodConfig, this.ctx)
+
+      const s = { prestage: { signature: 'hmac', data: { server: { appRequestId: appRequest.internalId, promptKey: requirementPrompt.key }, client: { __dv: appRequest.dataVersion } } } }
+    }
+    // if (requirementPrompt.definition.preload != null) {
+    //  const preloadData = await requirementPrompt.definition.preload(appRequest!, config, data, allPeriodConfig, this.ctx)
+    //  const mergedData = (data[requirementPrompt.key] != null) ? { ...preloadData, ...data[requirementPrompt.key] } : preloadData
+    //  return mergedData
+    // }
+    return data[requirementPrompt.key]
+  }
+
+  async requiresPrestaging (requirementPrompt: RequirementPrompt) {
     if (requirementPrompt.definition.prestage != null) {
       const data = await this.svc(AppRequestServiceInternal).getData(requirementPrompt.appRequestInternalId)
       const recur = ('recur' in requirementPrompt.definition.prestage) ? requirementPrompt.definition.prestage.recur : false
