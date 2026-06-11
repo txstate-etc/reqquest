@@ -305,8 +305,8 @@
     <InfoCard
       title="Application Notes"
       actions={[
-        ...(appRequest.actions.createNote ? [{ label: 'Add Note', icon: Pen, onClick: () => { showAddNoteDialog = true } }] : []),
-        ...(notes.length > 1 ? [{ label: 'See All Notes', icon: View, onClick: () => { showNotesDialog = true } }] : [])
+        ...(notes.length > 1 ? [{ label: 'See All Notes', icon: View, onClick: () => { showNotesDialog = true } }] : []),
+        ...(appRequest.actions.createNote ? [{ label: 'Add Note', icon: Pen, onClick: () => { showAddNoteDialog = true } }] : [])
       ]}
     >
       <BadgeNumber slot="header-right" value={notes.length} style="--badge-bg: var(--cds-ui-04)" />
@@ -320,7 +320,7 @@
           noborder
           />
         {:else}
-          <p class="note-empty">No notes yet.</p>
+          <p class="note-empty">No application notes. Add note to see it here.</p>
         {/if}
       </div>
     </InfoCard>
@@ -450,19 +450,21 @@
 {/if}
 
 <PanelFormDialog
-  title="Add Note"
+  title="New application note"
   bind:open={showAddNoteDialog}
   on:cancel={() => { showAddNoteDialog = false }}
   on:saved={onAddNoteSaved}
   validate={onAddNoteValidate}
   submit={onAddNoteSubmit}
-  submitText="Save"
+  submitText="Save note"
   centered
 >
-  <FieldTextArea path="content" labelText="Note" required notNull rows={6} />
-  {#if appRequest.actions.createPersistentNote}
+  <FieldTextArea path="content" labelText="Note" required notNull rows={6} placeholder="Enter your note here." />
+  <div class="bx--form__helper-text">This note will only be visible to other reviewers who access this application.</div>
+  <!-- {#if appRequest.actions.createPersistentNote}
     <FieldCheckbox path="persistent" labelText="Persistent (show on the applicant's profile)" />
   {/if}
+  -->
 </PanelFormDialog>
 
 <PanelDialog
