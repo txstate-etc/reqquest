@@ -174,6 +174,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     const config = allPeriodConfig[requirementPrompt.key] ?? {}
     if (!appRequest) throw new Error('AppRequest not found')
     if (await this.requiresPrestaging(requirementPrompt)) {
+      // check  
       const fetch = ('fetch' in requirementPrompt.definition.prestage!) ? requirementPrompt.definition.prestage.fetch : requirementPrompt.definition.prestage
       const prestageData = await fetch!(appRequest, config, allPeriodConfig, this.ctx)
       return this.signPrestageData(appRequest.internalId, requirementPrompt.key, prestageData, appRequest.dataVersion)
@@ -182,6 +183,8 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
 
   async requiresPrestaging (requirementPrompt: RequirementPrompt) {
     if (requirementPrompt.definition.prestage != null) {
+      // TODO: This should really only check for previous prestage data, no regular data, since we are namespacing separately
+      // consider storing in sep db field of prestageData to keep data work clean
       const data = await this.svc(AppRequestServiceInternal).getData(requirementPrompt.appRequestInternalId)
       const recur = ('recur' in requirementPrompt.definition.prestage) ? requirementPrompt.definition.prestage.recur : false
       if (data[requirementPrompt.key] == null) return true // first occurence should always run no matter the recur setting, since there is no existing data

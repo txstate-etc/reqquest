@@ -51,6 +51,7 @@ export interface AppRequestRow {
 export interface AppRequestRowData {
   id: number
   data?: string
+  prestageData?: string
 }
 
 export interface AppRequestActivityRow {
@@ -66,7 +67,7 @@ export interface AppRequestActivityRow {
 
 export async function getAppRequestData (ids: number[], tdb: Queryable = db): Promise<{ id: number, data: AppRequestData }[]> {
   const rows = await tdb.getall<AppRequestRowData>(`SELECT id, data FROM app_requests WHERE id = ${db.in([], ids)}`, ids)
-  return await Promise.all(rows.map(async row => ({ ...row, data: row.data ? await migrateAppRequestData(JSON.parse(row.data) as AppRequestData) : {} as AppRequestData })))
+  return await Promise.all(rows.map(async row => ({ ...row, data: row.data ? await migrateAppRequestData(JSON.parse(row.data) as AppRequestData) : {} as AppRequestData, prestageData: row.prestageData ? await migrateAppRequestData(JSON.parse(row.prestageData) as AppRequestData) : {} as AppRequestData })))
 }
 
 async function migrateAppRequestData (appRequestData: AppRequestData, toSchemaVersion: string = promptRegistry.latestMigration()) {
