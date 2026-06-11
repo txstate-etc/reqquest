@@ -474,7 +474,8 @@
   bind:open={showNotesDialog}
   on:cancel={() => { showNotesDialog = false }}
   cancelText="Close"
-  submitText=""
+  on:submit={() => { showNotesDialog = false; showAddNoteDialog = true }}
+  submitText="Add a note"
   centered
   size="large"
 >
@@ -491,7 +492,7 @@
         ]}
       />
     {:else}
-      <p>No notes yet.</p>
+      <p>No application notes. Add note to see it here.</p>
     {/each}
   </div>
 </PanelDialog>
