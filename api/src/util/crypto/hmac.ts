@@ -2,7 +2,7 @@ import * as crypto from 'crypto'
 
 export interface SignedPackage<T> {
   signature: string
-  signedData: T
+  data: T
 }
 
 /**
@@ -17,7 +17,7 @@ export function signJsonPackage<T> (data: T, secretKey: string): SignedPackage<T
 
   return {
     signature,
-    signedData: data
+    data
   }
 }
 
@@ -29,7 +29,7 @@ export function signJsonPackage<T> (data: T, secretKey: string): SignedPackage<T
  */
 export function verifySignedJsonPackage<T> (signedPackage: SignedPackage<T>, secretKey: string): boolean {
   try {
-    const jsonString = JSON.stringify(signedPackage.signedData)
+    const jsonString = JSON.stringify(signedPackage.data)
     const expectedSignature = createHmacSignature(jsonString, secretKey)
 
     // Use timing-safe comparison to prevent timing attacks
