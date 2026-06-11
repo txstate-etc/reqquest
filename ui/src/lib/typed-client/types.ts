@@ -808,6 +808,9 @@ export default {
             ]
         },
         "ApplicationMetricEntry": {
+            "appRequestId": [
+                49
+            ],
             "applicantFullname": [
                 85
             ],
@@ -1127,7 +1130,7 @@ export default {
                 88,
                 {
                     "appRequestId": [
-                        46,
+                        49,
                         "ID!"
                     ],
                     "content": [
@@ -1383,18 +1386,6 @@ export default {
                     ],
                     "validateOnly": [
                         41
-                    ]
-                }
-            ],
-            "stagePrompt": [
-                86,
-                {
-                    "dataVersion": [
-                        53
-                    ],
-                    "promptId": [
-                        49,
-                        "ID!"
                     ]
                 }
             ],
@@ -2013,6 +2004,9 @@ export default {
             "navTitle": [
                 85
             ],
+            "optOut": [
+                41
+            ],
             "preloadData": [
                 54,
                 {
@@ -2022,7 +2016,12 @@ export default {
                 }
             ],
             "prestage": [
-                41
+                54,
+                {
+                    "schemaVersion": [
+                        85
+                    ]
+                }
             ],
             "requirement": [
                 39

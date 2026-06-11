@@ -357,6 +357,7 @@ export interface ApplicationMetric {
 
 /** Application metric entry */
 export interface ApplicationMetricEntry {
+    appRequestId: Scalars['ID']
     applicantFullname: Scalars['String']
     applicantId: Scalars['ID']
     applicantLogin: Scalars['String']
@@ -539,8 +540,6 @@ export interface Mutation {
     roleDeleteGrant: AccessRoleValidatedResponse
     roleUpdate: AccessRoleValidatedResponse
     roleUpdateGrant: AccessRoleValidatedResponse
-    /** Stage the data for a prompt in this app request. */
-    stagePrompt: ValidatedAppRequestResponse
     /** Submit the app request. */
     submitAppRequest: ValidatedAppRequestResponse
     /** Toggle an existing note's persistent status. */
@@ -773,10 +772,11 @@ export interface RequirementPrompt {
     moot: Scalars['Boolean']
     /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
     navTitle: Scalars['String']
+    optOut: Scalars['Boolean']
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
     preloadData: (Scalars['JsonData'] | null)
-    /** Smartly identifies if the prompt requires pre staging processing. */
-    prestage: Scalars['Boolean']
+    /** Prestage data that has been generated according to the prompt definition. A prompt might require data that should only be modified API side (not client manipulable), such as user specific info sourced from other systems. */
+    prestage: (Scalars['JsonData'] | null)
     /** The requirement that this prompt is associated with. */
     requirement: ApplicationRequirement
     /** A human readable title for the prompt. This is what will be shown to users. */
@@ -1299,6 +1299,7 @@ export interface ApplicationMetricGenqlSelection{
 
 /** Application metric entry */
 export interface ApplicationMetricEntryGenqlSelection{
+    appRequestId?: boolean | number
     applicantFullname?: boolean | number
     applicantId?: boolean | number
     applicantLogin?: boolean | number
@@ -1520,10 +1521,6 @@ export interface MutationGenqlSelection{
     roleDeleteGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grantId: Scalars['ID']} })
     roleUpdate?: (AccessRoleValidatedResponseGenqlSelection & { __args: {role: AccessRoleInput, roleId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     roleUpdateGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grant: AccessRoleGrantUpdate, grantId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
-    /** Stage the data for a prompt in this app request. */
-    stagePrompt?: (ValidatedAppRequestResponseGenqlSelection & { __args: {
-    /** The data version of the app request at the time this prompt was loaded. If provided, the API will perform an optimistic concurrency check and fail the update if someone else has updated the data in the meantime. */
-    dataVersion?: (Scalars['Int'] | null), promptId: Scalars['ID']} })
     /** Submit the app request. */
     submitAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Toggle an existing note's persistent status. */
@@ -1807,12 +1804,15 @@ export interface RequirementPromptGenqlSelection{
     moot?: boolean | number
     /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
     navTitle?: boolean | number
+    optOut?: boolean | number
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
     preloadData?: { __args: {
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
-    /** Smartly identifies if the prompt requires pre staging processing. */
-    prestage?: boolean | number
+    /** Prestage data that has been generated according to the prompt definition. A prompt might require data that should only be modified API side (not client manipulable), such as user specific info sourced from other systems. */
+    prestage?: { __args: {
+    /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
+    schemaVersion?: (Scalars['String'] | null)} } | boolean | number
     /** The requirement that this prompt is associated with. */
     requirement?: ApplicationRequirementGenqlSelection
     /** A human readable title for the prompt. This is what will be shown to users. */

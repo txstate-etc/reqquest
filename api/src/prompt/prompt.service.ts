@@ -169,7 +169,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     ])
   }
 
-  async getPrestageData (requirementPrompt: RequirementPrompt) {
+  async getPrestage (requirementPrompt: RequirementPrompt) {
     const [appRequest, allPeriodConfig, data] = await this.getRequirementPromptSupportDetail(requirementPrompt)
     const config = allPeriodConfig[requirementPrompt.key] ?? {}
     if (!appRequest) throw new Error('AppRequest not found')

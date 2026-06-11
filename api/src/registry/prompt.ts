@@ -165,7 +165,7 @@ export interface ConfigurationDefinition<ConfigurationInputType = any, Configura
   default?: ConfigurationDataType
 }
 
-export interface PromptDefinition<DataType = any, InputDataType = DataType, ConfigurationDataType = any, FetchType = any, KeyLiteral extends string = string> {
+export interface PromptDefinition<DataType = any, InputDataType = DataType, PrestageDataType = any, ConfigurationDataType = any, FetchType = any, KeyLiteral extends string = string> {
   /**
    * A globally unique, human and machine readable key. This will be used to match up with
    * the UI definition and identify the prompt's answers stored in the database. Use lowercase
@@ -396,10 +396,10 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    * Process can be specified as recurring or run on first call only. If recur is true, the process function will run on every stage of the prompt.
    * If recur is false, NEVER or not provided, the process function will only run on the first evaluation of the app request where there is no existing data for this prompt,
    */
-  prestage?: ((appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext) => Promise<DataType> | DataType) | {
+  prestage?: ((appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext) => Promise<PrestageDataType> | PrestageDataType) | {
     recur?: PromptPreStagingRecurrence | boolean
-    fetch: (appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext) => Promise<DataType> | DataType
-    schema?: SchemaObject // defaults to { type: 'object', additionalProperties: true } if not specified
+    fetch: (appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext) => Promise<PrestageDataType> | PrestageDataType
+    schema?: SchemaObject
   }
   /**
    * Sometimes, you will want to allow application administrators to control various aspects of
