@@ -461,6 +461,7 @@
   submitText="Save note"
   centered
 >
+  <div>Write a note for this application.</div>
   <FieldTextArea path="content" labelText="Note" required notNull rows={6} placeholder="Enter your note here." />
   <div class="bx--form__helper-text">This note will only be visible to other reviewers who access this application.</div>
   <!-- {#if appRequest.actions.createPersistentNote}
