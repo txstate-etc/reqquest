@@ -1,14 +1,8 @@
 import * as crypto from 'crypto'
-/**
- * Additional fields auto appended to data for signing
- */
-interface SignedPackageAdditionalFields {
-  __iat: Number
-  __exp: Number
-}
+
 export interface SignedPackage<T> {
-  data: T
   signature: string
+  signedData: T
 }
 
 /**
@@ -22,8 +16,8 @@ export function signJsonPackage<T> (data: T, secretKey: string): SignedPackage<T
   const signature = createHmacSignature(jsonString, secretKey)
 
   return {
-    data,
-    signature
+    signature,
+    signedData: data
   }
 }
 
@@ -35,7 +29,7 @@ export function signJsonPackage<T> (data: T, secretKey: string): SignedPackage<T
  */
 export function verifySignedJsonPackage<T> (signedPackage: SignedPackage<T>, secretKey: string): boolean {
   try {
-    const jsonString = JSON.stringify(signedPackage.data)
+    const jsonString = JSON.stringify(signedPackage.signedData)
     const expectedSignature = createHmacSignature(jsonString, secretKey)
 
     // Use timing-safe comparison to prevent timing attacks

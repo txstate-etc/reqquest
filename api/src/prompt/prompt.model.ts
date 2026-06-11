@@ -1,5 +1,6 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
 import { ApplicationPhase, AppRequestPhase, AppRequestStatusDB, PromptDefinition, promptRegistry, PromptRow, RequirementType } from '../internal.js'
+import { JsonData } from '../internal.js'
 
 export enum PromptPreStagingRecurrence {
   NEVER = 'NEVER',
@@ -219,18 +220,24 @@ export class PeriodPromptActions {}
 ObjectType()
 
 export class PromptPrestageServerData {
-  @Field(type => Number, { nullable: true, description: 'Prompt prestage server appRequestId' })
-  appRequestId?: number
+  constructor (appRequestId: number, promptKey: string) {
+    this.appRequestId = appRequestId
+    this.promptKey = promptKey
+  }
 
-  @Field(type => String, { nullable: true, description: 'Prompt prestage server appRequestId' })
-  promptKey?: string
+  @Field(type => Number, { description: 'Prompt prestage server appRequestId' })
+  appRequestId: number
+
+  @Field(type => String, { description: 'Prompt prestage server appRequestId' })
+  promptKey: string
 }
 
 export class PromptPrestageClientData {
-  constructor (dataVersion: number) {
+  constructor (data: Record<string, any>, dataVersion: number) {
     this.__iat = Math.floor(Date.now() / 1000)
     this.__exp = this.__iat + 3600
     this.__dv = dataVersion
+    this.data = data
   }
 
   @Field(type => Number, { description: 'Prompt prestage package issued at' })
@@ -241,26 +248,29 @@ export class PromptPrestageClientData {
 
   @Field(type => Number, { description: 'Prompt prestage package data version' })
   __dv: number
+
+  @Field(type => JsonData, { description: 'Prompt prestage client data content' })
+  data: Record<string, any>
 }
 
 export class PromptPrestageData {
-  @Field(type => PromptPrestageServerData, { nullable: true, description: 'Prompt prestage server side fields, used for for data signing.' })
+  @Field(type => PromptPrestageServerData, { nullable: true, description: 'Prompt prestage server fields, used for data signing.' })
   server?: PromptPrestageServerData
 
-  @Field(type => PromptPrestageClientData, { description: 'Prompt prestage client fields.' })
-  client?: PromptPrestageServerData
+  @Field(type => PromptPrestageClientData, { description: 'Prompt prestage client data fields.' })
+  client!: PromptPrestageClientData
 }
 
 @ObjectType()
-export class PromptPrestage {
+export class PromptPrestagePackage {
   constructor (signature: string, data: PromptPrestageData) {
     this.signature = signature
     this.data = data
   }
 
-  @Field(type => String, { description: 'Prestage data signature' })
+  @Field(type => String, { description: 'Prompt prestage data signature' })
   signature: string
 
-  @Field(type => PromptPrestageData, { description: 'Prestage data content' })
+  @Field(type => PromptPrestageData, { description: 'Prompt prestage data content' })
   data: PromptPrestageData
 }

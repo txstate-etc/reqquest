@@ -11,8 +11,13 @@ import {
   statusVisibleToApplicantPhases, applicantRequirementTypes, setRequirementPromptsValid,
   RQContext,
   RequirementPromptFilter,
-  PromptPreStagingRecurrence
+  PromptPreStagingRecurrence,
+  PromptPrestagePackage,
+  PromptPrestageServerData,
+  PromptPrestageClientData,
+  PromptPrestageData
 } from '../internal.js'
+import { signJsonPackage } from '../util/crypto/hmac.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: number[]) => {
@@ -171,15 +176,16 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     if (await this.requiresPrestaging(requirementPrompt)) {
       const fetch = ('fetch' in requirementPrompt.definition.prestage!) ? requirementPrompt.definition.prestage.fetch : requirementPrompt.definition.prestage
       const prestageData = await fetch!(appRequest, config, allPeriodConfig, this.ctx)
-
-      const s = { prestage: { signature: 'hmac', data: { server: { appRequestId: appRequest.internalId, promptKey: requirementPrompt.key }, client: { __dv: appRequest.dataVersion } } } }
+      return this.signPrestageData(appRequest.internalId, requirementPrompt.key, prestageData, appRequest.dataVersion)
     }
-    // if (requirementPrompt.definition.preload != null) {
-    //  const preloadData = await requirementPrompt.definition.preload(appRequest!, config, data, allPeriodConfig, this.ctx)
-    //  const mergedData = (data[requirementPrompt.key] != null) ? { ...preloadData, ...data[requirementPrompt.key] } : preloadData
-    //  return mergedData
-    // }
-    return data[requirementPrompt.key]
+  }
+
+  signPrestageData (appRequestId: number, promptKey: string, data: any, dataVersion: number): PromptPrestagePackage {
+    const server = new PromptPrestageServerData(appRequestId, promptKey)
+    const client = new PromptPrestageClientData(data, dataVersion)
+    const prestageData: PromptPrestageData = { server, client }
+    const { signature } = signJsonPackage(prestageData, process.env.PROMPT_SIGNING_KEY!)
+    return { signature, data: { client } }
   }
 
   async requiresPrestaging (requirementPrompt: RequirementPrompt) {
