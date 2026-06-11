@@ -2,7 +2,7 @@
   import { BadgeNumber, FieldCheckbox, FieldTextArea, FormInlineNotification, Panel, PanelDialog, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
   import { Form } from '@txstate-mws/svelte-forms'
-  import { Button, Select, SelectItem, Tooltip } from 'carbon-components-svelte'
+  import { Button, InlineNotification, Select, SelectItem, Tooltip } from 'carbon-components-svelte'
   import DocumentExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
@@ -320,7 +320,7 @@
           noborder
           />
         {:else}
-          <p class="note-empty">No application notes. Add note to see it here.</p>
+          <InlineNotification kind="info" lowContrast hideCloseButton=true title="No application notes." subtitle="Add a note to see it here."></InlineNotification>
         {/if}
       </div>
     </InfoCard>
@@ -551,10 +551,7 @@
   .active-note {
     padding: 4px 8px;
   }
-  .note-empty {
-    font-size: 100%;
-    color: var(--cds-text-02);
-  }
+
   :global(.content):has(.notes-list) {
     max-height: calc(90vh - 1.5rem - 64px);
     background-color: var(--cds-ui-01);
