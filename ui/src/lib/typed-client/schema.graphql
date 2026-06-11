@@ -1765,7 +1765,7 @@ type RequirementPrompt {
   ): JsonData
 
   """
-  Prestage data that has been generated according to the prompt definition. A prompt might require data that should only be modified API side (not client manipulable), such as user specific info sourced from other systems.
+  Prestage package that has been generated according to the prompt definition. A prompt might require data that should only be modified API side (not client manipulable), such as user specific info sourced from other systems.
   """
   prestage(
     """

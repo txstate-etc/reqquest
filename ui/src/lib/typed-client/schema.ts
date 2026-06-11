@@ -775,7 +775,7 @@ export interface RequirementPrompt {
     optOut: Scalars['Boolean']
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
     preloadData: (Scalars['JsonData'] | null)
-    /** Prestage data that has been generated according to the prompt definition. A prompt might require data that should only be modified API side (not client manipulable), such as user specific info sourced from other systems. */
+    /** Prestage package that has been generated according to the prompt definition. A prompt might require data that should only be modified API side (not client manipulable), such as user specific info sourced from other systems. */
     prestage: (Scalars['JsonData'] | null)
     /** The requirement that this prompt is associated with. */
     requirement: ApplicationRequirement
@@ -1809,7 +1809,7 @@ export interface RequirementPromptGenqlSelection{
     preloadData?: { __args: {
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
-    /** Prestage data that has been generated according to the prompt definition. A prompt might require data that should only be modified API side (not client manipulable), such as user specific info sourced from other systems. */
+    /** Prestage package that has been generated according to the prompt definition. A prompt might require data that should only be modified API side (not client manipulable), such as user specific info sourced from other systems. */
     prestage?: { __args: {
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number

@@ -170,11 +170,10 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
   }
 
   async getPrestage (requirementPrompt: RequirementPrompt) {
-    const [appRequest, allPeriodConfig, data] = await this.getRequirementPromptSupportDetail(requirementPrompt)
-    const config = allPeriodConfig[requirementPrompt.key] ?? {}
+    const [appRequest, allPeriodConfig] = await this.getRequirementPromptSupportDetail(requirementPrompt)
     if (!appRequest) throw new Error('AppRequest not found')
     if (await this.requiresPrestaging(requirementPrompt)) {
-      // check  
+      const config = allPeriodConfig[requirementPrompt.key] ?? {}
       const fetch = ('fetch' in requirementPrompt.definition.prestage!) ? requirementPrompt.definition.prestage.fetch : requirementPrompt.definition.prestage
       const prestageData = await fetch!(appRequest, config, allPeriodConfig, this.ctx)
       return this.signPrestageData(appRequest.internalId, requirementPrompt.key, prestageData, appRequest.dataVersion)
@@ -183,11 +182,9 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
 
   async requiresPrestaging (requirementPrompt: RequirementPrompt) {
     if (requirementPrompt.definition.prestage != null) {
-      // TODO: This should really only check for previous prestage data, no regular data, since we are namespacing separately
-      // consider storing in sep db field of prestageData to keep data work clean
       const data = await this.svc(AppRequestServiceInternal).getData(requirementPrompt.appRequestInternalId)
       const recur = ('recur' in requirementPrompt.definition.prestage) ? requirementPrompt.definition.prestage.recur : false
-      if (data[requirementPrompt.key] == null) return true // first occurence should always run no matter the recur setting, since there is no existing data
+      if (data[requirementPrompt.key]?.__prestage == null) return true // first occurence should always run no matter the recur setting, since there is no existing prestageData
       if (recur === true || recur === PromptPreStagingRecurrence.ALWAYS) return true
       if (recur === PromptPreStagingRecurrence.INVALID && requirementPrompt.invalidated) return true
     }
@@ -280,6 +277,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
   }
 
   async update (prompt: RequirementPrompt, data: any, validateOnly = false, dataVersion?: number) {
+    // TODO: strip prestage object from data
     data ??= {}
     if (!this.mayUpdate(prompt)) throw new Error('You are not allowed to update this prompt.')
     if (!promptRegistry.validate(prompt.key, data)) throw new Error('Invalid prompt data.')

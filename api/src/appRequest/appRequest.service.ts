@@ -11,7 +11,9 @@ import {
   reopenAppRequest, appRequestReturnToApplicant, acceptOffer, ApplicationService, RequirementPromptService,
   AppRequestPhase, appRequestReturnToOffer, appRequestReturnToReview, promptRegistry,
   PaginationInfoWithTotalItems, Pagination, appRequestComplete, appRequestReturnToNonBlocking,
-  countAppRequests
+  countAppRequests,
+  PromptPrestagePackageEditions,
+  RequirementPrompt
 } from '../internal.js'
 
 const phaseNames = {
@@ -155,6 +157,14 @@ export class AppRequestService extends AuthService<AppRequest> {
     ])
     const cleanData: AppRequestData = { savedAtVersion: data.savedAtVersion }
     for (const p of prompts) {
+      const prestage = await this.svc(RequirementPromptService).getPrestage(p)
+      if (prestage) {
+        if (data[p.key]) {
+          data[p.key].__prestage = new PromptPrestagePackageEditions(prestage, data[p.key]?.__prestage?.current)
+        } else {
+          data[p.key] = { __prestage: new PromptPrestagePackageEditions(prestage) }
+        }
+      }
       cleanData[p.key] = reqPromptSvc.mayViewUnredacted(p) ? data[p.key] : promptRegistry.get(p.key)?.exposeToApplicant?.(data[p.key])
     }
     return cleanData

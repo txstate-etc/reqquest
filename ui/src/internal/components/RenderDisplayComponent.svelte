@@ -5,7 +5,7 @@
   export let def: PromptDefinition | undefined
   export let appRequestId: string
   export let appData: Record<string, any>
-  export let prompt: { key: string, answered: boolean, moot: boolean | null, invalidated: boolean | null, invalidatedReason: string | null }
+  export let prompt: { key: string, answered: boolean, moot: boolean | null, invalidated: boolean | null, invalidatedReason: string | null }  
   export let prestageData: Record<string, any>
   export let configData: Record<string, any>
   export let gatheredConfigData: Record<string, any>
