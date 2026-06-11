@@ -443,9 +443,11 @@
     }}
   >
     <FieldTextArea path="content" labelText="Note" required notNull rows={6} />
+    <!--
     {#if appRequest.actions.createPersistentNote}
       <FieldCheckbox path="persistent" labelText="Persistent (show on the applicant's profile)" />
     {/if}
+    -->
   </PanelFormDialog>
 {/if}
 
