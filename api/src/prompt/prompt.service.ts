@@ -17,7 +17,7 @@ import {
   PromptPrestageClientData,
   PromptPrestageData
 } from '../internal.js'
-import { signJsonPackage } from '../util/crypto/hmac.js'
+import { signJsonPackage, verifySignedJsonPackage } from '../util/crypto/hmac.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: number[]) => {
@@ -180,14 +180,6 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     }
   }
 
-  signPrestageData (appRequestId: number, promptKey: string, data: any, dataVersion: number): PromptPrestagePackage {
-    const server = new PromptPrestageServerData(appRequestId, promptKey)
-    const client = new PromptPrestageClientData(data, dataVersion)
-    const prestageData: PromptPrestageData = { server, client }
-    const { signature } = signJsonPackage(prestageData, process.env.PROMPT_SIGNING_KEY!)
-    return { signature, data: { client } }
-  }
-
   async requiresPrestaging (requirementPrompt: RequirementPrompt) {
     if (requirementPrompt.definition.prestage != null) {
       const data = await this.svc(AppRequestServiceInternal).getData(requirementPrompt.appRequestInternalId)
@@ -197,6 +189,22 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
       if (recur === PromptPreStagingRecurrence.INVALID && requirementPrompt.invalidated) return true
     }
     return false
+  }
+
+  signPrestageData (appRequestId: number, promptKey: string, data: any, dataVersion: number): PromptPrestagePackage {
+    const server = new PromptPrestageServerData(appRequestId, promptKey)
+    const client = new PromptPrestageClientData(data, dataVersion)
+    const prestageData: PromptPrestageData = { server, client }
+    const { signature } = signJsonPackage(prestageData, process.env.PROMPT_SIGNING_KEY!)
+    return { signature, data: { client } } // only send client data, not server specific info
+  }
+
+  verifyPrestageData (appRequestId: number, promptKey: string, dataVersion: number, pkg: PromptPrestagePackage) {
+    const server = new PromptPrestageServerData(appRequestId, promptKey) // returned package will not have server data, so need to append to validate sig
+    const prestagePkg: PromptPrestagePackage = { signature: pkg.signature, data: { server, client: pkg.data.client } }
+    return verifySignedJsonPackage(prestagePkg, process.env.PROMPT_SIGNING_KEY!)
+      && (pkg.data.client.__exp < Math.floor(Date.now() / 1000) + 3600)
+      && (pkg.data.client.__dv === dataVersion)
   }
 
   isOwn (prompt: RequirementPrompt): boolean {
