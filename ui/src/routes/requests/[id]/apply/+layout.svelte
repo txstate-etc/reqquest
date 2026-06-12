@@ -45,6 +45,7 @@
         const promptsUnderPrograms = applicationsForNav
           .flatMap(app => app.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION))
           .flatMap(r => r.prompts)
+          .filter(r => !r.optOut)
         const qualFinished = promptsUnderPrograms.every(p => p.answered && !p.invalidated)
         const postFinished = postqualPrompts.every(p => p.answered && !p.invalidated)
         if (!qualFinished) {
