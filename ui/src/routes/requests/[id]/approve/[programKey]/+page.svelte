@@ -362,13 +362,13 @@
               <dd class="flow" class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
                 {#if editMode}
                   <Form preload={prompt.preloadData} submit={onPromptSubmit(prompt.id)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptSaved} let:data let:messages>
-                    <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: appRequest.data.__prestage?.latest?.data.client.data, current: appRequest.data.__prestage?.current?.data.client.data}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
+                    <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestage?.data.client.data, current: appRequest.data.__prestage?.data}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
                     {#each messages as message (message.message, message.type)}
                       <FormInlineNotification {message} />
                     {/each}
                   </Form>
                 {:else}
-                  <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} prestageData={{latest: appRequest.data.__prestage?.latest?.data.client.data, current: appRequest.data.__prestage?.current?.data.client.data}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
+                  <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} prestageData={{latest: prompt.prestage?.data.client.data, current: appRequest.data.__prestage?.data}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
                   {#if prompt.actions.update}
                     {#if prompt.invalidated && !applicantRequirementTypes.has(requirement.type)}
                       <Button kind="primary" size="field" class="prompt-edit" on:click={editPrompt(prompt)}>Review correction</Button>
@@ -422,7 +422,7 @@
     <div class='font-medium text-center mt-2'>
       <p class="text-xl font-medium ">{promptBeingEdited.title}</p>
     </div>
-    <svelte:component this={def!.formComponent} appRequestId={appRequest.id} {data} appRequestData={promptBeingEdited.data} prestageData={{latest: promptBeingEdited.data.__prestage?.latest?.data.client.data, current: promptBeingEdited.data.__prestage?.current?.data.client.data}} fetched={promptBeingEdited.fetchedData} configData={promptBeingEdited.configurationData} gatheredConfigData={promptBeingEdited.gatheredConfigData} />
+    <svelte:component this={def!.formComponent} appRequestId={appRequest.id} {data} appRequestData={promptBeingEdited.data} prestageData={{latest: promptBeingEdited.prestage?.data.client.data, current: appRequest.data.__prestage?.data}} fetched={promptBeingEdited.fetchedData} configData={promptBeingEdited.configurationData} gatheredConfigData={promptBeingEdited.gatheredConfigData} />
   </PanelFormDialog>
 {/if}
 

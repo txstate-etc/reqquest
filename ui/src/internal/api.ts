@@ -253,6 +253,7 @@ class API extends APIBase {
               visibility: true,
               hasSavedData: true,
               preloadData: true,
+              prestage: true,
               fetchedData: true,
               configurationData: true,
               gatheredConfigData: true
@@ -998,6 +999,7 @@ class API extends APIBase {
           __args: { promptId },
           data: true,
           preloadData: true,
+          prestage: true,
           configurationData: true,
           gatheredConfigData: true,
           fetchedData: true
@@ -1020,6 +1022,7 @@ class API extends APIBase {
               id: true,
               data: true,
               preloadData: true,
+              prestage: true,
               configurationData: true,
               gatheredConfigData: true,
               fetchedData: true

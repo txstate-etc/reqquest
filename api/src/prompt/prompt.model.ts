@@ -274,17 +274,3 @@ export class PromptPrestagePackage {
   @Field(type => PromptPrestageData, { description: 'Prompt prestage data content' })
   data: PromptPrestageData
 }
-
-@ObjectType()
-export class PromptPrestagePackageEditions {
-  constructor (latest: PromptPrestagePackage, current?: PromptPrestagePackage) {
-    this.latest = latest
-    this.current = current
-  }
-
-  @Field(type => PromptPrestagePackage, { description: 'Prompt prestage package containing most recently updated updated data elements' })
-  latest: PromptPrestagePackage
-
-  @Field(type => PromptPrestagePackage, { nullable: true, description: 'Prompt prestage package containing the currently stored data elements' })
-  current?: PromptPrestagePackage
-}

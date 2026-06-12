@@ -5,7 +5,8 @@
   import { QuestionnairePrompt } from '$lib'
   export let data: YardData
   export let prestageData
-  $: console.log(prestageData)
+  $: console.log('Latest:', prestageData.latest)
+  $: console.log('Current:', prestageData.current)
 </script>
 
   <QuestionnairePrompt externalLinks={[{ url: 'https://www.aspca.org/', label: 'Yard Safety Tips from ASPCA' }, { url: 'https://www.humanesociety.org/', label: 'Creating a Pet-Friendly Yard from Humane Society' }]} title="Yard Information." description="Please provide some information about your yard to help us ensure it's a safe environment for your new pet.">
@@ -13,7 +14,7 @@
     <RadioButtonGroup disabled
       legendText="Yard has been surveyed?"
       name="plan"
-      selected={prestageData.surveyedYard.toString()}
+      selected={prestageData.current?.surveyedYard?.toString() ?? prestageData.latest?.surveyedYard?.toString()}
     >
       <RadioButton labelText='Yes' value='true' />
       <RadioButton labelText='No' value='false' />
