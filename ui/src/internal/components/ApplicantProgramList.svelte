@@ -19,12 +19,8 @@
 
   let open = false
   let optIn = false
-
   let optOutPrompt: Omit<PromptDefinition, 'displayComponent'> | undefined
-
-
   let optOutSelected: OptOutApplication | undefined
-
 
   async function openOptOutModal (programId: string, openOptIn = false) {
     optOutSelected = optOutPrograms[programId]
@@ -37,7 +33,7 @@
     ...acc,
     [curr.id]: curr.requirements
       .filter(r => r.type === enumRequirementType.QUALIFICATION)
-      .flatMap(r => r.prompts)
+      .flatMap(r => r.prompts)      
   }), {})
 
   $: programButtonStatus = applications.reduce((acc, curr) => ({
