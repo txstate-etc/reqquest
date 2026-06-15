@@ -776,7 +776,7 @@ export interface RequirementPrompt {
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
     preloadData: (Scalars['JsonData'] | null)
     /** Prestage data that has been generated according to the prompt definition. A prompt might require data that should only be modified API side (not client manipulable), such as user specific info sourced from other systems. */
-    prestage: (Scalars['JsonData'] | null)
+    prestageData: (Scalars['JsonData'] | null)
     /** The requirement that this prompt is associated with. */
     requirement: ApplicationRequirement
     /** A human readable title for the prompt. This is what will be shown to users. */
@@ -1810,7 +1810,7 @@ export interface RequirementPromptGenqlSelection{
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
     /** Prestage data that has been generated according to the prompt definition. A prompt might require data that should only be modified API side (not client manipulable), such as user specific info sourced from other systems. */
-    prestage?: { __args: {
+    prestageData?: { __args: {
     /** Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh. */
     schemaVersion?: (Scalars['String'] | null)} } | boolean | number
     /** The requirement that this prompt is associated with. */

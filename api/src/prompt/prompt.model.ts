@@ -256,7 +256,7 @@ export class PromptPrestageClientData {
   data: Record<string, any>
 }
 
-export class PromptPrestageData {
+export class PromptPrestageDataNodes {
   @Field(type => PromptPrestageServerData, { nullable: true, description: 'Prompt prestage server fields, used for data signing.' })
   server?: PromptPrestageServerData
 
@@ -266,14 +266,14 @@ export class PromptPrestageData {
 
 @ObjectType()
 export class PromptPrestagePackage {
-  constructor (signature: string, data: PromptPrestageData) {
+  constructor (signature: string, nodes: PromptPrestageDataNodes) {
     this.signature = signature
-    this.data = data
+    this.nodes = nodes
   }
 
   @Field(type => String, { description: 'Prompt prestage data signature' })
   signature: string
 
-  @Field(type => PromptPrestageData, { description: 'Prompt prestage data content' })
-  data: PromptPrestageData
+  @Field(type => PromptPrestageDataNodes, { description: 'Prompt prestage data nodes (server and client' })
+  nodes: PromptPrestageDataNodes
 }

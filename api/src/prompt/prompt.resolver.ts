@@ -37,7 +37,7 @@ export class RequirementPromptResolver {
   }
 
   @FieldResolver(type => JsonData, { nullable: true, description: 'Prestage data that has been generated according to the prompt definition. A prompt might require data that should only be modified API side (not client manipulable), such as user specific info sourced from other systems.' })
-  async prestage (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt, @Arg('schemaVersion', { nullable: true, description: 'Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh.' }) savedAtVersion?: string) {
+  async prestageData (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt, @Arg('schemaVersion', { nullable: true, description: 'Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh.' }) savedAtVersion?: string) {
     if (savedAtVersion && savedAtVersion < promptRegistry.latestMigration()) throw new Error('Client is out of date. Please refresh.')
     return await ctx.svc(RequirementPromptService).getPrestage(requirementPrompt)
   }

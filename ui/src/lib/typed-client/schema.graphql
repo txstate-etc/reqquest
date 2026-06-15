@@ -1767,7 +1767,7 @@ type RequirementPrompt {
   """
   Prestage data that has been generated according to the prompt definition. A prompt might require data that should only be modified API side (not client manipulable), such as user specific info sourced from other systems.
   """
-  prestage(
+  prestageData(
     """
     Provide the schemaVersion at the time the UI was built. Will throw an error if the client is too old, so it knows to refresh.
     """
