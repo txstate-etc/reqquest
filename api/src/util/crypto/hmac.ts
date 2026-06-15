@@ -1,4 +1,5 @@
 import * as crypto from 'crypto'
+export const DEFAULT_EXPIRY: number = 3600 // 3600 seconds, 1 hour
 
 export interface SignedPackage<T> {
   signature: string

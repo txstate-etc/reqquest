@@ -15,9 +15,10 @@ import {
   PromptPrestagePackage,
   PromptPrestageServerData,
   PromptPrestageClientData,
-  PromptPrestageData
+  PromptPrestageData,
+  PROMPT_PRESTAGE_NS
 } from '../internal.js'
-import { signJsonPackage, verifySignedJsonPackage } from '../util/crypto/hmac.js'
+import { DEFAULT_EXPIRY, signJsonPackage, verifySignedJsonPackage } from '../util/crypto/hmac.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: number[]) => {
@@ -184,7 +185,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     if (requirementPrompt.definition.prestage != null) {
       const data = await this.svc(AppRequestServiceInternal).getData(requirementPrompt.appRequestInternalId)
       const recur = ('recur' in requirementPrompt.definition.prestage) ? requirementPrompt.definition.prestage.recur : false
-      if (data[requirementPrompt.key]?.__prestage == null) return true // first occurence should always run no matter the recur setting, since there is no existing prestageData
+      if (data[requirementPrompt.key]?.[PROMPT_PRESTAGE_NS] == null) return true // first occurence should always run no matter the recur setting, since there is no existing prestageData
       if (recur === true || recur === PromptPreStagingRecurrence.ALWAYS) return true
       if (recur === PromptPreStagingRecurrence.INVALID && requirementPrompt.invalidated) return true
     }
@@ -199,12 +200,22 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     return { signature, data: { client } } // only send client data, not server specific info
   }
 
-  verifyPrestageData (appRequestId: number, promptKey: string, dataVersion: number, pkg: PromptPrestagePackage) {
+  async verifyPrestageData (appRequestId: number, promptKey: string, pkg: PromptPrestagePackage, dataVersion?: number) {
+    if (await this.verifyCurrentPrestageData(appRequestId, pkg)) return true
+    return this.verifyLatestPrestageData(appRequestId, promptKey, pkg, dataVersion)
+  }
+
+  async verifyCurrentPrestageData (appRequestId: number, pkg: PromptPrestagePackage) {
+    const data = await this.svc(AppRequestServiceInternal).getData(appRequestId)
+    if (PROMPT_PRESTAGE_NS in data && data[PROMPT_PRESTAGE_NS].signature === pkg.signature) return true
+  }
+
+  verifyLatestPrestageData (appRequestId: number, promptKey: string, pkg: PromptPrestagePackage, dataVersion?: number) {
     const server = new PromptPrestageServerData(appRequestId, promptKey) // returned package will not have server data, so need to append to validate sig
     const prestagePkg: PromptPrestagePackage = { signature: pkg.signature, data: { server, client: pkg.data.client } }
     return verifySignedJsonPackage(prestagePkg, process.env.PROMPT_SIGNING_KEY!)
-      && (pkg.data.client.__exp < Math.floor(Date.now() / 1000) + 3600)
-      && (pkg.data.client.__dv === dataVersion)
+      && (pkg.data.client.__exp < Math.floor(Date.now() / 1000) + DEFAULT_EXPIRY)
+      && ((dataVersion) ? pkg.data.client.__dv === dataVersion : true) // compare dateVersion only if included
   }
 
   isOwn (prompt: RequirementPrompt): boolean {
@@ -277,9 +288,9 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
   }
 
   async update (prompt: RequirementPrompt, data: any, validateOnly = false, dataVersion?: number) {
-    // TODO: strip prestage object from data
     data ??= {}
     if (!this.mayUpdate(prompt)) throw new Error('You are not allowed to update this prompt.')
+    if ((PROMPT_PRESTAGE_NS in data) && !await this.verifyPrestageData(prompt.appRequestInternalId, prompt.key, data[PROMPT_PRESTAGE_NS], dataVersion)) throw new Error('Invalid prompt signed data.')
     if (!promptRegistry.validate(prompt.key, data)) throw new Error('Invalid prompt data.')
     const response = new ValidatedAppRequestResponse()
     const allConfigData = await periodConfigCache.get(prompt.periodId)

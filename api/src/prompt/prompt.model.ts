@@ -1,6 +1,9 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
 import { ApplicationPhase, AppRequestPhase, AppRequestStatusDB, PromptDefinition, promptRegistry, PromptRow, RequirementType } from '../internal.js'
 import { JsonData } from '../internal.js'
+import { DEFAULT_EXPIRY } from '../util/crypto/hmac.js'
+
+export const PROMPT_PRESTAGE_NS = '__prestage'
 
 export enum PromptPreStagingRecurrence {
   NEVER = 'NEVER',
@@ -233,9 +236,9 @@ export class PromptPrestageServerData {
 }
 
 export class PromptPrestageClientData {
-  constructor (data: Record<string, any>, dataVersion: number) {
+  constructor (data: Record<string, any>, dataVersion?: number) {
     this.__iat = Math.floor(Date.now() / 1000)
-    this.__exp = this.__iat + 3600
+    this.__exp = this.__iat + DEFAULT_EXPIRY
     this.__dv = dataVersion
     this.data = data
   }
@@ -246,8 +249,8 @@ export class PromptPrestageClientData {
   @Field(type => Number, { description: 'Prompt prestage package expiration' })
   __exp: number
 
-  @Field(type => Number, { description: 'Prompt prestage package data version' })
-  __dv: number
+  @Field(type => Number, { nullable: true, description: 'Prompt prestage package data version' })
+  __dv?: number
 
   @Field(type => JsonData, { description: 'Prompt prestage client data content' })
   data: Record<string, any>

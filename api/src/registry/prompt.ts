@@ -5,7 +5,7 @@ import addFormats from 'ajv-formats'
 import addErrors from 'ajv-errors'
 import db from 'mysql2-async/db'
 import { Cache, isNotBlank, isNotEmpty, sortby } from 'txstate-utils'
-import { AppRequest, getIndexesInUse, Period, programRegistry, requirementRegistry, RQContext, TagDefinition, type AppRequestData, type PromptPreStagingRecurrence } from '../internal.js'
+import { AppRequest, getIndexesInUse, Period, programRegistry, PROMPT_PRESTAGE_NS, requirementRegistry, RQContext, TagDefinition, type AppRequestData, type PromptPreStagingRecurrence } from '../internal.js'
 import type { Queryable } from 'mysql2-async'
 
 export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVersion'>> {
@@ -572,7 +572,8 @@ class PromptRegistry {
   validate (key: string, data: any) {
     const validate = this.validators[key]
     if (!validate) return true
-    const valid = validate(data)
+    const { [PROMPT_PRESTAGE_NS]: prestage, ...dataSansPrestage } = data
+    const valid = validate(dataSansPrestage)
     if (!valid) console.error(validate.errors)
     return valid
   }
