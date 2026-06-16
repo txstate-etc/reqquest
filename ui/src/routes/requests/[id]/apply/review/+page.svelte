@@ -42,7 +42,7 @@
   }
 
   afterNavigate(({ from }) => {
-    if (from?.url.pathname) previousHref = from.url.pathname + from.url.search
+    if (from?.url?.pathname) previousHref = from.url.pathname + from.url.search
     const h2 = document.querySelector('h2')
     if (h2) {
       h2.tabIndex = -1

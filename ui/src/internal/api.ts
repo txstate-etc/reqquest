@@ -357,7 +357,7 @@ class API extends APIBase {
   static splitPromptsForApplicant<P extends { id: string, key: string, visibility: PromptVisibility, moot: boolean }, R extends { type: RequirementType, status: RequirementStatus, statusReason: string | null, prompts: P[] }, A extends { title: string, ineligiblePhase: IneligiblePhases | null, requirements: R[] }>(applications: A[]) {
     type ReturnPrompt = P & { statusReasons: { status: string, statusReason: string | null, programName: string }[] }
     type ReturnRequirement = R & { prompts: ReturnPrompt[] }
-    type ReturnApplication = A & { requirements: ReturnRequirement[], completionStatus: CompletionStatus, hasWarning: boolean, warningReasons: string[], ineligibleReasons: string[] }
+    type ReturnApplication = A & { requirements: ReturnRequirement[], completionStatus: CompletionStatus, hasWarning: boolean, warningReasons: string[], ineligibleReasons: string[], metReasons: string[]}
     const prequalPrompts: ReturnPrompt[] = []
     const postqualPrompts: ReturnPrompt[] = []
     const qualPrompts: ReturnPrompt[] = []
@@ -435,6 +435,8 @@ class API extends APIBase {
       const warningReasonsFull: string[] = []
       const ineligibleReasons: string[] = []
       const ineligibleReasonsFull: string[] = []
+      const metReasons: string[] = []
+      const metReasonsFull: string[] = []
       let hasWarning = false
       let hasWarningForNav = false
       for (const req of reqsForCompletion) {
@@ -456,14 +458,21 @@ class API extends APIBase {
             if (requirementTypesForNavigation.has(req.type)) ineligibleReasons.push(req.statusReason)
             if (application.ineligiblePhase !== enumIneligiblePhases.PREQUAL || req.type !== enumRequirementType.PREQUAL) ineligibleReasonsFull.push(req.statusReason)
           }
+        } else if (req.status === enumRequirementStatus.MET) {
+          completionStatus = 'ELIGIBLE'
+          if (requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'ELIGIBLE'
+          if (req.statusReason) {
+            if (requirementTypesForNavigation.has(req.type)) metReasons.push(req.statusReason)
+            metReasonsFull.push(req.statusReason)
+          }          
         }
       }
-      applicationsReviewWithDupes.push({ ...application, requirements: requirementsReviewWithDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, hasWarning })
-      applicationsReviewNoDupes.push({ ...application, requirements: requirementsReviewNoDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, hasWarning })
-      applicationsForNavWithDupes.push({ ...application, requirements: requirementsForNavWithDupes, completionStatus: completionStatusForNav, warningReasons, ineligibleReasons, hasWarning: hasWarningForNav })
-      applicationsForNavNoDupes.push({ ...application, requirements: requirementsForNavNoDupes, completionStatus: completionStatusForNav, warningReasons, ineligibleReasons, hasWarning: hasWarningForNav })
-      applicationsAcceptWithDupes.push({ ...application, requirements: requirementsAcceptWithDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, hasWarning })
-      applicationsAcceptNoDupes.push({ ...application, requirements: requirementsAcceptNoDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, hasWarning })
+      applicationsReviewWithDupes.push({ ...application, requirements: requirementsReviewWithDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, metReasons: metReasonsFull, hasWarning })
+      applicationsReviewNoDupes.push({ ...application, requirements: requirementsReviewNoDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, metReasons: metReasonsFull, hasWarning })
+      applicationsForNavWithDupes.push({ ...application, requirements: requirementsForNavWithDupes, completionStatus: completionStatusForNav, warningReasons, ineligibleReasons, metReasons: metReasonsFull, hasWarning: hasWarningForNav })
+      applicationsForNavNoDupes.push({ ...application, requirements: requirementsForNavNoDupes, completionStatus: completionStatusForNav, warningReasons, ineligibleReasons, metReasons: metReasonsFull, hasWarning: hasWarningForNav })
+      applicationsAcceptWithDupes.push({ ...application, requirements: requirementsAcceptWithDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, metReasons: metReasonsFull, hasWarning })
+      applicationsAcceptNoDupes.push({ ...application, requirements: requirementsAcceptNoDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, metReasons: metReasonsFull, hasWarning })
     }
     for (const prompts of Object.values(promptsByKey)) {
       const statusReasons = prompts.map(p => p.statusReasons[0])
