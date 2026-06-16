@@ -1,5 +1,6 @@
 import type { SchemaObject } from '@txstate-mws/fastify-shared'
 import type { FromSchema } from 'json-schema-to-ts'
+import { UploadInfoWithSumSchema } from './shared.models.js'
 
 export const TechincalTroubleshootingSchema = {
   type: 'object',
@@ -42,7 +43,7 @@ export const MaintainSysDocumentationSchema = {
   type: 'object',
   properties: {
     maintainSysDocumentation: { type: 'boolean' },
-    documentation: { type: 'object' }
+    documentation: UploadInfoWithSumSchema
   },
   additionalProperties: false
 } as const satisfies SchemaObject

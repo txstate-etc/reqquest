@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Button } from 'carbon-components-svelte'
+  import { Panel } from '@txstate-mws/carbon-svelte'
   import { getContext } from 'svelte'
   import type { Writable } from 'svelte/store'
   import { afterNavigate } from '$app/navigation'
@@ -27,15 +28,25 @@
 </script>
 
 <ProgressNavContainer title="Your potential programs" subtitle='Select "Start" to answer additional qualifying questions about the benefits you may be eligible for.'>
-  {@const eligibleApplicationsForNav = applicationsForNav.filter(a => a.ineligiblePhase !== enumIneligiblePhases.PREQUAL)}
+  {@const eligibleApplicationsForNav = applicationsForNav.filter(a => a.ineligiblePhase == null)}
   <div class="max-w-screen-md mx-auto">    
-    <ApplicantProgramList applications={eligibleApplicationsForNav} appRequest={appRequestForExport} />
+    {#if eligibleApplicationsForNav.length > 0} 
+      <ApplicantProgramList applications={eligibleApplicationsForNav} appRequest={appRequestForExport} />
+    {/if}
     {#if eligibleApplicationsForNav.some(a => a.status === enumApplicationStatus.INELIGIBLE)}
       <div class="program-helptext">
         If you believe you should be eligible, read the tooltips above and review your answers. If you believe there is an error, please contact us.
       </div>
     {/if}
   </div>
+  {@const ineligibleApplicationsForNav = applicationsForNav.filter(a => a.ineligiblePhase === enumIneligiblePhases.PREQUAL || a.ineligiblePhase === enumIneligiblePhases.QUALIFICATION)}
+  {#if ineligibleApplicationsForNav.length > 0}  
+    <div class="max-w-screen-md mx-auto">    
+      <Panel title="Ineligible programs" expandable={true} expanded={true}>
+        <ApplicantProgramList applications={ineligibleApplicationsForNav} appRequest={appRequestForExport} />
+      </Panel>
+    </div>
+  {/if}
   <div class='form-submit flex gap-12 justify-center mt-16'>
     {#if prevHref}
       <Button kind="ghost" href={prevHref}>Back</Button>

@@ -1,5 +1,19 @@
 import { RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
-import { WrittenAutomationPromptData, EvidenceAutomationPromptData, RateFutureCareerPromptData, InvestigatedFutureCareerPromptData } from '../models'
+import { WrittenAutomationPromptData, EvidenceAutomationPromptData, RateFutureCareerPromptData, InvestigatedFutureCareerPromptData, OptOutData } from '../models'
+
+export const operations_infrastructure_opt_out_req: RequirementDefinition = {
+  type: RequirementType.QUALIFICATION,
+  key: 'operations_infrastructure_opt_out_req',
+  title: 'Opt Out',
+  navTitle: 'Opt Out',
+  description: 'Opt Out',
+  promptKeys: ['operations_infrastructure_opt_out_prompt'],
+  resolve: (data, config) => {
+    const promptData = data['operations_infrastructure_opt_out_prompt'] as OptOutData
+    if (promptData?.optOut) return { status: RequirementStatus.DISQUALIFYING }
+    return { status: RequirementStatus.NOT_APPLICABLE }
+  }
+}
 
 export const written_automation_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,

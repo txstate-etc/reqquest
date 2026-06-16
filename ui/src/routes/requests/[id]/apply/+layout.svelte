@@ -45,6 +45,7 @@
         const promptsUnderPrograms = applicationsForNav
           .flatMap(app => app.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION))
           .flatMap(r => r.prompts)
+          .filter(r => !r.optOut)
         const qualFinished = promptsUnderPrograms.every(p => p.answered && !p.invalidated)
         const postFinished = postqualPrompts.every(p => p.answered && !p.invalidated)
         if (!qualFinished) {
@@ -75,6 +76,7 @@
         for (const requirement of application.requirements) {
           if (!submissionRequirementTypes.has(requirement.type)) continue
           for (const prompt of requirement.prompts) {
+            if (prompt.optOut) continue
             if (foundCurrent) {
               nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${prompt.id}`)
               foundCurrent = false

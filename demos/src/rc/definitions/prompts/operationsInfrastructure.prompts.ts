@@ -1,6 +1,18 @@
 import { PromptDefinition } from '@reqquest/api'
 import { EvidenceAutomationPromptData, EvidenceAutomationSchema, InvestigatedFutureCareerPromptData, InvestigatedFutureCareerSchema, RateFutureCareerPromptData, RateFutureCareerSchema, WrittenAutomationPromptData, WrittenAutomationSchema } from '../models/index.js'
 import { MutationMessageType } from '@txstate-mws/graphql-server'
+import { OptOutData, OptOutSchema } from '../models/optOut.models.js'
+
+export const operations_infrastructure_opt_out_prompt: PromptDefinition<OptOutData> = {
+  key: 'operations_infrastructure_opt_out_prompt',
+  title: 'Operations infrastructure',
+  description: 'Opt Out',
+  schema: OptOutSchema,
+  optOut: true,
+  validate: (data, config) => {
+    return []
+  }
+}
 
 export const written_automation_prompt: PromptDefinition<WrittenAutomationPromptData> = {
   key: 'written_automation_prompt',

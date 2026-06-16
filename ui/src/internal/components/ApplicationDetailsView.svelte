@@ -4,7 +4,7 @@
   import { Button, InlineNotification, Tooltip } from 'carbon-components-svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import type { AnsweredPrompt, PromptSection, AppRequestForDetails, ApplicationForDetails, Scalars } from '$lib'
-  import { enumRequirementType } from '$lib'
+  import { enumRequirementType, enumIneligiblePhases, enumApplicationStatus } from '$lib'
   import type { UIRegistry } from '../../lib/registry.js'
   import RenderDisplayComponent from './RenderDisplayComponent.svelte'
   import ApplicantProgramList from './ApplicantProgramList.svelte'
@@ -30,14 +30,16 @@
   const CORRECTABLE_STATUSES = ['STARTED', 'READY_TO_SUBMIT', 'DISQUALIFIED']
 
   $: canMakeCorrections = CORRECTABLE_STATUSES.includes(appRequest.status)
-
+  $: eligibleApplications = applications.filter(a => a.ineligiblePhase == null)
+  $: ineligibleApplications = applications.filter(a => a.ineligiblePhase === enumIneligiblePhases.PREQUAL || a.ineligiblePhase === enumIneligiblePhases.QUALIFICATION)
+  
   // Group prompts by sections, with reviewer prompts nested within application sections
   $: sections = (() => {
     const sections: PromptSection[] = []
 
     // General Questions === PREQUAL prompts
     if (prequalPrompts?.length) {
-      sections.push({ title: 'General Questions', prompts: prequalPrompts })
+      sections.push({ title: 'Eligibility screening questions', prompts: prequalPrompts })
     }
 
     // Application-Specific Questions with nested Reviewer Questions
@@ -105,7 +107,15 @@
         {/if}
 
         <!-- Application Status List -->
-        <ApplicantProgramList {applications} {appRequest} viewMode={statusDisplay === 'tags'} {showTooltipsAsText} />
+        {#if eligibleApplications.length > 0}
+          <ApplicantProgramList applications={eligibleApplications} {appRequest} viewMode={statusDisplay === 'tags'} {showTooltipsAsText} />
+        {/if}
+        <!-- Ineligible Status List -->
+         {#if ineligibleApplications.length > 0}
+            <Panel title="Ineligible programs" expandable={true} expanded={(eligibleApplications.length === 0)}>
+              <ApplicantProgramList applications={ineligibleApplications} {appRequest} viewMode={statusDisplay === 'tags'} {showTooltipsAsText} />
+            </Panel>
+         {/if}         
       </div>
     </section>
 
@@ -117,12 +127,7 @@
     {:else if sections.length > 0}
       {#each sections as section (section.title)}
         {@const applicationStatusInfo = section.applicationStatus ? getApplicationStatusInfo(section.applicationStatus, appRequest.phase, appRequest.closedAt) : undefined}
-        <Panel title={section.title} {expandable} expanded>
-          <svelte:fragment slot="headerLeft">
-            {#if applicationStatusInfo}
-              <TagSet tags={[{ label: applicationStatusInfo.label, type: applicationStatusInfo.color }]} />
-            {/if}
-          </svelte:fragment>
+        <Panel title={section.title} {expandable} expanded>         
           {#if section.prompts.length}
             <dl class="prompt-list">
               {#each section.prompts as prompt (prompt.id)}
@@ -269,9 +274,11 @@
     grid-template-columns: 1fr 1fr;
     align-items: stretch;
     row-gap: 0.5rem;
+    background-color: #F2F2F2;
+    padding-top: 0.5rem;
   }
   .prompt-list dt, .prompt-list dd {
-    padding-bottom: 0.5rem;
+    padding-top: 0.25rem;
   }
 
   .prompt-term {
@@ -279,6 +286,7 @@
     gap:1em;
     color: var(--cds-text-01);
     border-bottom: 1px solid var(--cds-border-subtle);
+    padding: 0.5rem 10px;
   }
   .prompt-term:has(+ .prompt-answer.large) {
     border-bottom: none;
@@ -287,6 +295,7 @@
   .prompt-answer {
     color: var(--cds-text-02);
     border-bottom: 1px solid var(--cds-border-subtle);
+    padding: 0.5rem 10px;
   }
   .prompt-answer.large {
     grid-column: span 2;

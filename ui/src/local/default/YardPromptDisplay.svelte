@@ -6,7 +6,7 @@
 {#if !data.haveYard}
   No yard.
 {:else}
-  <dl>
+  <dl style="padding-top: 0;">
     <dt>Square Footage</dt>
     <dd>{data.squareFootage ?? ''}</dd>
     <dt>Total Pets</dt>

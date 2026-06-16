@@ -28,7 +28,7 @@
   let store: FormStore | undefined
   let continueAfterSave = false
   $: hasPreviousPrompt = $nextHref.prevHref != null
-  $: loading = false  
+  $: loading = false
 
   async function handleBack () {
     const previousHref = $nextHref.prevHref
@@ -40,12 +40,12 @@
 
  async function onSubmit (data: any) {
     loading = true
-    const { success, messages } = await api.updatePrompt(prompt.id, data, false, dataVersion)   
-    if (!success) loading = false    
+    const { success, messages, data: newData } = await api.updatePrompt(prompt.id, data, false, dataVersion)
+    if (!success) loading = false
     return {
       success,
       messages,
-      data
+      data: newData[prompt.key]
     }
   }
 
@@ -58,9 +58,8 @@
     await invalidate('request:apply')
     if (continueAfterSave && prompt.answered) {
       // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved
+      stagedprompts.clear()
       await goto($nextHref.nextHref)
-    } else {
-      await store?.setData(appRequestForExport.data[prompt.key] as object)
     }
     loading = false
   }
@@ -70,9 +69,11 @@
     lastPromptId = prompt.id
     store = undefined
   }
-  afterNavigate(async () => {
-    stagedprompts.clear() // clear references to staged prompts since we may be navigating to a different prompt that needs staging
-    await invalidate('request:apply') // required to redraw the nav tree if potential staged data affects prompt visibility or status
+  afterNavigate(async (navigation) => {
+    if (!continueAfterSave) { // navigating away from current prompt without using the continue button ... remove prompt staging and invalidate to ensure any changes are reflected in nav
+      stagedprompts.clear()
+      await invalidate('request:apply')
+    }
   })
 </script>
 {#if loading}
@@ -85,7 +86,7 @@
     <h2 id="prompt-title" tabindex="-1" autofocus class="font-medium text-xl text-center">{prompt.title}</h2>
     <p class="text-center"> {prompt.description}</p>
   </div>
-  <Form bind:store hideFallbackMessage unsavedWarning submit={onSubmit} validate={onValidate} preloadAsDraft={!prompt.hasSavedData} preload={prompt.preloadData}  on:saved={onSaved} let:data>
+  <Form bind:store hideFallbackMessage unsavedWarning submit={onSubmit} validate={onValidate} preloadAsDraft={!prompt.hasSavedData} preload={prompt.preloadData} on:saved={onSaved} let:data>
     <svelte:component this={def!.formComponent} {data} appRequestId={appRequestForExport.id} appRequestData={appRequestForExport.data} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
     <svelte:fragment slot="submit" let:submitting>
       <div class='form-submit flex gap-12 justify-center mt-16'>
