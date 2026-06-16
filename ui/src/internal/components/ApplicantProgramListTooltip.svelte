@@ -7,7 +7,7 @@
 
 {#if application.warningReasons.length || application.ineligibleReasons.length || application.metReasons.length}
   <Tooltip align="end" direction="bottom" triggerText="" class="reason-tooltip">
-    {#if application.metReasons.length > 0}
+    {#if application.metReasons.length}
       <p><strong>Eligible Because:</strong></p>
       {#each application.metReasons as reason (reason)}
         <p>{reason}</p>
