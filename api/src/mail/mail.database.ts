@@ -58,3 +58,7 @@ export const updateMailOutbox = async (id: number, { status, lastErrorAt, sentAt
 export const getMailTemplate = async (templateKey: string): Promise<MailTemplateRow | undefined> => {
   return await db.getrow('SELECT * FROM mail_templates WHERE templateKey = ?', [templateKey])
 }
+
+export const toggleMailTemplate = async (templateKey: string, enabled: boolean) => {
+  return await db.update('UPDATE mail_templates SET enabled = ? WHERE templateKey = ?', [enabled ? 1 : 0, templateKey])
+}
