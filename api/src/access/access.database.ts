@@ -161,7 +161,7 @@ export namespace AccessDatabase {
     await db.insert(`
       INSERT INTO accessUsers (login, fullname, email, otherInfo)
       VALUES (?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE fullname = VALUES(fullname), otherInfo = VALUES(otherInfo)
+      ON DUPLICATE KEY UPDATE fullname = VALUES(fullname), otherInfo = VALUES(otherInfo), email = VALUES(email)
     `, [user.login, user.fullname, user.email, JSON.stringify(user.otherInfo)])
     await db.transaction(async db => {
       const userId = await db.getval('SELECT id FROM accessUsers WHERE login = ? FOR UPDATE', [user.login])
