@@ -8,14 +8,14 @@ export const internalNotifications: NotificationCB[] = [
     // Review complete
     if (ar.phase === AppRequestPhase.COMPLETE) {
       const user = await ctx.svc(AccessUserService).findByInternalId(ar.userInternalId)
-      if (user?.email) await ctx.svc(MailService).sendmulti({ users: [user?.email], templateKey: 'ReviewComplete', extra: {} })
+      if (user?.email) await ctx.svc(MailService).sendmulti({ users: [user?.email], templateKey: 'review_complete', extra: {} })
     }
   },
   async (ctx, ar, oldAppRequestStatus) => {
     // Returned back to applicant
-    if (oldAppRequestStatus === AppRequestStatus.APPROVAL && ar.phase === AppRequestPhase.STARTED) {
+    if ([AppRequestStatus.APPROVAL, AppRequestStatus.PREAPPROVAL, AppRequestStatus.REVIEW_COMPLETE].includes(oldAppRequestStatus)) {
       const user = await ctx.svc(AccessUserService).findByInternalId(ar.userInternalId)
-      if (user?.email) await ctx.svc(MailService).sendmulti({ users: [user?.email], templateKey: 'ApplicantReturn', extra: {} })
+      if (user?.email) await ctx.svc(MailService).sendmulti({ users: [user?.email], templateKey: 'applicant_return', extra: {} })
     }
   }
 ]
