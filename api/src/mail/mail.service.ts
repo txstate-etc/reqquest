@@ -1,15 +1,17 @@
 import { BaseService } from '@txstate-mws/graphql-server'
-import { createMailOutbox, getMailTemplate } from '../internal.js'
+import { AccessUserService, createMailOutbox, getMailTemplate } from '../internal.js'
 
 export class MailService extends BaseService {
-  async sendmulti ({ from, users, templateKey, extra }: { from?: string, users: string[], templateKey: string, extra?: Record<string, any> }) {
+  async sendmulti ({ from, userIds, templateKey, extra }: { from?: string, userIds: number[], templateKey: string, extra?: Record<string, any> }) {
     const templateRow = await getMailTemplate(templateKey)
 
     if (!templateRow) throw new Error('No mail template found')
     if (!templateRow?.enabled) return
 
-    for (const to of users) {
-      await createMailOutbox({ templateKey, emailTo: to, replyTo: from, variables: JSON.stringify(extra), status: 'pending' })
-    }
+    await Promise.all(userIds.map(async id => {
+      const user = await this.svc(AccessUserService).findByInternalId(id)
+      if (!user || !user.email) return
+      await createMailOutbox({ templateKey, emailTo: `${user.fullname} <${user.email}>`, replyTo: from, variables: JSON.stringify(extra), status: 'pending' })
+    }))
   }
 }
