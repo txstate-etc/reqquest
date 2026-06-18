@@ -50,13 +50,15 @@ export class MailOutbox {
   constructor (row: MailOutboxRow) {
     this.id = String(row.id)
     this.templateKey = row.templateKey
-    this.recipients = row.recipients
+    this.emailTo = row.emailTo
     this.variables = row.variables
     this.status = row.status
     this.attempts = row.attempts
-    this.sent = DateTime.fromJSDate(row.sent)
+    this.triggeredAt = DateTime.fromJSDate(row.triggeredAt)
+    this.sentAt = row.sentAt ? DateTime.fromJSDate(row.sentAt) : undefined
     this.updatedAt = DateTime.fromJSDate(row.updatedAt)
-    this.lastError = row.lastError ? DateTime.fromJSDate(row.lastError) : undefined
+    this.lastErrorAt = row.lastErrorAt ? DateTime.fromJSDate(row.lastErrorAt) : undefined
+    this.lastErrorMessage = row.lastErrorMessage
   }
 
   @Field(type => ID)
@@ -66,7 +68,7 @@ export class MailOutbox {
   templateKey: string
 
   @Field({ description: '' })
-  recipients: string
+  emailTo: string
 
   @Field(type => JsonData, { description: '' })
   variables: string
@@ -78,11 +80,17 @@ export class MailOutbox {
   attempts: number
 
   @Field({ description: '' })
-  sent: DateTime
+  triggeredAt: DateTime
+
+  @Field({ nullable: true, description: '' })
+  sentAt?: DateTime
 
   @Field({ description: '' })
   updatedAt: DateTime
 
   @Field({ nullable: true, description: '' })
-  lastError?: DateTime
+  lastErrorAt?: DateTime
+
+  @Field({ nullable: true, description: '' })
+  lastErrorMessage?: string
 }

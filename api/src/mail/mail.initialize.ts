@@ -11,7 +11,7 @@ export const mailMigrations: DatabaseMigration[] = [
           templateKey VARCHAR(255) NOT NULL,
           description VARCHAR(255) NOT NULL,
           audience VARCHAR(255) NOT NULL,
-          variables JSON NOT NULL,
+          variables LONGTEXT NOT NULL,
           subject VARCHAR(255) NOT NULL,
           body TEXT NOT NULL,
           created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -23,12 +23,15 @@ export const mailMigrations: DatabaseMigration[] = [
         CREATE TABLE IF NOT EXISTS mail_outbox (
           id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
           templateKey VARCHAR(255) NOT NULL,
-          recipients VARCHAR(255) NOT NULL,
-          variables JSON NOT NULL,
-          sent DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          emailTo VARCHAR(255) NOT NULL,
+          replyTo VARCHAR(255),
+          variables LONGTEXT NOT NULL,
+          triggeredAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          sentAt DATETIME,
           status VARCHAR(255) NOT NULL,
           attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
-          lastError DATETIME,
+          lastErrorAt DATETIME,
+          lastErrorMessage VARCHAR(255),
           updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `)
