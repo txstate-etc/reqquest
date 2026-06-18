@@ -83,7 +83,7 @@
 {#key prompt.id}
   <div class="prompt-intro flow max-w-screen-md mx-auto pt-10 px-6">
     <!-- svelte-ignore a11y_autofocus -->
-    <h2 id="prompt-title" tabindex="-1" autofocus class="font-bold text-2xl leading-normal text-center">{prompt.title}</h2>
+    <h2 id="prompt-title" tabindex="-1" autofocus class="font-medium text-xl text-center">{prompt.title}</h2>
     <p class="text-center"> {prompt.description}</p>
   </div>
   <Form bind:store hideFallbackMessage unsavedWarning submit={onSubmit} validate={onValidate} preloadAsDraft={!prompt.hasSavedData} preload={prompt.preloadData} on:saved={onSaved} let:data>
