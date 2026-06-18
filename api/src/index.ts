@@ -22,6 +22,7 @@ import {
 import { scheduler, schedulerMigration } from './util/scheduler.js'
 import { FastifyTxStateOptions } from 'fastify-txstate'
 import { fromQuery } from 'txstate-utils'
+import { mail } from './util/mail.js'
 
 export interface RQStartOpts extends Omit<GQLStartOpts, 'resolvers'> {
   resolvers?: NonEmptyArray<Function>
@@ -131,7 +132,7 @@ export class RQServer extends GQLServer {
     await installAppRequestRoutes(this.app)
     await ensureConfigurationRecords()
     await super.start({ ...options, resolvers })
-    await scheduler.start()
+    await scheduler.schedule('mail_outbox', mail.syncRows, { minutesBetween: 0.5 })
   }
 }
 
