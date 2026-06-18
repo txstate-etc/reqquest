@@ -52,7 +52,7 @@ services:
   fakesmtp:
     image: reachfive/fake-smtp-server:latest
     ports:
-      - 1080:1080
+      - 127.0.0.1:1080:1080
   mysql:
     image: percona/percona-server:8.4
     ports:
