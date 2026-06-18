@@ -175,6 +175,13 @@ export interface AppDefinition {
      */
     updatePrompt?: (ctx: RQContext, appRequest: AppRequest, appRequestData: AppRequestData, promptKey: string, oldData: any) => void | Promise<void>
   }
+  /**
+   * Variables used for email templates
+   */
+  emailConfig: {
+    appName: string
+    signature: string
+  } & Record<string, string>
 }
 
 export const appConfig = {

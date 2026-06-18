@@ -13,15 +13,15 @@ class Mail {
     this.transporter = createTransport({
       host: process.env.SMTP_SERVER,
       port: process.env.SMTP_PORT ?? 25,
-      secure: process.env.SMTP_SECURE,
+      secure: !!process.env.SMTP_SECURE,
       ...(process.env.SMTP_SECURE ? { auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }, requireTLS: true } : { ignoreTLS: true }),
       pool: true
     } as SMTPPool.Options)
   }
 
   async sendsingle ({ replyTo, to, subject, body, extra }: { replyTo?: string, to: string, subject: any, body: any, extra?: Record<string, any> }) {
-    const compiledSubject = subject({ to, replyTo, link_base: 'helpers.absolute()', ...extra })
-    const compiledBody = body({ to, replyTo, link_base: 'helpers.absolute()', ...extra })
+    const compiledSubject = subject({ to, replyTo, link_base: process.env.PUBLISHED_BASEURL, ...extra })
+    const compiledBody = body({ to, replyTo, link_base: process.env.PUBLISHED_BASEURL, ...extra })
     await this.transporter.sendMail({
       from: 'Reqquest <reqquest@txstate.edu>',
       replyTo: replyTo ?? 'Reqquest <reqquest@txstate.edu>',
@@ -41,7 +41,10 @@ class Mail {
       const subject = Handlebars.compile(templateRow.subject, { noEscape: true })
       const body = Handlebars.compile(templateRow.body)
       try {
-        await mail.sendsingle({ to: emailTo, replyTo, subject, body, extra: JSON.parse(variables) })
+        await mail.sendsingle({ to: emailTo, replyTo, subject, body, extra: {
+          ...JSON.parse(templateRow?.variables ?? '{}'),
+          ...JSON.parse(variables ?? '{}')
+        } })
         await updateMailOutbox(id, { status: 'delivered', sentAt: DateTime.now().toJSDate(), attempts: attempts += 1 })
       } catch (e: any) {
         console.log(e)

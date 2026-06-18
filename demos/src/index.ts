@@ -104,6 +104,10 @@ async function main () {
           return DateTime.fromFormat('20250601080000', 'yyyyMMddHHmmss')
         }
         return groupnames.map(groupName => ({ groupName, managers: [{ fullname: `${String(groupName).charAt(0).toLocaleUpperCase() + String(groupName).slice(1)} Lastname`, email: `${groupName.toLocaleLowerCase()}@txstate.edu` }], dateCreated: groupDateAdded(groupName) }))
+      },
+      emailConfig: {
+        appName: 'Reqquest',
+        signature: 'Mobile Web Systems'
       }
     },
     programs,

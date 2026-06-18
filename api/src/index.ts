@@ -132,7 +132,7 @@ export class RQServer extends GQLServer {
     await installAppRequestRoutes(this.app)
     await ensureConfigurationRecords()
     await super.start({ ...options, resolvers })
-    await scheduler.schedule('mail_outbox', mail.syncRows, { minutesBetween: 0.5 })
+    await scheduler.schedule('mail_outbox', mail.syncRows, { minutesBetween: 1 })
   }
 }
 

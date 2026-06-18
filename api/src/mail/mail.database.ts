@@ -5,7 +5,7 @@ export interface MailTemplateRow {
   templateKey: string
   description: string
   audience: string
-  variables: string
+  variables?: string
   subject: string
   body: string
   created: Date
@@ -17,7 +17,7 @@ export interface MailOutboxRow {
   templateKey: string
   emailTo: string
   replyTo?: string
-  variables: string
+  variables?: string
   status: string
   attempts: number
   triggeredAt: Date
