@@ -105,7 +105,8 @@ class Scheduler {
       CREATE TABLE IF NOT EXISTS tasks (
         name VARCHAR(255) CHARACTER SET 'ascii' COLLATE 'ascii_general_ci' NOT NULL PRIMARY KEY,
         lastBegin DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        retries TINYINT UNSIGNED NOT NULL DEFAULT 0
+        retries TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        inProgress TINYINT UNSIGNED NOT NULL DEFAULT 0
       )
       ENGINE = InnoDB
       DEFAULT CHARACTER SET = utf8mb4
