@@ -15,7 +15,7 @@ class Mail {
     this.transporter = createTransport({
       host: process.env.SMTP_SERVER,
       port: process.env.SMTP_PORT ?? 25,
-      secure: !!process.env.SMTP_SECURE,
+      secure: process.env.SMTP_SECURE ? (process.env.SMTP_SECURE.trim() === 'false' ? false : true) : false,
       ...(process.env.SMTP_SECURE ? { auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }, requireTLS: true } : { ignoreTLS: true }),
       pool: true
     } as SMTPPool.Options)
