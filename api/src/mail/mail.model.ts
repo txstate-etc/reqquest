@@ -20,28 +20,28 @@ export class MailTemplate {
   @Field(type => ID)
   id: string
 
-  @Field({ description: '' })
+  @Field()
   templateKey: string
 
-  @Field({ description: '' })
+  @Field()
   description: string
 
-  @Field({ description: '' })
+  @Field()
   audience: string
 
-  @Field(type => JsonData, { description: '' })
-  variables: string
+  @Field(type => JsonData, { nullable: true })
+  variables?: string
 
-  @Field({ description: '' })
+  @Field()
   subject: string
 
-  @Field({ description: '' })
+  @Field()
   body: string
 
-  @Field({ description: '' })
+  @Field()
   enabled: boolean
 
-  @Field({ description: '' })
+  @Field()
   created: DateTime
 }
 
@@ -64,33 +64,33 @@ export class MailOutbox {
   @Field(type => ID)
   id: string
 
-  @Field({ description: '' })
+  @Field()
   templateKey: string
 
-  @Field({ description: '' })
+  @Field()
   emailTo: string
 
-  @Field(type => JsonData, { description: '' })
-  variables: string
+  @Field(type => JsonData, { nullable: true })
+  variables?: string
 
-  @Field({ description: '' })
+  @Field()
   status: string
 
-  @Field({ description: '' })
+  @Field()
   attempts: number
 
-  @Field({ description: '' })
+  @Field()
   triggeredAt: DateTime
 
-  @Field({ nullable: true, description: '' })
+  @Field({ nullable: true })
   sentAt?: DateTime
 
-  @Field({ description: '' })
+  @Field()
   updatedAt: DateTime
 
-  @Field({ nullable: true, description: '' })
+  @Field({ nullable: true })
   lastErrorAt?: DateTime
 
-  @Field({ nullable: true, description: '' })
+  @Field({ nullable: true })
   lastErrorMessage?: string
 }

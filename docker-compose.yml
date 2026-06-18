@@ -19,6 +19,7 @@ services:
       MYSQL_USER: user
       MYSQL_PASS: password
       SMTP_SERVER: fakesmtp
+      PUBLISHED_BASE_URL: http://localhost
       SMTP_PORT: 1025
       JWT_TRUSTED_ISSUERS: '[{ "iss": "unified-auth", "url": "http://fakeauth/jwks" }, { "iss": "reqquest", "secret": "reqquest" }]'
       RESET_DB_ON_STARTUP: 'true'
