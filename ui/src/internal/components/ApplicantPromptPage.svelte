@@ -15,7 +15,6 @@
   import type { ResolvedPathname } from '$app/types'
   import { uiRegistry } from '../../local/index.js'
   import { api } from '../api.js'
-  import { stagedprompts } from '../prompt-utils.js'
   import type { PageData } from '../../routes/requests/[id]/apply/[promptId]/$types.js'
   import ButtonLoadingIcon from './ButtonLoadingIcon.svelte'
   import { Loading } from "carbon-components-svelte";
@@ -39,8 +38,8 @@
   }
 
  async function onSubmit (data: any) {
-    loading = true
-    const { success, messages, data: newData } = await api.updatePrompt(prompt.id, data, false, dataVersion)
+    loading = true    
+    const { success, messages, data: newData } =  await api.updatePrompt(prompt.id, data, false, dataVersion)
     if (!success) loading = false
     return {
       success,
@@ -57,8 +56,7 @@
   async function onSaved () {
     await invalidate('request:apply')
     if (continueAfterSave && prompt.answered) {
-      // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved
-      stagedprompts.clear()
+      // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved      
       await goto($nextHref.nextHref)
     }
     loading = false
@@ -69,12 +67,6 @@
     lastPromptId = prompt.id
     store = undefined
   }
-  afterNavigate(async (navigation) => {
-    if (!continueAfterSave) { // navigating away from current prompt without using the continue button ... remove prompt staging and invalidate to ensure any changes are reflected in nav
-      stagedprompts.clear()
-      await invalidate('request:apply')
-    }
-  })
 </script>
 {#if loading}
   <Loading />
@@ -83,11 +75,11 @@
 {#key prompt.id}
   <div class="prompt-intro flow max-w-screen-md mx-auto pt-10 px-6">
     <!-- svelte-ignore a11y_autofocus -->
-    <h2 id="prompt-title" tabindex="-1" autofocus class="font-medium text-xl text-center">{prompt.title}</h2>
+    <h2 id="prompt-title" tabindex="-1" autofocus class="font-bold text-2xl leading-normal text-center">{prompt.title}</h2>
     <p class="text-center"> {prompt.description}</p>
   </div>
   <Form bind:store hideFallbackMessage unsavedWarning submit={onSubmit} validate={onValidate} preloadAsDraft={!prompt.hasSavedData} preload={prompt.preloadData} on:saved={onSaved} let:data>
-    <svelte:component this={def!.formComponent} {data} appRequestId={appRequestForExport.id} appRequestData={appRequestForExport.data} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
+    <svelte:component this={def!.formComponent} {data} appRequestId={appRequestForExport.id} appRequestData={appRequestForExport.data} prestageData={{latest: prompt.prestageData, current: appRequestForExport.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
     <svelte:fragment slot="submit" let:submitting>
       <div class='form-submit flex gap-12 justify-center mt-16'>
         {#if hasPreviousPrompt}

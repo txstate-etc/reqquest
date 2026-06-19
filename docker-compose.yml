@@ -18,8 +18,9 @@ services:
       MYSQL_DATABASE: default_database
       MYSQL_USER: user
       MYSQL_PASS: password
-      SMTP_SERVER: fakesmtp
+      PROMPT_SIGNING_KEY: default_signing_key
       PUBLISHED_BASE_URL: http://localhost
+      SMTP_SERVER: fakesmtp
       SMTP_PORT: 1025
       JWT_TRUSTED_ISSUERS: '[{ "iss": "unified-auth", "url": "http://fakeauth/jwks" }, { "iss": "reqquest", "secret": "reqquest" }]'
       RESET_DB_ON_STARTUP: 'true'

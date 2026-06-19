@@ -1,27 +1,27 @@
 import { type PromptDefinition, PromptPreStagingRecurrence } from '@reqquest/api'
 import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
-import { YardPromptData, YardPromptSchema } from '../models/index.js'
+import { YardPromptData, YardPromptPreStageData, YardPromptPreStageSchema, YardPromptSchema } from '../models/index.js'
 
 export const have_yard_prompt: PromptDefinition<YardPromptData, YardPromptData> = {
   key: 'have_yard_prompt',
   title: 'Tell us about your yard',
   description: 'Applicants will enter information about their yard including how large it is and how many pets will share it.',
   schema: YardPromptSchema,
-  /*prestage: {
+  prestage: {
     recur: PromptPreStagingRecurrence.ALWAYS,
-    process: (appRequest, config, allPeriodConfig, ctx, db): YardPromptData => {
+    schema: YardPromptPreStageSchema,
+    fetch: (appRequest, config, allPeriodConfig, ctx): YardPromptPreStageData  => {
       return {
-        haveYard: true,
-        squareFootage: 10001
+        surveyedYard: false
       }
-    }
-  },*/
+    }    
+  },
   preload: async (appRequest, config, data, allPeriodConfig, ctx) => {
     await new Promise(resolve => setTimeout(resolve, 1000))
     return {
       haveYard: true,
       squareFootage: 6700,
-      // totalPets: 67
+      //TODO: Test for missing data causing early validation --totalPets: 67
     }
   },
   validate: (data, config) => {

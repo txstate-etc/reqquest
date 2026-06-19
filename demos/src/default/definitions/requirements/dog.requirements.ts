@@ -8,12 +8,13 @@ export const must_exercise_your_dog_req: RequirementDefinition<ExerciseConfigReq
   title: 'Agreement to Exercise the Dog',
   navTitle: 'Exercise Per Week',
   description: 'The applicant must exercise their dog a certain number of hours a week.',
-  promptKeys: ['must_exercise_your_dog_prompt'],
+  // promptKeys: ['must_exercise_your_dog_prompt'],
   resolve: (data, config) => {
-    const exerciseData = data.must_exercise_your_dog_prompt as ExercisePromptData
-    if (exerciseData?.exerciseHours == null) return { status: RequirementStatus.PENDING }
-    if (exerciseData.exerciseHours >= config.minExerciseHours) return { status: RequirementStatus.MET }
-    return { status: RequirementStatus.WARNING, reason: `You must exercise your dog ${config.minExerciseHours} hours a week.` }
+  //  const exerciseData = data.must_exercise_your_dog_prompt as ExercisePromptData
+  //  if (exerciseData?.exerciseHours == null) return { status: RequirementStatus.PENDING }
+  //  if (exerciseData.exerciseHours >= config.minExerciseHours) return { status: RequirementStatus.MET }
+  //  return { status: RequirementStatus.WARNING, reason: `You must exercise your dog ${config.minExerciseHours} hours a week.` }
+    return { status: RequirementStatus.MET, reason: 'Oprah - Everybody gets a dog!!!' }
   },
   configuration: {
     validate: config => {

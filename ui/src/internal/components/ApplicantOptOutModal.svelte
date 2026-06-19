@@ -46,11 +46,6 @@
     lastPromptId = prompt.id
     store = undefined
   }
-
-  afterNavigate(async () => {
-    stagedprompts.clear() // clear references to staged prompts since we may be navigating to a different prompt that needs staging
-    await invalidate('request:apply') // required to redraw the nav tree if potential staged data affects prompt visibility or status
-  })
 </script>
 
 {#if loading}
@@ -72,5 +67,5 @@
   preload={prompt.preloadData}
   preloadAsDraft={!prompt.hasSavedData} 
   >
-    <svelte:component this={def!.formComponent} {data} appRequestId={appRequest.id} appRequestData={appRequest.data} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
+    <svelte:component this={def!.formComponent} {data} appRequestId={appRequest.id} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
 </PanelFormDialog>

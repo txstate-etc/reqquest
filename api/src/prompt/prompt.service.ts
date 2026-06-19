@@ -11,8 +11,14 @@ import {
   statusVisibleToApplicantPhases, applicantRequirementTypes, setRequirementPromptsValid,
   RQContext,
   RequirementPromptFilter,
-  PromptPreStagingRecurrence
+  PromptPreStagingRecurrence,
+  PromptPrestagePackage,
+  PromptPrestageServerData,
+  PromptPrestageClientData,
+  PromptPrestageDataNodes,
+  PROMPT_PRESTAGE_NS
 } from '../internal.js'
+import { DEFAULT_EXPIRY, SignedPackage, signJsonPackage, verifySignedJsonPackage } from '../util/crypto/hmac.js'
 
 const byInternalIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: number[]) => {
@@ -164,15 +170,52 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     ])
   }
 
-  async requiresStaging (requirementPrompt: RequirementPrompt) {
+  async getPrestage (requirementPrompt: RequirementPrompt) {
+    const [appRequest, allPeriodConfig] = await this.getRequirementPromptSupportDetail(requirementPrompt)
+    if (!appRequest) throw new Error('AppRequest not found')
+    if (await this.requiresPrestaging(requirementPrompt)) {
+      const config = allPeriodConfig[requirementPrompt.key] ?? {}
+      const fetch = ('fetch' in requirementPrompt.definition.prestage!) ? requirementPrompt.definition.prestage.fetch : requirementPrompt.definition.prestage
+      const prestageData = await fetch!(appRequest, config, allPeriodConfig, this.ctx)
+      return this.signPrestageData(appRequest.internalId, requirementPrompt.key, prestageData, appRequest.dataVersion)
+    }
+  }
+
+  async requiresPrestaging (requirementPrompt: RequirementPrompt) {
     if (requirementPrompt.definition.prestage != null) {
       const data = await this.svc(AppRequestServiceInternal).getData(requirementPrompt.appRequestInternalId)
       const recur = ('recur' in requirementPrompt.definition.prestage) ? requirementPrompt.definition.prestage.recur : false
-      if (data[requirementPrompt.key] == null) return true // first occurence should always run no matter the recur setting, since there is no existing data
+      if (data[requirementPrompt.key]?.[PROMPT_PRESTAGE_NS] == null) return true // first occurence should always run no matter the recur setting, since there is no existing prestageData
       if (recur === true || recur === PromptPreStagingRecurrence.ALWAYS) return true
       if (recur === PromptPreStagingRecurrence.INVALID && requirementPrompt.invalidated) return true
     }
     return false
+  }
+
+  signPrestageData (appRequestId: number, promptKey: string, data: any, dataVersion: number): PromptPrestagePackage {
+    const server = new PromptPrestageServerData(appRequestId, promptKey)
+    const client = new PromptPrestageClientData(data, dataVersion)
+    const prestageDataNodes: PromptPrestageDataNodes = { server, client }
+    const { signature } = signJsonPackage(prestageDataNodes, process.env.PROMPT_SIGNING_KEY!)
+    return { signature, nodes: { client } } // only send client node data, not server node specific info
+  }
+
+  async verifyPrestageData (appRequestId: number, promptKey: string, pkg: PromptPrestagePackage, dataVersion?: number) {
+    if (await this.verifyCurrentPrestageData(appRequestId, promptKey, pkg)) return true
+    return this.verifyLatestPrestageData(appRequestId, promptKey, pkg, dataVersion)
+  }
+
+  async verifyCurrentPrestageData (appRequestId: number, promptKey: string, pkg: PromptPrestagePackage) {
+    const data = await this.svc(AppRequestServiceInternal).getData(appRequestId)
+    if (data[promptKey]?.[PROMPT_PRESTAGE_NS] && data[promptKey][PROMPT_PRESTAGE_NS].signature === pkg.signature) return true
+  }
+
+  verifyLatestPrestageData (appRequestId: number, promptKey: string, pkg: PromptPrestagePackage, dataVersion?: number) {
+    const server = new PromptPrestageServerData(appRequestId, promptKey) // returned package will not have server data, so need to append to validate sig
+    const signedPackage = { signature: pkg.signature, data: { server, client: pkg.nodes.client } }
+    return verifySignedJsonPackage(signedPackage, process.env.PROMPT_SIGNING_KEY!)
+      && (pkg.nodes.client.__exp < Math.floor(Date.now() / 1000) + DEFAULT_EXPIRY)
+      && ((dataVersion) ? pkg.nodes.client.__dv === dataVersion : true) // compare dateVersion only if included
   }
 
   isOwn (prompt: RequirementPrompt): boolean {
@@ -244,40 +287,10 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     return newPrompt
   }
 
-  async stage (prompt: RequirementPrompt, dataVersion?: number): Promise<ValidatedAppRequestResponse> {
-    if (!this.mayUpdate(prompt)) throw new Error('You are not allowed to stage this prompt.')
-    const response = new ValidatedAppRequestResponse()
-    response.success = false // default to fail
-    if (await this.requiresStaging(prompt) === false) return (response.success = true, response)
-    await appRequestTransaction(prompt.appRequestInternalId, async db => {
-      const [[appRequest], [appRequestDataPair]] = await Promise.all([
-        getAppRequests({ internalIds: [prompt.appRequestInternalId] }, db),
-        getAppRequestData([prompt.appRequestInternalId], db)
-      ])
-      if (!appRequest) throw new Error('AppRequest not found')
-      if (dataVersion != null && appRequest.dataVersion !== dataVersion) {
-        throw new Error('Someone else is working on the same request and made changes since you loaded. Copy any unsaved work into another document and reload the page to see what has changed.')
-      }
-      const appRequestData = appRequestDataPair?.data ?? {}
-      const allConfigData = await periodConfigCache.get(prompt.periodId)
-      const stagedData = (typeof prompt.definition.prestage === 'function') ? prompt.definition.prestage(appRequest, allConfigData[prompt.key] ?? {}, allConfigData, this.ctx, db) : prompt.definition.prestage!.process!(appRequest, allConfigData[prompt.key] ?? {}, allConfigData, this.ctx, db)
-      response.success = true
-      if (!equal(appRequestData[prompt.key], stagedData)) {
-        appRequestData[prompt.key] = stagedData
-        const promptsToInvalidate = promptRegistry.getInvalidatedPrompts(prompt.key, appRequestData, allConfigData)
-        await setRequirementPromptsInvalid(promptsToInvalidate, db)
-        const promptsToRevalidate = promptRegistry.getRevalidatedPrompts(prompt.key, appRequestData, allConfigData)
-        await setRequirementPromptsValid(promptsToRevalidate.concat([prompt.key]), db)
-        await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion, db)!
-        recordAppRequestActivity(appRequest.internalId, this.user!.internalId, `${programRegistry.get(prompt.programKey)?.navTitle ?? 'Prompt'} Updated`, { data: stagedData, description: prompt.title, impersonatedBy: this.impersonationUser?.internalId }, db)
-      }
-    })
-    return response
-  }
-
   async update (prompt: RequirementPrompt, data: any, validateOnly = false, dataVersion?: number) {
     data ??= {}
     if (!this.mayUpdate(prompt)) throw new Error('You are not allowed to update this prompt.')
+    if ((PROMPT_PRESTAGE_NS in data) && !await this.verifyPrestageData(prompt.appRequestInternalId, prompt.key, data[PROMPT_PRESTAGE_NS], dataVersion)) throw new Error('Invalid prompt signed data.')
     if (!promptRegistry.validate(prompt.key, data)) throw new Error('Invalid prompt data.')
     const response = new ValidatedAppRequestResponse()
     const allConfigData = await periodConfigCache.get(prompt.periodId)

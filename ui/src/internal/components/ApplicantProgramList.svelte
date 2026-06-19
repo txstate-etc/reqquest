@@ -128,11 +128,15 @@
         {#if optedOutPrograms[application.id]}
           <p>Opted out</p>
         {:else if programFirstPrompt && programStatus !== 'ineligible'}
-          <Button size="small" kind={programStatus === 'complete' ? 'ghost' : programStatus === 'revisit' ? 'secondary' : 'primary'} href={programFirstPrompt}>{ucfirst(programStatus)}</Button>
+          <Button size="small" kind={programStatus === 'complete' ? 'ghost' : programStatus === 'revisit' ? 'secondary' : 'primary'} href={programFirstPrompt}>{ucfirst((programStatus !== 'complete') ? programStatus : 'revisit')}</Button>
         {/if}
       {:else}
-        {@const statusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt)}
-        <TagSet tags={[{ type: statusInfo.color, label: statusInfo.label }]} />
+        {#if application.completionStatus !== enumApplicationStatus.INELIGIBLE}
+          {@const statusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt)}
+          <TagSet tags={[{ type: statusInfo.color, label: statusInfo.label }]} />
+        {:else}
+          <Close size={32} class="status-icon-ineligible" />
+        {/if}
         <ApplicantProgramListTooltip {application} />
       {/if}
     </div>

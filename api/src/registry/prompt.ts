@@ -5,7 +5,7 @@ import addFormats from 'ajv-formats'
 import addErrors from 'ajv-errors'
 import db from 'mysql2-async/db'
 import { Cache, isNotBlank, isNotEmpty, sortby } from 'txstate-utils'
-import { AppRequest, getIndexesInUse, Period, programRegistry, requirementRegistry, RQContext, TagDefinition, type AppRequestData, type PromptPreStagingRecurrence } from '../internal.js'
+import { AppRequest, getIndexesInUse, Period, programRegistry, PROMPT_PRESTAGE_NS, requirementRegistry, RQContext, TagDefinition, type AppRequestData, type PromptPreStagingRecurrence } from '../internal.js'
 import type { Queryable } from 'mysql2-async'
 
 export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVersion'>> {
@@ -165,7 +165,7 @@ export interface ConfigurationDefinition<ConfigurationInputType = any, Configura
   default?: ConfigurationDataType
 }
 
-export interface PromptDefinition<DataType = any, InputDataType = DataType, ConfigurationDataType = any, FetchType = any, KeyLiteral extends string = string> {
+export interface PromptDefinition<DataType = any, InputDataType = DataType, PrestageDataType = any, ConfigurationDataType = any, FetchType = any, KeyLiteral extends string = string> {
   /**
    * A globally unique, human and machine readable key. This will be used to match up with
    * the UI definition and identify the prompt's answers stored in the database. Use lowercase
@@ -392,13 +392,14 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Conf
    */
   preProcessData?: (data: InputDataType, ctx: RQContext, appRequest: AppRequest, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, db: Queryable) => Promise<DataType> | DataType
   /**
-   * Optionally provide a function that can perform server side prompt staging operations, such as querying and storing data that is meant to be readonly to the applicant.
+   * Optionally provide a function that can perform server side prompt staging operations, such as querying and returning data that is meant to be readonly to the applicant.
    * Process can be specified as recurring or run on first call only. If recur is true, the process function will run on every stage of the prompt.
-   * If recur is false or not provided, the process function will only run on the first evaluation of the app request where there is no existing data for this prompt,
+   * If recur is false, NEVER or not provided, the process function will only run on the first evaluation of the app request where there is no existing data for this prompt,
    */
-  prestage?: ((appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext, db: Queryable) => Promise<DataType> | DataType) | {
+  prestage?: ((appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext) => Promise<PrestageDataType> | PrestageDataType) | {
     recur?: PromptPreStagingRecurrence | boolean
-    process: (appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext, db: Queryable) => Promise<DataType> | DataType
+    fetch: (appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext) => Promise<PrestageDataType> | PrestageDataType
+    schema?: SchemaObject
   }
   /**
    * Sometimes, you will want to allow application administrators to control various aspects of
@@ -571,7 +572,8 @@ class PromptRegistry {
   validate (key: string, data: any) {
     const validate = this.validators[key]
     if (!validate) return true
-    const valid = validate(data)
+    const { [PROMPT_PRESTAGE_NS]: prestage, ...dataSansPrestage } = data
+    const valid = validate(dataSansPrestage)
     if (!valid) console.error(validate.errors)
     return valid
   }

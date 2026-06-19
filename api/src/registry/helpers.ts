@@ -1,5 +1,6 @@
 import { MutationMessage, MutationMessageType } from '@txstate-mws/graphql-server'
 import * as cheerio from 'cheerio'
+import { promptRegistry } from '../internal.js'
 
 export { MutationMessage } from '@txstate-mws/graphql-server'
 
@@ -92,4 +93,10 @@ export function validateHTML (html: string, arg: string) {
   }
   if (hasJavascriptUrl) warnings.push({ type: MutationMessageType.warning, message: 'javascript: URLs will be removed.', arg })
   return warnings
+}
+
+export function ensurePromptSigningKey () {
+  if (process.env.PROMPT_SIGNING_KEY != null) return
+  if (promptRegistry.list().every(prompt => !prompt.prestage)) return
+  throw new Error('Some registered prompts have defined prestage properties, but no prompt signing key is configured for the system.  Missing API env param \'PROMPT_SIGNING_KEY\' or it\'s value')
 }
