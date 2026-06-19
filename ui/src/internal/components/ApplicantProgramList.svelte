@@ -128,7 +128,7 @@
         {#if optedOutPrograms[application.id]}
           <p>Opted out</p>
         {:else if programFirstPrompt && programStatus !== 'ineligible'}
-          <Button size="small" kind={programStatus === 'complete' ? 'ghost' : programStatus === 'revisit' ? 'secondary' : 'primary'} href={programFirstPrompt}>{ucfirst(programStatus)}</Button>
+          <Button size="small" kind={programStatus === 'complete' ? 'ghost' : programStatus === 'revisit' ? 'secondary' : 'primary'} href={programFirstPrompt}>{ucfirst((programStatus !== 'complete') ? programStatus : 'revisit')}</Button>
         {/if}
       {:else}
         {#if application.completionStatus !== enumApplicationStatus.INELIGIBLE}
