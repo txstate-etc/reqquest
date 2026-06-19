@@ -2,7 +2,7 @@
   import { BadgeNumber, FieldCheckbox, FieldTextArea, FormInlineNotification, Panel, PanelDialog, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
   import { Form } from '@txstate-mws/svelte-forms'
-  import { Button, Select, SelectItem, Tooltip } from 'carbon-components-svelte'
+  import { Button, InlineNotification, Select, SelectItem, Tooltip } from 'carbon-components-svelte'
   import DocumentExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
@@ -306,7 +306,7 @@
       title="Application Notes"
       actions={[
         ...(appRequest.actions.createNote ? [{ label: 'Add Note', icon: Pen, onClick: () => { showAddNoteDialog = true } }] : []),
-        ...(notes.length > 1 ? [{ label: 'See All Notes', icon: View, onClick: () => { showNotesDialog = true } }] : [])
+        ...(notes.length > 0 ? [{ label: 'See All Notes', icon: View, onClick: () => { showNotesDialog = true } }] : [])
       ]}
     >
       <BadgeNumber slot="header-right" value={notes.length} style="--badge-bg: var(--cds-ui-04)" />
@@ -320,7 +320,7 @@
           noborder
           />
         {:else}
-          <p class="note-empty">No notes yet.</p>
+          <InlineNotification kind="info" lowContrast hideCloseButton=true title="No application notes." subtitle="Add a note to see it here."></InlineNotification>
         {/if}
       </div>
     </InfoCard>
@@ -443,26 +443,31 @@
     }}
   >
     <FieldTextArea path="content" labelText="Note" required notNull rows={6} />
+    <!--
     {#if appRequest.actions.createPersistentNote}
       <FieldCheckbox path="persistent" labelText="Persistent (show on the applicant's profile)" />
     {/if}
+    -->
   </PanelFormDialog>
 {/if}
 
 <PanelFormDialog
-  title="Add Note"
+  title="New application note"
   bind:open={showAddNoteDialog}
   on:cancel={() => { showAddNoteDialog = false }}
   on:saved={onAddNoteSaved}
   validate={onAddNoteValidate}
   submit={onAddNoteSubmit}
-  submitText="Save"
+  submitText="Save note"
   centered
 >
-  <FieldTextArea path="content" labelText="Note" required notNull rows={6} />
-  {#if appRequest.actions.createPersistentNote}
+  <div>Write a note for this application.</div>
+  <FieldTextArea path="content" labelText="Note" required notNull rows={6} placeholder="Enter your note here." />
+  <div class="bx--form__helper-text">This note will only be visible to other reviewers who access this application.</div>
+  <!-- {#if appRequest.actions.createPersistentNote}
     <FieldCheckbox path="persistent" labelText="Persistent (show on the applicant's profile)" />
   {/if}
+  -->
 </PanelFormDialog>
 
 <PanelDialog
@@ -470,7 +475,8 @@
   bind:open={showNotesDialog}
   on:cancel={() => { showNotesDialog = false }}
   cancelText="Close"
-  submitText=""
+  on:submit={() => { showNotesDialog = false; showAddNoteDialog = true }}
+  submitText="Add a note"
   centered
   size="large"
 >
@@ -487,7 +493,7 @@
         ]}
       />
     {:else}
-      <p>No notes yet.</p>
+      <p>No application notes. Add note to see it here.</p>
     {/each}
   </div>
 </PanelDialog>
@@ -545,10 +551,7 @@
   .active-note {
     padding: 4px 8px;
   }
-  .note-empty {
-    font-size: 100%;
-    color: var(--cds-text-02);
-  }
+
   :global(.content):has(.notes-list) {
     max-height: calc(90vh - 1.5rem - 64px);
     background-color: var(--cds-ui-01);
