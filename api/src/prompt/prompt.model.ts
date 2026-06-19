@@ -1,5 +1,9 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
 import { ApplicationPhase, AppRequestPhase, AppRequestStatusDB, PromptDefinition, promptRegistry, PromptRow, RequirementType } from '../internal.js'
+import { JsonData } from '../internal.js'
+import { DEFAULT_EXPIRY } from '../util/crypto/hmac.js'
+
+export const PROMPT_PRESTAGE_NS = '__prestage'
 
 export enum PromptPreStagingRecurrence {
   NEVER = 'NEVER',
@@ -215,3 +219,61 @@ export class PeriodPromptFilters {
 
 @ObjectType()
 export class PeriodPromptActions {}
+
+ObjectType()
+
+export class PromptPrestageServerData {
+  constructor (appRequestId: number, promptKey: string) {
+    this.appRequestId = appRequestId
+    this.promptKey = promptKey
+  }
+
+  @Field(type => Number, { description: 'Prompt prestage server appRequestId' })
+  appRequestId: number
+
+  @Field(type => String, { description: 'Prompt prestage server appRequestId' })
+  promptKey: string
+}
+
+export class PromptPrestageClientData {
+  constructor (data: Record<string, any>, dataVersion?: number) {
+    this.__iat = Math.floor(Date.now() / 1000)
+    this.__exp = this.__iat + DEFAULT_EXPIRY
+    this.__dv = dataVersion
+    this.data = data
+  }
+
+  @Field(type => Number, { description: 'Prompt prestage package issued at' })
+  __iat: number
+
+  @Field(type => Number, { description: 'Prompt prestage package expiration' })
+  __exp: number
+
+  @Field(type => Number, { nullable: true, description: 'Prompt prestage package data version' })
+  __dv?: number
+
+  @Field(type => JsonData, { description: 'Prompt prestage client data content' })
+  data: Record<string, any>
+}
+
+export class PromptPrestageDataNodes {
+  @Field(type => PromptPrestageServerData, { nullable: true, description: 'Prompt prestage server fields, used for data signing.' })
+  server?: PromptPrestageServerData
+
+  @Field(type => PromptPrestageClientData, { description: 'Prompt prestage client data fields.' })
+  client!: PromptPrestageClientData
+}
+
+@ObjectType()
+export class PromptPrestagePackage {
+  constructor (signature: string, nodes: PromptPrestageDataNodes) {
+    this.signature = signature
+    this.nodes = nodes
+  }
+
+  @Field(type => String, { description: 'Prompt prestage data signature' })
+  signature: string
+
+  @Field(type => PromptPrestageDataNodes, { description: 'Prompt prestage data nodes (server and client' })
+  nodes: PromptPrestageDataNodes
+}

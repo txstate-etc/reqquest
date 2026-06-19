@@ -253,10 +253,10 @@ class API extends APIBase {
               visibility: true,
               hasSavedData: true,
               preloadData: true,
+              prestageData: true,
               fetchedData: true,
               configurationData: true,
-              gatheredConfigData: true,
-              prestage: true
+              gatheredConfigData: true
         }
       }
     }) 
@@ -510,7 +510,6 @@ class API extends APIBase {
               invalidatedReason: true,
               configurationData: true,
               gatheredConfigData: true,
-              prestage: true,
               optOut: true
             }
           }
@@ -918,7 +917,6 @@ class API extends APIBase {
               moot: true,
               invalidated: true,
               invalidatedReason: true,
-              prestage: true,
               actions: {
                 update: true
               }
@@ -1001,6 +999,7 @@ class API extends APIBase {
           __args: { promptId },
           data: true,
           preloadData: true,
+          prestageData: true,
           configurationData: true,
           gatheredConfigData: true,
           fetchedData: true
@@ -1023,6 +1022,7 @@ class API extends APIBase {
               id: true,
               data: true,
               preloadData: true,
+              prestageData: true,
               configurationData: true,
               gatheredConfigData: true,
               fetchedData: true

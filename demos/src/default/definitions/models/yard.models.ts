@@ -11,3 +11,13 @@ export const YardPromptSchema = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type YardPromptData = FromSchema<typeof YardPromptSchema>
+
+// Exclusively tests prestage values that can only be gen'd API side, not input from UI side...read only client side
+export const YardPromptPreStageSchema = {
+  type: 'object',
+  properties: {
+    surveyedYard: { type: 'boolean' },
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type YardPromptPreStageData = FromSchema<typeof YardPromptPreStageSchema>
