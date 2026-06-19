@@ -50,9 +50,10 @@ export interface ApplicationForDetails {
   status: ApplicationStatus
   statusReason?: string | null
   completionStatus: CompletionStatus
-  hasWarning: boolean
+  hasWarning: boolean  
   warningReasons: string[]
   ineligibleReasons: string[]
+  metReasons: string[]
   requirements: {
     id: string
     type: RequirementType
