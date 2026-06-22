@@ -46,7 +46,7 @@
     for (const application of applications) {
       const applicantPrompts = application.requirements
         .filter(r => applicantRequirementTypes.has(r.type))
-        .flatMap(r => r.prompts)
+        .flatMap(r => r.prompts).filter(p => !p.optOut)
       const reviewerPrompts = application.requirements
         .filter(r => reviewRequirementTypes.has(r.type))
         .flatMap(r => r.prompts)

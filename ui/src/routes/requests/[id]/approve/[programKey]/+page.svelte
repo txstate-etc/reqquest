@@ -130,6 +130,7 @@
     promptIndicator = {}
     for (const req of application.requirements) {
       for (const prompt of req.prompts) {
+        console.log(prompt)
         if (prompt.visibility === enumPromptVisibility.UNREACHABLE) continue
         if (req.status === enumRequirementStatus.DISQUALIFYING && (promptIndicator[prompt.key]?.indicator ?? 0) < PromptIndicators.DISQUALIFYING) {
           promptIndicator[prompt.key] = { indicator: PromptIndicators.DISQUALIFYING, reason: req.statusReason ?? undefined }
@@ -330,7 +331,7 @@
       {#if section.requirements.some(r => r.prompts.length > 0)}
         <dl class="prompts">
           {#each section.requirements as requirement (requirement.id)}
-            {#each requirement.prompts as prompt (prompt.id)}
+            {#each requirement.prompts.filter(p => !p.optOut) as prompt (prompt.id)}
               {@const def = uiRegistry.getPrompt(prompt.key)}
               {@const isReviewerQuestion = reviewerRequirementTypes.has(requirement.type) && !def?.automation}
               {@const isAutomation = !!def?.automation}

@@ -926,6 +926,7 @@ class API extends APIBase {
               moot: true,
               invalidated: true,
               invalidatedReason: true,
+              optOut: true,
               actions: {
                 update: true
               }
