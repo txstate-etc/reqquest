@@ -16,6 +16,8 @@
   export let showTooltipsAsText = false
   export let promptsById: Record<string, any> = {}
 
+  $: console.log(applications)
+
   let open = false
   let optIn = false
   let optOutPrompt: Omit<PromptDefinition, 'displayComponent'> | undefined
@@ -38,7 +40,7 @@
   $: programButtonStatus = applications.reduce((acc, curr) => ({
     ...acc,
     [curr.id]: curr.completionStatus === enumApplicationStatus.PENDING
-      ? curr.requirements.some(r => r.prompts.some(p => p.answered && !p.invalidated))
+      ? curr.requirements.some(r => r.prompts.some(p => p.answered && !p.invalidated && !p.optOut))
         ? curr.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION).every(r => r.prompts.every(p => p.answered && !p.invalidated))
           ? 'complete'
           : 'continue'
@@ -98,14 +100,19 @@
     {@const programFirstPrompt = programFirstPromptId[application.id]}
     <div class="program column [ flex-col ]" style='align-items: start;'>
       <span>{application.title}</span>
-      {#if optedOutPrograms[application.id]}
-        <Button on:click={() => openOptOutModal(application.id, true)} kind='ghost' style='padding: 0; min-height: 0;' class='[ p-0 justify-start ]'>Opt In</Button>
-      {:else if optOutPrograms[application.id]}
-        <Button on:click={() => openOptOutModal(application.id)} kind='ghost' style='padding: 0; min-height: 0;' class='[ p-0 justify-start ]'>Opt out</Button>
+      {#if !viewMode}
+        {#if optedOutPrograms[application.id]}
+          <Button on:click={() => openOptOutModal(application.id, true)} kind='ghost' style='padding: 0; min-height: 0;' class='[ p-0 justify-start ]'>Opt In</Button>
+        {:else if optOutPrograms[application.id]}
+          <Button on:click={() => openOptOutModal(application.id)} kind='ghost' style='padding: 0; min-height: 0;' class='[ p-0 justify-start ]'>Opt out</Button>
+        {/if} 
       {/if}
     </div>
     <div class="status column" class:no-tooltip={!application.statusReason?.length}>
       {#if !viewMode}
+        {console.log('Program:', application.title)}
+        {console.log('Completion status:', application.completionStatus)}
+        {console.log('Program status:', programStatus)}
         <div class="icon-and-tooltip" class:wide-icon={application.completionStatus === enumApplicationStatus.INELIGIBLE}>
           {#if optedOutPrograms[application.id]}
             <SubtractAlt size={24} fill='#dd3b46'/>
@@ -126,9 +133,12 @@
           <Button size="small" kind={programStatus === 'complete' ? 'ghost' : programStatus === 'revisit' ? 'secondary' : 'primary'} href={programFirstPrompt}>{ucfirst((programStatus !== 'complete') ? programStatus : 'revisit')}</Button>
         {/if}
       {:else}
-        {#if application.completionStatus !== enumApplicationStatus.INELIGIBLE}
+        {console.log(programStatus)}
+        {#if ['start', 'continue'].includes(programStatus)}
           {@const statusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt)}
           <TagSet tags={[{ type: statusInfo.color, label: statusInfo.label }]} />
+        {:else if optedOutPrograms[application.id]}
+          <SubtractAlt size={24} fill='#dd3b46'/><p>Opted out</p>
         {:else}
           <Close size={32} class="status-icon-ineligible" />
         {/if}
