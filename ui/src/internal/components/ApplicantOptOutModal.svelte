@@ -4,7 +4,6 @@
   import { afterNavigate, invalidate, invalidateAll } from '$app/navigation'
   import { uiRegistry } from '../../local/index.js'
   import { api, type PromptForEditing } from '../api.js'
-  import { stagedprompts } from '../prompt-utils.js'
   import { Loading } from "carbon-components-svelte";
   import type { AppRequestForDetails, OptOutApplication } from '$lib'
 

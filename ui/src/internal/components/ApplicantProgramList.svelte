@@ -8,7 +8,6 @@
   import ApplicantProgramListTooltip from './ApplicantProgramListTooltip.svelte'
   import WarningIconYellow from './WarningIconYellow.svelte'
   import { api } from '$internal/api.js'
-  import { stagedprompts } from '$internal/prompt-utils.js'
   import ApplicantOptOutModal from './ApplicantOptOutModal.svelte'
 
   export let appRequest: AppRequestForDetails
@@ -82,11 +81,7 @@
 
   async function loadOptOutPrompt () {
     const promptId = optOutSelected?.prompt?.id
-    if (!promptId) return
-    if (promptsById[promptId]?.prestage && !stagedprompts.has(promptId)) {    
-      const response = await api.stagePrompt(promptId, appRequest.dataVersion) 
-      if (response.success) stagedprompts.add(promptId)
-    }     
+    if (!promptId) return    
     const { prompt } = await api.getApplicantPrompt(appRequest.id, promptId)
     optOutPrompt = prompt
   }
