@@ -16,8 +16,6 @@
   export let showTooltipsAsText = false
   export let promptsById: Record<string, any> = {}
 
-  $: console.log(applications)
-
   let open = false
   let optIn = false
   let optOutPrompt: Omit<PromptDefinition, 'displayComponent'> | undefined
@@ -39,9 +37,9 @@
 
   $: programButtonStatus = applications.reduce((acc, curr) => ({
     ...acc,
-    [curr.id]: curr.completionStatus === enumApplicationStatus.PENDING
+    [curr.id]: (curr.completionStatus === enumApplicationStatus.PENDING || curr.status === enumApplicationStatus.PENDING)
       ? curr.requirements.some(r => r.prompts.some(p => p.answered && !p.invalidated && !p.optOut))
-        ? curr.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION).every(r => r.prompts.every(p => p.answered && !p.invalidated))
+        ? curr.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION).every(r => r.prompts.every(p => p.answered && !p.invalidated  && !p.optOut))
           ? 'complete'
           : 'continue'
         : 'start'
@@ -110,9 +108,6 @@
     </div>
     <div class="status column" class:no-tooltip={!application.statusReason?.length}>
       {#if !viewMode}
-        {console.log('Program:', application.title)}
-        {console.log('Completion status:', application.completionStatus)}
-        {console.log('Program status:', programStatus)}
         <div class="icon-and-tooltip" class:wide-icon={application.completionStatus === enumApplicationStatus.INELIGIBLE}>
           {#if optedOutPrograms[application.id]}
             <SubtractAlt size={24} fill='#dd3b46'/>
@@ -133,8 +128,7 @@
           <Button size="small" kind={programStatus === 'complete' ? 'ghost' : programStatus === 'revisit' ? 'secondary' : 'primary'} href={programFirstPrompt}>{ucfirst((programStatus !== 'complete') ? programStatus : 'revisit')}</Button>
         {/if}
       {:else}
-        {console.log(programStatus)}
-        {#if ['start', 'continue'].includes(programStatus)}
+        {#if ['start', 'continue'].includes(programStatus) && !optedOutPrograms[application.id]}
           {@const statusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt)}
           <TagSet tags={[{ type: statusInfo.color, label: statusInfo.label }]} />
         {:else if optedOutPrograms[application.id]}

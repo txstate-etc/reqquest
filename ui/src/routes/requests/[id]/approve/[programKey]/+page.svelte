@@ -130,7 +130,6 @@
     promptIndicator = {}
     for (const req of application.requirements) {
       for (const prompt of req.prompts) {
-        console.log(prompt)
         if (prompt.visibility === enumPromptVisibility.UNREACHABLE) continue
         if (req.status === enumRequirementStatus.DISQUALIFYING && (promptIndicator[prompt.key]?.indicator ?? 0) < PromptIndicators.DISQUALIFYING) {
           promptIndicator[prompt.key] = { indicator: PromptIndicators.DISQUALIFYING, reason: req.statusReason ?? undefined }
