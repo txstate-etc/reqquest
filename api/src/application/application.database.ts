@@ -33,12 +33,13 @@ function processFilters (filter: ApplicationFilter) {
 
 export async function getApplications (filter: ApplicationFilter, tdb: Queryable = db) {
   const { where, binds } = processFilters(filter)
+  const whereClause = where.length > 0 ? `WHERE (${where.join(') AND (')})` : ''
   const rows = await tdb.getall<ApplicationRow>(`
     SELECT a.id, a.appRequestId, ar.periodId, a.programKey, ar.userId, a.computedStatus, a.computedStatusReason, a.computedPhase,
       a.computedIneligiblePhase, a.workflowStage, ar.status AS appRequestStatus, ar.phase AS appRequestPhase, ar.computedStatus AS appRequestComputedStatus
     FROM applications a
     INNER JOIN app_requests ar ON ar.id = a.appRequestId
-    WHERE (${where.join(') AND (')})
+    ${whereClause}
     ORDER BY evaluationOrder
   `, binds)
   return rows.map(row => new Application(row))
