@@ -126,7 +126,7 @@ function processFilters (filter?: AppRequestFilter) {
       joins.set('arn', 'LEFT JOIN app_request_notes arn ON arn.appRequestId = ar.id')
       binds.push(filter.search)
     }
-    where.push(`(p.name LIKE ? OR u.login LIKE ? OR u.fullname LIKE ? OR t.tag LIKE ? OR tl.label LIKE ?${filter.searchNotes ? ' OR MATCH(arn.content) AGAINST (? IN NATURAL LANGUAGE MODE)}' : ''})`)
+    where.push(`(p.name LIKE ? OR u.login LIKE ? OR u.fullname LIKE ? OR t.tag LIKE ? OR tl.label LIKE ?${filter.searchNotes ? ' OR MATCH(arn.content) AGAINST (? IN NATURAL LANGUAGE MODE)' : ''})`)
   }
   if (filter?.createdAfter) {
     where.push('ar.createdAt >= ?')
