@@ -16,6 +16,8 @@
   export let showTooltipsAsText = false
   export let promptsById: Record<string, any> = {}
 
+  $: console.log(applications)
+
   let open = false
   let optIn = false
   let optOutPrompt: Omit<PromptDefinition, 'displayComponent'> | undefined
@@ -128,7 +130,7 @@
           <Button size="small" kind={programStatus === 'complete' ? 'ghost' : programStatus === 'revisit' ? 'secondary' : 'primary'} href={programFirstPrompt}>{ucfirst((programStatus !== 'complete') ? programStatus : 'revisit')}</Button>
         {/if}
       {:else}
-        {#if ['start', 'continue'].includes(programStatus) && !optedOutPrograms[application.id]}
+        {#if ['start', 'continue', 'complete'].includes(programStatus) && !optedOutPrograms[application.id]}
           {@const statusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt)}
           <TagSet tags={[{ type: statusInfo.color, label: statusInfo.label }]} />
         {:else if optedOutPrograms[application.id]}
