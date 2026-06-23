@@ -5,6 +5,7 @@
   import { Button, InlineNotification, Select, SelectItem, Tooltip } from 'carbon-components-svelte'
   import DocumentExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
+  import Review from "carbon-icons-svelte/lib/Review.svelte";
   import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
   import Pen from 'carbon-icons-svelte/lib/Pen.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
@@ -362,7 +363,7 @@
               <dd class="flow" class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
                 {#if editMode}
                   <Form preload={prompt.preloadData} submit={onPromptSubmit(prompt.id)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptSaved} let:data let:messages>
-                    <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
+                    <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason}  />
                     {#each messages as message (message.message, message.type)}
                       <FormInlineNotification {message} />
                     {/each}
@@ -370,9 +371,8 @@
                 {:else}
                   <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
                   {#if prompt.actions.update}
-                  {console.log(requirement)}
                     {#if prompt.invalidated && !applicantRequirementTypes.has(requirement.type)}
-                      <Button kind="primary" size="field" class="prompt-edit mr-2 mt-2" on:click={editPrompt(prompt)}>Review corrections</Button>
+                      <Button kind="primary" size="field" class="prompt-edit mr-2" icon={Review} iconDescription="Review corrections" on:click={editPrompt(prompt)} />
                     {:else}
                       <Button kind="ghost" size="field" icon={Edit} iconDescription="Edit Prompt" class="prompt-edit" on:click={editPrompt(prompt)} />
                     {/if}
@@ -423,7 +423,7 @@
     <div class='font-medium text-center mt-2'>
       <p class="text-xl font-medium ">{promptBeingEdited.title}</p>
     </div>
-    <svelte:component this={def!.formComponent} appRequestId={appRequest.id} {data} appRequestData={promptBeingEdited.data} prestageData={{latest: promptBeingEdited.prestageData, current: appRequest.data[promptBeingEdited.key]?.__prestage}} fetched={promptBeingEdited.fetchedData} configData={promptBeingEdited.configurationData} gatheredConfigData={promptBeingEdited.gatheredConfigData} />
+    <svelte:component this={def!.formComponent} appRequestId={appRequest.id} {data} appRequestData={promptBeingEdited.data} prestageData={{latest: promptBeingEdited.prestageData, current: appRequest.data[promptBeingEdited.key]?.__prestage}} fetched={promptBeingEdited.fetchedData} configData={promptBeingEdited.configurationData} gatheredConfigData={promptBeingEdited.gatheredConfigData} invalidated={promptBeingEdited.invalidated} invalidatedReason={promptBeingEdited.invalidatedReason} />
   </PanelFormDialog>
 {/if}
 

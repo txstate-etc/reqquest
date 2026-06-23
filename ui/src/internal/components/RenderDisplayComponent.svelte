@@ -21,7 +21,10 @@
     <em>No display component registered.</em>
     <pre>{JSON.stringify(appData[prompt.key] ?? {}, null, 2)}</pre>
   {:else}
-    <svelte:component this={def.displayComponent} {appRequestId} data={appData[prompt.key]} appRequestData={appData} {prestageData} {configData} {gatheredConfigData} />
+    <svelte:component this={def.displayComponent} {appRequestId} data={appData[prompt.key]} appRequestData={appData} {prestageData} {configData} {gatheredConfigData} invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} />
+  {/if}
+  {#if prompt.invalidated && (showMoot || !prompt.moot)}
+    <InlineNotification class="mt-6 lg:mt-4 max-w-0" kind="warning" title="Applicant has made corrections:" subtitle={prompt.invalidatedReason ?? 'Requires review'} lowContrast hideCloseButton />
   {/if}
   {#snippet failed()}
     <div class="error">

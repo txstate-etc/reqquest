@@ -106,7 +106,8 @@ export const ReviewStateResidenceInfoPromptSchema = {
   type: 'object',
   properties: {
     residencyInfoAcceptable: { type: 'boolean' },
-    corrections: { type: 'string' }
+    corrections: { type: 'string' },
+    lastReviewedAt: { type: 'number' }
   },
   additionalProperties: false
 } as const satisfies SchemaObject
