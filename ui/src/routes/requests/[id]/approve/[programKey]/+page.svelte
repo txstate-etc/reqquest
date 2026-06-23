@@ -370,8 +370,9 @@
                 {:else}
                   <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
                   {#if prompt.actions.update}
+                  {console.log(requirement)}
                     {#if prompt.invalidated && !applicantRequirementTypes.has(requirement.type)}
-                      <Button kind="primary" size="field" class="flex prompt-edit mr-2 mt-2" on:click={editPrompt(prompt)}>Review corrections</Button>
+                      <Button kind="primary" size="field" class="prompt-edit mr-2 mt-2" on:click={editPrompt(prompt)}>Review corrections</Button>
                     {:else}
                       <Button kind="ghost" size="field" icon={Edit} iconDescription="Edit Prompt" class="prompt-edit" on:click={editPrompt(prompt)} />
                     {/if}
