@@ -16,8 +16,6 @@
   export let showTooltipsAsText = false
   export let promptsById: Record<string, any> = {}
 
-  $: console.log(applications)
-
   let open = false
   let optIn = false
   let optOutPrompt: Omit<PromptDefinition, 'displayComponent'> | undefined
