@@ -90,17 +90,17 @@
       </div>
     </svelte:fragment>
     <div class="flow max-w-screen-md">
-    <!-- Correction inline prompt notification -->
-    {#if prompt.invalidated && !$store?.hasUnsavedChanges}
-      <InlineNotification
-        kind="error"
-        title='Corrections required:'
-        hideCloseButton={true}
-        lowContrast
-        subtitle={prompt.invalidatedReason ?? 'Must update form data before continuing'}
-      />
-    {/if}
-  </div>
+      <!-- Correction inline prompt notification -->
+      {#if prompt.invalidated && !$store?.hasUnsavedChanges}
+        <InlineNotification
+          kind="error"
+          title='Corrections required:'
+          hideCloseButton={true}
+          lowContrast
+          subtitle={prompt.invalidatedReason ?? 'Must update form data before continuing'}
+        />
+      {/if}
+    </div>
   </Form>
   
 {/key}

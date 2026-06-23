@@ -23,9 +23,9 @@
   {:else}
     <svelte:component this={def.displayComponent} {appRequestId} data={appData[prompt.key]} appRequestData={appData} {prestageData} {configData} {gatheredConfigData} />
   {/if}
-  {#if prompt.invalidated && (showMoot || !prompt.moot)}
-    <InlineNotification kind="warning" title="Correction Needed" subtitle={prompt.invalidatedReason ?? undefined} class="mt-2" lowContrast hideCloseButton />
-  {/if}
+  <!--{#if prompt.invalidated && (showMoot || !prompt.moot)}
+    <InlineNotification kind="warning" title="Corrections Needed" subtitle={prompt.invalidatedReason ?? undefined} class="mt-2" lowContrast hideCloseButton />
+  {/if}-->
   {#snippet failed()}
     <div class="error">
       <div>Error Loading Component</div>

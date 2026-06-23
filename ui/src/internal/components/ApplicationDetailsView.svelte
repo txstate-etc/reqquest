@@ -151,7 +151,7 @@
                       <div class="icon" slot="icon">
                         <WarningIconYellow size={16} />
                       </div>
-                      <p>Correction needed<br>{prompt.invalidatedReason}</p>
+                      <p>Corrections needed<br>{prompt.invalidatedReason}</p>
                     </Tooltip>
                   {/if}
                   {prompt.title}
@@ -164,7 +164,7 @@
                 </dd>
                 {#if showCorrectionsInline && canMakeCorrections && needsCorrection(prompt)}
                   <div class="correction-notice">
-                    <InlineNotification kind="warning-alt" title="Correction needed" subtitle={prompt.invalidatedReason ?? ''} hideCloseButton lowContrast />
+                    <InlineNotification kind="warning-alt" title="Corrections needed" subtitle={prompt.invalidatedReason ?? ''} hideCloseButton lowContrast />
                   </div>
                 {/if}
               {/each}
@@ -197,7 +197,7 @@
                           <div class="icon" slot="icon">
                             <WarningIconYellow size={16} />
                           </div>
-                          <p>Correction needed<br>{prompt.invalidatedReason}</p>
+                          <p>Corrections needed<br>{prompt.invalidatedReason}</p>
                         </Tooltip>
                       {/if}
                       {prompt.title}
@@ -210,7 +210,7 @@
                     </dd>
                     {#if showCorrectionsInline && canMakeCorrections && needsCorrection(prompt)}
                       <div class="correction-notice">
-                        <InlineNotification kind="warning-alt" title="Correction needed" subtitle={prompt.invalidatedReason ?? ''} hideCloseButton lowContrast />
+                        <InlineNotification kind="warning-alt" title="Corrections needed" subtitle={prompt.invalidatedReason ?? ''} hideCloseButton lowContrast />
                       </div>
                     {/if}
                   {/each}
