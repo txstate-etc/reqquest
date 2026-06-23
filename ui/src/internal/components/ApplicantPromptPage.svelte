@@ -8,7 +8,7 @@
 
   import { Form } from '@txstate-mws/carbon-svelte'
   import type { FormStore } from '@txstate-mws/svelte-forms'
-  import { Button } from 'carbon-components-svelte'
+  import { Button, InlineNotification } from 'carbon-components-svelte'
   import { getContext } from 'svelte'
   import type { Writable } from 'svelte/store'
   import { afterNavigate, beforeNavigate, goto, invalidate, invalidateAll } from '$app/navigation'
@@ -89,5 +89,18 @@
         <Button icon={submitting && !continueAfterSave ? ButtonLoadingIcon : null} type="submit" disabled={submitting} on:click={() => { continueAfterSave = true }}>Continue</Button>
       </div>
     </svelte:fragment>
+    <div class="flow max-w-screen-md">
+    <!-- Correction inline prompt notification -->
+    {#if prompt.invalidated && !$store?.hasUnsavedChanges}
+      <InlineNotification
+        kind="error"
+        title='Corrections required:'
+        hideCloseButton={true}
+        lowContrast
+        subtitle={prompt.invalidatedReason ?? 'Must update form data before continuing'}
+      />
+    {/if}
+  </div>
   </Form>
+  
 {/key}

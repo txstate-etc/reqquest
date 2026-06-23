@@ -256,7 +256,9 @@ class API extends APIBase {
               prestageData: true,
               fetchedData: true,
               configurationData: true,
-              gatheredConfigData: true
+              gatheredConfigData: true,
+              invalidated: true,
+              invalidatedReason: true
         }
       }
     }) 
