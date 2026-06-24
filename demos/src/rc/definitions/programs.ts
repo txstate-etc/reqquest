@@ -1,6 +1,6 @@
 import type { ProgramDefinition } from '@reqquest/api'
 
-export const operationsInfrastructure: ProgramDefinition = {
+const operationsInfrastructure: ProgramDefinition = {
   key: 'operations_infrastructure',
   title: 'Operations & Infrastructure',
   requirementKeys: [
@@ -14,7 +14,7 @@ export const operationsInfrastructure: ProgramDefinition = {
     'assess_reccomendation_lettern_req'
   ]
 }
-export const softwareDevelopment: ProgramDefinition = {
+const softwareDevelopment: ProgramDefinition = {
   key: 'software_development',
   title: 'Software Development',
   requirementKeys: [
@@ -30,7 +30,7 @@ export const softwareDevelopment: ProgramDefinition = {
     'assess_reccomendation_lettern_req'
   ]
 }
-export const projectManagement: ProgramDefinition = {
+const projectManagement: ProgramDefinition = {
   key: 'project_management',
   title: 'Project Management',
   requirementKeys: [
@@ -46,7 +46,7 @@ export const projectManagement: ProgramDefinition = {
     'assess_reccomendation_lettern_req'
   ]
 }
-export const applicationManagement: ProgramDefinition = {
+const applicationManagement: ProgramDefinition = {
   key: 'application_management_support',
   title: 'Application Management & Support',
   requirementKeys: [
@@ -62,3 +62,10 @@ export const applicationManagement: ProgramDefinition = {
     'assess_reccomendation_lettern_req'
   ]
 }
+
+export const rcPrograms = [
+  operationsInfrastructure,
+  softwareDevelopment,
+  projectManagement,
+  applicationManagement
+]
