@@ -6,7 +6,7 @@
    * the app request since the prompt should only be visible in a single spot.
    */
 
-  import { Form } from '@txstate-mws/carbon-svelte'
+  import { Form, confirmationStore } from '@txstate-mws/carbon-svelte'
   import type { FormStore } from '@txstate-mws/svelte-forms'
   import { Button, InlineNotification } from 'carbon-components-svelte'
   import { getContext } from 'svelte'
@@ -39,7 +39,7 @@
 
  async function onSubmit (data: any) {
     loading = true    
-    const { success, messages, data: newData } =  await api.updatePrompt(prompt.id, data, false, dataVersion)
+    const { success, messages, data: newData } =  await api.updatePrompt(prompt.id, data, false, dataVersion, await confirmInvalidatedOverride())
     if (!success) loading = false
     return {
       success,
@@ -60,6 +60,19 @@
       await goto($nextHref.nextHref)
     }
     loading = false
+  }
+
+  async function confirmInvalidatedOverride() {
+   return (prompt.invalidated && $store?.hasUnsavedChanges) 
+    ? await confirmationStore.confirm(
+        'Corrections are required, but no changes have been made.  Can you confirm that all data is correct, and does not require changes?',
+        {
+          title: 'Confirm data is correct',
+          yesText: 'Yes',
+          noText: 'No'
+        }
+      )
+    : false 
   }
 
   let lastPromptId: string | undefined
