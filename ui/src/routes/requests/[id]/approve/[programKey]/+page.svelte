@@ -220,11 +220,11 @@
     promptBeingEdited = undefined
   }
 
-  function onPromptSubmit (id: string) {
+  function onPromptSubmit (prompt: any) {
     return async (data: any) => {   
       loading = true      
       hideEditModalPromptOnLoading()  
-      const response = await api.updatePrompt(id, data, false)
+      const response = await api.updatePrompt(prompt.id, data, false)
       return response
     }
   }
@@ -362,7 +362,7 @@
               </dt>
               <dd class="flow" class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
                 {#if editMode}
-                  <Form preload={prompt.preloadData} submit={onPromptSubmit(prompt.id)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptSaved} let:data let:messages>
+                  <Form preload={prompt.preloadData} submit={onPromptSubmit(prompt)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptSaved} let:data let:messages>
                     <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason}  />
                     {#each messages as message (message.message, message.type)}
                       <FormInlineNotification {message} />
@@ -411,10 +411,10 @@
     title={promptBeingEdited.invalidated ? `Review correction "${promptBeingEdited.title}"` : 'Edit Prompt'}
     bind:open={showPromptDialog}
     on:cancel={closePromptDialog}
-    submit={onPromptSubmit(promptBeingEdited.id)}
+    submit={onPromptSubmit(promptBeingEdited)}
     validate={onPromptValidate(promptBeingEdited)}
     on:saved={onPromptSaved}
-    disableSaveUntilChanged={true}
+    disableSaveUntilChanged={!promptBeingEdited.invalidated} // allow saving without changes if prompt was previously invalidated ...accomodates reviewer saying no changes required on correction check
     centered
     preload={promptBeingEdited.preloadData}
     let:data
