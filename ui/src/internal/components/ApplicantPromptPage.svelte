@@ -38,7 +38,7 @@
   }
 
  async function onSubmit (data: any) {
-    loading = true    
+    loading = true   
     const { success, messages, data: newData } =  await api.updatePrompt(prompt.id, data, false, dataVersion, await confirmInvalidatedOverride())
     if (!success) loading = false
     return {
@@ -63,7 +63,7 @@
   }
 
   async function confirmInvalidatedOverride() {
-   return (prompt.invalidated && $store?.hasUnsavedChanges) 
+   return (prompt.invalidated && !$store?.hasUnsavedChanges) 
     ? await confirmationStore.confirm(
         'Corrections are required, but no changes have been made.  Can you confirm that all data is correct, and does not require changes?',
         {

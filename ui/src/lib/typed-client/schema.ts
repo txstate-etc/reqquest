@@ -1533,7 +1533,7 @@ export interface MutationGenqlSelection{
     /** Update the data for a prompt in this app request. */
     updatePrompt?: (ValidatedAppRequestResponseGenqlSelection & { __args: {data: Scalars['JsonData'], 
     /** The data version of the app request at the time this prompt was loaded. If provided, the API will perform an optimistic concurrency check and fail the update if someone else has updated the data in the meantime. */
-    dataVersion?: (Scalars['Int'] | null), promptId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
+    dataVersion?: (Scalars['Int'] | null), overrideInvalidated?: (Scalars['Boolean'] | null), promptId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     __typename?: boolean | number
     __scalar?: boolean | number
 }

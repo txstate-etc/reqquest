@@ -281,28 +281,10 @@ class API extends APIBase {
     return this.mutationForDialog(response.stagePrompt)
   }
 
-  /* TODO: Future require to support staging prompts in bulk for supporting review data
-  async stagePrompts (promptIds: string[], dataVersion?: number) {
-    const response = await this.graphqlWithUploads<{ stagePrompt: MutationResponseFromAPI }>(`
-      mutation StagePrompts($promptIds: [ID!]!, $dataVersion: Int) {
-        stagePrompt(promptIds: $promptIds, dataVersion: $dataVersion) {
-          success
-          messages {
-            message
-            type
-            arg
-          }
-        }
-      }
-    `, { promptIds, dataVersion })
-    return this.mutationForDialog(response.stagePrompt)
-  }
-  */
-
   async updatePrompt (promptId: string, data: any, validateOnly: boolean, dataVersion?: number, overrideInvalidated?: boolean) {
     const response = await this.graphqlWithUploads<{ updatePrompt: MutationResponseFromAPI }>(`
-      mutation UpdatePrompt($promptId: ID!, $data: JsonData!, $validateOnly: Boolean!, $dataVersion: Int) {
-        updatePrompt(promptId: $promptId, data: $data, validateOnly: $validateOnly, dataVersion: $dataVersion) {
+      mutation UpdatePrompt($promptId: ID!, $data: JsonData!, $validateOnly: Boolean!, $dataVersion: Int, $overrideInvalidated: Boolean) {
+        updatePrompt(promptId: $promptId, data: $data, validateOnly: $validateOnly, dataVersion: $dataVersion, overrideInvalidated: $overrideInvalidated) {
           success
           messages {
             message
