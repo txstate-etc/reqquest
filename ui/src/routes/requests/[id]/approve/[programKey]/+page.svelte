@@ -195,13 +195,13 @@
   let promptBeingEdited: PromptWithExtra | undefined = undefined
   let showPromptDialog = false
   let fetchingEditPrompt = false
-  function editPrompt (prompt: Prompt) {
+  function editPrompt (prompt: Prompt, allowSaveWithoutChanges: boolean = false) {
     return async () => {
       if (fetchingEditPrompt) return
       fetchingEditPrompt = true
       try {
         const extra = await api.getPromptData(appRequest.id, prompt.id)
-        promptBeingEdited = { ...prompt, ...extra }
+        promptBeingEdited = { ...prompt, ...extra, allowSaveWithoutChanges }
         showPromptDialog = true
       } finally {
         fetchingEditPrompt = false
@@ -224,7 +224,9 @@
     return async (data: any) => {   
       loading = true      
       hideEditModalPromptOnLoading()  
-      const response = await api.updatePrompt(prompt.id, data, false)
+      const response = (!prompt.allowSaveWithoutChanges)
+        ? await api.updatePrompt(prompt.id, data, false)
+        : await api.updatePrompt(prompt.id, data, false, undefined, true) // triggers from review corrections edit selection, allow saving without changes to handle invalidate prompts that require no changes
       return response
     }
   }
@@ -372,7 +374,7 @@
                   <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
                   {#if prompt.actions.update}
                     {#if prompt.invalidated && !applicantRequirementTypes.has(requirement.type)}
-                      <Button kind="primary" size="field" class="prompt-edit mr-2" icon={Review} iconDescription="Review corrections" on:click={editPrompt(prompt)} />
+                      <Button kind="primary" size="field" class="prompt-edit mr-2" icon={Review} iconDescription="Review corrections" on:click={editPrompt(prompt, true)} />
                     {:else}
                       <Button kind="ghost" size="field" icon={Edit} iconDescription="Edit Prompt" class="prompt-edit" on:click={editPrompt(prompt)} />
                     {/if}
@@ -414,7 +416,7 @@
     submit={onPromptSubmit(promptBeingEdited)}
     validate={onPromptValidate(promptBeingEdited)}
     on:saved={onPromptSaved}
-    disableSaveUntilChanged={!promptBeingEdited.invalidated} // allow saving without changes if prompt was previously invalidated ...accomodates reviewer saying no changes required on correction check
+    disableSaveUntilChanged={!promptBeingEdited.allowSaveWithoutChanges} // allow saving without changes if prompt was previously invalidated ...accomodates reviewer saying no changes required on correction check
     centered
     preload={promptBeingEdited.preloadData}
     let:data
