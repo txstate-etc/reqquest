@@ -159,14 +159,12 @@
                 <dd class="prompt-answer flow" class:large={def?.displayMode === 'large'}>
                   <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appData} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
                   {#if showCorrectionsInline && canMakeCorrections && needsCorrection(prompt)}
-                    <Button kind="ghost" size="small" icon={Edit} iconDescription="Edit this answer" href={`/requests/${appRequest.id}/apply/${prompt.id}`} class="edit-button" />
+                    <div class="correction-notice">
+                      <Button kind="ghost" size="small" icon={Edit} iconDescription="Edit this answer" href={`/requests/${appRequest.id}/apply/${prompt.id}`} class="edit-button" />
+                      <InlineNotification kind="warning-alt" title="Corrections needed" subtitle={prompt.invalidatedReason ?? ''} hideCloseButton lowContrast />
+                    </div>
                   {/if}
                 </dd>
-                {#if showCorrectionsInline && canMakeCorrections && needsCorrection(prompt)}
-                  <div class="correction-notice">
-                    <InlineNotification kind="warning-alt" title="Corrections needed" subtitle={prompt.invalidatedReason ?? ''} hideCloseButton lowContrast />
-                  </div>
-                {/if}
               {/each}
             </dl>
           {/if}

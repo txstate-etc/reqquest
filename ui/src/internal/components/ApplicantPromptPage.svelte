@@ -106,8 +106,8 @@
       <!-- Correction inline prompt notification -->
       {#if prompt.invalidated && !$store?.hasUnsavedChanges}
         <InlineNotification
-          kind="error"
-          title='Corrections required:'
+          kind="warning-alt"
+          title='Corrections needed:'
           hideCloseButton={true}
           lowContrast
           subtitle={prompt.invalidatedReason ?? 'Must update form data before continuing'}

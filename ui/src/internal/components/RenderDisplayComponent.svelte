@@ -10,6 +10,8 @@
   export let configData: Record<string, any>
   export let gatheredConfigData: Record<string, any>
   export let showMoot = false
+  export let showInlineReviewNotification = false 
+
 </script>
 
 <svelte:boundary onerror={e => console.error(e)}>
@@ -23,7 +25,7 @@
   {:else}
     <svelte:component this={def.displayComponent} {appRequestId} data={appData[prompt.key]} appRequestData={appData} {prestageData} {configData} {gatheredConfigData} invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} />
   {/if}
-  {#if prompt.invalidated && (showMoot || !prompt.moot)}
+  {#if prompt.invalidated && (showMoot || !prompt.moot) && showInlineReviewNotification}
     <InlineNotification class="mt-6 lg:mt-4" kind="warning" title="Applicant has made corrections:" subtitle={prompt.invalidatedReason ?? 'Requires review'} lowContrast hideCloseButton />
   {/if}
   {#snippet failed()}
