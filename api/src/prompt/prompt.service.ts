@@ -287,7 +287,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     return newPrompt
   }
 
-  async update (prompt: RequirementPrompt, data: any, validateOnly = false, dataVersion?: number) {
+  async update (prompt: RequirementPrompt, data: any, validateOnly = false, dataVersion?: number, overrideInvalidated?: boolean) {
     data ??= {}
     if (!this.mayUpdate(prompt)) throw new Error('You are not allowed to update this prompt.')
     if ((PROMPT_PRESTAGE_NS in data) && !await this.verifyPrestageData(prompt.appRequestInternalId, prompt.key, data[PROMPT_PRESTAGE_NS], dataVersion)) throw new Error('Invalid prompt signed data.')
@@ -323,6 +323,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
         const promptsToInvalidate = promptRegistry.getInvalidatedPrompts(prompt.key, appRequestData, allConfigData)
         await setRequirementPromptsInvalid(promptsToInvalidate, db)
         const promptsToRevalidate = promptRegistry.getRevalidatedPrompts(prompt.key, appRequestData, allConfigData)
+        if (prompt.invalidated && overrideInvalidated) promptsToRevalidate.push(prompt.key) // used as a positive confirmation that this previously invalidated prompt requires no changes to be valid again
         await setRequirementPromptsValid(promptsToRevalidate.concat([prompt.key]), db)
         previousAppPhases = (await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion, db))!
         recordAppRequestActivity(appRequest.internalId, this.user!.internalId, `${programRegistry.get(prompt.programKey)?.navTitle ?? 'Prompt'} Updated`, { data, description: prompt.title, impersonatedBy: this.impersonationUser?.internalId }, db)
