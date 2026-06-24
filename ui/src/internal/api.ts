@@ -299,7 +299,7 @@ class API extends APIBase {
   }
   */
 
-  async updatePrompt (promptId: string, data: any, validateOnly: boolean, dataVersion?: number) {
+  async updatePrompt (promptId: string, data: any, validateOnly: boolean, dataVersion?: number, overrideInvalidated?: boolean) {
     const response = await this.graphqlWithUploads<{ updatePrompt: MutationResponseFromAPI }>(`
       mutation UpdatePrompt($promptId: ID!, $data: JsonData!, $validateOnly: Boolean!, $dataVersion: Int) {
         updatePrompt(promptId: $promptId, data: $data, validateOnly: $validateOnly, dataVersion: $dataVersion) {
@@ -314,7 +314,7 @@ class API extends APIBase {
           }
         }
       }
-    `, { promptId, data, validateOnly, dataVersion })
+    `, { promptId, data, validateOnly, dataVersion, overrideInvalidated })
     return { ...this.mutationForDialog(response.updatePrompt), data: response.updatePrompt.appRequest.data }
   }
 
