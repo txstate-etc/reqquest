@@ -8,26 +8,25 @@
 
   import { Form } from '@txstate-mws/carbon-svelte'
   import type { FormStore } from '@txstate-mws/svelte-forms'
-  import { Button } from 'carbon-components-svelte'
+  import { Button, SkeletonText } from 'carbon-components-svelte'
   import { getContext } from 'svelte'
   import type { Writable } from 'svelte/store'
-  import { afterNavigate, beforeNavigate, goto, invalidate, invalidateAll } from '$app/navigation'
+  import { goto, invalidate } from '$app/navigation'
   import type { ResolvedPathname } from '$app/types'
   import { uiRegistry } from '../../local/index.js'
   import { api } from '../api.js'
   import type { PageData } from '../../routes/requests/[id]/apply/[promptId]/$types.js'
   import ButtonLoadingIcon from './ButtonLoadingIcon.svelte'
-  import { Loading } from "carbon-components-svelte";
 
-  export let data: PageData
-  $: ({ prompt, appRequestForExport, dataVersion } = data)
+
+  export let data: Awaited<PageData['applicantPromptPromise']> & { dataVersion: number }
+  $: ({ prompt, appRequest: appRequestForExport, dataVersion } = data)
   $: def = uiRegistry.getPrompt(prompt.key)
   const nextHref = getContext<Writable<{ nextHref: ResolvedPathname, prevHref: ResolvedPathname | undefined }>>('nextHref')
 
   let store: FormStore | undefined
   let continueAfterSave = false
   $: hasPreviousPrompt = $nextHref.prevHref != null
-  $: loading = false
 
   async function handleBack () {
     const previousHref = $nextHref.prevHref
@@ -38,9 +37,7 @@
   }
 
  async function onSubmit (data: any) {
-    loading = true    
     const { success, messages, data: newData } =  await api.updatePrompt(prompt.id, data, false, dataVersion)
-    if (!success) loading = false
     return {
       success,
       messages,
@@ -59,7 +56,6 @@
       // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved      
       await goto($nextHref.nextHref)
     }
-    loading = false
   }
 
   let lastPromptId: string | undefined
@@ -68,9 +64,6 @@
     store = undefined
   }
 </script>
-{#if loading}
-  <Loading />
-{/if}
 
 {#key prompt.id}
   <div class="prompt-intro flow max-w-screen-md mx-auto pt-10 px-6">
@@ -91,3 +84,4 @@
     </svelte:fragment>
   </Form>
 {/key}
+
