@@ -124,7 +124,19 @@ export class ApplicationService extends AuthService<Application> {
   }
 
   async mayRescindApplication (application: Application) {
+    if (application.closed) return false // only prevent rescinding if application is closed
+    if (![ApplicationPhase.READY_TO_ACCEPT, ApplicationPhase.WORKFLOW_NONBLOCKING, ApplicationPhase.READY_TO_COMPLETE, ApplicationPhase.COMPLETE].includes(application.phase)) return false
+    if (this.isOwn(application) && !this.hasControl('AppRequest', 'review_own')) return false
+    if (!this.hasControl('AppRequest', 'review', application.appRequestTags)) return false
+    if (!this.hasControl('ApplicationPostAcceptance', 'rescind', application.appRequestTags)) return false
+    return true
+  }
+
+  async mayRestoreApplication (application: Application) {
     if (application.closed) return false
+    // TODO:  Additionall rules around individual restoration of rescinded apps (current stage, diff stage??)
+    if (!this.hasControl('ApplicationPostAcceptance', 'restore', application.appRequestTags)) return false
+    return true
   }
 
   async advanceWorkflow (applicationId: string) {

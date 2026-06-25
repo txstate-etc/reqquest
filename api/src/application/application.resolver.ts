@@ -71,4 +71,9 @@ export class ApplicationActionsResolver {
   async rescindApplication (@Ctx() ctx: RQContext, @Root() application: Application) {
     return ctx.svc(ApplicationService).mayRescindApplication(application)
   }
+
+  @FieldResolver(returns => Boolean)
+  async restoreApplication (@Ctx() ctx: RQContext, @Root() application: Application) {
+    return ctx.svc(ApplicationService).mayRestoreApplication(application)
+  }
 }
