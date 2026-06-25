@@ -123,6 +123,10 @@ export class ApplicationService extends AuthService<Application> {
     return true
   }
 
+  async mayRescindApplication (application: Application) {
+    if (application.closed) return false
+  }
+
   async advanceWorkflow (applicationId: string) {
     const [application] = await getApplications({ ids: [applicationId] })
     if (!application) throw new Error(`Application not found: ${applicationId}`)

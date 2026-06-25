@@ -66,4 +66,9 @@ export class ApplicationActionsResolver {
   async reverseWorkflow (@Ctx() ctx: RQContext, @Root() application: Application) {
     return await ctx.svc(ApplicationService).mayReverseWorkflow(application)
   }
+
+  @FieldResolver(returns => Boolean)
+  async rescindApplication (@Ctx() ctx: RQContext, @Root() application: Application) {
+    return ctx.svc(ApplicationService).mayRescindApplication(application)
+  }
 }
