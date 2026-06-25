@@ -135,6 +135,8 @@ export class ApplicationService extends AuthService<Application> {
   async mayRestoreApplication (application: Application) {
     if (application.closed) return false
     // TODO:  Additionall rules around individual restoration of rescinded apps (current stage, diff stage??)
+    if (this.isOwn(application) && !this.hasControl('AppRequest', 'review_own')) return false
+    if (!this.hasControl('AppRequest', 'review', application.appRequestTags)) return false
     if (!this.hasControl('ApplicationPostAcceptance', 'restore', application.appRequestTags)) return false
     return true
   }
