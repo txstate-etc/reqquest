@@ -69,10 +69,10 @@ async function main () {
             login => ({
               login,
               fullname: `${login} Full Name`,
-              email: `${login}@txstate.edu`,
+              email: 'reqquest-next@qual.txstate.edu',
               groups: userTypes[userTypePrefixes.find(p => login.startsWith(p))!].groups,
               otherInfo: {
-                email: `${login}@txstate.edu`,
+                email: 'reqquest-next@qual.txstate.edu',
                 indexes: {
                   institutionalRoles: pseudoInstitutionalRoles(login),
                   lastLogin: DateTime.fromJSDate(new Date())
