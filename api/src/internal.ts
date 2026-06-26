@@ -4,6 +4,7 @@ export * from './scalar/index.js'
 /** Utils */
 export * from './util/auth.js'
 export * from './util/filters.js'
+export * from './util/mail.js'
 export * from './access/access.structure.js'
 export * from './access/access.seed.js'
 
@@ -44,6 +45,7 @@ export * from './program/program.database.js'
 export * from './prompt/prompt.database.js'
 export * from './requirement/requirement.database.js'
 export * from './metrics/metrics.database.js'
+export * from './mail/mail.database.js'
 
 /** Services */
 export * from './access/access.user.service.js'
@@ -56,6 +58,7 @@ export * from './program/program.service.js'
 export * from './prompt/prompt.service.js'
 export * from './requirement/requirement.service.js'
 export * from './metrics/metrics.service.js'
+export * from './mail/mail.service.js'
 
 /** Routes */
 export * from './appRequest/appRequest.routes.js'
@@ -70,3 +73,4 @@ export * from './notes/notes.initialize.js'
 export * from './period/period.initialize.js'
 export * from './prompt/prompt.initialize.js'
 export * from './requirement/requirement.initialize.js'
+export * from './mail/mail.initialize.js'

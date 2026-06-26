@@ -62,7 +62,7 @@ export const review_applicant_state_residence_info_prompt: PromptDefinition = {
     if (!data) messages.push({ type: MutationMessageType.error, message: 'Confirmation info required' })
     if (data.residencyInfoAcceptable == null) messages.push({ type: MutationMessageType.error, message: 'Confirmation of residency required', arg: 'residencyInfoAcceptable' })
     if (!data.residencyInfoAcceptable) {
-      if (!data.corrections) messages.push({ type: MutationMessageType.error, message: 'Suggested corrections required', arg: 'corrections' })
+      if (!data.corrections) messages.push({ type: MutationMessageType.error, message: 'Suggested corrections needed', arg: 'corrections' })
     }
     return messages
   },

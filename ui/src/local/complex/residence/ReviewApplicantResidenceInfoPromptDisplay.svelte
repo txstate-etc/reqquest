@@ -2,8 +2,10 @@
   export let data
 </script>
 
+
 Residency info { !data.residencyInfoAcceptable ? 'does not match ' : 'matches ' }ID file.
 {#if !data.residencyInfoAcceptable}
-  <br><b>Suggested issues or corrections</b>: { data.corrections }
+  <br><b>Suggested corrections</b>: { data.corrections }
 {/if}
+
 

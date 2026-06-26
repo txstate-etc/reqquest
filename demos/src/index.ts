@@ -3,27 +3,27 @@ import { analyticsPlugin, unifiedAuthenticate } from 'fastify-txstate'
 import { DateTime } from 'luxon'
 
 import { defaultTestMigrations } from './default/testdata.js'
-import * as defaultPrograms from './default/definitions/programs.js'
+import { defaultPrograms } from './default/definitions/programs.js'
 import * as defaultRequirements from './default/definitions/requirements/index.js'
 import * as defaultPrompts from './default/definitions/prompts/index.js'
 
 import { simpleTestMigrations } from './simple/testdata.js'
-import * as simplePrograms from './simple/definitions/programs.js'
+import { simplePrograms } from './simple/definitions/programs.js'
 import * as simpleRequirements from './simple/definitions/requirements/index.js'
 import * as simplePrompts from './simple/definitions/prompts/index.js'
 
 import { multiTestMigrations } from './multi/testdata.js'
-import * as multiPrograms from './default/definitions/programs.js'
+import { defaultPrograms as multiPrograms } from './default/definitions/programs.js'
 import * as multiRequirements from './default/definitions/requirements/index.js'
 import * as multiPrompts from './default/definitions/prompts/index.js'
 
 import { complexTestMigrations } from './complex/testdata.js'
-import * as complexPrograms from './complex/definitions/programs.js'
+import { complexPrograms } from './complex/definitions/programs.js'
 import * as complexRequirements from './complex/definitions/requirements/index.js'
 import * as complexPrompts from './complex/definitions/prompts/index.js'
 
 import { rcTestMigrations } from './rc/testdata.js'
-import * as rcPrograms from './rc/definitions/programs.js'
+import { rcPrograms } from './rc/definitions/programs.js'
 import * as rcRequirements from './rc/definitions/requirements/index.js'
 import * as rcPrompts from './rc/definitions/prompts/index.js'
 
@@ -69,9 +69,10 @@ async function main () {
             login => ({
               login,
               fullname: `${login} Full Name`,
+              email: 'reqquest-next@qual.txstate.edu',
               groups: userTypes[userTypePrefixes.find(p => login.startsWith(p))!].groups,
               otherInfo: {
-                email: `${login}@txstate.edu`,
+                email: 'reqquest-next@qual.txstate.edu',
                 indexes: {
                   institutionalRoles: pseudoInstitutionalRoles(login),
                   lastLogin: DateTime.fromJSDate(new Date())
@@ -103,6 +104,10 @@ async function main () {
           return DateTime.fromFormat('20250601080000', 'yyyyMMddHHmmss')
         }
         return groupnames.map(groupName => ({ groupName, managers: [{ fullname: `${String(groupName).charAt(0).toLocaleUpperCase() + String(groupName).slice(1)} Lastname`, email: `${groupName.toLocaleLowerCase()}@txstate.edu` }], dateCreated: groupDateAdded(groupName) }))
+      },
+      emailConfig: {
+        appName: 'Reqquest',
+        signature: 'Mobile Web Systems'
       }
     },
     programs,
@@ -116,35 +121,35 @@ main().catch(e => { console.error(e) })
 
 function configureDemoInstanceParams () {
   if (process.env.DEMO_INSTANCE === 'simple') return {
-    programs: Object.values(simplePrograms),
+    programs: simplePrograms,
     requirements: Object.values(simpleRequirements),
     prompts: Object.values(simplePrompts),
     migrations: simpleTestMigrations,
     multipleRequestsPerPeriod: false
   }
   else if (process.env.DEMO_INSTANCE === 'multi') return {
-    programs: Object.values(multiPrograms),
+    programs: multiPrograms,
     requirements: Object.values(multiRequirements),
     prompts: Object.values(multiPrompts),
     migrations: multiTestMigrations,
     multipleRequestsPerPeriod: true
   }
   else if (process.env.DEMO_INSTANCE === 'complex') return {
-    programs: Object.values(complexPrograms),
+    programs: complexPrograms,
     requirements: Object.values(complexRequirements),
     prompts: Object.values(complexPrompts),
     migrations: complexTestMigrations,
     multipleRequestsPerPeriod: false
   }
   else if (process.env.DEMO_INSTANCE === 'rc') return {
-    programs: Object.values(rcPrograms),
+    programs: rcPrograms,
     requirements: Object.values(rcRequirements),
     prompts: Object.values(rcPrompts),
     migrations: rcTestMigrations,
     multipleRequestsPerPeriod: false
   }
   return {
-    programs: Object.values(defaultPrograms),
+    programs: defaultPrograms,
     requirements: Object.values(defaultRequirements),
     prompts: Object.values(defaultPrompts),
     migrations: defaultTestMigrations,

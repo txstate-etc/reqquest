@@ -13,6 +13,7 @@ export interface AnsweredPrompt {
   moot: boolean | null
   visibility: string
   optOut?: boolean | null
+  prestageData: Record<string, any>
   configurationData: Record<string, any>
   gatheredConfigData: Record<string, any>
   statusReasons: {

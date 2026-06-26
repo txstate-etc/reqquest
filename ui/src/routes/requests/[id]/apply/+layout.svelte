@@ -31,8 +31,12 @@
         label: prompt.navTitle,
         href: resolve(`/requests/${appRequestForExport.id}/apply/${prompt.id}`),
         type: $page.params.promptId === prompt.id
-          ? 'current'
-          : prompt.answered && !prompt.invalidated ? 'complete' : 'available',
+          ? 'current'          
+          : prompt.answered && !prompt.invalidated
+            ? 'complete' 
+            : prompt.answered && prompt.invalidated
+              ? 'warning'
+              : 'available',
         substeps: []
       })
     }
@@ -93,8 +97,12 @@
               label: prompt.navTitle,
               href: resolve(`/requests/${appRequestForExport.id}/apply/${prompt.id}`),
               type: $page.params.promptId === prompt.id
-                ? 'current'
-                : prompt.answered && !prompt.invalidated ? 'complete' : 'available'
+                ? 'current'          
+                : prompt.answered && !prompt.invalidated
+                  ? 'complete' 
+                  : prompt.answered && prompt.invalidated
+                    ? 'warning'
+                    : 'available'
             })
           }
         }
@@ -103,16 +111,18 @@
           nextHref = resolve(`/requests/${appRequestForExport.id}/apply/programs`)
           foundCurrent = false
         }
-        if (substeps.length > 0) {
+       if (substeps.length > 0) {
           navItems.push({
             id: `application${application.id}`,
             label: application.navTitle,
             href: substeps[0].href,
-            type: substeps.some(s => s.type === 'current')
-              ? 'current'
-              : substeps.every(s => s.type === 'complete')
-                ? 'complete'
-                : 'available',
+            type: substeps.some(s => s.type === 'warning')
+              ? 'warning'
+              : substeps.some(s => s.type === 'current')
+                ? 'current'
+                : substeps.every(s => s.type === 'complete')
+                  ? 'complete'
+                  : 'available',
             substeps
           })
         }

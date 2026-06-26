@@ -8,7 +8,6 @@
   import ApplicantProgramListTooltip from './ApplicantProgramListTooltip.svelte'
   import WarningIconYellow from './WarningIconYellow.svelte'
   import { api } from '$internal/api.js'
-  import { stagedprompts } from '$internal/prompt-utils.js'
   import ApplicantOptOutModal from './ApplicantOptOutModal.svelte'
 
   export let appRequest: AppRequestForDetails
@@ -38,9 +37,9 @@
 
   $: programButtonStatus = applications.reduce((acc, curr) => ({
     ...acc,
-    [curr.id]: curr.completionStatus === enumApplicationStatus.PENDING
-      ? curr.requirements.some(r => r.prompts.some(p => p.answered && !p.invalidated))
-        ? curr.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION).every(r => r.prompts.every(p => p.answered && !p.invalidated))
+    [curr.id]: (curr.completionStatus === enumApplicationStatus.PENDING || curr.status === enumApplicationStatus.PENDING)
+      ? curr.requirements.some(r => r.prompts.some(p => p.answered && !p.invalidated && !p.optOut))
+        ? curr.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION).every(r => r.prompts.every(p => p.answered && !p.invalidated  && !p.optOut))
           ? 'complete'
           : 'continue'
         : 'start'
@@ -82,11 +81,7 @@
 
   async function loadOptOutPrompt () {
     const promptId = optOutSelected?.prompt?.id
-    if (!promptId) return
-    if (promptsById[promptId]?.prestage && !stagedprompts.has(promptId)) {    
-      const response = await api.stagePrompt(promptId, appRequest.dataVersion) 
-      if (response.success) stagedprompts.add(promptId)
-    }     
+    if (!promptId) return    
     const { prompt } = await api.getApplicantPrompt(appRequest.id, promptId)
     optOutPrompt = prompt
   }
@@ -103,10 +98,12 @@
     {@const programFirstPrompt = programFirstPromptId[application.id]}
     <div class="program column [ flex-col ]" style='align-items: start;'>
       <span>{application.title}</span>
-      {#if optedOutPrograms[application.id]}
-        <Button on:click={() => openOptOutModal(application.id, true)} kind='ghost' style='padding: 0; min-height: 0;' class='[ p-0 justify-start ]'>Opt In</Button>
-      {:else if optOutPrograms[application.id]}
-        <Button on:click={() => openOptOutModal(application.id)} kind='ghost' style='padding: 0; min-height: 0;' class='[ p-0 justify-start ]'>Opt out</Button>
+      {#if !viewMode}
+        {#if optedOutPrograms[application.id]}
+          <Button on:click={() => openOptOutModal(application.id, true)} kind='ghost' style='padding: 0; min-height: 0;' class='[ p-0 justify-start ]'>Opt In</Button>
+        {:else if optOutPrograms[application.id]}
+          <Button on:click={() => openOptOutModal(application.id)} kind='ghost' style='padding: 0; min-height: 0;' class='[ p-0 justify-start ]'>Opt out</Button>
+        {/if} 
       {/if}
     </div>
     <div class="status column" class:no-tooltip={!application.statusReason?.length}>
@@ -131,9 +128,11 @@
           <Button size="small" kind={programStatus === 'complete' ? 'ghost' : programStatus === 'revisit' ? 'secondary' : 'primary'} href={programFirstPrompt}>{ucfirst((programStatus !== 'complete') ? programStatus : 'revisit')}</Button>
         {/if}
       {:else}
-        {#if application.completionStatus !== enumApplicationStatus.INELIGIBLE}
+        {#if ['start', 'continue', 'complete'].includes(programStatus) && !optedOutPrograms[application.id]}
           {@const statusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt)}
           <TagSet tags={[{ type: statusInfo.color, label: statusInfo.label }]} />
+        {:else if optedOutPrograms[application.id]}
+          <SubtractAlt size={24} fill='#dd3b46'/><p>Opted out</p>
         {:else}
           <Close size={32} class="status-icon-ineligible" />
         {/if}

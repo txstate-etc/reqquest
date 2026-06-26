@@ -1306,6 +1306,7 @@ type Mutation {
     The data version of the app request at the time this prompt was loaded. If provided, the API will perform an optimistic concurrency check and fail the update if someone else has updated the data in the meantime.
     """
     dataVersion: Int
+    overrideInvalidated: Boolean
     promptId: ID!
     validateOnly: Boolean
   ): ValidatedAppRequestResponse!

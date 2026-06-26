@@ -287,7 +287,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     return newPrompt
   }
 
-  async update (prompt: RequirementPrompt, data: any, validateOnly = false, dataVersion?: number) {
+  async update (prompt: RequirementPrompt, data: any, validateOnly = false, dataVersion?: number, overrideInvalidated?: boolean) {
     data ??= {}
     if (!this.mayUpdate(prompt)) throw new Error('You are not allowed to update this prompt.')
     if ((PROMPT_PRESTAGE_NS in data) && !await this.verifyPrestageData(prompt.appRequestInternalId, prompt.key, data[PROMPT_PRESTAGE_NS], dataVersion)) throw new Error('Invalid prompt signed data.')
@@ -315,7 +315,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
       }
       if (validateOnly) return
       response.success = true // if we got this far, it's saving the data, so that's a success even if the data isn't quite valid yet
-      if (!equal(appRequestData[prompt.key], processedData)) {
+      if (!equal(appRequestData[prompt.key], processedData) || (prompt.invalidated && overrideInvalidated)) {
         updated = true
         previousAppRequestStatus = appRequest.status
         savedData = appRequestData[prompt.key]
@@ -323,6 +323,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
         const promptsToInvalidate = promptRegistry.getInvalidatedPrompts(prompt.key, appRequestData, allConfigData)
         await setRequirementPromptsInvalid(promptsToInvalidate, db)
         const promptsToRevalidate = promptRegistry.getRevalidatedPrompts(prompt.key, appRequestData, allConfigData)
+        if (prompt.invalidated && overrideInvalidated) promptsToRevalidate.push(prompt.key) // used as a positive confirmation that this previously invalidated prompt requires no changes to be valid again
         await setRequirementPromptsValid(promptsToRevalidate.concat([prompt.key]), db)
         previousAppPhases = (await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion, db))!
         recordAppRequestActivity(appRequest.internalId, this.user!.internalId, `${programRegistry.get(prompt.programKey)?.navTitle ?? 'Prompt'} Updated`, { data, description: prompt.title, impersonatedBy: this.impersonationUser?.internalId }, db)

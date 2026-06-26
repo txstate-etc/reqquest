@@ -1,6 +1,6 @@
 import type { ProgramDefinition } from '@reqquest/api'
 
-export const adopt_a_dog_program: ProgramDefinition = {
+const adopt_a_dog_program: ProgramDefinition = {
   key: 'adopt_a_dog_program',
   title: 'Adopt a Dog',
   requirementKeys: [
@@ -27,7 +27,7 @@ export const adopt_a_dog_program: ProgramDefinition = {
   }]
 }
 
-export const adopt_a_cat_program: ProgramDefinition = {
+const adopt_a_cat_program: ProgramDefinition = {
   key: 'adopt_a_cat_program',
   title: 'Adopt a Cat',
   requirementKeys: [
@@ -53,7 +53,7 @@ export const adopt_a_cat_program: ProgramDefinition = {
   }]
 }
 
-export const foster_a_pet_program: ProgramDefinition = {
+const foster_a_pet_program: ProgramDefinition = {
   key: 'foster_a_pet_program',
   title: 'Foster a Pet',
   requirementKeys: [
@@ -85,3 +85,9 @@ export const foster_a_pet_program: ProgramDefinition = {
     requirementKeys: ['approve_reviewer_exercise_exemption_workflow_req']
   }]
 }
+
+export const complexPrograms = [
+  adopt_a_dog_program,
+  adopt_a_cat_program,
+  foster_a_pet_program
+]

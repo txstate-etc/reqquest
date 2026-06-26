@@ -25,7 +25,8 @@ export const technical_troubleshooting_prompt: PromptDefinition<TechincalTrouble
     if (data.describeTechincalTroubleshooting == null) messages.push({ type: MutationMessageType.error, message: 'This field is required', arg: 'describeTechincalTroubleshooting' })
 
     return messages
-  }
+  },
+  invalidUponChange: [{ promptKey: 'assess_technical_troubleshooting_prompt' }]
 }
 
 export const assess_technical_troubleshooting_prompt: PromptDefinition<AssessTechincalTroubleshootingData> = {
@@ -39,7 +40,8 @@ export const assess_technical_troubleshooting_prompt: PromptDefinition<AssessTec
     if (data.demonstrateTechincalTroubleshooting == null) messages.push({ type: MutationMessageType.error, message: 'This field is required', arg: '.demonstrateTechincalTroubleshooting' })
 
     return messages
-  }
+  },
+  invalidUponChange: [{ promptKey: 'technical_troubleshooting_prompt', reason: 'Troubleshooting was poorly described, make changes and resubmit' }]
 }
 
 export const support_communication_prompt: PromptDefinition<SupportCommunicationData> = {

@@ -1,8 +1,6 @@
 import { uiRegistry } from '../local'
 import { reviewerRequirementTypes } from '$internal'
 
-export const stagedprompts = new Set<string>()
-
 export const getInlineReviewerEditPrompts = (appRequest) => {
   const prompts = appRequest.applications.flatMap(application => application.requirements.filter(
     req => reviewerRequirementTypes.has(req.type))).flatMap(req => req.prompts.filter(prompt => {      
