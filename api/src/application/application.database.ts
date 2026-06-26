@@ -1,7 +1,6 @@
 import db from 'mysql2-async/db'
 import { Application, ApplicationFilter, ApplicationPhase, ApplicationStatus, AppRequestPhase, AppRequestStatus, AppRequestStatusDB, IneligiblePhases, PeriodWorkflowRow, programRegistry } from '../internal.js'
 import { Queryable } from 'mysql2-async'
-import { findIndex } from 'txstate-utils'
 
 export interface ApplicationRow {
   id: number
@@ -97,15 +96,15 @@ export async function advanceWorkflow (applicationId: string, tdb: Queryable = d
     if (!toStage) toPhase = ApplicationPhase.REVIEW_COMPLETE
     else toPhase = ApplicationPhase.WORKFLOW_BLOCKING
   } else if (current.blocking) {
-    const currIdx = findIndex(blocking, stage => stage.stageKey === current.stageKey)
-    if (currIdx) {
+    const currIdx = blocking.findIndex(stage => stage.stageKey === current.stageKey)
+    if (currIdx > -1) {
       toStage = blocking[currIdx + 1]
       if (!toStage) toPhase = ApplicationPhase.REVIEW_COMPLETE
       else toPhase = ApplicationPhase.WORKFLOW_BLOCKING
     } else toPhase = ApplicationPhase.REVIEW_COMPLETE
   } else {
-    const currIdx = findIndex(nonblocking, stage => stage.stageKey === current.stageKey)
-    if (currIdx) {
+    const currIdx = nonblocking.findIndex(stage => stage.stageKey === current.stageKey)
+    if (currIdx > -1) {
       toStage = nonblocking[currIdx + 1]
       if (!toStage) toPhase = ApplicationPhase.COMPLETE
       else toPhase = ApplicationPhase.WORKFLOW_NONBLOCKING
