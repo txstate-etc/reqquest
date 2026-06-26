@@ -14,6 +14,7 @@ export class AccessUser {
     this.fullname = row.fullname
     this.otherInfo = row.otherInfo
     this.stillValid = !!row.stillValid
+    this.email = row.email
   }
 
   internalId: number
@@ -23,6 +24,9 @@ export class AccessUser {
 
   @Field()
   fullname: string
+
+  @Field({ nullable: true })
+  email?: string
 
   @Field(type => JsonData, { nullable: true, description: 'A JSON object containing any information about the user that the implementing application wants to store. Could be useful for constructing personalized UI.' })
   otherInfo?: any
