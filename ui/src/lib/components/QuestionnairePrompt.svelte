@@ -30,12 +30,12 @@
     $: effectiveIntroAlignment = introTextAlignment ?? align
 </script>
 {#if $$slots.intro}
-    <div id="questionnaire-intro" class="prompt-intro flow max-w-screen-md px-6" class:mx-auto={align === 'center'} class:text-center={effectiveIntroAlignment === 'center'} class:text-right={effectiveIntroAlignment === 'right'} style:color="var(--cds-text-02)">
+    <div id="questionnaire-intro" class="prompt-intro flow max-w-screen-md px-px-3 sm:px-6" class:mx-auto={align === 'center'} class:text-center={effectiveIntroAlignment === 'center'} class:text-right={effectiveIntroAlignment === 'right'} style:color="var(--cds-text-02)">
         <slot name="intro" />
     </div>
 {/if}
 {#if externalLinks.length > 0}
-    <div class="prompt-intro-links flow max-w-screen-md px-6" class:mx-auto={align === 'center'}>
+    <div class="prompt-intro-links flow max-w-screen-md px-3 sm:px-6" class:mx-auto={align === 'center'}>
         <ul class="flex gap-4 flex-wrap mb-4" class:justify-center={align === 'center'}>
         {#each externalLinks.slice(0, 3) as link (link.url)}
             <li><Button kind="ghost" icon={Launch} href={link.url} target={link.target ?? '_blank'} rel={link.rel ?? 'noopener noreferrer'}>{link.label}{#if (link.target ?? '_blank') === '_blank'}<span class="sr-only"> (opens in a new tab)</span>{/if}</Button></li>
@@ -44,6 +44,6 @@
     </div>
 {/if}
 
-<div class="px-6 prompt-form flow" class:max-w-screen-md={!fullWidth} class:w-full={fullWidth} class:mx-auto={align === 'center'}>
+<div class="prompt-form flow px-3 sm:px-6" class:max-w-screen-md={!fullWidth} class:w-full={fullWidth} class:mx-auto={align === 'center'}>
     <slot />
 </div>
