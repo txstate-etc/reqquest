@@ -70,6 +70,17 @@ const NOTES_QUERY = `
   }
 `
 
+const SEARCH_APP_REQUESTS_QUERY = `
+  query SearchAppRequests($search: String!) {
+    appRequests(filter: { search: $search }) {
+      id
+    }
+  }
+`
+
+// Search term only to be found in notes for reviewer-gated note-content search test.
+const NOTE_SEARCH_MARKER = 'txstsearchmarker'
+
 function warningMessages (messages: { message: string, type: string }[]) {
   return messages.filter(m => m.type === 'warning').map(m => m.message)
 }
@@ -480,6 +491,28 @@ test.describe.serial('Notes - XSS sanitization', { tag: '@default' }, () => {
 
     const after = await reviewerRequest.graphql<{ appRequests: { notes: { id: string }[] }[] }>(NOTES_QUERY, { appRequestIds: [appRequestId] })
     expect(after.appRequests[0].notes.find(n => n.id === noteId)).toBeTruthy()
+  })
+
+  test('Reviewer - can find app request by searching note content', async ({ reviewerRequest }) => {
+    const content = `Reviewer-only note for internal purposes only ... ref ${NOTE_SEARCH_MARKER}. Applicants should not be able to search for this note.`
+    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+    expect(addNote.success).toEqual(true)
+
+    const { appRequests } = await reviewerRequest.graphql<{ appRequests: { id: string }[] }>(SEARCH_APP_REQUESTS_QUERY, { search: NOTE_SEARCH_MARKER })
+    expect(appRequests.map(r => String(r.id))).toContain(String(appRequestId))
+  })
+
+  test('Applicant - cannot discover notes via search, but can find their own data', async ({ applicantRequest }) => {
+    const { appRequests } = await applicantRequest.graphql<{ appRequests: { id: string }[] }>(SEARCH_APP_REQUESTS_QUERY, { search: NOTE_SEARCH_MARKER })
+    expect(appRequests.map(r => String(r.id))).not.toContain(String(appRequestId))
+
+    const byLogin = await applicantRequest.graphql<{ appRequests: { id: string }[] }>(SEARCH_APP_REQUESTS_QUERY, { search: applicantLogin })
+    expect(byLogin.appRequests.map(r => String(r.id))).toContain(String(appRequestId))
+  })
+
+  test('Applicant2 - cannot discover other applicant notes via search', async ({ applicant2Request }) => {
+    const { appRequests } = await applicant2Request.graphql<{ appRequests: { id: string }[] }>(SEARCH_APP_REQUESTS_QUERY, { search: NOTE_SEARCH_MARKER })
+    expect(appRequests.map(r => String(r.id))).not.toContain(String(appRequestId))
   })
 
 })
