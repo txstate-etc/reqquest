@@ -16,6 +16,6 @@ test.describe('ByLogins admin flow', { tag: '@all' }, () => {
     expect(accessUsers).toHaveLength(1)
     expect(accessUsers[0].login).toEqual(uniqueAdmin)
     expect(accessUsers[0].fullname).toEqual(`${uniqueAdmin} Full Name`)
-    expect(accessUsers[0].otherInfo.email).toEqual(`${uniqueAdmin}@txstate.edu`)
+    expect(accessUsers[0].otherInfo.email).toEqual('reqquest-next@qual.txstate.edu')
   })
 })
