@@ -6,7 +6,7 @@ import SMTPPool from 'nodemailer/lib/smtp-pool'
 import { getMailTemplate, getPendingMail, updateMailOutbox } from '../internal.js'
 import { DateTime } from 'luxon'
 
-if (!process.env.PUBLISHED_BASE_URL) console.error('PUBLISHED_BASE_URL needed for emails')
+if (!process.env.PUBLISHED_BASE_URL || !process.env.SMTP_SERVER) throw new Error('Environment variables PUBLISHED_BASE_URL & SMTP_SERVER needed for mail')
 
 class Mail {
   transporter: Transporter<SMTPPool.SentMessageInfo, SMTPPool.Options>
