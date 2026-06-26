@@ -2,4 +2,4 @@
   export let data
 </script>
 
-Movie knowledge is {!data.impressed ? 'un' : ''}impressive.<br>
+Movie knowledge is {!data?.impressed ? 'un' : ''}impressive.<br>

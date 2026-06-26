@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FieldRadio, FieldTextArea } from '@txstate-mws/carbon-svelte'
+  import { FieldRadio, FieldTextArea, FieldNumber } from '@txstate-mws/carbon-svelte'
   export let data
 </script>
 
