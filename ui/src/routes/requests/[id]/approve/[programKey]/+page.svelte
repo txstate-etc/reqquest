@@ -330,7 +330,7 @@
       {#if section.requirements.some(r => r.prompts.length > 0)}
         <dl class="prompts">
           {#each section.requirements as requirement (requirement.id)}
-            {#each requirement.prompts as prompt (prompt.id)}
+            {#each requirement.prompts.filter(p => !p.optOut) as prompt (prompt.id)}
               {@const def = uiRegistry.getPrompt(prompt.key)}
               {@const isReviewerQuestion = reviewerRequirementTypes.has(requirement.type) && !def?.automation}
               {@const isAutomation = !!def?.automation}
