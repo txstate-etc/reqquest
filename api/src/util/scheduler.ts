@@ -105,8 +105,7 @@ class Scheduler {
       CREATE TABLE IF NOT EXISTS tasks (
         name VARCHAR(255) CHARACTER SET 'ascii' COLLATE 'ascii_general_ci' NOT NULL PRIMARY KEY,
         lastBegin DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        retries TINYINT UNSIGNED NOT NULL DEFAULT 0,
-        inProgress TINYINT UNSIGNED NOT NULL DEFAULT 0
+        retries TINYINT UNSIGNED NOT NULL DEFAULT 0
       )
       ENGINE = InnoDB
       DEFAULT CHARACTER SET = utf8mb4
@@ -116,9 +115,16 @@ class Scheduler {
 }
 
 export const scheduler = new Scheduler()
-export const schedulerMigration: DatabaseMigration = {
+export const schedulerMigration: DatabaseMigration[] = [{
   id: '20250902180000',
   async execute (db: Queryable) {
     await Scheduler.createTable(db)
   }
-}
+},
+{
+  id: '20260902180000',
+  async execute (db: Queryable) {
+    const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_NAME = 'tasks' AND COLUMN_NAME = 'inProgress'")
+    if (!exists) await db.execute('ALTER TABLE tasks ADD COLUMN inProgress TINYINT(1) UNSIGNED NOT NULL DEFAULT 0')
+  }
+}]
