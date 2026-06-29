@@ -3,7 +3,7 @@ import { seedMailTemplates } from './mail.seed.js'
 
 export const mailMigrations: DatabaseMigration[] = [
   {
-    id: '20250114094100',
+    id: '20260629000000',
     async execute (db) {
       await db.execute(`
         CREATE TABLE IF NOT EXISTS mail_templates (
