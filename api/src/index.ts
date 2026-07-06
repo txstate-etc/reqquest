@@ -126,7 +126,7 @@ export class RQServer extends GQLServer {
     for (const program of options.programs) programRegistry.register(program, true)
     for (const program of options.pastPrograms ?? []) programRegistry.register(program, false)
     programRegistry.finalize()
-    await initializeDb([...periodMigrations, ...promptMigrations, ...requirementMigrations, ...accessMigrations, ...appRequestMigrations, ...applicationMigrations, ...noteMigrations, schedulerMigration, ...mailMigrations, ...(options?.migrations ?? [])])
+    await initializeDb([...periodMigrations, ...promptMigrations, ...requirementMigrations, ...accessMigrations, ...appRequestMigrations, ...applicationMigrations, ...noteMigrations, ...schedulerMigration, ...mailMigrations, ...(options?.migrations ?? [])])
     await initAccess()
     await super.swagger()
     await installDownloadRoutes(this.app)

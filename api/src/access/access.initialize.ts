@@ -102,8 +102,9 @@ export const accessMigrations: DatabaseMigration[] = [{
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
   }
 }, {
-  id: '20261119000000',
+  id: '20260629000000',
   execute: async db => {
-    await db.execute('ALTER TABLE accessUsers ADD COLUMN email VARCHAR(255)')
+    const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_NAME = 'accessUsers' AND COLUMN_NAME = 'email'")
+    if (!exists) await db.execute('ALTER TABLE accessUsers ADD COLUMN email VARCHAR(255)')
   }
 }]
