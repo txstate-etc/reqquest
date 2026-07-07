@@ -187,6 +187,12 @@ export interface UIConfig {
    */
   slots?: {
     /**
+     * This maps to the default slot available within the IntroPanel component and can be used
+     * to add additional context within IntroPanel directly below the applicantDashboardIntroHeader and
+     * applicantDashboardIntroDetail
+     */
+    applicantDashboardIntroSlot: Component
+    /**
      * This will be placed inside the top card on the reviewer sidebar that displays applicant information.
      *
      * It will receive receive the following props:
