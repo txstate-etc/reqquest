@@ -23,6 +23,7 @@ import OtherCatsVaccinesPrompt from './default/OtherCatsVaccinesPrompt.svelte'
 import OtherCatsVaccinesPromptDisplay from './default/OtherCatsVaccinesPromptDisplay.svelte'
 import VaccineReviewPrompt from './default/VaccineReviewPrompt.svelte'
 import VaccineReviewPromptDisplay from './default/VaccineReviewPromptDisplay.svelte'
+import DefaultIntroPanelDefaultSlot from './default/IntroPanelDefaultSlot.svelte'
 
 /** simple */
 import ResidencePrompt from './simple/ResidencePrompt.svelte'
@@ -159,19 +160,21 @@ import OptOut from './rc/OptOut.svelte'
 import OptOutDisplay from './rc/OptOutDisplay.svelte'
 import { api } from '$internal/api'
 
+
 /** RC */
 
-const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts, userLookup } = configureDemoInstanceParams()
+const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts, userLookup, slots } = configureDemoInstanceParams()
 
 export const uiRegistry = new UIRegistry({
   appName,
   applicantDashboardIntroHeader,
   applicantDashboardIntroDetail,
-  applicantDashboardRecentDays,
+  applicantDashboardRecentDays,  
   programs,
   requirements,
   prompts,
-  userLookup
+  userLookup,
+  slots
 })
 
 function configureDemoInstanceParams () {
@@ -584,6 +587,9 @@ function configureDemoInstanceParams () {
     applicantDashboardIntroHeader: 'Start your Pet Journey Here!',
     applicantDashboardIntroDetail: 'Submitting an adoption application is the first step in adopting a cat or dog. Based on your responses you will receive a list of "eligible benefits."',
     applicantDashboardRecentDays: 30,
+    slots: {
+      applicantDashboardIntroSlot: DefaultIntroPanelDefaultSlot
+    },
     userLookup: async (login) => {
       const accessUser = await api.getAccessUser(login)
       if (!accessUser) return
