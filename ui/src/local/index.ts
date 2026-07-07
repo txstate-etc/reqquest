@@ -108,6 +108,8 @@ import ComplexAcceptFosterPetPrompt from './complex/petOwner/AcceptFosterPetProm
 import ComplexAcceptFosterPetDisplayPrompt from './complex/petOwner/AcceptFosterPetDisplayPrompt.svelte'
 import ComplexConfirmCatMircochipServicePrompt from './complex/catOwner/ConfirmCatMircochipServicePrompt.svelte'
 import ComplexConfirmCatMircochipServiceDisplayPrompt from './complex/catOwner/ConfirmCatMircochipServiceDisplayPrompt.svelte'
+
+/** RC */
 import PreQualPrompt from './rc/PreQualPrompt.svelte'
 import WrittenAutomatinoPrompt from './rc/WrittenAutomatinoPrompt.svelte'
 import EvidenceWrittenAutomationPrompt from './rc/EvidenceWrittenAutomationPrompt.svelte'
@@ -158,10 +160,10 @@ import AssessReccomendationLetterDisplay from './rc/AssessReccomendationLetterDi
 import DataRelatedPuzzleDisplay from './rc/DataRelatedPuzzleDisplay.svelte'
 import OptOut from './rc/OptOut.svelte'
 import OptOutDisplay from './rc/OptOutDisplay.svelte'
+import RCIntroPanelDefaultSlot from './rc/IntroPanelDefaultSlot.svelte'
 import { api } from '$internal/api'
 
 
-/** RC */
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts, userLookup, slots } = configureDemoInstanceParams()
 
@@ -407,6 +409,9 @@ function configureDemoInstanceParams () {
       applicantDashboardIntroHeader: 'Apply for a technical mentorship here!',
       applicantDashboardIntroDetail: 'After applying for a mentorship, eligibilty will be determined based on your responses',
       applicantDashboardRecentDays: 30,
+      slots: {
+        applicantDashboardIntroSlot: RCIntroPanelDefaultSlot
+      },
       userLookup: async (login) => {
         const accessUser = await api.getAccessUser(login)
         if (!accessUser) return
