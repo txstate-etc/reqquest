@@ -20,7 +20,8 @@ export const data_related_puzzle_prompt: PromptDefinition<DataRelatedPuzzlePromp
   title: 'Data related puzzle',
   description: 'Data related puzzle',
   schema: DataRelatedPuzzleSchema,
-  preProcessData: async (data, ctx) => {
+  preProcessData: async (data, ctx, appRequest, appRequestData, config, db, validateOnly) => {
+    if (validateOnly) return data
     if (data.additionalDocumentation) {
       for await (const file of ctx.files()) {
         const { checksum, size } = await fileHandler.put(file.stream)
