@@ -520,11 +520,13 @@ function configureDemoInstanceParams () {
         key: 'technical_troubleshooting_prompt',
         formComponent: TechnicalTroubleshooting,
         displayComponent: TechnicalTroubleshootingDisplay
+        
       },
       {
         key: 'assess_technical_troubleshooting_prompt',
         formComponent: AssessTechnicalTroubleshooting,
-        displayComponent: AssessTechnicalTroubleshootingDisplay
+        displayComponent: AssessTechnicalTroubleshootingDisplay,
+        formMode: 'full'
       },
       {
         key: 'support_communication_prompt',
