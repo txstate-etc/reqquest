@@ -232,7 +232,7 @@ export class ConfigurationService extends AuthService<Configuration> {
     const registry = cfg.type === 'Prompt' ? promptRegistry : requirementRegistry
     const valid = registry.validateConfig(key, data)
     if (!valid) throw new Error('Invalid configuration data format.')
-    const processedData = cfg.configuredObject.definition.configuration?.preProcessData?.(data, this.ctx) ?? data
+    const processedData = cfg.configuredObject.definition.configuration?.preProcessData?.(data, this.ctx, validateOnly ?? false) ?? data
     const messages = await cfg.configuredObject.definition.configuration?.validate?.(processedData) ?? []
     for (const feedback of messages) response.addMessage(feedback.message)
     if (validateOnly || response.hasErrors()) return response
