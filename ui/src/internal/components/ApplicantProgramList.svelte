@@ -108,6 +108,10 @@
     </div>
     <div class="status column" class:no-tooltip={!application.statusReason?.length}>
       {#if !viewMode}
+        {console.log('APPLICANT PROGRAM LIST - VIEW MODE = false')}
+        {console.log('-------------------------------------------')}
+        {console.log(`application.completionStatus = ${application.completionStatus}`)}
+        {console.log(`application: ${JSON.stringify(application)}`)}
         <div class="icon-and-tooltip" class:wide-icon={application.completionStatus === enumApplicationStatus.INELIGIBLE}>
           {#if optedOutPrograms[application.id]}
             <SubtractAlt size={24} fill='#dd3b46'/>
