@@ -449,6 +449,15 @@ class API extends APIBase {
             if (requirementTypesForNavigation.has(req.type)) metReasons.push(req.statusReason)
             metReasonsFull.push(req.statusReason)
           }          
+        } else if (req.status === enumRequirementStatus.NOT_APPLICABLE) {
+          if (application.ineligiblePhase != null) completionStatus = 'INELIGIBLE'
+          if (completionStatus === 'INELIGIBLE') {
+            if (requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'INELIGIBLE'
+            if (req.statusReason && showWarnings) {
+              if (requirementTypesForNavigation.has(req.type)) ineligibleReasons.push(req.statusReason)
+              if (application.ineligiblePhase !== enumIneligiblePhases.PREQUAL || req.type !== enumRequirementType.PREQUAL) ineligibleReasonsFull.push(req.statusReason)
+            }
+          }          
         }
       }
       applicationsReviewWithDupes.push({ ...application, requirements: requirementsReviewWithDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, metReasons: metReasonsFull, hasWarning })
