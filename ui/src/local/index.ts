@@ -161,13 +161,14 @@ import { api } from '$internal/api'
 
 /** RC */
 
-const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, programs, requirements, prompts, userLookup } = configureDemoInstanceParams()
+const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, applicantReview, programs, requirements, prompts, userLookup } = configureDemoInstanceParams()
 
 export const uiRegistry = new UIRegistry({
   appName,
   applicantDashboardIntroHeader,
   applicantDashboardIntroDetail,
   applicantDashboardRecentDays,
+  applicantReview,
   programs,
   requirements,
   prompts,
@@ -403,6 +404,10 @@ function configureDemoInstanceParams () {
       appName: 'MWS Technical Mentorship Experience',
       applicantDashboardIntroHeader: 'Apply for a technical mentorship here!',
       applicantDashboardIntroDetail: 'After applying for a mentorship, eligibilty will be determined based on your responses',
+      applicantReview: {
+        title: 'Review your technical mentorship application',
+        subTitle: 'Confirm the technical mentorship benefits shown are the ones you are requesting and that your responses are correct, or make changes before submitting.'
+      },
       applicantDashboardRecentDays: 30,
       userLookup: async (login) => {
         const accessUser = await api.getAccessUser(login)
@@ -584,6 +589,10 @@ function configureDemoInstanceParams () {
     applicantDashboardIntroHeader: 'Start your Pet Journey Here!',
     applicantDashboardIntroDetail: 'Submitting an adoption application is the first step in adopting a cat or dog. Based on your responses you will receive a list of "eligible benefits."',
     applicantDashboardRecentDays: 30,
+    applicantReview: {
+      title: 'Review your critter application',
+      subTitle: 'Confirm the critter benefits shown are the ones you are requesting and that your responses are correct, or make changes before submitting.'
+    },
     userLookup: async (login) => {
       const accessUser = await api.getAccessUser(login)
       if (!accessUser) return
