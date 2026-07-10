@@ -450,25 +450,20 @@ class API extends APIBase {
             if (application.ineligiblePhase !== enumIneligiblePhases.PREQUAL || req.type !== enumRequirementType.PREQUAL) ineligibleReasonsFull.push(req.statusReason)
           }
         } else if (req.status === enumRequirementStatus.MET) {
-          completionStatus = 'ELIGIBLE'
-          if (requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'ELIGIBLE'
+          if (completionStatus !== 'INELIGIBLE') completionStatus = 'ELIGIBLE'
+          if (completionStatusForNav !== 'INELIGIBLE' && requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'ELIGIBLE'
           if (req.statusReason) {
             if (requirementTypesForNavigation.has(req.type)) metReasons.push(req.statusReason)
             metReasonsFull.push(req.statusReason)
           }          
         } else if (req.status === enumRequirementStatus.NOT_APPLICABLE) {
-          console.log(`APP: ${application.title}`)
-          console.log(`REQ status: ${req.status}`)
           if (application.ineligiblePhase) {
-            console.log('REQ ineligible')
             completionStatus = 'INELIGIBLE'
             if (requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'INELIGIBLE'
             if (req.statusReason && showWarnings) {
               if (requirementTypesForNavigation.has(req.type)) ineligibleReasons.push(req.statusReason)
               if (application.ineligiblePhase !== enumIneligiblePhases.PREQUAL || req.type !== enumRequirementType.PREQUAL) ineligibleReasonsFull.push(req.statusReason)
             }
-            console.log(`Completion status: ${completionStatus}`)
-            console.log(`Completion status for nav: ${completionStatusForNav}`)
           }  
         }
       }
