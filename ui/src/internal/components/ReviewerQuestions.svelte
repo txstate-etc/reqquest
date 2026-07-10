@@ -12,6 +12,7 @@
   import { Button } from 'carbon-components-svelte'
   import type { PageData } from '../../routes/requests/[id]/approve/[programKey]/$types'
   import { invalidateAll } from '$app/navigation'
+  import Review from "carbon-icons-svelte/lib/Review.svelte";
 
   export let sections: any[]
   export let promptIndicator: Record<string, any>
@@ -22,18 +23,17 @@
   type PromptExtraData = Awaited<ReturnType<typeof api.getPromptData>>
   type Prompt = PageData['appRequest']['applications'][0]['requirements'][0]['prompts'][0]
   type PromptWithExtra = Prompt & PromptExtraData
-  $: promptBeingEdited = undefined as PromptWithExtra | undefined
+  let promptBeingEdited: PromptWithExtra | undefined = undefined
   let showPromptDialog = false
   let fetchingEditPrompt = false
-  function editPrompt (prompt: Prompt) {
+  function editPrompt (prompt: Prompt, allowSaveWithoutChanges: boolean = false) {
     return async () => {
       if (fetchingEditPrompt) return
       fetchingEditPrompt = true
       showPromptDialog = true
       try {
         const extra = await api.getPromptData(appRequest.id, prompt.id)
-        console.log(prompt, extra)
-        promptBeingEdited = { ...prompt, ...extra }
+        promptBeingEdited = { ...prompt, ...extra, allowSaveWithoutChanges }
       } finally {
         fetchingEditPrompt = false
       }
@@ -51,11 +51,13 @@
     promptBeingEdited = undefined
   }
 
-  function onPromptSubmit (id: string) {
+  function onPromptSubmit (prompt: any) {
     return async (data: any) => {   
       loading = true      
       hideEditModalPromptOnLoading()  
-      const response = await api.updatePrompt(id, data, false)
+      const response = (!prompt.allowSaveWithoutChanges)
+        ? await api.updatePrompt(prompt.id, data, false)
+        : await api.updatePrompt(prompt.id, data, false, undefined, true) // triggers from review corrections edit selection, allow saving without changes to handle invalidate prompts that require no changes
       return response
     }
   }
@@ -73,13 +75,14 @@
     loading = false
   }
 
+
 </script>
 {#each sections as section (section.title)}
   <Panel title={section.title} expandable expanded>
     {#if section.requirements.some(r => r.prompts.length > 0)}
-    <dl class="prompts">
+      <dl class="prompts">
         {#each section.requirements as requirement (requirement.id)}
-        {#each requirement.prompts as prompt (prompt.id)}
+          {#each requirement.prompts.filter(p => !p.optOut) as prompt (prompt.id)}
             {@const def = uiRegistry.getPrompt(prompt.key)}
             {@const isReviewerQuestion = reviewerRequirementTypes.has(requirement.type) && !def?.automation}
             {@const isAutomation = !!def?.automation}
@@ -110,30 +113,33 @@
             </dt>
             <dd class="flow" class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
             {#if editMode}
-                <Form preload={prompt.preloadData} submit={onPromptSubmit(prompt.id)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptSaved} let:data let:messages>
-                <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
-                {#each messages as message (message.message, message.type)}
+               <Form preload={prompt.preloadData} submit={onPromptSubmit(prompt)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptSaved} let:data let:messages>
+                  <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason}  />
+                  {#each messages as message (message.message, message.type)}
                     <FormInlineNotification {message} />
-                {/each}
+                  {/each}
                 </Form>
-            {:else}
-                <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
+              {:else} 
                 {#if prompt.actions.update}
-                {#if prompt.invalidated && !applicantRequirementTypes.has(requirement.type)}
-                    <Button kind="primary" size="field" class="prompt-edit" on:click={editPrompt(prompt)}>Review correction</Button>
-                {:else}
+                  {#if prompt.invalidated && !applicantRequirementTypes.has(requirement.type)}
+                    <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot showInlineReviewNotification={true} />
+                    <Button kind="primary" size="field" class="prompt-edit mr-2" icon={Review} iconDescription="Review corrections" on:click={editPrompt(prompt, true)} />
+                  {:else}
+                    <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
                     <Button kind="ghost" size="field" icon={Edit} iconDescription="Edit Prompt" class="prompt-edit" on:click={editPrompt(prompt)} />
+                  {/if}     
+                  {:else}
+                    <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
                 {/if}
-                {/if}
-            {/if}
+              {/if}
             </dd>
+          {/each}
         {/each}
-        {/each}
-    </dl>
+      </dl>
     {:else if section.requirements[0]?.workflowStage && section.requirements[0]?.workflowStage.key === application.workflowStage?.key}
-    No questions need to be answered in this section. You may advance to the next step.
+      No questions need to be answered in this section. You may advance to the next step.
     {:else}
-    No questions in this section.
+      No questions in this section.
     {/if}
   </Panel>
 {/each}
@@ -143,11 +149,12 @@
     title={promptBeingEdited?.invalidated ? `Review correction "${promptBeingEdited?.title}"` : 'Edit Prompt'}
     bind:open={showPromptDialog}
     on:cancel={closePromptDialog}
-    submit={onPromptSubmit(promptBeingEdited?.id)}
+    submit={onPromptSubmit(promptBeingEdited)}
     validate={onPromptValidate(promptBeingEdited)}
     on:saved={onPromptSaved}
-    disableSaveUntilChanged={true}
+    disableSaveUntilChanged={!promptBeingEdited.allowSaveWithoutChanges} // allow saving without changes if prompt was previously invalidated ...accomodates reviewer saying no changes required on correction check
     centered
+    size={uiRegistry.getPrompt(promptBeingEdited.key)?.formMode === 'full' ? 'large' : undefined}
     preload={promptBeingEdited?.preloadData}
     let:data
   >
@@ -167,7 +174,10 @@
         }}
         fetched={promptBeingEdited.fetchedData}
         configData={promptBeingEdited.configurationData}
-        gatheredConfigData={promptBeingEdited.gatheredConfigData} />
+        gatheredConfigData={promptBeingEdited.gatheredConfigData}
+        invalidated={promptBeingEdited.invalidated}
+        invalidatedReason={promptBeingEdited.invalidatedReason}
+      />
     {:else}
       <GeneralTextSkeleton />
     {/if}
