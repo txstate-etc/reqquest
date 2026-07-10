@@ -423,6 +423,13 @@ class API extends APIBase {
       const metReasonsFull: string[] = []
       let hasWarning = false
       let hasWarningForNav = false
+      if (application.title === "Veteran Readiness & Employment - Ch31"){
+        for (const req of reqsForCompletion) {
+          console.log(`Requirement Status: ${req.status}`)
+          console.log(`Requirement Status Reason: ${req.statusReason}`)
+          console.log(`Requirement Prompts: ${req.prompts}`)
+        }
+      }
       for (const req of reqsForCompletion) {
         const showWarnings = application.ineligiblePhase !== enumIneligiblePhases.PREQUAL || req.type === enumRequirementType.PREQUAL
         if (req.status === enumRequirementStatus.PENDING) {
