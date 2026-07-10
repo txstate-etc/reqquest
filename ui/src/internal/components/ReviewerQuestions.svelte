@@ -152,9 +152,9 @@
     submit={onPromptSubmit(promptBeingEdited)}
     validate={onPromptValidate(promptBeingEdited)}
     on:saved={onPromptSaved}
-    disableSaveUntilChanged={!promptBeingEdited.allowSaveWithoutChanges} // allow saving without changes if prompt was previously invalidated ...accomodates reviewer saying no changes required on correction check
+    disableSaveUntilChanged={!promptBeingEdited?.allowSaveWithoutChanges} // allow saving without changes if prompt was previously invalidated ...accomodates reviewer saying no changes required on correction check
     centered
-    size={uiRegistry.getPrompt(promptBeingEdited.key)?.formMode === 'full' ? 'large' : undefined}
+    size={uiRegistry.getPrompt(promptBeingEdited?.key)?.formMode === 'full' ? 'large' : undefined}
     preload={promptBeingEdited?.preloadData}
     let:data
   >
