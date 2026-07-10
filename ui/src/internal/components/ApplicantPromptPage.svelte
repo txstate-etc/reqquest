@@ -6,9 +6,9 @@
    * the app request since the prompt should only be visible in a single spot.
    */
 
-  import { Form } from '@txstate-mws/carbon-svelte'
+  import { Form, confirmationStore } from '@txstate-mws/carbon-svelte'
   import type { FormStore } from '@txstate-mws/svelte-forms'
-  import { Button, SkeletonText } from 'carbon-components-svelte'
+  import { Button, InlineNotification } from 'carbon-components-svelte'
   import { getContext } from 'svelte'
   import type { Writable } from 'svelte/store'
   import { goto, invalidate } from '$app/navigation'
@@ -37,7 +37,7 @@
   }
 
  async function onSubmit (data: any) {
-    const { success, messages, data: newData } =  await api.updatePrompt(prompt.id, data, false, dataVersion)
+    const { success, messages, data: newData } =  await api.updatePrompt(prompt.id, data, false, dataVersion, await confirmInvalidatedOverride())
     return {
       success,
       messages,
@@ -58,6 +58,19 @@
     }
   }
 
+  async function confirmInvalidatedOverride() {
+   return (prompt.invalidated && !$store?.hasUnsavedChanges) 
+    ? await confirmationStore.confirm(
+        'Corrections are required, but no changes have been made.  Can you confirm that all data is correct, and does not require changes?',
+        {
+          title: 'Confirm data is correct',
+          yesText: 'Yes',
+          noText: 'No'
+        }
+      )
+    : false 
+  }
+
   let lastPromptId: string | undefined
   $: if (prompt.id !== lastPromptId) {
     lastPromptId = prompt.id
@@ -72,7 +85,7 @@
     <p class="text-center"> {prompt.description}</p>
   </div>
   <Form bind:store hideFallbackMessage unsavedWarning submit={onSubmit} validate={onValidate} preloadAsDraft={!prompt.hasSavedData} preload={prompt.preloadData} on:saved={onSaved} let:data>
-    <svelte:component this={def!.formComponent} {data} appRequestId={appRequestForExport.id} appRequestData={appRequestForExport.data} prestageData={{latest: prompt.prestageData, current: appRequestForExport.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
+    <svelte:component this={def!.formComponent} {data} appRequestId={appRequestForExport.id} appRequestData={appRequestForExport.data} prestageData={{latest: prompt.prestageData, current: appRequestForExport.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} />
     <svelte:fragment slot="submit" let:submitting>
       <div class='form-submit flex gap-12 justify-center mt-16'>
         {#if hasPreviousPrompt}
@@ -82,6 +95,19 @@
         <Button icon={submitting && !continueAfterSave ? ButtonLoadingIcon : null} type="submit" disabled={submitting} on:click={() => { continueAfterSave = true }}>Continue</Button>
       </div>
     </svelte:fragment>
+    <div class="flow max-w-screen-md">
+      <!-- Correction inline prompt notification -->
+      {#if prompt.invalidated && !$store?.hasUnsavedChanges}
+        <InlineNotification
+          kind="warning-alt"
+          title='Corrections needed:'
+          hideCloseButton={true}
+          lowContrast
+          subtitle={prompt.invalidatedReason ?? 'Must update form data before continuing'}
+        />
+      {/if}
+    </div>
   </Form>
+  
 {/key}
 

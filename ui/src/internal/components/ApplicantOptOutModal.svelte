@@ -4,7 +4,6 @@
   import { afterNavigate, invalidate, invalidateAll } from '$app/navigation'
   import { uiRegistry } from '../../local/index.js'
   import { api, type PromptForEditing } from '../api.js'
-  import { stagedprompts } from '../prompt-utils.js'
   import { Loading } from "carbon-components-svelte";
   import type { AppRequestForDetails, OptOutApplication } from '$lib'
 
@@ -60,6 +59,7 @@
   on:cancel={() => { open = false }}
   on:validate={onValidate}
   on:saved={saved}
+  disableSaveUntilChanged={true}
   {submit}
   title={`${optIn ? 'Opt in to' : 'Opt out of'} ${optOutSelected?.title}?`}
   submitText={optIn ? 'Opt in' : 'Opt out'}
@@ -67,5 +67,5 @@
   preload={prompt.preloadData}
   preloadAsDraft={!prompt.hasSavedData} 
   >
-    <svelte:component this={def!.formComponent} {data} appRequestId={appRequest.id} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
+    <svelte:component this={def!.formComponent} {data} appRequestId={appRequest.id} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} />
 </PanelFormDialog>

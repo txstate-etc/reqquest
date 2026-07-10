@@ -14,6 +14,7 @@ export interface AccessUserRow {
   login: string
   fullname: string
   otherInfo?: string
+  email?: string
   stillValid: 0 | 1
 }
 
@@ -158,10 +159,10 @@ export namespace AccessDatabase {
 
   export async function upsertAccessUser (user: ReqquestUser): Promise<AccessUser> {
     await db.insert(`
-      INSERT INTO accessUsers (login, fullname, otherInfo)
-      VALUES (?, ?, ?)
-      ON DUPLICATE KEY UPDATE fullname = VALUES(fullname), otherInfo = VALUES(otherInfo)
-    `, [user.login, user.fullname, JSON.stringify(user.otherInfo)])
+      INSERT INTO accessUsers (login, fullname, email, otherInfo)
+      VALUES (?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE fullname = VALUES(fullname), otherInfo = VALUES(otherInfo), email = VALUES(email)
+    `, [user.login, user.fullname, user.email, JSON.stringify(user.otherInfo)])
     await db.transaction(async db => {
       const userId = await db.getval('SELECT id FROM accessUsers WHERE login = ? FOR UPDATE', [user.login])
 

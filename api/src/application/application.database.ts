@@ -1,7 +1,6 @@
 import db from 'mysql2-async/db'
 import { Application, ApplicationFilter, ApplicationPhase, ApplicationStatus, AppRequestPhase, AppRequestStatus, AppRequestStatusDB, IneligiblePhases, PeriodWorkflowRow, programRegistry } from '../internal.js'
 import { Queryable } from 'mysql2-async'
-import { findIndex } from 'txstate-utils'
 
 export interface ApplicationRow {
   id: number
@@ -33,12 +32,13 @@ function processFilters (filter: ApplicationFilter) {
 
 export async function getApplications (filter: ApplicationFilter, tdb: Queryable = db) {
   const { where, binds } = processFilters(filter)
+  const whereClause = where.length > 0 ? `WHERE (${where.join(') AND (')})` : ''
   const rows = await tdb.getall<ApplicationRow>(`
     SELECT a.id, a.appRequestId, ar.periodId, a.programKey, ar.userId, a.computedStatus, a.computedStatusReason, a.computedPhase,
       a.computedIneligiblePhase, a.workflowStage, ar.status AS appRequestStatus, ar.phase AS appRequestPhase, ar.computedStatus AS appRequestComputedStatus
     FROM applications a
     INNER JOIN app_requests ar ON ar.id = a.appRequestId
-    WHERE (${where.join(') AND (')})
+    ${whereClause}
     ORDER BY evaluationOrder
   `, binds)
   return rows.map(row => new Application(row))
@@ -97,15 +97,15 @@ export async function advanceWorkflow (applicationId: string, tdb: Queryable = d
     if (!toStage) toPhase = ApplicationPhase.REVIEW_COMPLETE
     else toPhase = ApplicationPhase.WORKFLOW_BLOCKING
   } else if (current.blocking) {
-    const currIdx = findIndex(blocking, stage => stage.stageKey === current.stageKey)
-    if (currIdx) {
+    const currIdx = blocking.findIndex(stage => stage.stageKey === current.stageKey)
+    if (currIdx > -1) {
       toStage = blocking[currIdx + 1]
       if (!toStage) toPhase = ApplicationPhase.REVIEW_COMPLETE
       else toPhase = ApplicationPhase.WORKFLOW_BLOCKING
     } else toPhase = ApplicationPhase.REVIEW_COMPLETE
   } else {
-    const currIdx = findIndex(nonblocking, stage => stage.stageKey === current.stageKey)
-    if (currIdx) {
+    const currIdx = nonblocking.findIndex(stage => stage.stageKey === current.stageKey)
+    if (currIdx > -1) {
       toStage = nonblocking[currIdx + 1]
       if (!toStage) toPhase = ApplicationPhase.COMPLETE
       else toPhase = ApplicationPhase.WORKFLOW_NONBLOCKING

@@ -69,9 +69,10 @@ async function main () {
             login => ({
               login,
               fullname: `${login} Full Name`,
+              email: 'reqquest-next@qual.txstate.edu',
               groups: userTypes[userTypePrefixes.find(p => login.startsWith(p))!].groups,
               otherInfo: {
-                email: `${login}@txstate.edu`,
+                email: 'reqquest-next@qual.txstate.edu',
                 indexes: {
                   institutionalRoles: pseudoInstitutionalRoles(login),
                   lastLogin: DateTime.fromJSDate(new Date())
@@ -103,6 +104,10 @@ async function main () {
           return DateTime.fromFormat('20250601080000', 'yyyyMMddHHmmss')
         }
         return groupnames.map(groupName => ({ groupName, managers: [{ fullname: `${String(groupName).charAt(0).toLocaleUpperCase() + String(groupName).slice(1)} Lastname`, email: `${groupName.toLocaleLowerCase()}@txstate.edu` }], dateCreated: groupDateAdded(groupName) }))
+      },
+      emailConfig: {
+        appName: 'Reqquest',
+        signature: 'Mobile Web Systems'
       }
     },
     programs,

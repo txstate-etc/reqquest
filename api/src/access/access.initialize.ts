@@ -101,4 +101,10 @@ export const accessMigrations: DatabaseMigration[] = [{
       FOREIGN KEY (userId) REFERENCES accessUsers(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
   }
+}, {
+  id: '20260629000000',
+  execute: async db => {
+    const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_NAME = 'accessUsers' AND COLUMN_NAME = 'email'")
+    if (!exists) await db.execute('ALTER TABLE accessUsers ADD COLUMN email VARCHAR(255)')
+  }
 }]

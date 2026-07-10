@@ -282,7 +282,6 @@
 </ApproveLayout>
 
 
-
 {#if showUpdateNoteDialog && noteBeingEdited}
   <PanelFormDialog
     title="Update Note"
