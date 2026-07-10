@@ -109,8 +109,13 @@ export class AppRequestService extends AuthService<AppRequest> {
   protected raw = this.svc(AppRequestServiceInternal)
 
   preprocessFilter (filter?: AppRequestFilter) {
-    filter ??= {}
+    filter ??= new AppRequestFilter()
     if (filter.own) filter.userInternalIds = [this.user?.internalId ?? -1]
+    // Notes are reviewer-only and never visible to applicants.
+    // non-reviewers should not be able to probe the existence/content of notes
+    // (even on their own requests) by observing which requests match.
+    // TODO: May need to add a mayViewNotes method.
+    if (this.mayViewReviewerInterface()) filter.searchNotes = true
     return filter
   }
 

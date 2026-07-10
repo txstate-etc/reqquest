@@ -58,8 +58,8 @@
     {prequalPrompts}
     {postqualPrompts}
     {uiRegistry}
-    title="Review your application"
-    subtitle="Confirm the benefits shown are the ones you are requesting and that your responses are correct, or make changes before submitting."
+    title={uiRegistry.config.applicantReview?.title ?? "Review your application"}
+    subtitle={uiRegistry.config.applicantReview?.subTitle ?? "Confirm the benefits shown are the ones you are requesting and that your responses are correct, or make changes before submitting."}
     expandable={false}
     showWarningsInline={true}
     showAppRequestStatus={false}

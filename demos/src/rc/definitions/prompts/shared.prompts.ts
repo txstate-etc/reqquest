@@ -8,7 +8,8 @@ export const reccomendation_letter_prompt: PromptDefinition<ReccomendationLetter
   title: 'Reccomendation Letter',
   description: 'Reccomendation Letter',
   schema: ReccomendationLettersSchema,
-  preProcessData: async (data, ctx) => {
+  preProcessData: async (data, ctx, appRequest, appRequestData, config, db, validateOnly) => {
+    if (validateOnly) return data
     if (data.reccomendationLetter) {
       for await (const file of ctx.files()) {
         const { checksum, size } = await fileHandler.put(file.stream)

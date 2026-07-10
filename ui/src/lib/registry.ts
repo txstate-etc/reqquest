@@ -152,6 +152,14 @@ export interface UIConfig {
    * Defaults to 30 if not specified.
    */
   applicantDashboardRecentDays?: number
+
+  /**
+   * Applicant Review submission page title and subtitle text.
+   */
+  applicantReview?: {
+    title?: string
+    subTitle?: string
+  }
   /**
    * Whether to constrain the applicant review/submission page to a medium
    * screen-width container. Defaults to true.
@@ -186,6 +194,16 @@ export interface UIConfig {
    * Specify the components here.
    */
   slots?: {
+    /**
+     * This maps to the default slot available within the IntroPanel component and can be used
+     * to add additional context within IntroPanel directly below the applicantDashboardIntroHeader and
+     * applicantDashboardIntroDetail
+     * 
+     * It will receive the following props
+     * - `appRequests` with all appRequests and their details
+     * - `api` which is an instance of the API client
+     */
+    applicantDashboardIntroSlot?: Component
     /**
      * This will be placed inside the top card on the reviewer sidebar that displays applicant information.
      *
@@ -227,7 +245,7 @@ export class UIRegistry {
     for (const prompt of config.prompts) this.promptMap[prompt.key] = prompt
     for (const requirement of config.requirements) this.requirementMap[requirement.key] = requirement
     for (const program of config.programs) this.programMap[program.key] = program
-    this.userLookup = config.userLookup    
+    this.userLookup = config.userLookup 
     this.lang = {
       appRequest: config.terminology?.appRequest ?? (config.programs.length > 1 ? 'App Request' : 'Application'),
       login: config.terminology?.login ?? 'Login',

@@ -224,7 +224,7 @@ export class ConfigurationService extends AuthService<Configuration> {
     return this.hasControl(cfg.type, 'configure', cfg.configuredObject.authorizationKeys)
   }
 
-  async update (periodId: string, key: string, data: any, validateOnly?: boolean) {
+  async update (periodId: string, key: string, data: any, validateOnly = false) {
     const cfg = await this.findByPeriodIdAndKey(periodId, key)
     if (!cfg) throw new Error('Configuration not found')
     if (!await this.mayUpdate(cfg)) throw new Error('You are not allowed to update this configuration.')
@@ -232,7 +232,7 @@ export class ConfigurationService extends AuthService<Configuration> {
     const registry = cfg.type === 'Prompt' ? promptRegistry : requirementRegistry
     const valid = registry.validateConfig(key, data)
     if (!valid) throw new Error('Invalid configuration data format.')
-    const processedData = cfg.configuredObject.definition.configuration?.preProcessData?.(data, this.ctx) ?? data
+    const processedData = cfg.configuredObject.definition.configuration?.preProcessData?.(data, this.ctx, validateOnly) ?? data
     const messages = await cfg.configuredObject.definition.configuration?.validate?.(processedData) ?? []
     for (const feedback of messages) response.addMessage(feedback.message)
     if (validateOnly || response.hasErrors()) return response

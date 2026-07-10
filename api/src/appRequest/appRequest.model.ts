@@ -225,6 +225,10 @@ export class AppRequestActions {}
 
 @InputType()
 export class AppRequestFilter {
+  constructor () {
+    this.searchNotes = false
+  }
+
   @Field(type => [ID], { nullable: true })
   ids?: string[]
 
@@ -251,6 +255,8 @@ export class AppRequestFilter {
 
   @Field(type => String, { nullable: true, description: 'Search for appRequests that match this search term. This will do a prefix search across all fields that are indexed.' })
   search?: string
+
+  searchNotes?: boolean
 
   @Field(type => DateTime, { nullable: true, description: 'Only return appRequests that were created after this date.' })
   createdAfter?: DateTime

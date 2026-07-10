@@ -121,8 +121,12 @@ function processFilters (filter?: AppRequestFilter) {
     joins.set('u', 'INNER JOIN accessUsers u ON u.id = ar.userId')
     joins.set('t', 'LEFT JOIN app_request_tags t ON t.appRequestId = ar.id')
     joins.set('tl', 'LEFT JOIN tag_labels tl ON tl.category = t.category AND tl.tag = t.tag')
-    where.push('(p.name LIKE ? OR u.login LIKE ? OR u.fullname LIKE ? OR t.tag LIKE ? OR tl.label LIKE ?)')
     binds.push(`${filter.search}%`, `${filter.search}%`, `%${filter.search}%`, `${filter.search}%`, `${filter.search}%`)
+    if (filter.searchNotes) {
+      joins.set('arn', 'LEFT JOIN app_request_notes arn ON arn.appRequestId = ar.id')
+      binds.push(filter.search)
+    }
+    where.push(`(p.name LIKE ? OR u.login LIKE ? OR u.fullname LIKE ? OR t.tag LIKE ? OR tl.label LIKE ?${filter.searchNotes ? ' OR MATCH(arn.content) AGAINST (? IN NATURAL LANGUAGE MODE)' : ''})`)
   }
   if (filter?.createdAfter) {
     where.push('ar.createdAt >= ?')
