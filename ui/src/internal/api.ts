@@ -436,6 +436,10 @@ class API extends APIBase {
           if (completionStatus !== 'INELIGIBLE') completionStatus = 'PENDING'
           if (completionStatusForNav !== 'INELIGIBLE' && requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'PENDING'
         } else if (req.status === enumRequirementStatus.WARNING) {
+          if (application.ineligiblePhase) {
+            completionStatus = 'INELIGIBLE'
+            if (requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'INELIGIBLE'
+          }
           hasWarning = true
           if (requirementTypesForNavigation.has(req.type)) hasWarningForNav = true
           if (req.statusReason && showWarnings) {
@@ -460,10 +464,6 @@ class API extends APIBase {
           if (application.ineligiblePhase) {
             completionStatus = 'INELIGIBLE'
             if (requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'INELIGIBLE'
-            if (req.statusReason && showWarnings) {
-              if (requirementTypesForNavigation.has(req.type)) ineligibleReasons.push(req.statusReason)
-              if (application.ineligiblePhase !== enumIneligiblePhases.PREQUAL || req.type !== enumRequirementType.PREQUAL) ineligibleReasonsFull.push(req.statusReason)
-            }
           }  
         }
       }
