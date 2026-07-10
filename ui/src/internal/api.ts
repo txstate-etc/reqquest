@@ -429,6 +429,10 @@ class API extends APIBase {
           if (completionStatus !== 'INELIGIBLE') completionStatus = 'PENDING'
           if (completionStatusForNav !== 'INELIGIBLE' && requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'PENDING'
         } else if (req.status === enumRequirementStatus.WARNING) {
+          if (application.ineligiblePhase) {
+            completionStatus = 'INELIGIBLE'
+            if (requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'INELIGIBLE'
+          }
           hasWarning = true
           if (requirementTypesForNavigation.has(req.type)) hasWarningForNav = true
           if (req.statusReason && showWarnings) {
@@ -443,12 +447,17 @@ class API extends APIBase {
             if (application.ineligiblePhase !== enumIneligiblePhases.PREQUAL || req.type !== enumRequirementType.PREQUAL) ineligibleReasonsFull.push(req.statusReason)
           }
         } else if (req.status === enumRequirementStatus.MET) {
-          completionStatus = 'ELIGIBLE'
-          if (requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'ELIGIBLE'
+          if (completionStatus !== 'INELIGIBLE') completionStatus = 'ELIGIBLE'
+          if (completionStatusForNav !== 'INELIGIBLE' && requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'ELIGIBLE'
           if (req.statusReason) {
             if (requirementTypesForNavigation.has(req.type)) metReasons.push(req.statusReason)
             metReasonsFull.push(req.statusReason)
           }          
+        } else if (req.status === enumRequirementStatus.NOT_APPLICABLE) {
+          if (application.ineligiblePhase) {
+            completionStatus = 'INELIGIBLE'
+            if (requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'INELIGIBLE'
+          }  
         }
       }
       applicationsReviewWithDupes.push({ ...application, requirements: requirementsReviewWithDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, metReasons: metReasonsFull, hasWarning })

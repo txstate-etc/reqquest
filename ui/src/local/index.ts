@@ -23,6 +23,7 @@ import OtherCatsVaccinesPrompt from './default/OtherCatsVaccinesPrompt.svelte'
 import OtherCatsVaccinesPromptDisplay from './default/OtherCatsVaccinesPromptDisplay.svelte'
 import VaccineReviewPrompt from './default/VaccineReviewPrompt.svelte'
 import VaccineReviewPromptDisplay from './default/VaccineReviewPromptDisplay.svelte'
+import DefaultIntroPanelDefaultSlot from './default/IntroPanelDefaultSlot.svelte'
 
 /** simple */
 import ResidencePrompt from './simple/ResidencePrompt.svelte'
@@ -107,6 +108,8 @@ import ComplexAcceptFosterPetPrompt from './complex/petOwner/AcceptFosterPetProm
 import ComplexAcceptFosterPetDisplayPrompt from './complex/petOwner/AcceptFosterPetDisplayPrompt.svelte'
 import ComplexConfirmCatMircochipServicePrompt from './complex/catOwner/ConfirmCatMircochipServicePrompt.svelte'
 import ComplexConfirmCatMircochipServiceDisplayPrompt from './complex/catOwner/ConfirmCatMircochipServiceDisplayPrompt.svelte'
+
+/** RC */
 import PreQualPrompt from './rc/PreQualPrompt.svelte'
 import WrittenAutomatinoPrompt from './rc/WrittenAutomatinoPrompt.svelte'
 import EvidenceWrittenAutomationPrompt from './rc/EvidenceWrittenAutomationPrompt.svelte'
@@ -157,11 +160,10 @@ import AssessReccomendationLetterDisplay from './rc/AssessReccomendationLetterDi
 import DataRelatedPuzzleDisplay from './rc/DataRelatedPuzzleDisplay.svelte'
 import OptOut from './rc/OptOut.svelte'
 import OptOutDisplay from './rc/OptOutDisplay.svelte'
+import RCIntroPanelDefaultSlot from './rc/IntroPanelDefaultSlot.svelte'
 import { api } from '$internal/api'
 
-/** RC */
-
-const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, applicantReview, programs, requirements, prompts, userLookup } = configureDemoInstanceParams()
+const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, applicantReview, programs, requirements, prompts, userLookup, slots } = configureDemoInstanceParams()
 
 export const uiRegistry = new UIRegistry({
   appName,
@@ -172,7 +174,8 @@ export const uiRegistry = new UIRegistry({
   programs,
   requirements,
   prompts,
-  userLookup
+  userLookup,
+  slots
 })
 
 function configureDemoInstanceParams () {
@@ -409,6 +412,9 @@ function configureDemoInstanceParams () {
         subTitle: 'Confirm the technical mentorship benefits shown are the ones you are requesting and that your responses are correct, or make changes before submitting.'
       },
       applicantDashboardRecentDays: 30,
+      slots: {
+        applicantDashboardIntroSlot: RCIntroPanelDefaultSlot
+      },
       userLookup: async (login) => {
         const accessUser = await api.getAccessUser(login)
         if (!accessUser) return
@@ -525,11 +531,13 @@ function configureDemoInstanceParams () {
         key: 'technical_troubleshooting_prompt',
         formComponent: TechnicalTroubleshooting,
         displayComponent: TechnicalTroubleshootingDisplay
+        
       },
       {
         key: 'assess_technical_troubleshooting_prompt',
         formComponent: AssessTechnicalTroubleshooting,
-        displayComponent: AssessTechnicalTroubleshootingDisplay
+        displayComponent: AssessTechnicalTroubleshootingDisplay,
+        formMode: 'full'
       },
       {
         key: 'support_communication_prompt',
@@ -592,6 +600,8 @@ function configureDemoInstanceParams () {
     applicantReview: {
       title: 'Review your critter application',
       subTitle: 'Confirm the critter benefits shown are the ones you are requesting and that your responses are correct, or make changes before submitting.'
+    slots: {
+      applicantDashboardIntroSlot: DefaultIntroPanelDefaultSlot
     },
     userLookup: async (login) => {
       const accessUser = await api.getAccessUser(login)

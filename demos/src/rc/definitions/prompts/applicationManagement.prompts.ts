@@ -4,6 +4,13 @@ import { MutationMessageType } from '@txstate-mws/graphql-server'
 import { fileHandler } from 'fastify-txstate'
 import { OptOutData, OptOutSchema } from '../models/optOut.models.js'
 
+const wait = () => {
+    return new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+    });
+};
+
+
 export const application_management_opt_out_prompt: PromptDefinition<OptOutData> = {
   key: 'application_management_opt_out_prompt',
   title: 'Application management',
@@ -41,6 +48,13 @@ export const assess_technical_troubleshooting_prompt: PromptDefinition<AssessTec
 
     return messages
   },
+  preload: async (data, config) => {
+    await wait() // simulate a long-running preload operation
+    return {
+      demonstrateTechincalTroubleshooting: true,
+      complexity: 1
+    }
+  },
   invalidUponChange: [{ promptKey: 'technical_troubleshooting_prompt', reason: 'Troubleshooting was poorly described, make changes and resubmit' }]
 }
 
@@ -75,7 +89,8 @@ export const maintain_sys_documentation_prompt: PromptDefinition<MaintainSysDocu
   title: 'Maintain System Documentation',
   description: 'Maintain System Documentation',
   schema: MaintainSysDocumentationSchema,
-  preProcessData: async (data, ctx) => {
+  preProcessData: async (data, ctx, appRequest, appRequestData, config, db, validateOnly) => {
+    if (validateOnly) return data
     if (data.documentation) {
       for await (const file of ctx.files()) {
         const { checksum, size } = await fileHandler.put(file.stream)

@@ -68,3 +68,9 @@ export const phaseChangeMutations = ['submitAppRequest', 'returnToApplicant', 'c
 export type PhaseChangeMutations = typeof phaseChangeMutations[number]
 
 export type OptOutApplication = ApplicationForDetails & { prompt: AnsweredPrompt }
+
+export enum PromptIndicators {
+  AUTOMATION = 1,
+  WARNING = 2,
+  DISQUALIFYING = 3
+}
