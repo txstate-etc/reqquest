@@ -314,7 +314,7 @@
       title={uiRegistry.config.applicantDashboardIntroHeader}
       subtitle={uiRegistry.config.applicantDashboardIntroDetail}
 
-    >
+    >       
       <svelte:fragment slot="block-end">
         {#if displayablePeriods.length > 0}
           <!-- Show period info and action for selected period -->
@@ -382,7 +382,12 @@
         {:else}
           <p>No {uiRegistry.getWord('appRequest').toLowerCase()} {uiRegistry.getPlural('period').toLowerCase()} are currently available.</p>
         {/if}
-      </svelte:fragment>
+      </svelte:fragment>   
+      <svelte:fragment>
+        {#if uiRegistry.config.slots?.applicantDashboardIntroSlot}          
+          <svelte:component this={uiRegistry.config.slots?.applicantDashboardIntroSlot} {appRequests} {api} />
+        {/if}          
+      </svelte:fragment>   
     </IntroPanel>
   {/if}
   <!-- Application Cards -->
