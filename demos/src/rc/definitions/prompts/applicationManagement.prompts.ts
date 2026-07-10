@@ -4,9 +4,9 @@ import { MutationMessageType } from '@txstate-mws/graphql-server'
 import { fileHandler } from 'fastify-txstate'
 import { OptOutData, OptOutSchema } from '../models/optOut.models.js'
 
-const waitFiveSeconds = () => {
+const wait = () => {
     return new Promise((resolve) => {
-        setTimeout(resolve, 5000);
+        setTimeout(resolve, 1000);
     });
 };
 
@@ -49,7 +49,7 @@ export const assess_technical_troubleshooting_prompt: PromptDefinition<AssessTec
     return messages
   },
   preload: async (data, config) => {
-    await waitFiveSeconds() // simulate a long-running preload operation
+    await wait() // simulate a long-running preload operation
     return {
       demonstrateTechincalTroubleshooting: true,
       complexity: 1
