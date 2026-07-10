@@ -600,6 +600,7 @@ function configureDemoInstanceParams () {
     applicantReview: {
       title: 'Review your critter application',
       subTitle: 'Confirm the critter benefits shown are the ones you are requesting and that your responses are correct, or make changes before submitting.'
+    },
     slots: {
       applicantDashboardIntroSlot: DefaultIntroPanelDefaultSlot
     },
