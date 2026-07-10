@@ -423,7 +423,13 @@ class API extends APIBase {
       const metReasonsFull: string[] = []
       let hasWarning = false
       let hasWarningForNav = false
+      console.log('API:  APPLICATION')
+      console.log('----------------')
+      console.log(application)
       for (const req of reqsForCompletion) {
+        console.log('API:  REQ IN REQS FOR COMPLETION')
+        console.log('--------------------------------')
+        console.log(req)
         const showWarnings = application.ineligiblePhase !== enumIneligiblePhases.PREQUAL || req.type === enumRequirementType.PREQUAL
         if (req.status === enumRequirementStatus.PENDING) {
           if (completionStatus !== 'INELIGIBLE') completionStatus = 'PENDING'

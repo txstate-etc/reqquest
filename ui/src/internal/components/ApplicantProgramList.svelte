@@ -37,7 +37,7 @@
 
   $: programButtonStatus = applications.reduce((acc, curr) => ({
     ...acc,
-    [curr.id]: (curr.completionStatus === enumApplicationStatus.PENDING || (viewMode && curr.status === enumApplicationStatus.PENDING))
+    [curr.id]: (curr.completionStatus === enumApplicationStatus.PENDING)
       ? curr.requirements.some(r => r.prompts.some(p => p.answered && !p.invalidated && !p.optOut))
         ? curr.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION).every(r => r.prompts.every(p => p.answered && !p.invalidated  && !p.optOut))
           ? 'complete'
