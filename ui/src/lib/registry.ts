@@ -152,6 +152,14 @@ export interface UIConfig {
    * Defaults to 30 if not specified.
    */
   applicantDashboardRecentDays?: number
+
+  /**
+   * Applicant Review submission page title and subtitle text.
+   */
+  applicantReview?: {
+    title?: string
+    subTitle?: string
+  }
   /**
    * Whether to constrain the applicant review/submission page to a medium
    * screen-width container. Defaults to true.
