@@ -413,8 +413,8 @@ class API extends APIBase {
         }
       }
       const reqsForCompletion = application.requirements.filter(r => r.type !== enumRequirementType.POSTQUAL)
-      let completionStatus: CompletionStatus = 'ELIGIBLE'
-      let completionStatusForNav: CompletionStatus = 'ELIGIBLE'
+      let completionStatus: CompletionStatus = (application.ineligiblePhase) ? 'INELIGIBLE' : 'ELIGIBLE'
+      let completionStatusForNav: CompletionStatus = (application.ineligiblePhase) ? 'INELIGIBLE' : 'ELIGIBLE'
       const warningReasons: string[] = []
       const warningReasonsFull: string[] = []
       const ineligibleReasons: string[] = []
