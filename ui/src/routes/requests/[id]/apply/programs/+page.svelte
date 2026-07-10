@@ -12,6 +12,8 @@
 
   export let data: PageData
   $: ({ applicationsForNav, appRequestForExport } = data)
+  $: console.log('Applications for Nav')
+  $: console.log(applicationsForNav)
 
   let prevHref: string | undefined
   let nextHref: string | undefined
@@ -40,6 +42,8 @@
     {/if}
   </div>
   {@const ineligibleApplicationsForNav = applicationsForNav.filter(a => a.ineligiblePhase === enumIneligiblePhases.PREQUAL || a.ineligiblePhase === enumIneligiblePhases.QUALIFICATION)}
+  {console.log('INELIGIBLE APPS FOR NAV')}
+  {console.log(ineligibleApplicationsForNav)}
   {#if ineligibleApplicationsForNav.length > 0}  
     <div class="max-w-screen-md mx-auto">    
       <Panel title="Ineligible programs" expandable={true} expanded={true}>
