@@ -4,6 +4,13 @@ import { MutationMessageType } from '@txstate-mws/graphql-server'
 import { fileHandler } from 'fastify-txstate'
 import { OptOutData, OptOutSchema } from '../models/optOut.models.js'
 
+const wait = () => {
+    return new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+    });
+};
+
+
 export const application_management_opt_out_prompt: PromptDefinition<OptOutData> = {
   key: 'application_management_opt_out_prompt',
   title: 'Application management',
@@ -40,6 +47,13 @@ export const assess_technical_troubleshooting_prompt: PromptDefinition<AssessTec
     if (data.demonstrateTechincalTroubleshooting == null) messages.push({ type: MutationMessageType.error, message: 'This field is required', arg: '.demonstrateTechincalTroubleshooting' })
 
     return messages
+  },
+  preload: async (data, config) => {
+    await wait() // simulate a long-running preload operation
+    return {
+      demonstrateTechincalTroubleshooting: true,
+      complexity: 1
+    }
   },
   invalidUponChange: [{ promptKey: 'technical_troubleshooting_prompt', reason: 'Troubleshooting was poorly described, make changes and resubmit' }]
 }
