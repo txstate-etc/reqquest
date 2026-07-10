@@ -423,13 +423,7 @@ class API extends APIBase {
       const metReasonsFull: string[] = []
       let hasWarning = false
       let hasWarningForNav = false
-      console.log('API:  APPLICATION')
-      console.log('----------------')
-      console.log(application)
       for (const req of reqsForCompletion) {
-        console.log('API:  REQ IN REQS FOR COMPLETION')
-        console.log('--------------------------------')
-        console.log(req)
         const showWarnings = application.ineligiblePhase !== enumIneligiblePhases.PREQUAL || req.type === enumRequirementType.PREQUAL
         if (req.status === enumRequirementStatus.PENDING) {
           if (completionStatus !== 'INELIGIBLE') completionStatus = 'PENDING'
@@ -456,14 +450,19 @@ class API extends APIBase {
             metReasonsFull.push(req.statusReason)
           }          
         } else if (req.status === enumRequirementStatus.NOT_APPLICABLE) {
-          if (application.ineligiblePhase != null) completionStatus = 'INELIGIBLE'
-          if (completionStatus === 'INELIGIBLE') {
+          console.log(`APP: ${application.title}`)
+          console.log(`REQ status: ${req.status}`)
+          if (application.ineligiblePhase) {
+            console.log('REQ ineligible')
+            completionStatus = 'INELIGIBLE'
             if (requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'INELIGIBLE'
             if (req.statusReason && showWarnings) {
               if (requirementTypesForNavigation.has(req.type)) ineligibleReasons.push(req.statusReason)
               if (application.ineligiblePhase !== enumIneligiblePhases.PREQUAL || req.type !== enumRequirementType.PREQUAL) ineligibleReasonsFull.push(req.statusReason)
             }
-          }          
+            console.log(`Completion status: ${completionStatus}`)
+            console.log(`Completion status for nav: ${completionStatusForNav}`)
+          }  
         }
       }
       applicationsReviewWithDupes.push({ ...application, requirements: requirementsReviewWithDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, metReasons: metReasonsFull, hasWarning })
