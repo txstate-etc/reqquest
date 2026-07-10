@@ -43,7 +43,7 @@
           ? 'complete'
           : 'continue'
         : 'start'
-      : curr.completionStatus === enumApplicationStatus.INELIGIBLE || curr.status === enumApplicationStatus.INELIGIBLE
+      : curr.completionStatus === enumApplicationStatus.INELIGIBLE
         ? curr.ineligiblePhase === enumIneligiblePhases.PREQUAL
           ? 'ineligible'
           : 'revisit'

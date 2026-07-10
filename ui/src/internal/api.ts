@@ -476,6 +476,12 @@ class API extends APIBase {
       const statusReasons = prompts.map(p => p.statusReasons[0])
       for (const prompt of prompts) prompt.statusReasons = statusReasons
     }
+    console.log('PRE API.TS RETURN')
+    console.log('DUPES-----------')
+    console.log(applicationsForNavWithDupes)
+    console.log('NO DUPES-----------')
+    console.log(applicationsForNavNoDupes)
+    
     return { prequalPrompts, postqualPrompts, qualPrompts, applicationsReviewWithDupes, applicationsReviewNoDupes, applicationsForNavWithDupes, applicationsForNavNoDupes, applicationsAcceptWithDupes, applicationsAcceptNoDupes, promptsByKey, promptsById }
   }
 
@@ -534,6 +540,9 @@ class API extends APIBase {
     type ResponsePrompt = ResponseRequirement['prompts'][0]
 
     const splitInfo = API.splitPromptsForApplicant<ResponsePrompt, ResponseRequirement, ResponseApplication>(response.appRequests[0]?.applications ?? [])
+    console.log('GET APP FOR EXPORT')
+    console.log('APPS FOR NAV---------')
+    console.log(showDupePrompts ? splitInfo.applicationsForNavWithDupes : splitInfo.applicationsForNavNoDupes)
     return {
       ...omit(splitInfo, 'applicationsForNavNoDupes', 'applicationsForNavWithDupes', 'applicationsReviewNoDupes', 'applicationsReviewWithDupes'),
       applicationsForNav: showDupePrompts ? splitInfo.applicationsForNavWithDupes : splitInfo.applicationsForNavNoDupes,
