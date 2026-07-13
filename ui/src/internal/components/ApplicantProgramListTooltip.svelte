@@ -17,8 +17,7 @@
       {#each application.warningReasons as reason (reason)}
         <p>{reason}</p>
       {/each}    
-    {:else if application.metReasons.length}
-       <p><strong>Eligible Because:</strong></p>
+    {:else if application.metReasons.length}       
       {#each application.metReasons as reason (reason)}
         <p>{reason}</p>
       {/each}
