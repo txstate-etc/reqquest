@@ -55,7 +55,10 @@ export const assess_technical_troubleshooting_prompt: PromptDefinition<AssessTec
       complexity: 1
     }
   },
-  invalidUponChange: [{ promptKey: 'technical_troubleshooting_prompt', reason: 'Troubleshooting was poorly described, make changes and resubmit' }]
+  invalidUponChange: [
+    { promptKey: 'technical_troubleshooting_prompt', reason: 'Troubleshooting was poorly described, make changes and resubmit' },
+    { promptKey: 'critical_thinking_prompt', reason: 'Need to find out why someone bad at technical troubleshooting would be good at critical thinking'}
+  ]
 }
 
 export const support_communication_prompt: PromptDefinition<SupportCommunicationData> = {

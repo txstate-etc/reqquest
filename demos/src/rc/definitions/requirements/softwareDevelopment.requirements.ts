@@ -83,6 +83,7 @@ export const critical_thinking_req: RequirementDefinition = {
   resolve: (data, config) => {
     const writtenAutomationData = data['critical_thinking_prompt'] as CriticalThinkingPromptData
     if (writtenAutomationData?.criticalThinkingAnswer == null) return { status: RequirementStatus.PENDING }
+    if (writtenAutomationData?.criticalThinkingAnswer == 'NA') return { status: RequirementStatus.DISQUALIFYING, reason: 'NA for critical thinking answer is disqualifying' }
     return { status: RequirementStatus.MET }
   }
 }
