@@ -413,8 +413,8 @@ class API extends APIBase {
         }
       }
       const reqsForCompletion = application.requirements.filter(r => r.type !== enumRequirementType.POSTQUAL)
-      let completionStatus: CompletionStatus = 'ELIGIBLE'
-      let completionStatusForNav: CompletionStatus = 'ELIGIBLE'
+      let completionStatus: CompletionStatus = (application.ineligiblePhase) ? 'INELIGIBLE' : 'ELIGIBLE' // ineligible is always precise state, while eligible could be in eligible or pending state
+      let completionStatusForNav: CompletionStatus = (application.ineligiblePhase) ? 'INELIGIBLE' : 'ELIGIBLE' // ineligible is always precise state, while eligible could be in eligible or pending state
       const warningReasons: string[] = []
       const warningReasonsFull: string[] = []
       const ineligibleReasons: string[] = []
@@ -424,42 +424,36 @@ class API extends APIBase {
       let hasWarning = false
       let hasWarningForNav = false
       for (const req of reqsForCompletion) {
-        const showWarnings = application.ineligiblePhase !== enumIneligiblePhases.PREQUAL || req.type === enumRequirementType.PREQUAL
-        if (req.status === enumRequirementStatus.PENDING) {
-          if (completionStatus !== 'INELIGIBLE') completionStatus = 'PENDING'
-          if (completionStatusForNav !== 'INELIGIBLE' && requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'PENDING'
-        } else if (req.status === enumRequirementStatus.WARNING) {
-          if (application.ineligiblePhase) {
-            completionStatus = 'INELIGIBLE'
-            if (requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'INELIGIBLE'
-          }
+        const showWarnings = application.ineligiblePhase !== enumIneligiblePhases.PREQUAL || req.type === enumRequirementType.PREQUAL  
+        // PENDING change only if previously was eligibile, if ineligiible or pending just remain      
+        if (completionStatus === 'ELIGIBLE' && req.status === enumRequirementStatus.PENDING) {
+          completionStatus = 'PENDING'
+          if (requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'PENDING'
+        }
+        //WARNING makes no completion status changes, whatever application state remains (pending, inel, eli), just append warning reasons
+        else if (req.status === enumRequirementStatus.WARNING) {
           hasWarning = true
           if (requirementTypesForNavigation.has(req.type)) hasWarningForNav = true
           if (req.statusReason && showWarnings) {
             if (requirementTypesForNavigation.has(req.type)) warningReasons.push(req.statusReason)
             warningReasonsFull.push(req.statusReason)
           }
+        // DISQUALIFYING, eligibility is already known by app ineligiblePhase, but always log ineligible reasons
         } else if (req.status === enumRequirementStatus.DISQUALIFYING) {
-          completionStatus = 'INELIGIBLE'
-          if (requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'INELIGIBLE'
           if (req.statusReason && showWarnings) {
             if (requirementTypesForNavigation.has(req.type)) ineligibleReasons.push(req.statusReason)
             if (application.ineligiblePhase !== enumIneligiblePhases.PREQUAL || req.type !== enumRequirementType.PREQUAL) ineligibleReasonsFull.push(req.statusReason)
           }
+        // MET, eligibility is already known by app ineligiblePhase, but always log MET reasons
         } else if (req.status === enumRequirementStatus.MET) {
-          if (completionStatus !== 'INELIGIBLE') completionStatus = 'ELIGIBLE'
-          if (completionStatusForNav !== 'INELIGIBLE' && requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'ELIGIBLE'
           if (req.statusReason) {
             if (requirementTypesForNavigation.has(req.type)) metReasons.push(req.statusReason)
             metReasonsFull.push(req.statusReason)
-          }          
-        } else if (req.status === enumRequirementStatus.NOT_APPLICABLE) {
-          if (application.ineligiblePhase) {
-            completionStatus = 'INELIGIBLE'
-            if (requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'INELIGIBLE'
-          }  
-        }
-      }
+          }   
+        // NOT APPLICABLE, reference here is for completness, but not implemented as not_applicable currently changes nothing, nor logs reasons
+        } //else if (req.status === enumRequirementStatus.NOT_APPLICABLE) {
+        //}        
+      }      
       applicationsReviewWithDupes.push({ ...application, requirements: requirementsReviewWithDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, metReasons: metReasonsFull, hasWarning })
       applicationsReviewNoDupes.push({ ...application, requirements: requirementsReviewNoDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, metReasons: metReasonsFull, hasWarning })
       applicationsForNavWithDupes.push({ ...application, requirements: requirementsForNavWithDupes, completionStatus: completionStatusForNav, warningReasons, ineligibleReasons, metReasons: metReasonsFull, hasWarning: hasWarningForNav })
