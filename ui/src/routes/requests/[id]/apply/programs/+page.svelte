@@ -27,7 +27,7 @@
   })
 </script>
 
-<ProgressNavContainer title="Your potential programs" subtitle='Select "Start" to answer additional qualifying questions about the benefits you may be eligible for.'>
+<ProgressNavContainer title="Your potential benefits" subtitle='Select "Start" to answer additional qualifying questions about the benefits you may be eligible for.'>
   {@const eligibleApplicationsForNav = applicationsForNav.filter(a => a.ineligiblePhase == null)}
   <div class="max-w-screen-md mx-auto">    
     {#if eligibleApplicationsForNav.length > 0} 
@@ -42,7 +42,7 @@
   {@const ineligibleApplicationsForNav = applicationsForNav.filter(a => a.ineligiblePhase === enumIneligiblePhases.PREQUAL || a.ineligiblePhase === enumIneligiblePhases.QUALIFICATION)}
   {#if ineligibleApplicationsForNav.length > 0}  
     <div class="max-w-screen-md mx-auto">    
-      <Panel title="Ineligible programs" expandable={true} expanded={true}>
+      <Panel title="Ineligible benefits" expandable={true} expanded={true}>
         <ApplicantProgramList applications={ineligibleApplicationsForNav} appRequest={appRequestForExport} />
       </Panel>
     </div>
