@@ -153,6 +153,7 @@ export interface AccessTagCategory {
 
 /** A user that has or once had access to the system. */
 export interface AccessUser {
+    email: (Scalars['String'] | null)
     fullname: Scalars['String']
     groups: Scalars['String'][]
     login: Scalars['ID']
@@ -1021,6 +1022,7 @@ tag: Scalars['String']}
 
 /** A user that has or once had access to the system. */
 export interface AccessUserGenqlSelection{
+    email?: boolean | number
     fullname?: boolean | number
     groups?: boolean | number
     login?: boolean | number

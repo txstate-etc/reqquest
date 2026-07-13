@@ -832,7 +832,14 @@ class API extends APIBase {
           navTitle: true,
           programKey: true,
           status: true,
-          ineligiblePhase: true
+          ineligiblePhase: true,
+          requirements : {
+            type: true,
+            prompts: {
+              key: true,
+              invalidated: true
+            }
+          }
         },
         actions: {
           acceptOffer: true,
