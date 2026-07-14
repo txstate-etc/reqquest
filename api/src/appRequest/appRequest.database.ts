@@ -623,6 +623,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
 
         requirement.status = resolveInfo.status
         requirement.statusReason = resolveInfo.reason
+        if (requirement.status === RequirementStatus.MET && (prompts.some(p => p.invalidated))) requirement.status = RequirementStatus.PENDING
         if (requirement.status === RequirementStatus.DISQUALIFYING) applicationIsIneligible = true
       }
 
