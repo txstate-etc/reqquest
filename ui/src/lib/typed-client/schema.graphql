@@ -211,6 +211,7 @@ input AccessTagInput {
 
 """A user that has or once had access to the system."""
 type AccessUser {
+  email: String
   fullname: String!
   groups: [String!]!
   login: ID!

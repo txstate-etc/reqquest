@@ -321,6 +321,9 @@ export default {
             ]
         },
         "AccessUser": {
+            "email": [
+                85
+            ],
             "fullname": [
                 85
             ],

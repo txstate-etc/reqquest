@@ -1,4 +1,4 @@
-import { MutationMessage, PromptDefinition } from '@reqquest/api'
+import { MutationMessage, PromptDefinition, InvalidatedResponse } from '@reqquest/api'
 import { AssessMaintainSysDocumentationData, AssessMaintainSysDocumentationSchema, AssessSupportCommunicationData, AssessSupportCommunicationSchema, AssessTechincalTroubleshootingData, AssessTechincalTroubleshootingSchema, MaintainSysDocumentationData, MaintainSysDocumentationSchema, SupportCommunicationData, SupportCommunicationSchema, TechincalTroubleshootingData, TechincalTroubleshootingSchema } from '../models/index.js'
 import { MutationMessageType } from '@txstate-mws/graphql-server'
 import { fileHandler } from 'fastify-txstate'
@@ -55,7 +55,19 @@ export const assess_technical_troubleshooting_prompt: PromptDefinition<AssessTec
       complexity: 1
     }
   },
-  invalidUponChange: [{ promptKey: 'technical_troubleshooting_prompt', reason: 'Troubleshooting was poorly described, make changes and resubmit' }]
+  invalidUponChange: (data: any, config: any, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) => {
+    const invalidatedResponse: InvalidatedResponse[] = []
+    if (data && !data.demonstrateTechincalTroubleshooting) {
+      invalidatedResponse.push({ promptKey: 'technical_troubleshooting_prompt', reason: 'Troubleshooting was poorly described, make changes and resubmit' },
+                              { promptKey: 'critical_thinking_prompt', reason: 'Need to find out why someone bad at technical troubleshooting would be good at critical thinking'})
+    }
+    return invalidatedResponse
+  },
+  validUponChange: (data: any, config: any, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) => {
+    return (data && data.demonstrateTechincalTroubleshooting)
+      ? ['technical_troubleshooting_prompt', 'critical_thinking_prompt']
+      : []
+  }
 }
 
 export const support_communication_prompt: PromptDefinition<SupportCommunicationData> = {
