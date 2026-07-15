@@ -428,6 +428,11 @@ export const applicantRequirementTypes = new Set<RequirementType>([
   RequirementType.ACCEPTANCE
 ])
 
+export const reviewerRequirementTypes = new Set<RequirementType>([
+  RequirementType.PREAPPROVAL,
+  RequirementType.APPROVAL
+])
+
 export async function tagAppRequest (appRequestInternalId: number, data: AppRequestData, prompts: RequirementPrompt[], tdb: Queryable = db) {
   const tagRows = []
   const seenPrompts = new Set<string>()
@@ -623,13 +628,25 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
 
         requirement.status = resolveInfo.status
         requirement.statusReason = resolveInfo.reason
-        if (requirement.status === RequirementStatus.MET && (prompts.some(p => p.invalidated))) requirement.status = RequirementStatus.PENDING
         if (requirement.status === RequirementStatus.DISQUALIFYING) applicationIsIneligible = true
       }
 
       const firstFailingRequirement = sortedRequirements.find(r => r.status === RequirementStatus.DISQUALIFYING)
       const firstPendingRequirement = sortedRequirements.find(r => r.status === RequirementStatus.PENDING)
       const nonPassingRequirement = firstFailingRequirement ?? firstPendingRequirement
+      // does this application have an invalidated APPLICANT prompt? An invalidated answer stays answered (its
+      // data is still used by resolve, so the requirement can still resolve MET), so invalidation would not
+      // otherwise change status/phase. We only count applicant-owned requirements: a reviewer prompt getting
+      // invalidated (e.g. when the applicant edits an answer the reviewer already assessed) is reviewer work,
+      // not a reason to block the applicant from submitting or to pull the request off the reviewer dashboard -
+      // and the applicant cannot clear a reviewer prompt anyway, so counting it would make the application
+      // impossible to submit. https://github.com/txstate-etc/reqquest-txstate/issues/377
+      const hasInvalidatedApplicantPrompt = requirements.some(req => applicantRequirementTypes.has(req.type) && (promptLookup[req.id] ?? []).some(p => p.invalidated))
+      // the mirror image for reviewer-owned requirements: if a reviewer prompt has been invalidated (e.g. the
+      // applicant edited an answer the reviewer already assessed) the reviewer must re-assess, so we keep the
+      // application in APPROVAL below and block it from advancing to READY_FOR_WORKFLOW/REVIEW_COMPLETE.
+      // https://github.com/txstate-etc/reqquest-txstate/issues/377
+      const hasInvalidatedReviewerPrompt = requirements.some(req => reviewerRequirementTypes.has(req.type) && (promptLookup[req.id] ?? []).some(p => p.invalidated))
       const requirementsResolution = firstFailingRequirement != null
         ? 'fail'
         : firstPendingRequirement != null
@@ -638,17 +655,28 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
 
       application.status = phase === 'nonblocking' || phase === 'complete'
         ? application.status
-        : phase === 'acceptance'
-          ? requirementsResolution === 'pass'
-            ? ApplicationStatus.ACCEPTED
-            : requirementsResolution === 'fail'
-              ? ApplicationStatus.REJECTED
-              : ApplicationStatus.ELIGIBLE
-          : requirementsResolution === 'pending'
+        // an invalidated prompt means someone must re-answer, so report the application as PENDING (rather than
+        // the ELIGIBLE/INELIGIBLE its still-intact answers would otherwise resolve to). This is set on the
+        // computed application status only - requirement.status still reflects resolve() so the execution
+        // resolvers are unaffected. Pairs with the phase routing below. In the applicant phase only an
+        // applicant prompt counts (it gates READY_TO_SUBMIT); in the review phase an invalidated applicant OR
+        // reviewer prompt counts (it keeps the application off the dashboard / blocks advancing out of review).
+        // https://github.com/txstate-etc/reqquest-txstate/issues/377
+        : phase === 'applicant' && hasInvalidatedApplicantPrompt
+          ? ApplicationStatus.PENDING
+          : phase === 'review' && (hasInvalidatedApplicantPrompt || hasInvalidatedReviewerPrompt)
             ? ApplicationStatus.PENDING
-            : requirementsResolution === 'fail'
-              ? ApplicationStatus.INELIGIBLE
-              : ApplicationStatus.ELIGIBLE
+            : phase === 'acceptance'
+              ? requirementsResolution === 'pass'
+                ? ApplicationStatus.ACCEPTED
+                : requirementsResolution === 'fail'
+                  ? ApplicationStatus.REJECTED
+                  : ApplicationStatus.ELIGIBLE
+              : requirementsResolution === 'pending'
+                ? ApplicationStatus.PENDING
+                : requirementsResolution === 'fail'
+                  ? ApplicationStatus.INELIGIBLE
+                  : ApplicationStatus.ELIGIBLE
 
       application.statusReason = firstFailingRequirement?.statusReason ?? firstPendingRequirement?.statusReason
 
@@ -665,19 +693,28 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
               ? ApplicationPhase.READY_TO_ACCEPT
               : ApplicationPhase.ACCEPTANCE
             : phase === 'applicant'
-              ? requirementsResolution !== 'pending'
+              // an invalidated prompt must be re-answered before the applicant can submit, so keep the
+              // application out of READY_TO_SUBMIT (which is what gates submission). https://github.com/txstate-etc/reqquest-txstate/issues/377
+              ? requirementsResolution !== 'pending' && !hasInvalidatedApplicantPrompt
                 ? ApplicationPhase.READY_TO_SUBMIT
                 : nonPassingRequirement?.type === RequirementType.PREQUAL
                   ? ApplicationPhase.PREQUAL
                   : ApplicationPhase.QUALIFICATION
               : phase === 'review'
-                ? requirementsResolution !== 'pending'
-                  ? application.phase === ApplicationPhase.REVIEW_COMPLETE
-                    ? ApplicationPhase.REVIEW_COMPLETE
-                    : ApplicationPhase.READY_FOR_WORKFLOW
-                  : nonPassingRequirement?.type === RequirementType.PREAPPROVAL
-                    ? ApplicationPhase.PREAPPROVAL
-                    : ApplicationPhase.APPROVAL
+                // if any prompt has been invalidated, the application is really waiting on the applicant to
+                // re-answer, so hold it in PREAPPROVAL (off the reviewer dashboard) regardless of whether the
+                // requirements otherwise resolve as passing or pending. https://github.com/txstate-etc/reqquest-txstate/issues/377
+                ? hasInvalidatedApplicantPrompt
+                  ? ApplicationPhase.PREAPPROVAL
+                  // a reviewer prompt awaiting re-assessment keeps the application under review (APPROVAL) so
+                  // the reviewer cannot advance it to READY_FOR_WORKFLOW/REVIEW_COMPLETE until they re-answer.
+                  : requirementsResolution !== 'pending' && !hasInvalidatedReviewerPrompt
+                    ? application.phase === ApplicationPhase.REVIEW_COMPLETE
+                      ? ApplicationPhase.REVIEW_COMPLETE
+                      : ApplicationPhase.READY_FOR_WORKFLOW
+                    : nonPassingRequirement?.type === RequirementType.PREAPPROVAL
+                      ? ApplicationPhase.PREAPPROVAL
+                      : ApplicationPhase.APPROVAL
                 : requirementsResolution === 'pass' // phase === 'blocking'
                   ? application.phase === ApplicationPhase.REVIEW_COMPLETE
                     ? ApplicationPhase.REVIEW_COMPLETE
