@@ -595,7 +595,7 @@ class PromptRegistry {
   getInvalidatedPrompts (key: string, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) {
     const prompt = this.prompts[key]
     if (!prompt) throw new Error(`Prompt ${key} not found.`)
-    return this.promptInvalidators[key](appRequestData[key], allPeriodConfig[key], appRequestData, allPeriodConfig) ?? []
+    return this.promptInvalidators[key](appRequestData[key], allPeriodConfig[key], appRequestData, allPeriodConfig).filter(ir => !this.prompts[ir.promptKey].optOut) ?? []
   }
 
   getRevalidatedPrompts (key: string, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) {
