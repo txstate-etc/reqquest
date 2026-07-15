@@ -635,9 +635,9 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       const firstPendingRequirement = sortedRequirements.find(r => r.status === RequirementStatus.PENDING)
       const nonPassingRequirement = firstFailingRequirement ?? firstPendingRequirement
       // have to track applicant specific requirements that have invalidate prompts for accurately computing phase for advancement below
-      const hasInvalidatedApplicantPrompt = requirements.some(req => applicantRequirementTypes.has(req.type) && (promptLookup[req.id] ?? []).some(p => p.invalidated))
+      const hasInvalidatedApplicantPrompt = requirements.some(req => applicantRequirementTypes.has(req.type) && (promptLookup[req.id] ?? []).some(p => p.invalidated && !p.moot))
       // have to track reviewer specific requirements that have invalidated prompts separately than applicants
-      const hasInvalidatedReviewerPrompt = requirements.some(req => reviewerRequirementTypes.has(req.type) && (promptLookup[req.id] ?? []).some(p => p.invalidated))
+      const hasInvalidatedReviewerPrompt = requirements.some(req => reviewerRequirementTypes.has(req.type) && (promptLookup[req.id] ?? []).some(p => p.invalidated && !p.moot))
       const requirementsResolution = firstFailingRequirement != null
         ? 'fail'
         : firstPendingRequirement != null
