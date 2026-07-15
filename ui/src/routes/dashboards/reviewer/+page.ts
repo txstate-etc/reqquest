@@ -6,7 +6,7 @@ import { api } from '$internal'
 import { enumAppRequestStatus, type AppRequestFilter } from '$lib'
 import type { PageLoad } from './$types'
 
-export const _reviewerDashboardInReviewStatuses = [enumAppRequestStatus.APPROVAL, enumAppRequestStatus.ACCEPTANCE, enumAppRequestStatus.READY_TO_ACCEPT, enumAppRequestStatus.REVIEW_COMPLETE]
+export const _reviewerDashboardInReviewStatuses = [enumAppRequestStatus.PREAPPROVAL, enumAppRequestStatus.APPROVAL, enumAppRequestStatus.ACCEPTANCE, enumAppRequestStatus.READY_TO_ACCEPT, enumAppRequestStatus.REVIEW_COMPLETE]
 export const _defaultReviewerDashboardFilters = { t: { complete: false, reviewStarted: false, status: _reviewerDashboardInReviewStatuses } }
 
 export const load: PageLoad = async ({ url, parent }) => {

@@ -286,6 +286,11 @@ type AppRequest {
   applications: [Application!]!
 
   """
+  True when at least one reachable prompt anywhere on this request has been invalidated and must be re-answered. Status and phase are computed from the answers on file, so use this flag to explain that the request is held back awaiting a correction.
+  """
+  awaitingCorrection: Boolean!
+
+  """
   Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date.
   """
   closedAt: DateTime
@@ -735,6 +740,11 @@ An application represents the applicant applying to a specific program. Each app
 """
 type Application {
   actions: ApplicationActions!
+
+  """
+  True when at least one reachable prompt on this application has been invalidated and must be re-answered. Status is still computed from the answers on file, so pair status displays with this flag to indicate that a correction is outstanding.
+  """
+  awaitingCorrection: Boolean!
   id: ID!
 
   """

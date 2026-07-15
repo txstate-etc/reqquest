@@ -101,6 +101,7 @@ export class Application {
     this.workflowStageKey = row.workflowStage
     this.status = row.computedStatus
     this.statusReason = row.computedStatusReason
+    this.awaitingCorrection = !!row.computedAwaitingCorrection
     this.title = this.program.title
     this.navTitle = this.program.title ?? this.program.title
     this.authorizationKeys = { program: [this.program.key] }
@@ -124,6 +125,9 @@ export class Application {
 
   @Field({ nullable: true, description: 'When one of the application\'s requirements is failing or throwing a warning, its reason will be copied here for convenience. If there is a warning and then later a failure, the failure reason will win.' })
   statusReason?: string
+
+  @Field({ description: 'True when at least one reachable prompt on this application has been invalidated and must be re-answered. Status is still computed from the answers on file, so pair status displays with this flag to indicate that a correction is outstanding.' })
+  awaitingCorrection: boolean
 
   @Field({ description: 'The title of the program this application is for.' })
   title: string

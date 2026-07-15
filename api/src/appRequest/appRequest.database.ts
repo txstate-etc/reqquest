@@ -38,6 +38,7 @@ export interface AppRequestRow {
   phase: AppRequestPhase
   computedStatus: AppRequestStatus
   computedReadyToComplete: 0 | 1
+  computedAwaitingCorrection: 0 | 1
   createdAt: Date
   updatedAt: Date
   submittedAt: Date | null
@@ -176,7 +177,7 @@ export async function getAppRequests (filter?: AppRequestFilter & Pagination, td
   const { joins, where, binds } = processFilters(filter)
   const limit = filter?.perPage ? `LIMIT ${filter.perPage} OFFSET ${((filter.page ?? 1) - 1) * filter.perPage}` : ''
   const rows = await tdb.getall<AppRequestRow>(`
-    SELECT DISTINCT ar.id, ar.periodId, ar.userId, ar.reviewStarted, ar.status, ar.phase, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt, ar.dataVersion, ar.computedReadyToComplete,
+    SELECT DISTINCT ar.id, ar.periodId, ar.userId, ar.reviewStarted, ar.status, ar.phase, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt, ar.dataVersion, ar.computedReadyToComplete, ar.computedAwaitingCorrection,
       p.code AS periodCode, p.closeDate AS periodClosesAt, p.archiveDate AS periodArchivesAt, p.openDate AS periodOpensAt
     FROM app_requests ar
     INNER JOIN periods p ON p.id = ar.periodId
@@ -230,7 +231,7 @@ export async function getIndexesInUse (category: string) {
 }
 
 export async function updateAppRequestComputed (appRequest: AppRequest, db: Queryable) {
-  await db.execute('UPDATE app_requests SET computedStatus = ?, computedReadyToComplete = ? WHERE id = ?', [appRequest.status, appRequest.readyToComplete ? 1 : 0, appRequest.internalId])
+  await db.execute('UPDATE app_requests SET computedStatus = ?, computedReadyToComplete = ?, computedAwaitingCorrection = ? WHERE id = ?', [appRequest.status, appRequest.readyToComplete ? 1 : 0, appRequest.awaitingCorrection ? 1 : 0, appRequest.internalId])
 }
 
 export async function createAppRequest (periodId: number, userId: number) {
@@ -428,11 +429,6 @@ export const applicantRequirementTypes = new Set<RequirementType>([
   RequirementType.ACCEPTANCE
 ])
 
-export const reviewerRequirementTypes = new Set<RequirementType>([
-  RequirementType.PREAPPROVAL,
-  RequirementType.APPROVAL
-])
-
 export async function tagAppRequest (appRequestInternalId: number, data: AppRequestData, prompts: RequirementPrompt[], tdb: Queryable = db) {
   const tagRows = []
   const seenPrompts = new Set<string>()
@@ -584,9 +580,13 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
 
       const promptsSeenInApplication = new Set<string>()
       let applicationIsIneligible = false
+      let firstAwaitingCorrectionRequirement: typeof sortedRequirements[number] | undefined
       for (const requirement of sortedRequirements) {
         const requiredData = {} as AppRequestData
         const prompts = promptLookup[requirement.id] ?? []
+        // matches the `moot` flag stored on regular prompts below: a prior requirement already
+        // disqualified this application, so nothing in this requirement can change its outcome
+        const promptsAreMoot = applicationIsIneligible && requirement.type !== RequirementType.WORKFLOW
         const anyOrderPrompts = prompts.filter(p => requirement.definition.anyOrderPromptKeySet.has(p.key))
         const noDisplayPrompts = prompts.filter(p => requirement.definition.noDisplayPromptKeySet.has(p.key))
         const regularPrompts = prompts.filter(p => !requirement.definition.anyOrderPromptKeySet.has(p.key) && !requirement.definition.noDisplayPromptKeySet.has(p.key))
@@ -611,7 +611,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
         if (!hasUnanswered && anyOrderAllAnswered && anyOrderPrompts.length) resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
         hasUnanswered ||= !anyOrderAllAnswered
         for (const prompt of regularPrompts) {
-          prompt.moot = applicationIsIneligible && requirement.type !== RequirementType.WORKFLOW
+          prompt.moot = promptsAreMoot
           if ((hasUnanswered || resolveInfo.status !== RequirementStatus.PENDING) && !promptRegistry.get(prompt.key).optOut) prompt.visibility = PromptVisibility.UNREACHABLE
           else {
             if (promptsSeenInApplication.has(prompt.key)) prompt.visibility = PromptVisibility.APPLICATION_DUPE
@@ -629,77 +629,74 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
         requirement.status = resolveInfo.status
         requirement.statusReason = resolveInfo.reason
         if (requirement.status === RequirementStatus.DISQUALIFYING) applicationIsIneligible = true
+
+        // an invalidated prompt that the user can currently reach must be re-answered before the
+        // application may move forward; remember the first requirement that needs the attention so
+        // the phase can point at it
+        if (firstAwaitingCorrectionRequirement == null && !promptsAreMoot && prompts.some(p => p.invalidated && p.visibility === PromptVisibility.AVAILABLE)) {
+          firstAwaitingCorrectionRequirement = requirement
+        }
       }
+      application.awaitingCorrection = firstAwaitingCorrectionRequirement != null
 
       const firstFailingRequirement = sortedRequirements.find(r => r.status === RequirementStatus.DISQUALIFYING)
       const firstPendingRequirement = sortedRequirements.find(r => r.status === RequirementStatus.PENDING)
       const nonPassingRequirement = firstFailingRequirement ?? firstPendingRequirement
-      // have to track applicant specific requirements that have invalidate prompts for accurately computing phase for advancement below
-      const hasInvalidatedApplicantPrompt = requirements.some(req => applicantRequirementTypes.has(req.type) && (promptLookup[req.id] ?? []).some(p => p.invalidated && !p.moot))
-      // have to track reviewer specific requirements that have invalidated prompts separately than applicants
-      const hasInvalidatedReviewerPrompt = requirements.some(req => reviewerRequirementTypes.has(req.type) && (promptLookup[req.id] ?? []).some(p => p.invalidated && !p.moot))
       const requirementsResolution = firstFailingRequirement != null
         ? 'fail'
         : firstPendingRequirement != null
           ? 'pending'
           : 'pass'
 
+      // status intentionally ignores invalidation: it is the best assessment of the data currently
+      // on file, so disqualified applications remain INELIGIBLE while a correction is outstanding.
+      // awaitingCorrection carries the "must be re-answered" fact and holds back the phase below.
       application.status = phase === 'nonblocking' || phase === 'complete'
         ? application.status
-        // an invalidated prompt means someone must re-answer, so report the application as PENDING
-        // requirement.status still reflects resolve so the execution resolvers are unaffected
-        : phase === 'applicant' && hasInvalidatedApplicantPrompt
-          ? ApplicationStatus.PENDING
-          : phase === 'review' && (hasInvalidatedApplicantPrompt || hasInvalidatedReviewerPrompt)
+        : phase === 'acceptance'
+          ? requirementsResolution === 'pass'
+            ? ApplicationStatus.ACCEPTED
+            : requirementsResolution === 'fail'
+              ? ApplicationStatus.REJECTED
+              : ApplicationStatus.ELIGIBLE
+          : requirementsResolution === 'pending'
             ? ApplicationStatus.PENDING
-            : phase === 'acceptance'
-              ? requirementsResolution === 'pass'
-                ? ApplicationStatus.ACCEPTED
-                : requirementsResolution === 'fail'
-                  ? ApplicationStatus.REJECTED
-                  : ApplicationStatus.ELIGIBLE
-              : requirementsResolution === 'pending'
-                ? ApplicationStatus.PENDING
-                : requirementsResolution === 'fail'
-                  ? ApplicationStatus.INELIGIBLE
-                  : ApplicationStatus.ELIGIBLE
+            : requirementsResolution === 'fail'
+              ? ApplicationStatus.INELIGIBLE
+              : ApplicationStatus.ELIGIBLE
 
       application.statusReason = firstFailingRequirement?.statusReason ?? firstPendingRequirement?.statusReason
 
+      // awaitingCorrection suppresses the readiness phases: someone must re-answer an invalidated
+      // prompt before the application can move forward, so hold the phase at the requirement that
+      // needs the attention (falling back to the normal non-passing requirement when one exists)
       application.phase = phase === 'complete'
         ? ApplicationPhase.COMPLETE
         : phase === 'nonblocking'
           ? application.workflowStageKey
-            ? requirementsResolution === 'pass'
+            ? requirementsResolution === 'pass' && !application.awaitingCorrection
               ? ApplicationPhase.READY_FOR_WORKFLOW
               : ApplicationPhase.WORKFLOW_NONBLOCKING
             : ApplicationPhase.READY_TO_COMPLETE
           : phase === 'acceptance'
-            ? requirementsResolution !== 'pending'
+            ? requirementsResolution !== 'pending' && !application.awaitingCorrection
               ? ApplicationPhase.READY_TO_ACCEPT
               : ApplicationPhase.ACCEPTANCE
             : phase === 'applicant'
-              // all invalidated prompts must be re-answered before the applicant can submit
-              ? requirementsResolution !== 'pending' && !hasInvalidatedApplicantPrompt
+              ? requirementsResolution !== 'pending' && !application.awaitingCorrection
                 ? ApplicationPhase.READY_TO_SUBMIT
-                : nonPassingRequirement?.type === RequirementType.PREQUAL
+                : (nonPassingRequirement ?? firstAwaitingCorrectionRequirement)?.type === RequirementType.PREQUAL
                   ? ApplicationPhase.PREQUAL
                   : ApplicationPhase.QUALIFICATION
               : phase === 'review'
-                // if any applicant prompt has been invalidated, the application is waiting on the applicant to
-                // re-answer, so hold it in PREAPPROVAL (off the reviewer dashboard) regardless of whether the requirements resolve as passing or pending
-                ? hasInvalidatedApplicantPrompt
-                  ? ApplicationPhase.PREAPPROVAL
-                  // a reviewer prompt awaiting re-assessment keeps the application in review/approval so the reviewer cannot advance it
-                  // to READY_FOR_WORKFLOW/REVIEW_COMPLETE until they check and confirm the answer is still good...or change the answer
-                  : requirementsResolution !== 'pending' && !hasInvalidatedReviewerPrompt
-                    ? application.phase === ApplicationPhase.REVIEW_COMPLETE
-                      ? ApplicationPhase.REVIEW_COMPLETE
-                      : ApplicationPhase.READY_FOR_WORKFLOW
-                    : nonPassingRequirement?.type === RequirementType.PREAPPROVAL
-                      ? ApplicationPhase.PREAPPROVAL
-                      : ApplicationPhase.APPROVAL
-                : requirementsResolution === 'pass' // phase === 'blocking'
+                ? requirementsResolution !== 'pending' && !application.awaitingCorrection
+                  ? application.phase === ApplicationPhase.REVIEW_COMPLETE
+                    ? ApplicationPhase.REVIEW_COMPLETE
+                    : ApplicationPhase.READY_FOR_WORKFLOW
+                  : (nonPassingRequirement ?? firstAwaitingCorrectionRequirement)?.type === RequirementType.PREAPPROVAL
+                    ? ApplicationPhase.PREAPPROVAL
+                    : ApplicationPhase.APPROVAL
+                : requirementsResolution === 'pass' && !application.awaitingCorrection // phase === 'blocking'
                   ? application.phase === ApplicationPhase.REVIEW_COMPLETE
                     ? ApplicationPhase.REVIEW_COMPLETE
                     : ApplicationPhase.READY_FOR_WORKFLOW
@@ -745,22 +742,28 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       prompt.locked = promptKeysLocked.has(prompt.key)
     }
 
+    // an outstanding correction anywhere in the request blocks the request-level readiness
+    // statuses, even when the application holding it is INELIGIBLE - the correction may exist
+    // precisely because fixing it would gain the applicant a benefit
+    appRequest.awaitingCorrection = applications.some(a => a.awaitingCorrection)
+
     if (applications.every(a => a.status === ApplicationStatus.INELIGIBLE || a.status === ApplicationStatus.REJECTED)) {
       if (appRequest.phase === AppRequestPhase.SUBMITTED) {
-        if (applications.length === 1 && !workflowStages.filter(s => s.blocking).length && (applications[0].phase === ApplicationPhase.READY_FOR_WORKFLOW || applications[0].phase === ApplicationPhase.REVIEW_COMPLETE)) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
+        if (appRequest.awaitingCorrection) appRequest.status = AppRequestStatus.APPROVAL
+        else if (applications.length === 1 && !workflowStages.filter(s => s.blocking).length && (applications[0].phase === ApplicationPhase.READY_FOR_WORKFLOW || applications[0].phase === ApplicationPhase.REVIEW_COMPLETE)) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
         else if (applications.every(a => a.phase === ApplicationPhase.REVIEW_COMPLETE || (a.ineligiblePhase && [IneligiblePhases.PREQUAL, IneligiblePhases.QUALIFICATION].includes(a.ineligiblePhase)))) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
         else appRequest.status = AppRequestStatus.APPROVAL
       } else if (applications.some(a => a.ineligiblePhase === IneligiblePhases.ACCEPTANCE)) appRequest.status = AppRequestStatus.NOT_ACCEPTED
       else if (applications.some(a => a.ineligiblePhase === IneligiblePhases.APPROVAL || a.ineligiblePhase === IneligiblePhases.WORKFLOW)) appRequest.status = AppRequestStatus.NOT_APPROVED
       else appRequest.status = AppRequestStatus.DISQUALIFIED
-    } else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_SUBMIT) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.READY_TO_SUBMIT
+    } else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_SUBMIT) && !applications.some(a => a.status === ApplicationStatus.PENDING) && !appRequest.awaitingCorrection) appRequest.status = AppRequestStatus.READY_TO_SUBMIT
     // special case for single-program systems with no blocking workflow stages - we set the appRequest to REVIEW_COMPLETE so
     // the reviewers can do the appRequest-level "Complete Review" right away instead of having to advance the application first
-    else if (applications.length === 1 && !workflowStages.filter(s => s.blocking).length && (applications[0].phase === ApplicationPhase.READY_FOR_WORKFLOW || applications[0].phase === ApplicationPhase.REVIEW_COMPLETE)) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
+    else if (applications.length === 1 && !workflowStages.filter(s => s.blocking).length && (applications[0].phase === ApplicationPhase.READY_FOR_WORKFLOW || applications[0].phase === ApplicationPhase.REVIEW_COMPLETE) && !appRequest.awaitingCorrection) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
     // exclude prequal and qual ineligible applications from affecting AppRequestStatus, since they never require approval to the next step and we don't want them blocking the appRequest from moving forward
     else if (applications.filter(a => a.status !== ApplicationStatus.INELIGIBLE || (a.ineligiblePhase && [IneligiblePhases.APPROVAL].includes(a.ineligiblePhase))).some(a => a.phase === ApplicationPhase.READY_FOR_WORKFLOW)) appRequest.status = AppRequestStatus.APPROVAL
-    else if (applications.some(a => a.phase === ApplicationPhase.REVIEW_COMPLETE) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
-    else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_ACCEPT) && !applications.some(a => a.status === ApplicationStatus.PENDING)) appRequest.status = AppRequestStatus.READY_TO_ACCEPT
+    else if (applications.some(a => a.phase === ApplicationPhase.REVIEW_COMPLETE) && !applications.some(a => a.status === ApplicationStatus.PENDING) && !appRequest.awaitingCorrection) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
+    else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_ACCEPT) && !applications.some(a => a.status === ApplicationStatus.PENDING) && !appRequest.awaitingCorrection) appRequest.status = AppRequestStatus.READY_TO_ACCEPT
     else if (applications.some(a => a.phase === ApplicationPhase.ACCEPTANCE)) appRequest.status = AppRequestStatus.ACCEPTANCE
     else if (applications.some(a => a.phase === ApplicationPhase.PREAPPROVAL)) appRequest.status = AppRequestStatus.PREAPPROVAL
     else if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_BLOCKING)) appRequest.status = AppRequestStatus.APPROVAL
