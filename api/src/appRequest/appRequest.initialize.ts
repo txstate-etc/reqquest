@@ -15,6 +15,7 @@ export const appRequestMigrations: DatabaseMigration[] = [
           phase VARCHAR(255) NOT NULL DEFAULT '${AppRequestPhase.STARTED}',
           computedStatus VARCHAR(255) NOT NULL DEFAULT 'PREQUAL',
           computedReadyToComplete TINYINT(1) NOT NULL DEFAULT 0,
+          computedAwaitingCorrection TINYINT(1) NOT NULL DEFAULT 0,
           createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           submittedAt DATETIME,
@@ -93,6 +94,12 @@ export const appRequestMigrations: DatabaseMigration[] = [
           auth TEXT NOT NULL,
           createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`)
+    }
+  }, {
+    id: '20260715000000',
+    async execute (db: Queryable) {
+      const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_NAME = 'app_requests' AND COLUMN_NAME = 'computedAwaitingCorrection'")
+      if (!exists) await db.execute('ALTER TABLE app_requests ADD COLUMN computedAwaitingCorrection TINYINT(1) NOT NULL DEFAULT 0 AFTER computedReadyToComplete')
     }
   }
 ]

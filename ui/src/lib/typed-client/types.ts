@@ -418,6 +418,9 @@ export default {
             "applications": [
                 33
             ],
+            "awaitingCorrection": [
+                41
+            ],
             "closedAt": [
                 47
             ],
@@ -723,6 +726,9 @@ export default {
         "Application": {
             "actions": [
                 34
+            ],
+            "awaitingCorrection": [
+                41
             ],
             "id": [
                 49

@@ -59,7 +59,8 @@ export const assess_technical_troubleshooting_prompt: PromptDefinition<AssessTec
     const invalidatedResponse: InvalidatedResponse[] = []
     if (data && !data.demonstrateTechincalTroubleshooting) {
       invalidatedResponse.push({ promptKey: 'technical_troubleshooting_prompt', reason: 'Troubleshooting was poorly described, make changes and resubmit' },
-                              { promptKey: 'critical_thinking_prompt', reason: 'Need to find out why someone bad at technical troubleshooting would be good at critical thinking'})
+                              { promptKey: 'critical_thinking_prompt', reason: 'Need to find out why someone bad at technical troubleshooting would be good at critical thinking'},
+                              { promptKey: 'application_management_opt_out_prompt', reason: 'TEST:  Should never see.  We do not want inadvertent typos/copies, where we invalidate an optOut prompt and break forward flow allowance'})
     }
     return invalidatedResponse
   },

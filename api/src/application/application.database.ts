@@ -12,6 +12,7 @@ export interface ApplicationRow {
   computedStatusReason?: string
   computedPhase: ApplicationPhase
   computedIneligiblePhase?: IneligiblePhases
+  computedAwaitingCorrection: 0 | 1
   workflowStage: string
   appRequestStatus: AppRequestStatusDB
   appRequestComputedStatus: AppRequestStatus
@@ -35,7 +36,7 @@ export async function getApplications (filter: ApplicationFilter, tdb: Queryable
   const whereClause = where.length > 0 ? `WHERE (${where.join(') AND (')})` : ''
   const rows = await tdb.getall<ApplicationRow>(`
     SELECT a.id, a.appRequestId, ar.periodId, a.programKey, ar.userId, a.computedStatus, a.computedStatusReason, a.computedPhase,
-      a.computedIneligiblePhase, a.workflowStage, ar.status AS appRequestStatus, ar.phase AS appRequestPhase, ar.computedStatus AS appRequestComputedStatus
+      a.computedIneligiblePhase, a.computedAwaitingCorrection, a.workflowStage, ar.status AS appRequestStatus, ar.phase AS appRequestPhase, ar.computedStatus AS appRequestComputedStatus
     FROM applications a
     INNER JOIN app_requests ar ON ar.id = a.appRequestId
     ${whereClause}
@@ -70,7 +71,7 @@ export async function syncApplications (appRequestId: number, activeProgramKeySe
 
 export async function updateApplicationsComputed (applications: Application[], db: Queryable) {
   for (const application of applications) {
-    await db.update('UPDATE applications SET computedStatus = ?, computedStatusReason = ?, computedPhase = ?, computedIneligiblePhase = ? WHERE id = ?', [application.status, application.statusReason, application.phase, application.ineligiblePhase, application.internalId])
+    await db.update('UPDATE applications SET computedStatus = ?, computedStatusReason = ?, computedPhase = ?, computedIneligiblePhase = ?, computedAwaitingCorrection = ? WHERE id = ?', [application.status, application.statusReason, application.phase, application.ineligiblePhase, application.awaitingCorrection ? 1 : 0, application.internalId])
   }
 }
 
