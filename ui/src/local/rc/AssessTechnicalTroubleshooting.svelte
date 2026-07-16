@@ -1,8 +1,5 @@
 <script lang="ts">
   import { FieldRadio } from '@txstate-mws/carbon-svelte'
-  import type { AssessTechnicalTroubleshooting } from './types.js'
-  export let gatheredConfigData
-  export let data: Partial<AssessTechnicalTroubleshooting>
 </script>
 
 <FieldRadio boolean path="demonstrateTechincalTroubleshooting" legendText="Did the applicant demonstrate a structured methodology for troubleshooting?" items={[{ label: 'Yes', value: true }, { label: 'No', value: false }]} />

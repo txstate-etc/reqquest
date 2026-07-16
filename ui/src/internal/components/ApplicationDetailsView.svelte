@@ -112,7 +112,7 @@
         {/if}
         <!-- Ineligible Status List -->
          {#if ineligibleApplications.length > 0}
-            <Panel title="Ineligible programs" expandable={true} expanded={(eligibleApplications.length === 0)}>
+            <Panel title="Ineligible benefits" expandable={true} expanded={(eligibleApplications.length === 0)}>
               <ApplicantProgramList applications={ineligibleApplications} {appRequest} viewMode={statusDisplay === 'tags'} {showTooltipsAsText} />
             </Panel>
          {/if}         

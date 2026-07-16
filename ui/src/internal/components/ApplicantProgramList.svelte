@@ -91,7 +91,7 @@
 <section class="programs-container">
   <header>
     <div class="program column">Program</div>
-    <div class="status column">Eligibility</div>
+    <div class="status column">Status</div>
   </header>
   {#each applications as application (application.id)}
     {@const programStatus = programButtonStatus[application.id]}

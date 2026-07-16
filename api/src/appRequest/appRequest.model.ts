@@ -92,6 +92,7 @@ export class AppRequest {
     this.tags = tags ?? {}
     this.dataVersion = row.dataVersion
     this.readyToComplete = !!row.computedReadyToComplete
+    this.awaitingCorrection = !!row.computedAwaitingCorrection
   }
 
   @Field(type => ID)
@@ -117,6 +118,9 @@ export class AppRequest {
 
   @Field(type => Int, { description: 'The version of the data for this app request. This is incremented every time the data is updated. If you provide it with your update requests, the API will perform an optimistic concurrency check and fail the update if someone else has updated the data in the meantime.' })
   dataVersion: number
+
+  @Field({ description: 'True when at least one reachable prompt anywhere on this request has been invalidated and must be re-answered. Status and phase are computed from the answers on file, so use this flag to explain that the request is held back awaiting a correction.' })
+  awaitingCorrection: boolean
 
   periodClosesAt?: DateTime
   periodArchivesAt?: DateTime
