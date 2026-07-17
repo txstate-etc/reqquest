@@ -40,7 +40,7 @@ class Mail {
     await Promise.all(outbox.map(async ({ id, templateKey, emailTo, variables, replyTo, attempts }) => {
       const templateRow = await getMailTemplate(templateKey)
       if (!templateRow) return await updateMailOutbox(id, { status: 'error', lastErrorAt: DateTime.now().toJSDate(), lastErrorMessage: 'No template found', attempts: attempts += 1 })
-      if (attempts <= 5) return
+      if (attempts >= 5) return
       const subject = Handlebars.compile(templateRow.subject, { noEscape: true })
       const body = Handlebars.compile(templateRow.body)
       try {
