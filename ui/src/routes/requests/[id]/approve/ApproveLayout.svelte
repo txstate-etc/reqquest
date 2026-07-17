@@ -6,6 +6,8 @@
   import { Modal } from 'carbon-components-svelte'
   import { Information, InformationFilled } from 'carbon-icons-svelte'
     import { ColumnList } from '@txstate-mws/carbon-svelte';
+    import StatusMessageList from '$internal/components/StatusMessageList.svelte';
+    import { titleCase } from 'txstate-utils';
 
   export let basicRequestData: LayoutData['basicRequestData']
   export let appRequest: ReviewData
@@ -58,23 +60,22 @@
   </div>
 </div>
 
-<Modal passiveModal bind:open modalHeading="Ineligible programs">
-<ColumnList
-  columns={[
-    { id: 'reason', label: 'reason' }
-  ]}
-  rows={appRequest?.applications.filter(app => app.status === enumApplicationStatus.INELIGIBLE).map(app => ({
-    id: app.id,
-    reason: app.statusReason,
-
-  })) ?? []}
-/>
+<Modal passiveModal open modalHeading="Ineligible programs">
   <div class='flex flex-col'>
     {#each appRequest?.applications.filter(app => app.status === enumApplicationStatus.INELIGIBLE) as application}
-      {application.title}
-      <div class='flex'>
-        <InformationFilled size={20} color='#dd3b46' /> {application.status}
+      {@const warningReqs = application.requirements.filter(r => r.status === 'WARNING' && r.statusReason)}
+      <span class='py-4'>{application.title}</span>
+
+      <div class='ineligible-warning flex gap-4'>
+        <InformationFilled size={20} color='#dd3b46' class=' mr-2' /> 
+        <span class="bx--accordion__title">{titleCase(application.status)}: {application.statusReason ?? 'No reasons provided'}</span>
       </div>
+
+      <!-- <StatusMessageList
+        // items={[...warningReqs.map(r => ({ id: r.id, message: r.statusReason! })), ...warningReqs.map(r => ({ id: `r.id+`, message: r.statusReason! }))]}
+        items={warningReqs.map(r => ({ id: r.id, message: r.statusReason! }))}
+        variant="warning"
+        accordionTitle="Multiple warnings" /> -->
     {/each}
   </div>
 </Modal>
@@ -126,5 +127,9 @@
     .identifier {
       grid-template-columns: 1fr;
     }
+  }
+
+  .ineligible-warning {
+    padding: .625rem 0;
   }
 </style>
