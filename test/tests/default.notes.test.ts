@@ -96,6 +96,50 @@ test.describe.serial('Notes - XSS sanitization', { tag: '@default' }, () => {
 
   let periodId = 0
   let appRequestId = 0
+  let programKey = ''
+
+  // Each case is added as a note via the API, then the UI must render every expected
+  // href as an <a> tag whose text is exactly the url. These testcases help to verify
+  // that the regex is working as expected.
+  // NOTE: The surrounding quotes, parentheses and sentence punctuation must stay outside
+  //   the highlighted link and href of the a tag.
+  const urlCases: { name: string, content: string, hrefs: string[] }[] = [
+    {
+      name: 'double-quoted url at end of note',
+      content: 'See the docs at "http://quoted-end.domain.com/content?pages=1&count=2"',
+      hrefs: ['http://quoted-end.domain.com/content?pages=1&count=2']
+    },
+    {
+      name: 'double-quoted url in middle of note',
+      content: 'See "http://quoted-mid.domain.com/content?pages=1&count=2" for details',
+      hrefs: ['http://quoted-mid.domain.com/content?pages=1&count=2']
+    },
+    {
+      name: 'parenthesized comma-separated urls at end of note',
+      content: 'Check both (https://first-end.domain.com/, https://second-end.domain.com/)',
+      hrefs: ['https://first-end.domain.com/', 'https://second-end.domain.com/']
+    },
+    {
+      name: 'parenthesized comma-separated urls in middle of note',
+      content: 'Check both (https://first-mid.domain.com/, https://second-mid.domain.com/) before continuing',
+      hrefs: ['https://first-mid.domain.com/', 'https://second-mid.domain.com/']
+    },
+    {
+      name: 'url followed by a colon',
+      content: 'https://example.domain.com: example domain.',
+      hrefs: ['https://example.domain.com']
+    },
+    {
+      name: 'url ending a sentence with a period',
+      content: 'At this url https://period-end.domain.com.',
+      hrefs: ['https://period-end.domain.com']
+    },
+    {
+      name: 'url ending a sentence with an exclamation point',
+      content: 'At this url https://bang-end.domain.com!',
+      hrefs: ['https://bang-end.domain.com']
+    }
+  ]
 
   test('Admin - create period for notes XSS tests', async ({ adminRequest }) => {
     const query = `
@@ -514,5 +558,46 @@ test.describe.serial('Notes - XSS sanitization', { tag: '@default' }, () => {
     const { appRequests } = await applicant2Request.graphql<{ appRequests: { id: string }[] }>(SEARCH_APP_REQUESTS_QUERY, { search: NOTE_SEARCH_MARKER })
     expect(appRequests.map(r => String(r.id))).not.toContain(String(appRequestId))
   })
+
+  test('Reviewer - look up program key for the approve page', async ({ reviewerRequest }) => {
+    const query = `
+      query GetProgramKeys($appRequestIds: [ID!]) {
+        appRequests(filter: { ids: $appRequestIds }) {
+          applications { programKey }
+        }
+      }
+    `
+    const { appRequests } = await reviewerRequest.graphql<{ appRequests: { applications: { programKey: string }[] }[] }>(query, { appRequestIds: [appRequestId] })
+    programKey = appRequests[0].applications[0]?.programKey
+    expect(programKey).toBeTruthy()
+  })
+
+  test('Reviewer - add notes containing URLs testcases via API for clickable url tests', async ({ reviewerRequest }) => {
+    for (const urlCase of urlCases) {
+      const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content: urlCase.content })
+      expect(addNote.success).toEqual(true)
+      expect(addNote.note?.content).toEqual(urlCase.content)
+    }
+  })
+
+  for (const urlCase of urlCases) {
+    test(`Reviewer - ${urlCase.name} renders as clickable link`, async ({ reviewerPage }) => {
+      await reviewerPage.goto(`/requests/${appRequestId}/approve/${programKey}`)
+      await reviewerPage.getByRole('menuitem', { name: 'See All Notes' }).click()
+      const notesList = reviewerPage.locator('.notes-list')
+      await expect(notesList).toBeVisible()
+
+      // Locate by comments and search for the full note text, including the punctuation surrounding the url(s), to verify that our comment rendered.
+      await expect(notesList.locator('.comment-content p').filter({ hasText: urlCase.content })).toBeVisible()
+
+      for (const href of urlCase.hrefs) {
+        const anchor = notesList.locator(`a[href="${href}"]`)
+        // Locating by exact href helps to verify that the surrounding quotes/parens/punctuation were not included as part of the url.
+        await expect(anchor).toBeVisible()
+        await expect(anchor).toHaveText(href)
+        await expect(anchor).toHaveAttribute('target', '_blank')
+      }
+    })
+  }
 
 })
