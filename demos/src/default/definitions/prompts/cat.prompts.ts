@@ -96,7 +96,7 @@ export const other_cats_vaccines_prompt: PromptDefinition<VaccinePromptData> = {
     }
     return messages
   },
-  preProcessData: async (data, ctx) => {
+  preProcessData: async (data, ctx, appRequest, appRequestData, config, db, validateOnly) => {    
     const shasums: string[] = []
     for await (const file of ctx.files()) {
       const hash = createHash('sha256')

@@ -1,8 +1,15 @@
-import { MutationMessage, PromptDefinition } from '@reqquest/api'
+import { MutationMessage, PromptDefinition, InvalidatedResponse } from '@reqquest/api'
 import { AssessMaintainSysDocumentationData, AssessMaintainSysDocumentationSchema, AssessSupportCommunicationData, AssessSupportCommunicationSchema, AssessTechincalTroubleshootingData, AssessTechincalTroubleshootingSchema, MaintainSysDocumentationData, MaintainSysDocumentationSchema, SupportCommunicationData, SupportCommunicationSchema, TechincalTroubleshootingData, TechincalTroubleshootingSchema } from '../models/index.js'
 import { MutationMessageType } from '@txstate-mws/graphql-server'
 import { fileHandler } from 'fastify-txstate'
 import { OptOutData, OptOutSchema } from '../models/optOut.models.js'
+
+const wait = () => {
+    return new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+    });
+};
+
 
 export const application_management_opt_out_prompt: PromptDefinition<OptOutData> = {
   key: 'application_management_opt_out_prompt',
@@ -41,7 +48,27 @@ export const assess_technical_troubleshooting_prompt: PromptDefinition<AssessTec
 
     return messages
   },
-  invalidUponChange: [{ promptKey: 'technical_troubleshooting_prompt', reason: 'Troubleshooting was poorly described, make changes and resubmit' }]
+  preload: async (data, config) => {
+    await wait() // simulate a long-running preload operation
+    return {
+      demonstrateTechincalTroubleshooting: true,
+      complexity: 1
+    }
+  },
+  invalidUponChange: (data: any, config: any, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) => {
+    const invalidatedResponse: InvalidatedResponse[] = []
+    if (data && !data.demonstrateTechincalTroubleshooting) {
+      invalidatedResponse.push({ promptKey: 'technical_troubleshooting_prompt', reason: 'Troubleshooting was poorly described, make changes and resubmit' },
+                              { promptKey: 'critical_thinking_prompt', reason: 'Need to find out why someone bad at technical troubleshooting would be good at critical thinking'},
+                              { promptKey: 'application_management_opt_out_prompt', reason: 'TEST:  Should never see.  We do not want inadvertent typos/copies, where we invalidate an optOut prompt and break forward flow allowance'})
+    }
+    return invalidatedResponse
+  },
+  validUponChange: (data: any, config: any, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) => {
+    return (data && data.demonstrateTechincalTroubleshooting)
+      ? ['technical_troubleshooting_prompt', 'critical_thinking_prompt']
+      : []
+  }
 }
 
 export const support_communication_prompt: PromptDefinition<SupportCommunicationData> = {
@@ -75,7 +102,8 @@ export const maintain_sys_documentation_prompt: PromptDefinition<MaintainSysDocu
   title: 'Maintain System Documentation',
   description: 'Maintain System Documentation',
   schema: MaintainSysDocumentationSchema,
-  preProcessData: async (data, ctx) => {
+  preProcessData: async (data, ctx, appRequest, appRequestData, config, db, validateOnly) => {
+    if (validateOnly) return data
     if (data.documentation) {
       for await (const file of ctx.files()) {
         const { checksum, size } = await fileHandler.put(file.stream)

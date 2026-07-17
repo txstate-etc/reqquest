@@ -18,7 +18,8 @@ export const state_residence_prompt: PromptDefinition = {
     }
     return messages
   },
-  preProcessData: async (data, ctx) => {
+  preProcessData: async (data, ctx, appRequest, appRequestData, config, db, validateOnly) => {
+    if (validateOnly) return data
     if (data.residentIdDoc) {
       for await (const file of ctx.files()) {
         const { checksum, size } = await fileHandler.put(file.stream)

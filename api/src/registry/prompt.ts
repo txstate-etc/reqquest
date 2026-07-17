@@ -129,7 +129,7 @@ export interface ConfigurationDefinition<ConfigurationInputType = any, Configura
    * validate), but be aware of the potential transformations when you set the `arg` for each
    * MutationMessage returned by `validate`.
    */
-  preProcessData?: (data: Partial<ConfigurationInputType>, ctx: RQContext) => Promise<ConfigurationDataType> | ConfigurationDataType
+  preProcessData?: (data: Partial<ConfigurationInputType>, ctx: RQContext, validateOnly: boolean) => Promise<ConfigurationDataType> | ConfigurationDataType
   /**
    * Return validation messages to the user to help them provide correct input while
    * configuring the Prompt. Prompt configuration is for administrators to be able to
@@ -390,7 +390,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Pres
    * evaluation routine, so it has to operate on post-processed data. Be aware of the potential
    * transformations when you set the `arg` for each MutationMessage returned by `validate`.
    */
-  preProcessData?: (data: InputDataType, ctx: RQContext, appRequest: AppRequest, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, db: Queryable) => Promise<DataType> | DataType
+  preProcessData?: (data: InputDataType, ctx: RQContext, appRequest: AppRequest, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, db: Queryable, validateOnly: boolean) => Promise<DataType> | DataType
   /**
    * Optionally provide a function that can perform server side prompt staging operations, such as querying and returning data that is meant to be readonly to the applicant.
    * Process can be specified as recurring or run on first call only. If recur is true, the process function will run on every stage of the prompt.
@@ -595,7 +595,7 @@ class PromptRegistry {
   getInvalidatedPrompts (key: string, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) {
     const prompt = this.prompts[key]
     if (!prompt) throw new Error(`Prompt ${key} not found.`)
-    return this.promptInvalidators[key](appRequestData[key], allPeriodConfig[key], appRequestData, allPeriodConfig) ?? []
+    return this.promptInvalidators[key](appRequestData[key], allPeriodConfig[key], appRequestData, allPeriodConfig).filter(ir => !this.prompts[ir.promptKey].optOut) ?? []
   }
 
   getRevalidatedPrompts (key: string, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) {

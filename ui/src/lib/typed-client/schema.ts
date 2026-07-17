@@ -153,6 +153,7 @@ export interface AccessTagCategory {
 
 /** A user that has or once had access to the system. */
 export interface AccessUser {
+    email: (Scalars['String'] | null)
     fullname: Scalars['String']
     groups: Scalars['String'][]
     login: Scalars['ID']
@@ -182,6 +183,8 @@ export interface AppRequest {
     actions: AppRequestActions
     applicant: AccessUser
     applications: Application[]
+    /** True when at least one reachable prompt anywhere on this request has been invalidated and must be re-answered. Status and phase are computed from the answers on file, so use this flag to explain that the request is held back awaiting a correction. */
+    awaitingCorrection: Scalars['Boolean']
     /** Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date. */
     closedAt: (Scalars['DateTime'] | null)
     createdAt: Scalars['DateTime']
@@ -307,6 +310,8 @@ export type AppRequestStatus = 'ACCEPTANCE' | 'ACCEPTED' | 'APPROVAL' | 'APPROVE
 /** An application represents the applicant applying to a specific program. Each appRequest has multiple applications - one per program defined in the system. Some applications are mutually exclusive and/or will be eliminated early based on PREQUAL requirements, but they all technically exist in the data model - there is no concept of picking one application over another, just two applications where one dies and the other survives. */
 export interface Application {
     actions: ApplicationActions
+    /** True when at least one reachable prompt on this application has been invalidated and must be re-answered. Status is still computed from the answers on file, so pair status displays with this flag to indicate that a correction is outstanding. */
+    awaitingCorrection: Scalars['Boolean']
     id: Scalars['ID']
     /** The phase in which this application became ineligible for benefits. Useful for reporting / filtering. Null if the application is not (yet) ineligible. */
     ineligiblePhase: (IneligiblePhases | null)
@@ -1021,6 +1026,7 @@ tag: Scalars['String']}
 
 /** A user that has or once had access to the system. */
 export interface AccessUserGenqlSelection{
+    email?: boolean | number
     fullname?: boolean | number
     groups?: boolean | number
     login?: boolean | number
@@ -1070,6 +1076,8 @@ export interface AppRequestGenqlSelection{
     actions?: AppRequestActionsGenqlSelection
     applicant?: AccessUserGenqlSelection
     applications?: ApplicationGenqlSelection
+    /** True when at least one reachable prompt anywhere on this request has been invalidated and must be re-answered. Status and phase are computed from the answers on file, so use this flag to explain that the request is held back awaiting a correction. */
+    awaitingCorrection?: boolean | number
     /** Date that this request was considered closed and no longer editable. If active or re-opened, will be null. If closed again, will be the second closure date. */
     closedAt?: boolean | number
     createdAt?: boolean | number
@@ -1246,6 +1254,8 @@ ids?: (Scalars['ID'][] | null)}
 /** An application represents the applicant applying to a specific program. Each appRequest has multiple applications - one per program defined in the system. Some applications are mutually exclusive and/or will be eliminated early based on PREQUAL requirements, but they all technically exist in the data model - there is no concept of picking one application over another, just two applications where one dies and the other survives. */
 export interface ApplicationGenqlSelection{
     actions?: ApplicationActionsGenqlSelection
+    /** True when at least one reachable prompt on this application has been invalidated and must be re-answered. Status is still computed from the answers on file, so pair status displays with this flag to indicate that a correction is outstanding. */
+    awaitingCorrection?: boolean | number
     id?: boolean | number
     /** The phase in which this application became ineligible for benefits. Useful for reporting / filtering. Null if the application is not (yet) ineligible. */
     ineligiblePhase?: boolean | number
