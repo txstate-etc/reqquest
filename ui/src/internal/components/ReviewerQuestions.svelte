@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Form } from '@txstate-mws/svelte-forms'
   import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
-  import WarningAltFilled from 'carbon-icons-svelte/lib/WarningAltFilled.svelte'
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import { isInlineReviewerEditPrompt, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api } from '$internal'
@@ -13,6 +12,7 @@
   import type { PageData } from '../../routes/requests/[id]/approve/[programKey]/$types'
   import { invalidateAll } from '$app/navigation'
   import Review from "carbon-icons-svelte/lib/Review.svelte";
+  import WarningIconYellow from './WarningIconYellow.svelte';
 
   export let sections: any[]
   export let promptIndicator: Record<string, any>
@@ -98,7 +98,7 @@
                     {#if promptIndicator[prompt.key]?.indicator === PromptIndicators.AUTOMATION}
                         <MachineLearning size={20} />
                     {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.WARNING}
-                        <WarningAltFilled size={20} class="warning-icon" />
+                        <WarningIconYellow />
                     {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.DISQUALIFYING}
                         <WarningFilled size={20} class="disqualifying-icon" />
                     {/if}
@@ -230,7 +230,7 @@
   .prompts dt :global(.warning-icon) {
     fill: var(--cds-inverse-support-03, #f1c21b);
   }
-  .prompts dt :global(.disqualifying-icon) {
+  :global(.disqualifying-icon) {
     fill: var(--cds-support-01, #da1e28);
   }
 </style>

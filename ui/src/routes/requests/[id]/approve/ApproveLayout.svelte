@@ -4,10 +4,9 @@
   import { uiRegistry } from '../../../../local/index.js'
   import { enumApplicationStatus, InfoCard } from '$lib'
   import { Modal } from 'carbon-components-svelte'
-  import { Information, InformationFilled } from 'carbon-icons-svelte'
-    import { ColumnList } from '@txstate-mws/carbon-svelte';
-    import StatusMessageList from '$internal/components/StatusMessageList.svelte';
-    import { titleCase } from 'txstate-utils';
+  import { Information } from 'carbon-icons-svelte'
+  import StatusMessageList from '$internal/components/StatusMessageList.svelte'
+  import { titleCase } from 'txstate-utils'
 
   export let basicRequestData: LayoutData['basicRequestData']
   export let appRequest: ReviewData
@@ -16,21 +15,6 @@
 
 <div class="review-container">
   <div class="review-sidebar flow">
-    <!-- <Card
-      title={basicRequestData.applicant.fullname}
-    >
-      <dl class="identifier">
-        <dt>{uiRegistry.getWord('login')}</dt>
-        <dd>{basicRequestData.applicant.login}</dd>
-        {#each basicRequestData.applicant.otherIdentifiers as identifier (identifier.id)}
-          <dt>{identifier.label}:</dt>
-          <dd>{identifier.id}</dd>
-        {/each}
-      </dl>
-      {#if uiRegistry.config.slots?.reviewerSidebarCard}
-        <svelte:component this={uiRegistry.config.slots.reviewerSidebarCard} appRequest={basicRequestData} applicant={basicRequestData.applicant} {api} />
-      {/if}
-    </Card> -->
     <InfoCard
       noPrimaryAction
       title={basicRequestData.applicant.fullname}
@@ -60,22 +44,21 @@
   </div>
 </div>
 
-<Modal passiveModal open modalHeading="Ineligible programs">
-  <div class='flex flex-col'>
+<Modal passiveModal bind:open modalHeading="Ineligible programs">
+  <div class='flex flex-col gap-4 text-base'>
     {#each appRequest?.applications.filter(app => app.status === enumApplicationStatus.INELIGIBLE) as application}
       {@const warningReqs = application.requirements.filter(r => r.status === 'WARNING' && r.statusReason)}
-      <span class='py-4'>{application.title}</span>
-
-      <div class='ineligible-warning flex gap-4'>
-        <InformationFilled size={20} color='#dd3b46' class=' mr-2' /> 
-        <span class="bx--accordion__title">{titleCase(application.status)}: {application.statusReason ?? 'No reasons provided'}</span>
-      </div>
-
-      <!-- <StatusMessageList
-        // items={[...warningReqs.map(r => ({ id: r.id, message: r.statusReason! })), ...warningReqs.map(r => ({ id: `r.id+`, message: r.statusReason! }))]}
+      <span class='py-2'>{application.title}</span>
+      <StatusMessageList
+        icon
+        items={[{ id: '', message: `${titleCase(application.status)}${application.statusReason ? ':' : ''} ${application.statusReason ?? ''}` }]}
+        variant="error"
+        accordionTitle="Multiple warnings" />
+      <StatusMessageList
+        icon
         items={warningReqs.map(r => ({ id: r.id, message: r.statusReason! }))}
         variant="warning"
-        accordionTitle="Multiple warnings" /> -->
+        accordionTitle="Multiple warnings" />
     {/each}
   </div>
 </Modal>

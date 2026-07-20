@@ -3,15 +3,17 @@
   import type { ComponentProps } from 'svelte'
 
   interface $$Props extends ComponentProps<typeof WarningAltFilled> {}
+
+  export let size = 20
 </script>
 
 <div>
-  <WarningAltFilled {...$$restProps} />
+  <WarningAltFilled {size} {...$$restProps} />
 </div>
 
 <style>
   div :global(svg) {
-    fill: var(--cds-support-03, rgba(239, 200, 108, 1)) !important;
+    fill: var(--cds-support-03, #f1c21b) !important;
   }
 
   div :global([data-icon-path="inner-path"]) {
