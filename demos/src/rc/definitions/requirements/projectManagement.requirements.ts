@@ -10,7 +10,7 @@ export const project_management_opt_out_req: RequirementDefinition = {
   promptKeys: ['project_management_opt_out_prompt'],
   resolve: (data, config) => {
     const promptData = data['project_management_opt_out_prompt'] as OptOutData
-    if (promptData?.optOut) return { status: RequirementStatus.DISQUALIFYING, response: 'Applicant opted out of the program' }
+    if (promptData?.optOut) return { status: RequirementStatus.DISQUALIFYING, reason: 'Applicant opted out of the program' }
     return { status: RequirementStatus.NOT_APPLICABLE }
   }
 }

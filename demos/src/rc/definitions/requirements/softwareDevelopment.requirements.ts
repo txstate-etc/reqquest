@@ -11,7 +11,7 @@ export const software_dev_opt_out_req: RequirementDefinition = {
   promptKeys: ['software_dev_opt_out_prompt'],
   resolve: (data, config) => {
     const promptData = data['software_dev_opt_out_prompt'] as OptOutData
-    if (promptData?.optOut) return { status: RequirementStatus.DISQUALIFYING, response: 'Applicant opted out of the program' }
+    if (promptData?.optOut) return { status: RequirementStatus.DISQUALIFYING, reason: 'Applicant opted out of the program' }
     return { status: RequirementStatus.NOT_APPLICABLE }
   }
 }
