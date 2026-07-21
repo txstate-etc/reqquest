@@ -214,8 +214,8 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     const server = new PromptPrestageServerData(appRequestId, promptKey) // returned package will not have server data, so need to append to validate sig
     const signedPackage = { signature: pkg.signature, data: { server, client: pkg.nodes.client } }
     return verifySignedJsonPackage(signedPackage, process.env.PROMPT_SIGNING_KEY!)
-      && (pkg.nodes.client.__exp < Math.floor(Date.now() / 1000) + DEFAULT_EXPIRY)
-      && ((dataVersion) ? pkg.nodes.client.__dv === dataVersion : true) // compare dateVersion only if included
+      && (pkg.nodes.client.__exp > Math.floor(Date.now() / 1000))
+      && ((dataVersion) ? pkg.nodes.client.__dv === dataVersion : true) // compare dataVersion only if included
   }
 
   isOwn (prompt: RequirementPrompt): boolean {
