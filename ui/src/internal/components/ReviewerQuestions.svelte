@@ -26,9 +26,12 @@
   let promptBeingEdited: PromptWithExtra | undefined = undefined
   let showPromptDialog = false
   let fetchingEditPrompt = false
+  let dialogSize = ''
+
   function editPrompt (prompt: Prompt, allowSaveWithoutChanges: boolean = false) {
     return async () => {
       if (fetchingEditPrompt) return
+      dialogSize = uiRegistry.getPrompt(prompt?.key)?.formMode === 'full' ? 'large' : ''
       fetchingEditPrompt = true
       showPromptDialog = true
       try {
@@ -153,8 +156,8 @@
     validate={onPromptValidate(promptBeingEdited)}
     on:saved={onPromptSaved}
     disableSaveUntilChanged={!promptBeingEdited?.allowSaveWithoutChanges} // allow saving without changes if prompt was previously invalidated ...accomodates reviewer saying no changes required on correction check
-    centered
-    size={uiRegistry.getPrompt(promptBeingEdited?.key)?.formMode === 'full' ? 'large' : undefined}
+    centered={!dialogSize}
+    size={dialogSize}
     preload={promptBeingEdited?.preloadData}
     let:data
   >
