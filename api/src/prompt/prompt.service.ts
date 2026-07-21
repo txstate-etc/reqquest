@@ -201,21 +201,14 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
   }
 
   async verifyPrestageData (appRequestId: number, promptKey: string, pkg: PromptPrestagePackage, dataVersion?: number) {
-    if (await this.verifyCurrentPrestageData(appRequestId, promptKey, pkg)) return true
-    return this.verifyLatestPrestageData(appRequestId, promptKey, pkg, dataVersion)
-  }
-
-  async verifyCurrentPrestageData (appRequestId: number, promptKey: string, pkg: PromptPrestagePackage) {
-    const data = await this.svc(AppRequestServiceInternal).getData(appRequestId)
-    if (data[promptKey]?.[PROMPT_PRESTAGE_NS] && data[promptKey][PROMPT_PRESTAGE_NS].signature === pkg.signature) return true
-  }
-
-  verifyLatestPrestageData (appRequestId: number, promptKey: string, pkg: PromptPrestagePackage, dataVersion?: number) {
     const server = new PromptPrestageServerData(appRequestId, promptKey) // returned package will not have server data, so need to append to validate sig
     const signedPackage = { signature: pkg.signature, data: { server, client: pkg.nodes.client } }
-    return verifySignedJsonPackage(signedPackage, process.env.PROMPT_SIGNING_KEY!)
-      && (pkg.nodes.client.__exp > Math.floor(Date.now() / 1000))
-      && ((dataVersion) ? pkg.nodes.client.__dv === dataVersion : true) // compare dataVersion only if included
+    if (verifySignedJsonPackage(signedPackage, process.env.PROMPT_SIGNING_KEY!)) { // confirms it's a valid signed package, but doesn't check expiry or data version since could be current (stored) or latest
+      const data = await this.svc(AppRequestServiceInternal).getData(appRequestId)
+      if (data[promptKey]?.[PROMPT_PRESTAGE_NS] && data[promptKey][PROMPT_PRESTAGE_NS].signature === pkg.signature) return true // stored signed package so no expiry or data version check required
+      return ((pkg.nodes.client.__exp > Math.floor(Date.now() / 1000)) && ((dataVersion) ? pkg.nodes.client.__dv === dataVersion : true)) // if we are here, means we are checking latest, so ensure expiry and data versions are valid
+    }
+    return false
   }
 
   isOwn (prompt: RequirementPrompt): boolean {
