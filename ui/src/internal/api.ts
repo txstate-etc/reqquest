@@ -17,6 +17,8 @@ export const showDupePrompts = PUBLIC_SHOW_DUPLICATE_PROMPTS.trim() === 'true'
 export type DashboardAppRequest = Awaited<ReturnType<typeof api.getApplicantRequests>>[number]
 export type AppRequestForExportResponse = Awaited<ReturnType<typeof api.getAppRequestForExport>>
 export type PromptForEditing = Awaited<ReturnType<typeof api.getApplicantPrompt>>['prompt']
+export type ReviewData = Awaited<ReturnType<typeof api.getReviewData>>
+export type PromptDataLegion = Awaited<ReturnType<typeof api.getPromptDataLegion>>
 
 class API extends APIBase {
   baseUrl = PUBLIC_API_BASE

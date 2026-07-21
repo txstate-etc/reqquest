@@ -230,7 +230,7 @@
     <Loading />    
 {/if}
 
-<ApproveLayout {basicRequestData}>
+<ApproveLayout {basicRequestData} {appRequest}>
   <svelte:fragment slot="sidebar">
     <InfoCard title={application.title} tags={[{ label: applicationStatusInfo.label, type: applicationStatusInfo.color }]} tagsInBody>
       <!--
