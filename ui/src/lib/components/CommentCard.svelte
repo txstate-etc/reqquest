@@ -56,8 +56,10 @@
   // People often put punctuation at the end or enclose url's in parentheses or quotes so do not include
   // https://www.youtube.com/watch?v&#x3D;pYBrK1O4UEQ&amp;list&#x3D;UUHdD1ujwX1fCB0CiamefSWA.
   //   => href="https://www.youtube.com/watch?v=pYBrK1O4UEQ&list=UUHdD1ujwX1fCB0CiamefSWA"
+  // This runs on htmlEncoded text, so quotes arrive as entities (&quot;, &#x27;). Treat & as a
+  // delimiter except for the &amp; and &#x3D; entities that legitimately appear inside urls.
   function clickableUrl(str: string) {
-    return str.replace(/(\bhttps?:\/\/([^.,!?:)\n\r\t '"]+|[.,!?:)][^\n\r\t '")])+)/g, (m: string) => `<a href="${unencodeUrl(m)}" target="_blank">${m}</a>`)
+    return str.replace(/(\bhttps?:\/\/(&(?:amp|#x3D);|[^.,!?:&\n\r\t '")]+|[.,!?:][^&\n\r\t '")])+)/g, (m: string) => `<a href="${unencodeUrl(m)}" target="_blank">${m}</a>`)
   }
 
 </script>
