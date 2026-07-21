@@ -46,7 +46,7 @@
           routeId: '/requests/[id]/apply/programs'
         }, {
           routeId: '/requests/[id]/apply/[promptId]',
-          title: page => page.data.promptsById?.[page.data.prompt.id]?.navTitle ?? 'Unknown Prompt'
+          title: page => page.data.promptsById?.[page.data.prompt?.id]?.navTitle ?? 'Unknown Prompt'
         }]
       }]
     },
