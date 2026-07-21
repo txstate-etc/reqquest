@@ -1,7 +1,9 @@
 export interface RCPreQual {
+  lsat: number
   gpa: number
   availability: boolean
   acknowledgeExpectations: boolean
+  __prestage: object
 }
 
 export interface WrittenAutomation {
