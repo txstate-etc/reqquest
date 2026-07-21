@@ -158,6 +158,8 @@ import AssessMaintainSysDocumentationDisplay from './rc/AssessMaintainSysDocumen
 import ReccomendationLetterDisplay from './rc/ReccomendationLetterDisplay.svelte'
 import AssessReccomendationLetterDisplay from './rc/AssessReccomendationLetterDisplay.svelte'
 import DataRelatedPuzzleDisplay from './rc/DataRelatedPuzzleDisplay.svelte'
+import RCPreQualUserInfoPrompt from './rc/PreQualUserInfoPrompt.svelte'
+import RCPreQualUserInfoPromptDisplay from './rc/PreQualUserInfoPromptDisplay.svelte'
 import OptOut from './rc/OptOut.svelte'
 import OptOutDisplay from './rc/OptOutDisplay.svelte'
 import RCIntroPanelDefaultSlot from './rc/IntroPanelDefaultSlot.svelte'
@@ -451,6 +453,11 @@ function configureDemoInstanceParams () {
         key: 'pre_qual_prompt',
         formComponent: PreQualPrompt,
         displayComponent: PreQualDisplay
+      },
+      {
+        key: 'pre_qual_user_info_prompt',
+        formComponent: RCPreQualUserInfoPrompt,
+        displayComponent: RCPreQualUserInfoPromptDisplay
       },
       {
         key: 'written_automation_prompt',
