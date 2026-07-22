@@ -163,6 +163,11 @@ import RCPreQualUserInfoPromptDisplay from './rc/PreQualUserInfoPromptDisplay.sv
 import OptOut from './rc/OptOut.svelte'
 import OptOutDisplay from './rc/OptOutDisplay.svelte'
 import RCIntroPanelDefaultSlot from './rc/IntroPanelDefaultSlot.svelte'
+import RCAuditSoftwareDevelopmentRegular from './rc/AuditSoftwareDevelopmentRegular.svelte'
+import RCAuditSoftwareDevelopmentRegularDisplay from './rc/AuditSoftwareDevelopmentRegularDisplay.svelte'
+import RCAuditSoftwareDevelopmentSubmitted from './rc/AuditSoftwareDevelopmentSubmitted.svelte'
+import RCAuditSoftwareDevelopmentSubmittedDisplay from './rc/AuditSoftwareDevelopmentSubmittedDisplay.svelte'
+
 import { api } from '$internal/api'
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, applicantReview, programs, requirements, prompts, userLookup, slots } = configureDemoInstanceParams()
@@ -447,7 +452,9 @@ function configureDemoInstanceParams () {
         { key: 'organization_req' },
         { key: 'assess_organization_req' },
         { key: 'reccomendation_letter_req' },
-        { key: 'assess_reccomendation_letter_req' }
+        { key: 'assess_reccomendation_letter_req' },
+        { key: 'audit_software_development_non_blocking_show_submitted_req'},
+        { key: 'audit_software_development_non_blocking_show_regular_req'}
       ],
       prompts: [{
         key: 'pre_qual_prompt',
@@ -595,6 +602,16 @@ function configureDemoInstanceParams () {
         key: 'project_management_opt_out_prompt',
         formComponent: OptOut,
         displayComponent: OptOutDisplay
+      },
+      {
+        key: 'audit_software_development_non_blocking_show_submitted_prompt',
+        formComponent: RCAuditSoftwareDevelopmentSubmitted,
+        displayComponent: RCAuditSoftwareDevelopmentSubmittedDisplay
+      },
+      {
+        key: 'audit_software_development_non_blocking_show_regular_prompt',
+        formComponent: RCAuditSoftwareDevelopmentRegular,
+        displayComponent: RCAuditSoftwareDevelopmentRegularDisplay
       }
       ]
     }

@@ -29,18 +29,19 @@ const softwareDevelopment: ProgramDefinition = {
     'reccomendation_letter_req',
     'assess_reccomendation_lettern_req'
   ],
-  workfworkflowStages: [{
+  workflowStages: [
+  {
     key: 'software_development_non_blocking_show_submitted',
     nonBlocking: true,
     nonBlockingEmergence: AppRequestPhase.SUBMITTED,
     title: 'Audit the actively ongoing review',
-    requirementKeys: ['audit_software_development_non_blocking_show_submitted']
+    requirementKeys: ['audit_software_development_non_blocking_show_submitted_req']
   },
   {
     key: 'software_development_non_blocking_show_regular',
     nonBlocking: true,
     title: 'Audit the entire program after all other phases complete',
-    requirementKeys: ['audit_software_development_non_blocking_show_regular']
+    requirementKeys: ['audit_software_development_non_blocking_show_regular_req']
   }]
 }
 const projectManagement: ProgramDefinition = {
