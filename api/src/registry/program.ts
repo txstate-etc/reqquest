@@ -47,10 +47,12 @@ export interface WorkflowStage {
   nonBlocking?: boolean
   /**
    * For workflows that are set nonBlocking: true, this property identifies in what AppRequestPhase
-   * these workflow requirements first become visible.  Once visible these workflows remain visible
-   * for the remainder of the AppRequest lifecycle
+   * these workflow requirements first become visible/editable.  Once visible these workflows remain visible
+   * for the remainder of the AppRequest lifecycle. Defaults to WORKFLOW_NONBLOCKING,
+   * which preserves the legacy behavior of only surfacing non-blocking workflow requirements once the
+   * request reaches the WORKFLOW_NONBLOCKING phase.
    */
-  nonBlockingEmergence: AppRequestPhase
+  nonBlockingEmergence?: AppRequestPhase
   /**
    * The title of the stage, displayed to the user.
    */

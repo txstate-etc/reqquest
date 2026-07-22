@@ -71,6 +71,28 @@ registerEnumType(AppRequestPhase, {
   }
 })
 
+/**
+ * Although the AppRequestPhase enum currently lists phases in chronological order,
+ * this is intended to guarantee expected order.  Safety since AppRequestPhase
+ * doesn't explicitly project order.
+ */
+export const appRequestPhaseOrder: AppRequestPhase[] = [
+  AppRequestPhase.STARTED,
+  AppRequestPhase.SUBMITTED,
+  AppRequestPhase.ACCEPTANCE,
+  AppRequestPhase.WORKFLOW_NONBLOCKING,
+  AppRequestPhase.COMPLETE
+]
+
+/**
+ * Returns true if current is at or beyond target in the natural phase progression. created
+ * specifically for non blocking workflows to confirm phase has been reached
+ * so its requirements should become visible/editable for the remainder of the life cycle.
+ */
+export function appRequestPhaseReached (current: AppRequestPhase, target: AppRequestPhase) {
+  return appRequestPhaseOrder.indexOf(current) >= appRequestPhaseOrder.indexOf(target)
+}
+
 @ObjectType({ description: 'Represents a group of applications all being applied for at the same time. As part of the request, multiple applications will be created and either eliminated as ineligible or submitted for approval.' })
 export class AppRequest {
   constructor (row: AppRequestRow, tags?: Record<string, string[]>) {

@@ -6,7 +6,7 @@ import db from 'mysql2-async/db'
 import { clone, findIndex, groupby, isNotBlank, keyby, omit, stringify } from 'txstate-utils'
 import {
   ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters,
-  AppRequestFilter, AppRequestPhase, AppRequestStatus, getApplications, getPeriodWorkflowStages, IneligiblePhases, Pagination,
+  AppRequestFilter, AppRequestPhase, appRequestPhaseReached, AppRequestStatus, getApplications, getPeriodWorkflowStages, IneligiblePhases, Pagination,
   PaginationInfoWithTotalItems, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, RequirementStatus,
   RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed,
   updatePromptComputed, updateRequirementComputed, type AppRequestData
@@ -565,6 +565,14 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       const presubmitRequirements = [...prequalRequirements, ...qualificationRequirements, ...postqualRequirements]
       const reviewRequirements = [...presubmitRequirements, ...preapprovalRequirements, ...approvalRequirements]
       const acceptRequirements = [...reviewRequirements, ...blockingWorkflowRequirements, ...acceptanceRequirements]
+      // Non-blocking workflow stages may now define an emergence phase at which their requirements first become
+      // visible/editable, rather than always waiting for the request to reach the WORKFLOW_NONBLOCKING phase.
+      // Must NEVER influence eligibility/status resolution since these are non-blocking
+      // so kept out of sortedRequirements
+      const emergedNonblockingWorkflowRequirements = nonblockingWorkflowRequirements.filter(req => {
+        const emergence = programRegistry.getWorkflowStageByKey(req.workflowStageKey)?.nonBlockingEmergence ?? AppRequestPhase.WORKFLOW_NONBLOCKING
+        return appRequestPhaseReached(appRequest.phase, emergence)
+      })
 
       // if we are in applicant phase, we only need to evaluate prequal, postqual, and qualification requirements
       // acceptance requirements if we are in acceptance phase, etc
@@ -578,10 +586,21 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
               ? currentWorkflowRequirements
               : reviewRequirements
 
+      // requirements from non-blocking workflow stages whose reached emergence phase are
+      // surfaced alongside the phase's normal requirements.
+      // Must inject the emerged bucket for the earlier review/blocking/acceptance phases. Non-blocking works normal still.
+      // They are appended after sortedRequirements and excluded from eligibility decisions.
+      const emergedExtraRequirements = phase === 'acceptance' || phase === 'blocking' || phase === 'review'
+        ? emergedNonblockingWorkflowRequirements.filter(req => !sortedRequirements.includes(req))
+        : []
+      const displayedRequirements = [...sortedRequirements, ...emergedExtraRequirements]
+
       const promptsSeenInApplication = new Set<string>()
       let applicationIsIneligible = false
       let firstAwaitingCorrectionRequirement: typeof sortedRequirements[number] | undefined
-      for (const requirement of sortedRequirements) {
+      for (const requirement of displayedRequirements) {
+        // identify if requirement influences eligibility (accommodate emerged non blocking that may be mixed in)
+        const isResolutionRequirement = sortedRequirements.includes(requirement)
         const requiredData = {} as AppRequestData
         const prompts = promptLookup[requirement.id] ?? []
         // matches the `moot` flag stored on regular prompts below: a prior requirement already
@@ -628,12 +647,14 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
 
         requirement.status = resolveInfo.status
         requirement.statusReason = resolveInfo.reason
-        if (requirement.status === RequirementStatus.DISQUALIFYING) applicationIsIneligible = true
+        if (requirement.status === RequirementStatus.DISQUALIFYING && isResolutionRequirement) applicationIsIneligible = true
 
         // an invalidated prompt that the user can currently reach must be re-answered before the
         // application may move forward; remember the first requirement that needs the attention so
-        // the phase can point at it
-        if (firstAwaitingCorrectionRequirement == null && !promptsAreMoot && prompts.some(p => p.invalidated && p.visibility === PromptVisibility.AVAILABLE)) {
+        // the phase can point at it.
+        // non-blocking requirements (that can now emerge early) are excluded (not resolution requirement) so they can never
+        // hold back the application's phase progression.
+        if (isResolutionRequirement && firstAwaitingCorrectionRequirement == null && !promptsAreMoot && prompts.some(p => p.invalidated && p.visibility === PromptVisibility.AVAILABLE)) {
           firstAwaitingCorrectionRequirement = requirement
         }
       }
