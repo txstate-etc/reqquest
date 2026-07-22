@@ -86,7 +86,7 @@ export const appRequestPhaseOrder: AppRequestPhase[] = [
 
 /**
  * Returns true if current is at or beyond target in the natural phase progression. created
- * specifically for non blocking workflows to confirm phase has been reached
+ * specifically for non blocking workflows to confirm emergence phase has been reached
  * so its requirements should become visible/editable for the remainder of the life cycle.
  */
 export function appRequestPhaseReached (current: AppRequestPhase, target: AppRequestPhase) {

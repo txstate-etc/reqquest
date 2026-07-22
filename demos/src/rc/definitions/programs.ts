@@ -1,4 +1,4 @@
-import type { ProgramDefinition } from '@reqquest/api'
+import { ProgramDefinition, AppRequestPhase } from '@reqquest/api'
 
 const operationsInfrastructure: ProgramDefinition = {
   key: 'operations_infrastructure',
@@ -28,7 +28,20 @@ const softwareDevelopment: ProgramDefinition = {
     'assess_critical_thinking_req',
     'reccomendation_letter_req',
     'assess_reccomendation_lettern_req'
-  ]
+  ],
+  workfworkflowStages: [{
+    key: 'software_development_non_blocking_show_submitted',
+    nonBlocking: true,
+    nonBlockingEmergence: AppRequestPhase.SUBMITTED,
+    title: 'Audit the actively ongoing review',
+    requirementKeys: ['approve_reviewer_exercise_exemption_workflow_req']
+  },
+  {
+    key: 'software_development_non_blocking_show_regular',
+    nonBlocking: true,
+    title: 'Audit the entire program after all other phases complete',
+    requirementKeys: ['approve_reviewer_exercise_exemption_workflow_req']
+  }]
 }
 const projectManagement: ProgramDefinition = {
   key: 'project_management',
