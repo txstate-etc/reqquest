@@ -1,6 +1,6 @@
 import { PromptDefinition } from '@reqquest/api'
 import { MutationMessageType } from '@txstate-mws/graphql-server'
-import { AssessCriticalThinkingPromptData, AssessCriticalThinkingSchema, AssessOutsideClassExamplePromptData, AssessOutsideClassExampleSchema, AssessPuzzleSolutionPromptData, AssessPuzzleSolutionSchema, CriticalThinkingPromptData, CriticalThinkingSchema, DataRelatedPuzzlePromptData, DataRelatedPuzzleSchema, OutsideClassExamplePromptData, OutsideClassExampleSchema } from '../models/index.js'
+import { AssessCriticalThinkingPromptData, AssessCriticalThinkingSchema, AssessOutsideClassExamplePromptData, AssessOutsideClassExampleSchema, AssessPuzzleSolutionPromptData, AssessPuzzleSolutionSchema, AuditSoftwareSubmittedPromptData, AuditSoftwareSubmittedPromptSchema, CriticalThinkingPromptData, CriticalThinkingSchema, DataRelatedPuzzlePromptData, DataRelatedPuzzleSchema, OutsideClassExamplePromptData, OutsideClassExampleSchema } from '../models/index.js'
 import { fileHandler } from 'fastify-txstate'
 import { OptOutData, OptOutSchema } from '../models/optOut.models.js'
 
@@ -108,6 +108,20 @@ export const assess_critical_thinking_prompt: PromptDefinition<AssessCriticalThi
     }
     if (data.realIssue == null) {
       messages.push({ type: MutationMessageType.error, message: 'Please answer the question.', arg: 'realIssue' })
+    }
+    return messages
+  }
+}
+
+export const audit_software_development_non_blocking_show_submitted_prompt: PromptDefinition<AuditSoftwareSubmittedPromptData> = {
+  key: 'audit_software_development_non_blocking_show_submitted_prompt',
+  title: 'Audit during review',
+  description: 'Audit during review',
+  schema: AuditSoftwareSubmittedPromptSchema,
+  validate: (data, config) => {
+    const messages = []
+    if (data.ok == null) {
+      messages.push({ type: MutationMessageType.error, message: 'Please answer if review was performed appropriately.', arg: 'ok' })
     }
     return messages
   }

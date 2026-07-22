@@ -34,13 +34,13 @@ const softwareDevelopment: ProgramDefinition = {
     nonBlocking: true,
     nonBlockingEmergence: AppRequestPhase.SUBMITTED,
     title: 'Audit the actively ongoing review',
-    requirementKeys: ['approve_reviewer_exercise_exemption_workflow_req']
+    requirementKeys: ['audit_software_development_non_blocking_show_submitted']
   },
   {
     key: 'software_development_non_blocking_show_regular',
     nonBlocking: true,
     title: 'Audit the entire program after all other phases complete',
-    requirementKeys: ['approve_reviewer_exercise_exemption_workflow_req']
+    requirementKeys: ['audit_software_development_non_blocking_show_regular']
   }]
 }
 const projectManagement: ProgramDefinition = {

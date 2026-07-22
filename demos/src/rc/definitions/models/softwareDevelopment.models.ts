@@ -60,3 +60,21 @@ export const AssessCriticalThinkingSchema = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type AssessCriticalThinkingPromptData = FromSchema<typeof AssessCriticalThinkingSchema>
+
+export const AuditSoftwareSubmittedPromptSchema = {
+  type: 'object',
+  properties: {
+    ok: { type: 'boolean'}
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type AuditSoftwareSubmittedPromptData = FromSchema<typeof AuditSoftwareSubmittedPromptSchema>
+
+export const AuditSoftwareRegularPromptSchema = {
+  type: 'object',
+  properties: {
+    ok: { type: 'boolean'}
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type AuditSoftwareRegularPromptData = FromSchema<typeof AuditSoftwareRegularPromptSchema>
