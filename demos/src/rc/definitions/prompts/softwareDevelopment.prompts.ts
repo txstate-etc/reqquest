@@ -1,6 +1,6 @@
 import { PromptDefinition } from '@reqquest/api'
 import { MutationMessageType } from '@txstate-mws/graphql-server'
-import { AssessCriticalThinkingPromptData, AssessCriticalThinkingSchema, AssessOutsideClassExamplePromptData, AssessOutsideClassExampleSchema, AssessPuzzleSolutionPromptData, AssessPuzzleSolutionSchema, AuditSoftwareSubmittedPromptData, AuditSoftwareSubmittedPromptSchema, CriticalThinkingPromptData, CriticalThinkingSchema, DataRelatedPuzzlePromptData, DataRelatedPuzzleSchema, OutsideClassExamplePromptData, OutsideClassExampleSchema } from '../models/index.js'
+import { AssessCriticalThinkingPromptData, AssessCriticalThinkingSchema, AssessOutsideClassExamplePromptData, AssessOutsideClassExampleSchema, AssessPuzzleSolutionPromptData, AssessPuzzleSolutionSchema, AuditSoftwareRegularPromptData, AuditSoftwareRegularPromptSchema, AuditSoftwareSubmittedPromptData, AuditSoftwareSubmittedPromptSchema, CriticalThinkingPromptData, CriticalThinkingSchema, DataRelatedPuzzlePromptData, DataRelatedPuzzleSchema, OutsideClassExamplePromptData, OutsideClassExampleSchema } from '../models/index.js'
 import { fileHandler } from 'fastify-txstate'
 import { OptOutData, OptOutSchema } from '../models/optOut.models.js'
 
@@ -118,6 +118,20 @@ export const audit_software_development_non_blocking_show_submitted_prompt: Prom
   title: 'Audit during review',
   description: 'Audit during review',
   schema: AuditSoftwareSubmittedPromptSchema,
+  validate: (data, config) => {
+    const messages = []
+    if (data.ok == null) {
+      messages.push({ type: MutationMessageType.error, message: 'Please answer if review was performed appropriately during review.', arg: 'ok' })
+    }
+    return messages
+  }
+}
+
+export const audit_software_development_non_blocking_show_regular_prompt: PromptDefinition<AuditSoftwareRegularPromptData> = {
+  key: 'audit_software_development_non_blocking_show_regular_prompt',
+  title: 'Audit regular',
+  description: 'Audit regular',
+  schema: AuditSoftwareRegularPromptSchema,
   validate: (data, config) => {
     const messages = []
     if (data.ok == null) {
