@@ -97,6 +97,13 @@ export interface PromptDefinition {
    * An icon for the navigation.
    */
   icon?: Component
+  /**
+   * 
+   */
+  loader?: {
+    skeletonComponent: Component
+    delay?: number
+  } | boolean
 }
 
 export interface Terminologies {

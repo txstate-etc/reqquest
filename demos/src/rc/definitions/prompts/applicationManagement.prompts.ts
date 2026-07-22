@@ -3,13 +3,7 @@ import { AssessMaintainSysDocumentationData, AssessMaintainSysDocumentationSchem
 import { MutationMessageType } from '@txstate-mws/graphql-server'
 import { fileHandler } from 'fastify-txstate'
 import { OptOutData, OptOutSchema } from '../models/optOut.models.js'
-
-const wait = () => {
-    return new Promise((resolve) => {
-        setTimeout(resolve, 1000);
-    });
-};
-
+import { wait } from '../../../utils.js'
 
 export const application_management_opt_out_prompt: PromptDefinition<OptOutData> = {
   key: 'application_management_opt_out_prompt',
@@ -49,7 +43,7 @@ export const assess_technical_troubleshooting_prompt: PromptDefinition<AssessTec
     return messages
   },
   preload: async (data, config) => {
-    await wait() // simulate a long-running preload operation
+    await wait(1000) // simulate a long-running preload operation
     return {
       demonstrateTechincalTroubleshooting: true,
       complexity: 1

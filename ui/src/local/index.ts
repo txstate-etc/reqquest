@@ -164,6 +164,7 @@ import OptOut from './rc/OptOut.svelte'
 import OptOutDisplay from './rc/OptOutDisplay.svelte'
 import RCIntroPanelDefaultSlot from './rc/IntroPanelDefaultSlot.svelte'
 import { api } from '$internal/api'
+import ApplicantPromptSkeleton from '$internal/components/ApplicantPromptSkeleton.svelte'
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, applicantReview, programs, requirements, prompts, userLookup, slots } = configureDemoInstanceParams()
 
@@ -482,7 +483,8 @@ function configureDemoInstanceParams () {
       {
         key: 'data_related_puzzle_prompt',
         formComponent: DataRelatedPuzzle,
-        displayComponent: DataRelatedPuzzleDisplay
+        displayComponent: DataRelatedPuzzleDisplay,
+        loader: true
       },
       {
         key: 'assess_data_related_puzzle_prompt',
@@ -512,7 +514,10 @@ function configureDemoInstanceParams () {
       {
         key: 'communication_prompt',
         formComponent: Communication,
-        displayComponent: CommunicationDisplay
+        displayComponent: CommunicationDisplay,
+        loader: {
+          skeletonComponent: ApplicantPromptSkeleton
+        }
       },
       {
         key: 'assess_communication_prompt',
