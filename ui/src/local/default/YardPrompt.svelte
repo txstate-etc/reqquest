@@ -5,7 +5,8 @@
   import { QuestionnairePrompt } from '$lib'
   export let data
   export let prestageData
-  data.__prestage = prestageData.latest ?? prestageData.current
+  $: prestage = prestageData.latest ?? prestageData.current
+  $: if (data) data.__prestage = prestage
 </script>
 
   <QuestionnairePrompt externalLinks={[{ url: 'https://www.aspca.org/', label: 'Yard Safety Tips from ASPCA' }, { url: 'https://www.humanesociety.org/', label: 'Creating a Pet-Friendly Yard from Humane Society' }]} title="Yard Information." description="Please provide some information about your yard to help us ensure it's a safe environment for your new pet.">
