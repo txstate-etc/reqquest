@@ -1,5 +1,5 @@
 import { PUBLIC_DEMO_INSTANCE } from '$env/static/public'
-import { UIRegistry } from '$lib'
+import { UIRegistry, type UIConfig } from '$lib'
 /** default */
 import DogWalker from 'carbon-icons-svelte/lib/DogWalker.svelte'
 import Gamification from 'carbon-icons-svelte/lib/Gamification.svelte'
@@ -164,6 +164,8 @@ import OptOut from './rc/OptOut.svelte'
 import OptOutDisplay from './rc/OptOutDisplay.svelte'
 import RCIntroPanelDefaultSlot from './rc/IntroPanelDefaultSlot.svelte'
 import { api } from '$internal/api'
+import ApplicantPromptSkeleton from '$internal/components/ApplicantPromptSkeleton.svelte'
+import { GeneralTextSkeleton } from '@txstate-mws/carbon-svelte'
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, applicantReview, programs, requirements, prompts, userLookup, slots } = configureDemoInstanceParams()
 
@@ -180,7 +182,7 @@ export const uiRegistry = new UIRegistry({
   slots
 })
 
-function configureDemoInstanceParams () {
+function configureDemoInstanceParams (): UIConfig {
   /**
    * So here's a fun hack. PUBLIC_DEMO_INSTANCE is one of our environment variables, but we
    * have a bit of a custom system for injecting environment at startup time rather than build time.
@@ -482,7 +484,8 @@ function configureDemoInstanceParams () {
       {
         key: 'data_related_puzzle_prompt',
         formComponent: DataRelatedPuzzle,
-        displayComponent: DataRelatedPuzzleDisplay
+        displayComponent: DataRelatedPuzzleDisplay,
+        loader: true
       },
       {
         key: 'assess_data_related_puzzle_prompt',
@@ -512,7 +515,10 @@ function configureDemoInstanceParams () {
       {
         key: 'communication_prompt',
         formComponent: Communication,
-        displayComponent: CommunicationDisplay
+        displayComponent: CommunicationDisplay,
+        loader: {
+          skeletonComponent: ApplicantPromptSkeleton
+        }
       },
       {
         key: 'assess_communication_prompt',
@@ -544,7 +550,10 @@ function configureDemoInstanceParams () {
         key: 'assess_technical_troubleshooting_prompt',
         formComponent: AssessTechnicalTroubleshooting,
         displayComponent: AssessTechnicalTroubleshootingDisplay,
-        formMode: 'full'
+        formMode: 'full',
+        loader: {
+          skeletonComponent: GeneralTextSkeleton
+        }
       },
       {
         key: 'support_communication_prompt',

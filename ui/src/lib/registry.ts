@@ -2,6 +2,17 @@ import type { LayoutStructureNode, LayoutStructureNodeRoot, UserProfile } from '
 import type { Component } from 'svelte'
 import { plural } from 'txstate-utils'
 
+export interface PromptLoader {
+  skeletonComponent: Component<any>
+  /**
+   * The number of milliseconds to wait before showing the skeleton loader. This is useful for preventing flickering when the data is fetched quickly.
+   * Since some data is can be cached, the initial load needs a skeleton loader, but after caching the data comes back quicker and no skeleton loader is needed.
+   */
+  delay?: number
+}
+
+export type Loader = PromptLoader | boolean
+
 export interface ProgramDefinition {
   /**
    * The key for the program. Allows us to match up API programs with
@@ -44,7 +55,7 @@ export interface PromptDefinition {
    * by an automation. The applicant view cannot handle this, so always include
    * a formComponent for applicant prompts.
    */
-  formComponent?: Component
+  formComponent?: Component<any>
   /**
    * Control the size of the area the formComponent will be rendered in.
    * - 'small' will render the form in a small area (about 8 lines or less at 320px width).
@@ -72,7 +83,7 @@ export interface PromptDefinition {
    * A component that displays the data collected from this prompt instead of collecting
    * it. Should be as compact as possible, as it will be displayed in a big list of prompts.
    */
-  displayComponent: Component
+  displayComponent: Component<any>
   /**
    * Control the size of the area the displayComponent will be rendered in.
    * - 'small' will render the component in a small area (about 8 lines or less at 320px width).
@@ -97,6 +108,11 @@ export interface PromptDefinition {
    * An icon for the navigation.
    */
   icon?: Component
+  /**
+   * Determines if the prompt should display a skeleton loader while the data is being fetched. Defaults to false.
+   * A boolean value will result in a default skeleton loader. 
+   */
+  loader?: Loader
 }
 
 export interface Terminologies {

@@ -3,6 +3,7 @@ import { MutationMessageType } from '@txstate-mws/graphql-server'
 import { AssessCriticalThinkingPromptData, AssessCriticalThinkingSchema, AssessOutsideClassExamplePromptData, AssessOutsideClassExampleSchema, AssessPuzzleSolutionPromptData, AssessPuzzleSolutionSchema, CriticalThinkingPromptData, CriticalThinkingSchema, DataRelatedPuzzlePromptData, DataRelatedPuzzleSchema, OutsideClassExamplePromptData, OutsideClassExampleSchema } from '../models/index.js'
 import { fileHandler } from 'fastify-txstate'
 import { OptOutData, OptOutSchema } from '../models/optOut.models.js'
+import { wait } from '../../../utils.js'
 
 export const software_dev_opt_out_prompt: PromptDefinition<OptOutData> = {
   key: 'software_dev_opt_out_prompt',
@@ -37,6 +38,10 @@ export const data_related_puzzle_prompt: PromptDefinition<DataRelatedPuzzlePromp
       messages.push({ type: MutationMessageType.error, message: 'Please complete the puzzle.', arg: 'puzzleAnswer' })
     }
     return messages
+  },
+  preload: async (data, config) => {
+    await wait(1000) // simulate a long-running preload operation
+    return {}
   }
 }
 

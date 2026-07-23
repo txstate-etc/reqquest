@@ -1,10 +1,7 @@
 <script lang="ts">
   import { SkeletonText } from 'carbon-components-svelte'
 </script>
-<div class="gap-4 flex flex-col">
-  <div class="prompt-intro flow pt-10 flex justify-center">
-    <SkeletonText width="80%" style="height: 30px" />
-  </div>
+<div class="gap-4 flex flex-col mt-10">
   <SkeletonText />
   <SkeletonText />
   <SkeletonText />
