@@ -127,6 +127,20 @@ export const audit_software_development_non_blocking_show_submitted_prompt: Prom
   }
 }
 
+export const audit_software_development_non_blocking_show_submitted_prompt2: PromptDefinition<AuditSoftwareSubmittedPromptData> = {
+  key: 'audit_software_development_non_blocking_show_submitted_prompt2',
+  title: 'Second audit during review',
+  description: 'Second audit during review',
+  schema: AuditSoftwareSubmittedPromptSchema,
+  validate: (data, config) => {
+    const messages = []
+    if (data.ok == null) {
+      messages.push({ type: MutationMessageType.error, message: 'Please confirm your previous answer if review was performed appropriately during review.', arg: 'ok' })
+    }
+    return messages
+  }
+}
+
 export const audit_software_development_non_blocking_show_regular_prompt: PromptDefinition<AuditSoftwareRegularPromptData> = {
   key: 'audit_software_development_non_blocking_show_regular_prompt',
   title: 'Audit regular',

@@ -44,6 +44,13 @@ const softwareDevelopment: ProgramDefinition = {
     requirementKeys: ['audit_software_development_non_blocking_show_submitted_req']
   },
   {
+    key: 'software_development_non_blocking_show_submitted2',
+    nonBlocking: true,
+    nonBlockingEmergence: AppRequestPhase.SUBMITTED,
+    title: 'Audit the actively ongoing review for a second time',
+    requirementKeys: ['audit_software_development_non_blocking_show_submitted_req2']
+  },
+  {
     key: 'software_development_non_blocking_show_regular',
     nonBlocking: true,
     title: 'Audit the entire program after all other phases complete',

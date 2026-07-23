@@ -117,6 +117,20 @@ export const audit_software_development_non_blocking_show_submitted_req: Require
   }
 }
 
+export const audit_software_development_non_blocking_show_submitted_req2: RequirementDefinition = {
+  type: RequirementType.WORKFLOW,
+  key: 'audit_software_development_non_blocking_show_submitted_req2',
+  title: 'Second audit during review ',
+  navTitle: 'Second audit during review',
+  description: 'Second audit during review',
+  promptKeys: ['audit_software_development_non_blocking_show_submitted_prompt2'],
+  resolve: (data, config) => {
+    const audit = data['audit_software_development_non_blocking_show_submitted_prompt2'] as AuditSoftwareSubmittedPromptData
+    if (audit?.ok == null) return { status: RequirementStatus.PENDING }
+    return { status: RequirementStatus.MET }
+  }
+}
+
 export const audit_software_development_non_blocking_show_regular_req: RequirementDefinition = {
   type: RequirementType.WORKFLOW,
   key: 'audit_software_development_non_blocking_show_regular_req',
