@@ -44,7 +44,7 @@ export class ApplicationResolver {
     return await ctx.svc(ApplicationService).advanceWorkflow(applicationId)
   }
 
-  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Moves the application back to the previous workflow stage. If on the first blocking workflow stage, moves back to APPROVAL. If on the first non-blocking workflow, throws an error.' })
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Moves the application back to the previous blocking workflow stage. Non-blocking workflow stages are excluded from the reverse order, so this only steps back through the blocking workflow during the review (SUBMITTED) phase. If on the first blocking workflow stage, moves back to APPROVAL.' })
   async reverseWorkflow (@Ctx() ctx: RQContext, @Arg('applicationId', type => ID) applicationId: string) {
     return await ctx.svc(ApplicationService).reverseWorkflow(applicationId)
   }
@@ -63,7 +63,7 @@ export class ApplicationActionsResolver {
   }
 
   @FieldResolver(returns => Boolean)
-  async reverseWorkflow (@Ctx() ctx: RQContext, @Root() application: Application) {
-    return await ctx.svc(ApplicationService).mayReverseWorkflow(application)
+  reverseWorkflow (@Ctx() ctx: RQContext, @Root() application: Application) {
+    return ctx.svc(ApplicationService).mayReverseWorkflow(application)
   }
 }

@@ -63,10 +63,9 @@ export class ApplicationService extends AuthService<Application> {
   }
 
   async getPreviousWorkflowStage (application: Application) {
-    if (!await this.mayReverseWorkflow(application)) return null
-    const blocking = application.appRequestPhase !== AppRequestPhase.WORKFLOW_NONBLOCKING
-    const stages = await this.svc(ProgramService).findWorkflowStagesByPeriodIdAndProgramKey(application.periodId, application.programKey, { hasEnabledRequirements: true, blocking })
-    if (application.phase === ApplicationPhase.COMPLETE) return stages[stages.length - 1]
+    if (!this.mayReverseWorkflow(application)) return null
+    // only blocking workflow stages participate in the reverse order, non-blocking stages are excluded.
+    const stages = await this.svc(ProgramService).findWorkflowStagesByPeriodIdAndProgramKey(application.periodId, application.programKey, { hasEnabledRequirements: true, blocking: true })
     if (!application.workflowStageKey) return null
     const currentIndex = stages.findIndex(s => s.key === application.workflowStageKey)
     if (currentIndex > 0) {
@@ -105,22 +104,16 @@ export class ApplicationService extends AuthService<Application> {
     return this.hasControl('AppRequest', 'review', application.appRequestTags)
   }
 
-  async mayReverseWorkflow (application: Application) {
+  mayReverseWorkflow (application: Application) {
     if (application.closed || application.appRequestPhase === AppRequestPhase.COMPLETE) return false
-    if (![ApplicationPhase.WORKFLOW_BLOCKING, ApplicationPhase.REVIEW_COMPLETE, ApplicationPhase.COMPLETE, ApplicationPhase.WORKFLOW_NONBLOCKING, ApplicationPhase.READY_FOR_WORKFLOW].includes(application.phase)) return false
+    if (![ApplicationPhase.WORKFLOW_BLOCKING, ApplicationPhase.REVIEW_COMPLETE, ApplicationPhase.READY_FOR_WORKFLOW].includes(application.phase)) return false
     // READY_FOR_WORKFLOW could mean we are at the end of a workflow or at the end of review, if end of review we can't reverse
     if (application.phase === ApplicationPhase.READY_FOR_WORKFLOW && !application.workflowStageKey) return false
     if (this.isOwn(application) && !this.hasControl('AppRequest', 'review_own')) return false
     if (!this.hasControl('AppRequest', 'review', application.appRequestTags)) return false
-    if (application.appRequestPhase === AppRequestPhase.SUBMITTED) return true
-
-    const stages = await this.svc(ProgramService).findWorkflowStagesByPeriodIdAndProgramKey(application.periodId, application.programKey, { hasEnabledRequirements: true, blocking: false })
-    if (application.phase === ApplicationPhase.WORKFLOW_NONBLOCKING && stages[0]?.key === application.workflowStageKey) {
-      // can't reverse from the first non-blocking stage
-      return false
-    }
-
-    return true
+    // Non-blocking workflow stages are excluded from the reverse (return) order. Application-level reversal only
+    // steps back through the blocking workflow.
+    return application.appRequestPhase === AppRequestPhase.SUBMITTED
   }
 
   async advanceWorkflow (applicationId: string) {
@@ -150,7 +143,7 @@ export class ApplicationService extends AuthService<Application> {
   async reverseWorkflow (applicationId: string, stage?: number) {
     const [application] = await getApplications({ ids: [applicationId] })
     if (!application) throw new Error(`Application not found: ${applicationId}`)
-    if (!await this.mayReverseWorkflow(application)) throw new Error('You may not reverse this application to a previous stage.')
+    if (!this.mayReverseWorkflow(application)) throw new Error('You may not reverse this application to a previous stage.')
     await appRequestTransaction(application.appRequestInternalId, async db => {
       await reverseWorkflow(application.id, db)
       await evaluateAppRequest(application.appRequestInternalId, db)
