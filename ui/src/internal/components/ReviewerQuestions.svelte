@@ -13,6 +13,7 @@
   import type { PageData } from '../../routes/requests/[id]/approve/[programKey]/$types'
   import { invalidateAll } from '$app/navigation'
   import Review from "carbon-icons-svelte/lib/Review.svelte";
+    import DelayedSkeleton from '$lib/components/DelayedSkeleton.svelte';
 
   export let sections: any[]
   export let promptIndicator: Record<string, any>
@@ -23,17 +24,19 @@
   type PromptExtraData = Awaited<ReturnType<typeof api.getPromptData>>
   type Prompt = PageData['appRequest']['applications'][0]['requirements'][0]['prompts'][0]
   type PromptWithExtra = Prompt & PromptExtraData
-  let promptBeingEdited: PromptWithExtra | undefined = undefined
+  let editingPromptWithData: PromptWithExtra | undefined = undefined
+  let promptBeingEdited: Prompt | undefined = undefined
   let showPromptDialog = false
   let fetchingEditPrompt = false
   function editPrompt (prompt: Prompt, allowSaveWithoutChanges: boolean = false) {
     return async () => {
       if (fetchingEditPrompt) return
+      promptBeingEdited = prompt
       fetchingEditPrompt = true
       showPromptDialog = true
       try {
         const extra = await api.getPromptData(appRequest.id, prompt.id)
-        promptBeingEdited = { ...prompt, ...extra, allowSaveWithoutChanges }
+        editingPromptWithData = { ...prompt, ...extra, allowSaveWithoutChanges }
       } finally {
         fetchingEditPrompt = false
       }
@@ -48,6 +51,7 @@
   function closePromptDialog () {
     fetchingEditPrompt = false
     showPromptDialog = false
+    editingPromptWithData = undefined
     promptBeingEdited = undefined
   }
 
@@ -144,42 +148,45 @@
   </Panel>
 {/each}
 
-{#if showPromptDialog}
+{#if showPromptDialog && promptBeingEdited}
   <PanelFormDialog
-    title={promptBeingEdited?.invalidated ? `Review correction "${promptBeingEdited?.title}"` : 'Edit Prompt'}
+    title={editingPromptWithData?.invalidated ? `Review correction "${editingPromptWithData?.title}"` : 'Edit Prompt'}
     bind:open={showPromptDialog}
     on:cancel={closePromptDialog}
-    submit={onPromptSubmit(promptBeingEdited)}
-    validate={onPromptValidate(promptBeingEdited)}
+    submit={onPromptSubmit(editingPromptWithData)}
+    validate={onPromptValidate(editingPromptWithData)}
     on:saved={onPromptSaved}
-    disableSaveUntilChanged={!promptBeingEdited?.allowSaveWithoutChanges} // allow saving without changes if prompt was previously invalidated ...accomodates reviewer saying no changes required on correction check
+    disableSaveUntilChanged={!editingPromptWithData?.allowSaveWithoutChanges} // allow saving without changes if prompt was previously invalidated ...accomodates reviewer saying no changes required on correction check
     centered
-    size={uiRegistry.getPrompt(promptBeingEdited?.key)?.formMode === 'full' ? 'large' : undefined}
-    preload={promptBeingEdited?.preloadData}
+    size={uiRegistry.getPrompt(editingPromptWithData?.key)?.formMode === 'full' ? 'large' : undefined}
+    preload={editingPromptWithData?.preloadData}
     let:data
   >
-    {#if promptBeingEdited}
-      {@const def = uiRegistry.getPrompt(promptBeingEdited.key)}
+    {#if editingPromptWithData}
+      {@const def = uiRegistry.getPrompt(editingPromptWithData.key)}
       <div class='font-medium text-center mt-2'>
-        <p class="text-xl font-medium ">{promptBeingEdited.title}</p>
+        <p class="text-xl font-medium ">{editingPromptWithData.title}</p>
       </div>
       <svelte:component
         this={def!.formComponent}
         appRequestId={appRequest.id}
         {data}
-        appRequestData={promptBeingEdited.data}
+        appRequestData={editingPromptWithData.data}
         prestageData={{
-          latest: promptBeingEdited.prestageData,
-          current: appRequest.data[promptBeingEdited.key]?.__prestage
+          latest: editingPromptWithData.prestageData,
+          current: appRequest.data[editingPromptWithData.key]?.__prestage
         }}
-        fetched={promptBeingEdited.fetchedData}
-        configData={promptBeingEdited.configurationData}
-        gatheredConfigData={promptBeingEdited.gatheredConfigData}
-        invalidated={promptBeingEdited.invalidated}
-        invalidatedReason={promptBeingEdited.invalidatedReason}
+        fetched={editingPromptWithData.fetchedData}
+        configData={editingPromptWithData.configurationData}
+        gatheredConfigData={editingPromptWithData.gatheredConfigData}
+        invalidated={editingPromptWithData.invalidated}
+        invalidatedReason={editingPromptWithData.invalidatedReason}
       />
-    {:else}
-      <GeneralTextSkeleton />
+    {:else if fetchingEditPrompt}
+      {@const loader = uiRegistry.getPrompt(promptBeingEdited.key)?.loader}
+      {#if loader}
+        <DelayedSkeleton {loader} />
+      {/if}
     {/if}
   </PanelFormDialog>
 {/if}
