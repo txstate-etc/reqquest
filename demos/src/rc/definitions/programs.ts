@@ -31,6 +31,12 @@ const softwareDevelopment: ProgramDefinition = {
   ],
   workflowStages: [
   {
+    key: 'software_development_blocking_second_eyes',
+    nonBlocking: false,
+    title: 'Second reviewer assessment',
+    requirementKeys: ['reviewer_software_development_second_eyes_req']
+  },
+  {
     key: 'software_development_non_blocking_show_submitted',
     nonBlocking: true,
     nonBlockingEmergence: AppRequestPhase.SUBMITTED,

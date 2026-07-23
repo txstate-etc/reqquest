@@ -78,3 +78,12 @@ export const AuditSoftwareRegularPromptSchema = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type AuditSoftwareRegularPromptData = FromSchema<typeof AuditSoftwareRegularPromptSchema>
+
+export const ReviewSoftwarSecondEyesPromptSchema = {
+  type: 'object',
+  properties: {
+    score: { type: 'number'}
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type ReviewSoftwarSecondEyesPromptData = FromSchema<typeof ReviewSoftwarSecondEyesPromptSchema>

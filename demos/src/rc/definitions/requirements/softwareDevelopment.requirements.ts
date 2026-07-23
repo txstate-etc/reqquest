@@ -1,5 +1,5 @@
 import { RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
-import { DataRelatedPuzzlePromptData, AssessPuzzleSolutionPromptData, OutsideClassExamplePromptData, AssessOutsideClassExamplePromptData, CriticalThinkingPromptData, AssessCriticalThinkingPromptData, AuditSoftwareSubmittedPromptData, AuditSoftwareRegularPromptData } from '../models'
+import { DataRelatedPuzzlePromptData, AssessPuzzleSolutionPromptData, OutsideClassExamplePromptData, AssessOutsideClassExamplePromptData, CriticalThinkingPromptData, AssessCriticalThinkingPromptData, AuditSoftwareSubmittedPromptData, AuditSoftwareRegularPromptData, ReviewSoftwarSecondEyesPromptData } from '../models'
 import { OptOutData } from '../models/optOut.models'
 
 export const software_dev_opt_out_req: RequirementDefinition = {
@@ -127,6 +127,20 @@ export const audit_software_development_non_blocking_show_regular_req: Requireme
   resolve: (data, config) => {
     const audit = data['audit_software_development_non_blocking_show_regular_prompt'] as AuditSoftwareRegularPromptData
     if (audit?.ok == null) return { status: RequirementStatus.PENDING }
+    return { status: RequirementStatus.MET }
+  }
+}
+
+export const reviewer_software_development_second_eyes_req: RequirementDefinition = {
+  type: RequirementType.WORKFLOW,
+  key: 'reviewer_software_development_second_eyes_req',
+  title: 'Second reviewer score`',
+  navTitle: 'Second reviewer score',
+  description: 'Second reviewer score',
+  promptKeys: ['reviewer_software_development_second_eyes_prompt'],
+  resolve: (data, config) => {
+    const secondEyes = data['reviewer_software_development_second_eyes_prompt'] as ReviewSoftwarSecondEyesPromptData
+    if (secondEyes?.score == null) return { status: RequirementStatus.PENDING }
     return { status: RequirementStatus.MET }
   }
 }
