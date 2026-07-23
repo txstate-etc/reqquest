@@ -247,9 +247,8 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     }
     const hasUpdate = this.hasControl('PromptAnswer', 'update', { ...prompt.authorizationKeys, ...prompt.appRequestTags })
     const hasUpdateAnytime = this.hasControl('PromptAnswer', 'update_anytime', { ...prompt.authorizationKeys, ...prompt.appRequestTags })
-    // once the request is actually in WORKFLOW_NONBLOCKING or later the normal sequence runs
-    // but this is needed to relax editability for earlier phases for emereged non-blocking workflows.
-    if (prompt.requirementType === RequirementType.WORKFLOW && prompt.appRequestDbPhase !== AppRequestPhase.WORKFLOW_NONBLOCKING) {
+    // non-blocking workflow stages stay editable once their emergence phase is reached for the remainder of the request lifecycle
+    if (prompt.requirementType === RequirementType.WORKFLOW) {
       const stage = programRegistry.getWorkflowStageByKey(prompt.workflowStage)
       const emergence = stage?.nonBlockingEmergence ?? AppRequestPhase.WORKFLOW_NONBLOCKING
       if (stage?.nonBlocking && appRequestPhaseReached(prompt.appRequestDbPhase, emergence)) {

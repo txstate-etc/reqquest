@@ -113,9 +113,10 @@ export class ApplicationService extends AuthService<Application> {
     if (application.phase === ApplicationPhase.READY_FOR_WORKFLOW && !application.workflowStageKey) return false
     if (this.isOwn(application) && !this.hasControl('AppRequest', 'review_own')) return false
     if (!this.hasControl('AppRequest', 'review', application.appRequestTags)) return false
-    // Non-blocking workflow stages are excluded from the reverse (return) order. Application-level reversal only
-    // steps back through the blocking workflow.
-    return application.appRequestPhase === AppRequestPhase.SUBMITTED
+    // exclude non-blocking workflow stages from the reverse order. a reviewer can
+    // never reverse from (or onto) a non-blocking stage, in any AppRequestPhase.  Always open once open
+    const currentStage = programRegistry.getWorkflowStageByKey(application.workflowStageKey)
+    return !currentStage?.nonBlocking
   }
 
   async advanceWorkflow (applicationId: string) {

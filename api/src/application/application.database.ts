@@ -119,6 +119,8 @@ export async function advanceWorkflow (applicationId: string, tdb: Queryable = d
 export async function reverseWorkflow (applicationId: string, tdb: Queryable = db) {
   const [application] = await getApplications({ ids: [applicationId] }, tdb)
   if (!application) throw new Error(`Application not found: ${applicationId}`)
+  // reversing between non-blocking stages must never occur in any AppRequestPhase since they are no longer sequential, exclude from the reverse order.
+  if (programRegistry.getWorkflowStageByKey(application.workflowStageKey)?.nonBlocking) throw new Error('Non-blocking workflow stages cannot be reversed.')
 
   const stages = await tdb.getall<PeriodWorkflowRow>(`
     SELECT DISTINCT w.* FROM period_workflow_stages w
