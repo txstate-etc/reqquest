@@ -66,8 +66,10 @@ export class ApplicationService extends AuthService<Application> {
     if (!this.mayReverseWorkflow(application)) return null
     // only blocking workflow stages participate in the reverse order, non-blocking stages are excluded.
     const stages = await this.svc(ProgramService).findWorkflowStagesByPeriodIdAndProgramKey(application.periodId, application.programKey, { hasEnabledRequirements: true, blocking: true })
-    if (!application.workflowStageKey) return null
-    const currentIndex = stages.findIndex(s => s.key === application.workflowStageKey)
+    // past the blocking workflow (REVIEW_COMPLETE, no active stage) reversing re-enters last blocking stage.
+    const currentIndex = application.phase === ApplicationPhase.REVIEW_COMPLETE
+      ? stages.length
+      : stages.findIndex(s => s.key === application.workflowStageKey)
     if (currentIndex > 0) {
       return stages[currentIndex - 1]
     }

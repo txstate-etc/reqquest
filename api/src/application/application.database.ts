@@ -129,9 +129,12 @@ export async function reverseWorkflow (applicationId: string, tdb: Queryable = d
   `, [application.programKey, application.periodId])
   // Non-blocking workflow stages are excluded from the reverse (return) order — reversal only steps back
   // through the blocking workflow and never targets a non-blocking stage. Aligns with new non-blocking
-  // workflows being allowed to surface earlier
+  // workflows being allowed to surface earlier.
   const blocking = stages.filter(stage => !!stage.blocking)
-  const currIdx = blocking.findIndex(stage => stage.stageKey === application.workflowStageKey)
+  // Needed to take into consideration blocking workflow stages and not just move back to APPROVAL
+  const currIdx = application.phase === ApplicationPhase.REVIEW_COMPLETE
+    ? blocking.length
+    : blocking.findIndex(stage => stage.stageKey === application.workflowStageKey)
   const toStage: PeriodWorkflowRow | undefined = currIdx > 0 ? blocking[currIdx - 1] : undefined
   const toPhase = toStage ? ApplicationPhase.WORKFLOW_BLOCKING : ApplicationPhase.APPROVAL
   await tdb.update('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [toPhase, toStage?.stageKey, applicationId])
