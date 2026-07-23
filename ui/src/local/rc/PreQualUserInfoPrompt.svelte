@@ -3,7 +3,7 @@
   export let data
   export let prestageData
   $: prestage = prestageData.latest ?? prestageData.current
-    $: if (data) data.__prestage = prestage
+  $: if (data) data.__prestage = prestage
 
   const options = [
     { value: true, label: "Yes" },
