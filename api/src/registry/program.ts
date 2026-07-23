@@ -1,4 +1,4 @@
-import { requirementRegistry } from '../internal.js'
+import { AppRequest, AppRequestPhase, requirementRegistry } from '../internal.js'
 
 export interface ProgramDefinition {
   key: string
@@ -45,6 +45,14 @@ export interface WorkflowStage {
    * improvements or training opportunities.
    */
   nonBlocking?: boolean
+  /**
+   * For workflows that are set nonBlocking: true, this property identifies in what AppRequestPhase
+   * these workflow requirements first become visible/editable.  Once visible these workflows remain visible
+   * for the remainder of the AppRequest lifecycle. Defaults to WORKFLOW_NONBLOCKING,
+   * which preserves the legacy behavior of only surfacing non-blocking workflow requirements once the
+   * request reaches the WORKFLOW_NONBLOCKING phase.
+   */
+  nonBlockingEmergence?: AppRequestPhase.SUBMITTED | AppRequestPhase.ACCEPTANCE | AppRequestPhase.WORKFLOW_NONBLOCKING
   /**
    * The title of the stage, displayed to the user.
    */

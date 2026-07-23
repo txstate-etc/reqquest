@@ -1,5 +1,5 @@
 import { RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
-import { DataRelatedPuzzlePromptData, AssessPuzzleSolutionPromptData, OutsideClassExamplePromptData, AssessOutsideClassExamplePromptData, CriticalThinkingPromptData, AssessCriticalThinkingPromptData } from '../models'
+import { DataRelatedPuzzlePromptData, AssessPuzzleSolutionPromptData, OutsideClassExamplePromptData, AssessOutsideClassExamplePromptData, CriticalThinkingPromptData, AssessCriticalThinkingPromptData, AuditSoftwareSubmittedPromptData, AuditSoftwareRegularPromptData, ReviewSoftwarSecondEyesPromptData } from '../models'
 import { OptOutData } from '../models/optOut.models'
 
 export const software_dev_opt_out_req: RequirementDefinition = {
@@ -99,6 +99,76 @@ export const assess_critical_thinking_req: RequirementDefinition = {
     const writtenAutomationData = data['assess_critical_thinking_prompt'] as AssessCriticalThinkingPromptData
     if (writtenAutomationData?.feasable == null) return { status: RequirementStatus.PENDING }
     if (writtenAutomationData?.realIssue == null) return { status: RequirementStatus.PENDING }
+    return { status: RequirementStatus.MET }
+  }
+}
+
+export const audit_software_development_non_blocking_show_submitted_req: RequirementDefinition = {
+  type: RequirementType.WORKFLOW,
+  key: 'audit_software_development_non_blocking_show_submitted_req',
+  title: 'Audit during review',
+  navTitle: 'Audit during review',
+  description: 'Audit during review',
+  promptKeys: ['audit_software_development_non_blocking_show_submitted_prompt'],
+  resolve: (data, config) => {
+    const audit = data['audit_software_development_non_blocking_show_submitted_prompt'] as AuditSoftwareSubmittedPromptData
+    if (audit?.ok == null) return { status: RequirementStatus.PENDING }
+    return { status: RequirementStatus.MET }
+  }
+}
+
+export const audit_software_development_non_blocking_show_submitted_req2: RequirementDefinition = {
+  type: RequirementType.WORKFLOW,
+  key: 'audit_software_development_non_blocking_show_submitted_req2',
+  title: 'Second audit during review ',
+  navTitle: 'Second audit during review',
+  description: 'Second audit during review',
+  promptKeys: ['audit_software_development_non_blocking_show_submitted_prompt2'],
+  resolve: (data, config) => {
+    const audit = data['audit_software_development_non_blocking_show_submitted_prompt2'] as AuditSoftwareSubmittedPromptData
+    if (audit?.ok == null) return { status: RequirementStatus.PENDING }
+    return { status: RequirementStatus.MET }
+  }
+}
+
+export const audit_software_development_non_blocking_show_regular_req: RequirementDefinition = {
+  type: RequirementType.WORKFLOW,
+  key: 'audit_software_development_non_blocking_show_regular_req',
+  title: 'Audit regular`',
+  navTitle: 'Audit regular',
+  description: 'Audit regular',
+  promptKeys: ['audit_software_development_non_blocking_show_regular_prompt'],
+  resolve: (data, config) => {
+    const audit = data['audit_software_development_non_blocking_show_regular_prompt'] as AuditSoftwareRegularPromptData
+    if (audit?.ok == null) return { status: RequirementStatus.PENDING }
+    return { status: RequirementStatus.MET }
+  }
+}
+
+export const audit_software_development_non_blocking_show_regular_req2: RequirementDefinition = {
+  type: RequirementType.WORKFLOW,
+  key: 'audit_software_development_non_blocking_show_regular_req2',
+  title: 'Second audit regular`',
+  navTitle: 'Second audit regular',
+  description: 'Second audit regular',
+  promptKeys: ['audit_software_development_non_blocking_show_regular_prompt2'],
+  resolve: (data, config) => {
+    const audit = data['audit_software_development_non_blocking_show_regular_prompt2'] as AuditSoftwareRegularPromptData
+    if (audit?.ok == null) return { status: RequirementStatus.PENDING }
+    return { status: RequirementStatus.MET }
+  }
+}
+
+export const reviewer_software_development_second_eyes_req: RequirementDefinition = {
+  type: RequirementType.WORKFLOW,
+  key: 'reviewer_software_development_second_eyes_req',
+  title: 'Second reviewer score`',
+  navTitle: 'Second reviewer score',
+  description: 'Second reviewer score',
+  promptKeys: ['reviewer_software_development_second_eyes_prompt'],
+  resolve: (data, config) => {
+    const secondEyes = data['reviewer_software_development_second_eyes_prompt'] as ReviewSoftwarSecondEyesPromptData
+    if (secondEyes?.score == null) return { status: RequirementStatus.PENDING }
     return { status: RequirementStatus.MET }
   }
 }

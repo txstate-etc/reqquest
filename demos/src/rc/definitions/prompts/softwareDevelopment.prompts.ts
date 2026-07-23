@@ -1,6 +1,6 @@
 import { PromptDefinition } from '@reqquest/api'
 import { MutationMessageType } from '@txstate-mws/graphql-server'
-import { AssessCriticalThinkingPromptData, AssessCriticalThinkingSchema, AssessOutsideClassExamplePromptData, AssessOutsideClassExampleSchema, AssessPuzzleSolutionPromptData, AssessPuzzleSolutionSchema, CriticalThinkingPromptData, CriticalThinkingSchema, DataRelatedPuzzlePromptData, DataRelatedPuzzleSchema, OutsideClassExamplePromptData, OutsideClassExampleSchema } from '../models/index.js'
+import { AssessCriticalThinkingPromptData, AssessCriticalThinkingSchema, AssessOutsideClassExamplePromptData, AssessOutsideClassExampleSchema, AssessPuzzleSolutionPromptData, AssessPuzzleSolutionSchema, AuditSoftwareRegularPromptData, AuditSoftwareRegularPromptSchema, AuditSoftwareSubmittedPromptData, AuditSoftwareSubmittedPromptSchema, CriticalThinkingPromptData, CriticalThinkingSchema, DataRelatedPuzzlePromptData, DataRelatedPuzzleSchema, OutsideClassExamplePromptData, OutsideClassExampleSchema, ReviewSoftwarSecondEyesPromptData, ReviewSoftwarSecondEyesPromptSchema } from '../models/index.js'
 import { fileHandler } from 'fastify-txstate'
 import { OptOutData, OptOutSchema } from '../models/optOut.models.js'
 
@@ -108,6 +108,76 @@ export const assess_critical_thinking_prompt: PromptDefinition<AssessCriticalThi
     }
     if (data.realIssue == null) {
       messages.push({ type: MutationMessageType.error, message: 'Please answer the question.', arg: 'realIssue' })
+    }
+    return messages
+  }
+}
+
+export const audit_software_development_non_blocking_show_submitted_prompt: PromptDefinition<AuditSoftwareSubmittedPromptData> = {
+  key: 'audit_software_development_non_blocking_show_submitted_prompt',
+  title: 'Audit during review',
+  description: 'Audit during review',
+  schema: AuditSoftwareSubmittedPromptSchema,
+  validate: (data, config) => {
+    const messages = []
+    if (data.ok == null) {
+      messages.push({ type: MutationMessageType.error, message: 'Please answer if review was performed appropriately during review.', arg: 'ok' })
+    }
+    return messages
+  }
+}
+
+export const audit_software_development_non_blocking_show_submitted_prompt2: PromptDefinition<AuditSoftwareSubmittedPromptData> = {
+  key: 'audit_software_development_non_blocking_show_submitted_prompt2',
+  title: 'Second audit during review',
+  description: 'Second audit during review',
+  schema: AuditSoftwareSubmittedPromptSchema,
+  validate: (data, config) => {
+    const messages = []
+    if (data.ok == null) {
+      messages.push({ type: MutationMessageType.error, message: 'Please confirm your previous answer if review was performed appropriately during review.', arg: 'ok' })
+    }
+    return messages
+  }
+}
+
+export const audit_software_development_non_blocking_show_regular_prompt: PromptDefinition<AuditSoftwareRegularPromptData> = {
+  key: 'audit_software_development_non_blocking_show_regular_prompt',
+  title: 'Audit regular',
+  description: 'Audit regular',
+  schema: AuditSoftwareRegularPromptSchema,
+  validate: (data, config) => {
+    const messages = []
+    if (data.ok == null) {
+      messages.push({ type: MutationMessageType.error, message: 'Please answer if review was performed appropriately.', arg: 'ok' })
+    }
+    return messages
+  }
+}
+
+export const audit_software_development_non_blocking_show_regular_prompt2: PromptDefinition<AuditSoftwareRegularPromptData> = {
+  key: 'audit_software_development_non_blocking_show_regular_prompt2',
+  title: 'Second audit regular',
+  description: 'Second audit regular',
+  schema: AuditSoftwareRegularPromptSchema,
+  validate: (data, config) => {
+    const messages = []
+    if (data.ok == null) {
+      messages.push({ type: MutationMessageType.error, message: 'Please answer if review was performed appropriately AGAIN.', arg: 'ok' })
+    }
+    return messages
+  }
+}
+
+export const reviewer_software_development_second_eyes_prompt: PromptDefinition<ReviewSoftwarSecondEyesPromptData> = {
+  key: 'reviewer_software_development_second_eyes_prompt',
+  title: 'Second review score',
+  description: 'Second review score',
+  schema: ReviewSoftwarSecondEyesPromptSchema,
+  validate: (data, config) => {
+    const messages = []
+    if (data.score == null || data.score > 100 || data.score < 0) {
+      messages.push({ type: MutationMessageType.error, message: 'Please provide an overall score from 0 to 100.', arg: 'score' })
     }
     return messages
   }

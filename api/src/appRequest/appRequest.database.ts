@@ -6,7 +6,7 @@ import db from 'mysql2-async/db'
 import { clone, findIndex, groupby, isNotBlank, keyby, omit, stringify } from 'txstate-utils'
 import {
   ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters,
-  AppRequestFilter, AppRequestPhase, AppRequestStatus, getApplications, getPeriodWorkflowStages, IneligiblePhases, Pagination,
+  AppRequestFilter, AppRequestPhase, appRequestPhaseReached, AppRequestStatus, getApplications, getPeriodWorkflowStages, IneligiblePhases, Pagination,
   PaginationInfoWithTotalItems, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, RequirementStatus,
   RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed,
   updatePromptComputed, updateRequirementComputed, type AppRequestData
@@ -336,9 +336,11 @@ export async function acceptOffer (appRequestId: number, nextPhase: AppRequestPh
     if (existingDataVersion == null) throw new Error(`AppRequest ${appRequestId} not found`)
     if (incomingDataVersion && existingDataVersion !== incomingDataVersion) throw new Error('Someone else is working on the same request and made changes since you loaded. Reload the page to try again.')
     const applications = await getApplications({ appRequestIds: [String(appRequestId)] }, db)
-    const workflowStages = await getPeriodWorkflowStages({ periodIds: [applications[0]?.periodId], hasEnabledRequirements: true, blocking: false }, db)
     for (const application of applications) {
-      await db.execute('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [ApplicationPhase.WORKFLOW_NONBLOCKING, workflowStages.find(w => w.programKey === application.programKey)?.key, application.internalId])
+      // non-blocking workflow is non-sequential so there is no active stage pointer. All non-blocking requirements
+      // become visible/editable at once and marks the application READY_TO_COMPLETE once they are all
+      // resolved. Completion is via the whole-request complete action, not per stage advancing.
+      await db.execute('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [ApplicationPhase.WORKFLOW_NONBLOCKING, null, application.internalId])
     }
     await db.update('UPDATE app_requests SET phase = ? WHERE id = ?', [nextPhase, appRequestId])
     await evaluateAppRequest(appRequestId, db)
@@ -374,10 +376,9 @@ export async function appRequestReturnToNonBlocking (appRequestId: number) {
   return await appRequestTransaction(appRequestId, async db => {
     await db.execute('UPDATE app_requests SET phase = ? WHERE id = ?', [AppRequestPhase.WORKFLOW_NONBLOCKING, appRequestId])
     const applications = await getApplications({ appRequestIds: [String(appRequestId)] }, db)
-    const workflowStages = await getPeriodWorkflowStages({ periodIds: [applications[0]?.periodId], hasEnabledRequirements: true, blocking: false }, db)
     for (const app of applications) {
-      const workflowStage = workflowStages.toReversed().find(s => s.programKey === app.programKey)
-      await db.execute('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [workflowStage == null ? ApplicationPhase.READY_TO_COMPLETE : ApplicationPhase.WORKFLOW_NONBLOCKING, workflowStage?.key, app.internalId])
+      // non-blocking workflow is non-sequential so recompute readiness from the resolution of all non-blocking requirements.
+      await db.execute('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [ApplicationPhase.WORKFLOW_NONBLOCKING, null, app.internalId])
     }
     await evaluateAppRequest(appRequestId, db)
   })
@@ -565,23 +566,45 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       const presubmitRequirements = [...prequalRequirements, ...qualificationRequirements, ...postqualRequirements]
       const reviewRequirements = [...presubmitRequirements, ...preapprovalRequirements, ...approvalRequirements]
       const acceptRequirements = [...reviewRequirements, ...blockingWorkflowRequirements, ...acceptanceRequirements]
+      // Non-blocking workflow stages may now define an emergence phase at which their requirements first become
+      // visible/editable, rather than always waiting for the request to reach the WORKFLOW_NONBLOCKING phase.
+      // Must NEVER influence eligibility/status resolution since these are non-blocking
+      // so kept out of sortedRequirements
+      const emergedNonblockingWorkflowRequirements = nonblockingWorkflowRequirements.filter(req => {
+        const emergence = programRegistry.getWorkflowStageByKey(req.workflowStageKey)?.nonBlockingEmergence ?? AppRequestPhase.WORKFLOW_NONBLOCKING
+        return appRequestPhaseReached(appRequest.phase, emergence)
+      })
 
       // if we are in applicant phase, we only need to evaluate prequal, postqual, and qualification requirements
-      // acceptance requirements if we are in acceptance phase, etc
+      // acceptance requirements if we are in acceptance phase, etc.
+      // non-blocking workflow is  not sequential, so take into account here
       const sortedRequirements = phase === 'complete'
         ? []
         : phase === 'applicant'
           ? presubmitRequirements
           : phase === 'acceptance'
             ? acceptRequirements
-            : phase === 'blocking' || phase === 'nonblocking'
-              ? currentWorkflowRequirements
-              : reviewRequirements
+            : phase === 'nonblocking'
+              ? nonblockingWorkflowRequirements
+              : phase === 'blocking'
+                ? currentWorkflowRequirements
+                : reviewRequirements
+
+      // requirements from non-blocking workflow stages whose reached emergence phase are
+      // surfaced alongside the phase's normal requirements in the earlier phases.
+      // in non-blocking phase they are already all in sortedRequirements
+      // They are appended after sortedRequirements and excluded from eligibility decisions.
+      const emergedExtraRequirements = phase === 'acceptance' || phase === 'blocking' || phase === 'review'
+        ? emergedNonblockingWorkflowRequirements.filter(req => !sortedRequirements.includes(req))
+        : []
+      const displayedRequirements = [...sortedRequirements, ...emergedExtraRequirements]
 
       const promptsSeenInApplication = new Set<string>()
       let applicationIsIneligible = false
       let firstAwaitingCorrectionRequirement: typeof sortedRequirements[number] | undefined
-      for (const requirement of sortedRequirements) {
+      for (const requirement of displayedRequirements) {
+        // identify if requirement influences eligibility (accommodate emerged non blocking that may be mixed in)
+        const isResolutionRequirement = sortedRequirements.includes(requirement)
         const requiredData = {} as AppRequestData
         const prompts = promptLookup[requirement.id] ?? []
         // matches the `moot` flag stored on regular prompts below: a prior requirement already
@@ -628,12 +651,14 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
 
         requirement.status = resolveInfo.status
         requirement.statusReason = resolveInfo.reason
-        if (requirement.status === RequirementStatus.DISQUALIFYING) applicationIsIneligible = true
+        if (requirement.status === RequirementStatus.DISQUALIFYING && isResolutionRequirement) applicationIsIneligible = true
 
         // an invalidated prompt that the user can currently reach must be re-answered before the
         // application may move forward; remember the first requirement that needs the attention so
-        // the phase can point at it
-        if (firstAwaitingCorrectionRequirement == null && !promptsAreMoot && prompts.some(p => p.invalidated && p.visibility === PromptVisibility.AVAILABLE)) {
+        // the phase can point at it.
+        // non-blocking requirements (that can now emerge early) are excluded (not resolution requirement) so they can never
+        // hold back the application's phase progression.
+        if (isResolutionRequirement && firstAwaitingCorrectionRequirement == null && !promptsAreMoot && prompts.some(p => p.invalidated && p.visibility === PromptVisibility.AVAILABLE)) {
           firstAwaitingCorrectionRequirement = requirement
         }
       }
@@ -673,11 +698,15 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       application.phase = phase === 'complete'
         ? ApplicationPhase.COMPLETE
         : phase === 'nonblocking'
-          ? application.workflowStageKey
-            ? requirementsResolution === 'pass' && !application.awaitingCorrection
-              ? ApplicationPhase.READY_FOR_WORKFLOW
+          // Ineligible applications are disqualified and have no post-acceptance work
+          ? application.ineligiblePhase != null
+            ? ApplicationPhase.READY_TO_COMPLETE
+          // non-blocking workflow is non sequential, a non-blocking fail never blocks completion, so only a pending holds it back.
+            : requirementsResolution !== 'pending' && !application.awaitingCorrection
+              ? nonblockingWorkflowRequirements.length
+                ? ApplicationPhase.READY_FOR_WORKFLOW
+                : ApplicationPhase.READY_TO_COMPLETE
               : ApplicationPhase.WORKFLOW_NONBLOCKING
-            : ApplicationPhase.READY_TO_COMPLETE
           : phase === 'acceptance'
             ? requirementsResolution !== 'pending' && !application.awaitingCorrection
               ? ApplicationPhase.READY_TO_ACCEPT
@@ -727,7 +756,8 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       } else if (phase === 'blocking') {
         requirementsToLock.push(...reviewRequirements, ...blockingWorkflowRequirements.slice(0, findIndex(blockingWorkflowRequirements, r => r.workflowStageKey === application.workflowStageKey) ?? blockingWorkflowRequirements.length))
       } else if (phase === 'nonblocking') {
-        requirementsToLock.push(...reviewRequirements, ...blockingWorkflowRequirements, ...acceptanceRequirements, ...nonblockingWorkflowRequirements.slice(0, findIndex(nonblockingWorkflowRequirements, r => r.workflowStageKey === application.workflowStageKey) ?? nonblockingWorkflowRequirements.length))
+        // never lock non-blocking workflow requirements, once emerged they stay editable for the remainder of the lifecycle.
+        requirementsToLock.push(...reviewRequirements, ...blockingWorkflowRequirements, ...acceptanceRequirements)
       } else if (phase === 'acceptance') {
         requirementsToLock.push(...reviewRequirements, ...blockingWorkflowRequirements)
       }
@@ -758,17 +788,18 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       else appRequest.status = AppRequestStatus.DISQUALIFIED
     } else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_SUBMIT) && !applications.some(a => a.status === ApplicationStatus.PENDING) && !appRequest.awaitingCorrection) appRequest.status = AppRequestStatus.READY_TO_SUBMIT
     // special case for single-program systems with no blocking workflow stages - we set the appRequest to REVIEW_COMPLETE so
-    // the reviewers can do the appRequest-level "Complete Review" right away instead of having to advance the application first
-    else if (applications.length === 1 && !workflowStages.filter(s => s.blocking).length && (applications[0].phase === ApplicationPhase.READY_FOR_WORKFLOW || applications[0].phase === ApplicationPhase.REVIEW_COMPLETE) && !appRequest.awaitingCorrection) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
+    // the reviewers can do the appRequest-level "Complete Review" right away instead of having to advance the application first.
+    // READY_FOR_WORKFLOW is a review-phase (SUBMITTED) signal here, but in the non-blocking phase it means 'ready to send to complete' and is handled below, so restrict this to SUBMITTED.
+    else if (appRequest.phase === AppRequestPhase.SUBMITTED && applications.length === 1 && !workflowStages.filter(s => s.blocking).length && (applications[0].phase === ApplicationPhase.READY_FOR_WORKFLOW || applications[0].phase === ApplicationPhase.REVIEW_COMPLETE) && !appRequest.awaitingCorrection) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
     // exclude prequal and qual ineligible applications from affecting AppRequestStatus, since they never require approval to the next step and we don't want them blocking the appRequest from moving forward
-    else if (applications.filter(a => a.status !== ApplicationStatus.INELIGIBLE || (a.ineligiblePhase && [IneligiblePhases.APPROVAL].includes(a.ineligiblePhase))).some(a => a.phase === ApplicationPhase.READY_FOR_WORKFLOW)) appRequest.status = AppRequestStatus.APPROVAL
+    else if (appRequest.phase === AppRequestPhase.SUBMITTED && applications.filter(a => a.status !== ApplicationStatus.INELIGIBLE || (a.ineligiblePhase && [IneligiblePhases.APPROVAL].includes(a.ineligiblePhase))).some(a => a.phase === ApplicationPhase.READY_FOR_WORKFLOW)) appRequest.status = AppRequestStatus.APPROVAL
     else if (applications.some(a => a.phase === ApplicationPhase.REVIEW_COMPLETE) && !applications.some(a => a.status === ApplicationStatus.PENDING) && !appRequest.awaitingCorrection) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
     else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_ACCEPT) && !applications.some(a => a.status === ApplicationStatus.PENDING) && !appRequest.awaitingCorrection) appRequest.status = AppRequestStatus.READY_TO_ACCEPT
     else if (applications.some(a => a.phase === ApplicationPhase.ACCEPTANCE)) appRequest.status = AppRequestStatus.ACCEPTANCE
     else if (applications.some(a => a.phase === ApplicationPhase.PREAPPROVAL)) appRequest.status = AppRequestStatus.PREAPPROVAL
     else if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_BLOCKING)) appRequest.status = AppRequestStatus.APPROVAL
     else if (applications.some(a => a.phase === ApplicationPhase.APPROVAL)) appRequest.status = AppRequestStatus.APPROVAL
-    else if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_NONBLOCKING)) appRequest.status = applications.some(a => a.status === ApplicationStatus.ACCEPTED) ? AppRequestStatus.ACCEPTED : AppRequestStatus.APPROVED
+    else if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_NONBLOCKING || a.phase === ApplicationPhase.READY_FOR_WORKFLOW)) appRequest.status = applications.some(a => a.status === ApplicationStatus.ACCEPTED) ? AppRequestStatus.ACCEPTED : AppRequestStatus.APPROVED
     else if (applications.every(a => a.phase === ApplicationPhase.COMPLETE || a.phase === ApplicationPhase.READY_TO_COMPLETE)) appRequest.status = applications.some(a => a.status === ApplicationStatus.ACCEPTED) ? AppRequestStatus.ACCEPTED : AppRequestStatus.APPROVED
     else appRequest.status = AppRequestStatus.STARTED
 
