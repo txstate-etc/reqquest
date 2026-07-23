@@ -171,6 +171,8 @@ import RCAuditSoftwareDevelopmentSubmitted2 from './rc/AuditSoftwareDevelopmentS
 import RCAuditSoftwareDevelopmentSubmittedDisplay2 from './rc/AuditSoftwareDevelopmentSubmittedDisplay2.svelte'
 import RCReviewerSoftwareDevelopmentSecondEyes from './rc/ReviewerSoftwareDevelopmentSecondEyes.svelte'
 import RCReviewerSoftwareDevelopmentSecondEyesDisplay from './rc/ReviewerSoftwareDevelopmentSecondEyesDisplay.svelte'
+import RCAuditSoftwareDevelopmentRegular2 from './rc/AuditSoftwareDevelopmentRegular2.svelte'
+import RCAuditSoftwareDevelopmentRegularDisplay2 from './rc/AuditSoftwareDevelopmentRegularDisplay2.svelte'
 
 import { api } from '$internal/api'
 
@@ -460,6 +462,7 @@ function configureDemoInstanceParams () {
         { key: 'audit_software_development_non_blocking_show_submitted_req'},
         { key: 'audit_software_development_non_blocking_show_submitted_req2'},
         { key: 'audit_software_development_non_blocking_show_regular_req'},
+        { key: 'audit_software_development_non_blocking_show_regular_req2'},
         { key: 'reviewer_software_development_second_eyes_req'}
       ],
       prompts: [{
@@ -623,6 +626,11 @@ function configureDemoInstanceParams () {
         key: 'audit_software_development_non_blocking_show_regular_prompt',
         formComponent: RCAuditSoftwareDevelopmentRegular,
         displayComponent: RCAuditSoftwareDevelopmentRegularDisplay
+      },
+      {
+        key: 'audit_software_development_non_blocking_show_regular_prompt2',
+        formComponent: RCAuditSoftwareDevelopmentRegular2,
+        displayComponent: RCAuditSoftwareDevelopmentRegularDisplay2
       },
       {
         key: 'reviewer_software_development_second_eyes_prompt',

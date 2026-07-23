@@ -39,7 +39,7 @@ export class ApplicationResolver {
     return application
   }
 
-  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation.' })
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Moves the application to the next blocking workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. In the non-blocking (WORKFLOW_NONBLOCKING) phase the workflow is non-sequential with all non-blocking requirements editable at once and once they are all resolved this becomes a single "Send to Complete" action that moves the application to COMPLETE.' })
   async advanceWorkflow (@Ctx() ctx: RQContext, @Arg('applicationId', type => ID) applicationId: string) {
     return await ctx.svc(ApplicationService).advanceWorkflow(applicationId)
   }

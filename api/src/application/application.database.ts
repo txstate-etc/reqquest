@@ -80,6 +80,13 @@ export async function advanceWorkflow (applicationId: string, tdb: Queryable = d
   if (!application) throw new Error(`Application not found: ${applicationId}`)
   if (application.phase !== ApplicationPhase.READY_FOR_WORKFLOW) throw new Error('Application is not ready to advance workflow.')
 
+  // In the non-blocking (post-acceptance) phase the workflow is non-sequential, no stage stepping,
+  // this is the single explicit 'Send to Complete' action.
+  if (application.appRequestPhase === AppRequestPhase.WORKFLOW_NONBLOCKING) {
+    await tdb.update('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [ApplicationPhase.COMPLETE, null, applicationId])
+    return
+  }
+
   const stages = await tdb.getall<PeriodWorkflowRow>(`
     SELECT DISTINCT w.* FROM period_workflow_stages w
     INNER JOIN application_requirements r ON r.workflowStage = w.stageKey
@@ -130,9 +137,8 @@ export async function reverseWorkflow (applicationId: string, tdb: Queryable = d
     ORDER BY w.evaluationOrder
   `, [application.programKey, application.periodId])
   // Non-blocking workflow stages are excluded from the reverse (return) order — reversal only steps back
-  // through the blocking workflow and never targets a non-blocking stage. Aligns with new non-blocking
-  // workflows being allowed to surface earlier.
-  const blocking = stages.filter(stage => !!stage.blocking)
+  // through the blocking workflow. The stage definition (registry) is authoritative for nonBlocking
+  const blocking = stages.filter(stage => !!stage.blocking && !programRegistry.getWorkflowStageByKey(stage.stageKey)?.nonBlocking)
   // Needed to take into consideration blocking workflow stages and not just move back to APPROVAL
   const currIdx = application.phase === ApplicationPhase.REVIEW_COMPLETE
     ? blocking.length

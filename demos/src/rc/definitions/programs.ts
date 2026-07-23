@@ -55,6 +55,12 @@ const softwareDevelopment: ProgramDefinition = {
     nonBlocking: true,
     title: 'Audit the entire program after all other phases complete',
     requirementKeys: ['audit_software_development_non_blocking_show_regular_req']
+  },
+  {
+    key: 'software_development_non_blocking_show_regular2',
+    nonBlocking: true,
+    title: 'Audit the entire program again after all other phases complete',
+    requirementKeys: ['audit_software_development_non_blocking_show_regular_req2']
   }]
 }
 const projectManagement: ProgramDefinition = {

@@ -145,6 +145,20 @@ export const audit_software_development_non_blocking_show_regular_req: Requireme
   }
 }
 
+export const audit_software_development_non_blocking_show_regular_req2: RequirementDefinition = {
+  type: RequirementType.WORKFLOW,
+  key: 'audit_software_development_non_blocking_show_regular_req2',
+  title: 'Second audit regular`',
+  navTitle: 'Second audit regular',
+  description: 'Second audit regular',
+  promptKeys: ['audit_software_development_non_blocking_show_regular_prompt2'],
+  resolve: (data, config) => {
+    const audit = data['audit_software_development_non_blocking_show_regular_prompt2'] as AuditSoftwareRegularPromptData
+    if (audit?.ok == null) return { status: RequirementStatus.PENDING }
+    return { status: RequirementStatus.MET }
+  }
+}
+
 export const reviewer_software_development_second_eyes_req: RequirementDefinition = {
   type: RequirementType.WORKFLOW,
   key: 'reviewer_software_development_second_eyes_req',

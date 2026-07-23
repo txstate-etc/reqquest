@@ -155,6 +155,20 @@ export const audit_software_development_non_blocking_show_regular_prompt: Prompt
   }
 }
 
+export const audit_software_development_non_blocking_show_regular_prompt2: PromptDefinition<AuditSoftwareRegularPromptData> = {
+  key: 'audit_software_development_non_blocking_show_regular_prompt2',
+  title: 'Second audit regular',
+  description: 'Second audit regular',
+  schema: AuditSoftwareRegularPromptSchema,
+  validate: (data, config) => {
+    const messages = []
+    if (data.ok == null) {
+      messages.push({ type: MutationMessageType.error, message: 'Please answer if review was performed appropriately AGAIN.', arg: 'ok' })
+    }
+    return messages
+  }
+}
+
 export const reviewer_software_development_second_eyes_prompt: PromptDefinition<ReviewSoftwarSecondEyesPromptData> = {
   key: 'reviewer_software_development_second_eyes_prompt',
   title: 'Second review score',
