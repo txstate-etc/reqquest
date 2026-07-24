@@ -1,17 +1,26 @@
 <script lang="ts">
-  import { Card } from '@txstate-mws/carbon-svelte'
-  import { api } from '$internal'
+  import { api, type ReviewData } from '$internal'
   import type { LayoutData } from '../$types.js'
   import { uiRegistry } from '../../../../local/index.js'
+  import { enumApplicationStatus, InfoCard } from '$lib'
+  import { Modal } from 'carbon-components-svelte'
+  import { Information } from 'carbon-icons-svelte'
+  import StatusMessageList from '$internal/components/StatusMessageList.svelte'
+  import { titleCase } from 'txstate-utils'
 
   export let basicRequestData: LayoutData['basicRequestData']
+  export let appRequest: ReviewData
+  let open = false
 </script>
 
 <div class="review-container">
   <div class="review-sidebar flow">
-    <Card
+    <InfoCard
+      noPrimaryAction
       title={basicRequestData.applicant.fullname}
-    >
+      actions={[
+        { label: 'Ineligibility Information', icon: Information, onClick: () => { open = true } }
+      ]}>
       <dl class="identifier">
         <dt>{uiRegistry.getWord('login')}</dt>
         <dd>{basicRequestData.applicant.login}</dd>
@@ -23,7 +32,8 @@
       {#if uiRegistry.config.slots?.reviewerSidebarCard}
         <svelte:component this={uiRegistry.config.slots.reviewerSidebarCard} appRequest={basicRequestData} applicant={basicRequestData.applicant} {api} />
       {/if}
-    </Card>
+    </InfoCard>
+
     <slot name="sidebar" />
     {#if uiRegistry.config.slots?.reviewerSidebar}
       <svelte:component this={uiRegistry.config.slots.reviewerSidebar} appRequest={basicRequestData} applicant={basicRequestData.applicant} {api} />
@@ -33,6 +43,26 @@
     <slot />
   </div>
 </div>
+
+<Modal passiveModal bind:open modalHeading="Ineligible programs">
+  <div class='flex flex-col gap-4 text-base'>
+    {#each appRequest?.applications.filter(app => app.status === enumApplicationStatus.INELIGIBLE) as application}
+      {@const warningReqs = application.requirements.filter(r => r.status === 'WARNING' && r.statusReason)}
+      <span class='py-2'>{application.title}</span>
+      <StatusMessageList
+        icon
+        items={[{ id: '', message: `${titleCase(application.status)}${application.statusReason ? ':' : ''} ${application.statusReason ?? ''}` }]}
+        variant="error"
+        accordionTitle="Multiple warnings" />
+      <StatusMessageList
+        icon
+        items={warningReqs.map(r => ({ id: r.id, message: r.statusReason! }))}
+        variant="warning"
+        accordionTitle="Multiple warnings" />
+    {/each}
+  </div>
+</Modal>
+
 
 <style>
   .review-container {
@@ -80,5 +110,9 @@
     .identifier {
       grid-template-columns: 1fr;
     }
+  }
+
+  .ineligible-warning {
+    padding: .625rem 0;
   }
 </style>

@@ -2,6 +2,7 @@ import { MutationMessage, PromptDefinition } from '@reqquest/api'
 import { MutationMessageType } from '@txstate-mws/graphql-server'
 import { AssessAttentionDetailData, AssessAttentionDetailSchema, AssessCommunicationData, AssessCommunicationSchema, AssessOrganizationData, AssessOrganizationSchema, CommunicationData, CommunicationSchema, OrganizationData, OrganizationSchema } from '../models/index.js'
 import { OptOutData, OptOutSchema } from '../models/optOut.models.js'
+import { wait } from '../../../utils.js'
 
 export const project_management_opt_out_prompt: PromptDefinition<OptOutData> = {
   key: 'project_management_opt_out_prompt',
@@ -24,6 +25,10 @@ export const communication_prompt: PromptDefinition<CommunicationData> = {
     if (data.describeCommunication == null) messages.push({ type: MutationMessageType.error, message: 'Please answer question.', arg: 'describeCommunication' })
 
     return messages
+  },
+  preload: async (data, config) => {
+    await wait(1000) // simulate a long-running preload operation
+    return {}
   }
 }
 

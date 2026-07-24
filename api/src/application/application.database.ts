@@ -80,6 +80,13 @@ export async function advanceWorkflow (applicationId: string, tdb: Queryable = d
   if (!application) throw new Error(`Application not found: ${applicationId}`)
   if (application.phase !== ApplicationPhase.READY_FOR_WORKFLOW) throw new Error('Application is not ready to advance workflow.')
 
+  // In the non-blocking (post-acceptance) phase the workflow is non-sequential, no stage stepping,
+  // this is the single explicit 'Send to Complete' action.
+  if (application.appRequestPhase === AppRequestPhase.WORKFLOW_NONBLOCKING) {
+    await tdb.update('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [ApplicationPhase.COMPLETE, null, applicationId])
+    return
+  }
+
   const stages = await tdb.getall<PeriodWorkflowRow>(`
     SELECT DISTINCT w.* FROM period_workflow_stages w
     INNER JOIN application_requirements r ON r.workflowStage = w.stageKey
@@ -119,6 +126,8 @@ export async function advanceWorkflow (applicationId: string, tdb: Queryable = d
 export async function reverseWorkflow (applicationId: string, tdb: Queryable = db) {
   const [application] = await getApplications({ ids: [applicationId] }, tdb)
   if (!application) throw new Error(`Application not found: ${applicationId}`)
+  // reversing between non-blocking stages must never occur in any AppRequestPhase since they are no longer sequential, exclude from the reverse order.
+  if (programRegistry.getWorkflowStageByKey(application.workflowStageKey)?.nonBlocking) throw new Error('Non-blocking workflow stages cannot be reversed.')
 
   const stages = await tdb.getall<PeriodWorkflowRow>(`
     SELECT DISTINCT w.* FROM period_workflow_stages w
@@ -127,21 +136,14 @@ export async function reverseWorkflow (applicationId: string, tdb: Queryable = d
     WHERE w.programKey=? AND w.periodId=?
     ORDER BY w.evaluationOrder
   `, [application.programKey, application.periodId])
-  const blocking = stages.filter(stage => !!stage.blocking)
-  const nonblocking = stages.filter(stage => !stage.blocking)
-  const currentlyBlocking = application.appRequestPhase === AppRequestPhase.WORKFLOW_NONBLOCKING ? false : true
-  const activeStages = currentlyBlocking ? blocking : nonblocking
-  const fromStage = activeStages.find(stage => stage.stageKey === application.workflowStageKey)
-  const currIdx = application.phase === ApplicationPhase.COMPLETE ? activeStages.length : activeStages.findIndex(stage => stage.stageKey === fromStage?.stageKey)
-  let toStage: PeriodWorkflowRow | undefined = activeStages[currIdx - 1]
-  let toPhase: ApplicationPhase | undefined
-
-  if (currentlyBlocking) {
-    toPhase = toStage ? ApplicationPhase.WORKFLOW_BLOCKING : ApplicationPhase.APPROVAL
-  } else if (toStage != null) {
-    toPhase = ApplicationPhase.WORKFLOW_NONBLOCKING
-  } else {
-    throw new Error('Cannot reverse workflow any further.')
-  }
+  // Non-blocking workflow stages are excluded from the reverse (return) order — reversal only steps back
+  // through the blocking workflow. The stage definition (registry) is authoritative for nonBlocking
+  const blocking = stages.filter(stage => !!stage.blocking && !programRegistry.getWorkflowStageByKey(stage.stageKey)?.nonBlocking)
+  // Needed to take into consideration blocking workflow stages and not just move back to APPROVAL
+  const currIdx = application.phase === ApplicationPhase.REVIEW_COMPLETE
+    ? blocking.length
+    : blocking.findIndex(stage => stage.stageKey === application.workflowStageKey)
+  const toStage: PeriodWorkflowRow | undefined = currIdx > 0 ? blocking[currIdx - 1] : undefined
+  const toPhase = toStage ? ApplicationPhase.WORKFLOW_BLOCKING : ApplicationPhase.APPROVAL
   await tdb.update('UPDATE applications SET computedPhase = ?, workflowStage = ? WHERE id = ?', [toPhase, toStage?.stageKey, applicationId])
 }

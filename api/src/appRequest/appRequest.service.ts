@@ -359,8 +359,11 @@ export class AppRequestService extends AuthService<AppRequest> {
 
   mayReturnToNonBlocking (appRequest: AppRequest) {
     if (this.isClosed(appRequest)) return false
-    if (appRequest.phase !== AppRequestPhase.COMPLETE) return false
     if (!this.isNonBlockingWorkflowPeriod(appRequest.periodId)) return false
+    // available once the non-blocking workflow is finished, so a reviewer can reopen it to fix an
+    // audit (non blocking working phase) answer.
+    const nonBlockingFinished = appRequest.phase === AppRequestPhase.COMPLETE || (appRequest.phase === AppRequestPhase.WORKFLOW_NONBLOCKING && appRequest.readyToComplete)
+    if (!nonBlockingFinished) return false
     if (this.isOwn(appRequest) && !this.hasControl('AppRequest', 'review_own', appRequest.tags)) return false
     return this.hasControl('AppRequest', 'review', appRequest.tags)
   }
