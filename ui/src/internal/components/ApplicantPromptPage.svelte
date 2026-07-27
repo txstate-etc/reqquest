@@ -10,7 +10,7 @@
   import type { FormStore } from '@txstate-mws/svelte-forms'
   import { Button, InlineNotification } from 'carbon-components-svelte'
   import { getContext } from 'svelte'
-  import type { Writable } from 'svelte/store'
+  import { get, type Writable } from 'svelte/store'
   import { goto, invalidate } from '$app/navigation'
   import type { ResolvedPathname } from '$app/types'
   import { uiRegistry } from '../../local/index.js'
@@ -51,10 +51,15 @@
   }
 
   async function onSaved () {
-    await invalidate('request:apply')
-    if (continueAfterSave && prompt.answered) {
-      // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved      
-      await goto($nextHref.nextHref)
+    if (continueAfterSave) {
+      // Bug issue that became apparent with loaders. 
+      // only refresh nav/answered state, not this prompt page. read the store directly with
+      // get() rather than $nextHref/prompt.answered because its stale until reload reactive updates.
+      await invalidate('request:apply:nav')
+      // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved
+      await goto(get(nextHref).nextHref)
+    } else {
+      await invalidate('request:apply')
     }
   }
 
