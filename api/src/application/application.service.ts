@@ -20,6 +20,7 @@ export const statusVisibleToApplicantPhases = new Set<ApplicationPhase>([
   ApplicationPhase.PREQUAL,
   ApplicationPhase.QUALIFICATION,
   ApplicationPhase.READY_TO_SUBMIT,
+  ApplicationPhase.REVIEW_COMPLETE,
   ApplicationPhase.ACCEPTANCE,
   ApplicationPhase.READY_TO_ACCEPT,
   ApplicationPhase.WORKFLOW_NONBLOCKING,
