@@ -10,6 +10,5 @@ export const load: PageLoad = async ({ params, depends }) => {
   const coalescedAppRequest = coalesceAppRequestPrompts(appRequest, inlinePromptsWithData)
   if (!coalescedAppRequest) throw error(404, 'App Request not found')
   depends('request:approve')
-  console.log(coalescedAppRequest)
   return { appRequest: coalescedAppRequest, programKey: params.programKey }
 }
