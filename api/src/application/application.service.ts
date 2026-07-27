@@ -98,6 +98,7 @@ export class ApplicationService extends AuthService<Application> {
 
   maySeeFullStatus (application: Application) {
     if (this.mayViewAsReviewer(application)) return true
+    if (application.appRequestPhase === AppRequestPhase.STARTED) return false // While the appRequest is still being filled out, prior to submission, an applicant must never see a decided eligibility status
     return statusVisibleToApplicantPhases.has(application.phase)
   }
 
