@@ -692,6 +692,11 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
 
       application.statusReason = firstFailingRequirement?.statusReason ?? firstPendingRequirement?.statusReason
 
+      // the reviewer has begun (but not finished) their work when an APPROVAL requirement is still
+      // pending while one of its prompts already has data on file
+      const reviewInProgress = approvalRequirements.some(req => req.status === RequirementStatus.PENDING
+        && (promptLookup[req.id] ?? []).some(p => p.answered && data[p.key] != null))
+
       // awaitingCorrection suppresses the readiness phases: someone must re-answer an invalidated
       // prompt before the application can move forward, so hold the phase at the requirement that
       // needs the attention (falling back to the normal non-passing requirement when one exists)
@@ -724,7 +729,9 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
                     : ApplicationPhase.READY_FOR_WORKFLOW
                   : (nonPassingRequirement ?? firstAwaitingCorrectionRequirement)?.type === RequirementType.PREAPPROVAL
                     ? ApplicationPhase.PREAPPROVAL
-                    : ApplicationPhase.APPROVAL
+                    : reviewInProgress
+                      ? ApplicationPhase.REVIEW_IN_PROGRESS
+                      : ApplicationPhase.APPROVAL
                 : requirementsResolution === 'pass' && !application.awaitingCorrection // phase === 'blocking'
                   ? application.phase === ApplicationPhase.REVIEW_COMPLETE
                     ? ApplicationPhase.REVIEW_COMPLETE
@@ -798,6 +805,9 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
     else if (applications.some(a => a.phase === ApplicationPhase.ACCEPTANCE)) appRequest.status = AppRequestStatus.ACCEPTANCE
     else if (applications.some(a => a.phase === ApplicationPhase.PREAPPROVAL)) appRequest.status = AppRequestStatus.PREAPPROVAL
     else if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_BLOCKING)) appRequest.status = AppRequestStatus.APPROVAL
+    // once a reviewer has begun their work on any application, the whole request reads as in-progress
+    // rather than merely awaiting a reviewer, so this takes precedence over the APPROVAL check below
+    else if (applications.some(a => a.phase === ApplicationPhase.REVIEW_IN_PROGRESS)) appRequest.status = AppRequestStatus.REVIEW_IN_PROGRESS
     else if (applications.some(a => a.phase === ApplicationPhase.APPROVAL)) appRequest.status = AppRequestStatus.APPROVAL
     else if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_NONBLOCKING || a.phase === ApplicationPhase.READY_FOR_WORKFLOW)) appRequest.status = applications.some(a => a.status === ApplicationStatus.ACCEPTED) ? AppRequestStatus.ACCEPTED : AppRequestStatus.APPROVED
     else if (applications.every(a => a.phase === ApplicationPhase.COMPLETE || a.phase === ApplicationPhase.READY_TO_COMPLETE)) appRequest.status = applications.some(a => a.status === ApplicationStatus.ACCEPTED) ? AppRequestStatus.ACCEPTED : AppRequestStatus.APPROVED

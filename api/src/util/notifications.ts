@@ -12,7 +12,7 @@ export const internalNotifications: NotificationCB[] = [
   },
   async (ctx, ar, oldAppRequestStatus) => {
     // Returned back to applicant
-    if ([AppRequestStatus.APPROVAL, AppRequestStatus.PREAPPROVAL, AppRequestStatus.REVIEW_COMPLETE].includes(oldAppRequestStatus)) {
+    if ([AppRequestStatus.APPROVAL, AppRequestStatus.REVIEW_IN_PROGRESS, AppRequestStatus.PREAPPROVAL, AppRequestStatus.REVIEW_COMPLETE].includes(oldAppRequestStatus)) {
       await ctx.svc(MailService).sendmulti({ userIds: [ar.userInternalId], templateKey: 'applicant_return', extra: appConfig.emailConfig })
     }
   }
