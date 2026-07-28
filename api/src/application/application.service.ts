@@ -29,6 +29,22 @@ export const statusVisibleToApplicantPhases = new Set<ApplicationPhase>([
   ApplicationPhase.COMPLETE
 ])
 
+/**
+ * Whether an application's results may be shown to the applicant, based on how far along it is.
+ *
+ * Phase alone is not enough because READY_FOR_WORKFLOW carries two very different meanings. While the
+ * request is still in review it means 'review finished, waiting for a reviewer to advance into the
+ * blocking workflow', nothing may be released yet, since a blocking stage can still change the
+ * outcome. Once the review has been completed it means 'non-blocking workflow finished, ready to
+ * complete', and the results were already released when the review completed.
+ */
+export function statusVisibleToApplicant (applicationPhase: ApplicationPhase, appRequestPhase: AppRequestPhase) {
+  if (applicationPhase === ApplicationPhase.READY_FOR_WORKFLOW) {
+    return appRequestPhase !== AppRequestPhase.STARTED && appRequestPhase !== AppRequestPhase.SUBMITTED
+  }
+  return statusVisibleToApplicantPhases.has(applicationPhase)
+}
+
 export class ApplicationServiceInternal extends BaseService<Application> {
   async findByInternalId (internalId: number, appRequestTags?: Record<string, string[]>) {
     const application = await this.loaders.get(appByInternalIdLoader).load(String(internalId))
@@ -100,7 +116,7 @@ export class ApplicationService extends AuthService<Application> {
   maySeeFullStatus (application: Application) {
     if (this.mayViewAsReviewer(application)) return true
     if (application.appRequestPhase === AppRequestPhase.STARTED) return false // While the appRequest is still being filled out, prior to submission, an applicant must never see a decided eligibility status
-    return statusVisibleToApplicantPhases.has(application.phase)
+    return statusVisibleToApplicant(application.phase, application.appRequestPhase)
   }
 
   mayAdvanceWorkflow (application: Application) {

@@ -520,8 +520,12 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       }
     }
 
+    // prompt keys the applicant owns somewhere in this request. A prompt can be shared between an
+    // applicant requirement and a reviewer requirement, and data the applicant provided can't read as review progress.
+    const applicantPromptKeys = new Set(prompts.filter(p => applicantRequirementTypes.has(p.requirementType)).map(p => p.key))
     const promptsSeenInRequest = new Set<string>()
     const promptKeysLocked = new Set<string>()
+    const reviewStartedApplicationIds = new Set<string>()
     for (const application of applications) {
       const requirements = reqLookup[application.id] ?? []
       const workflowStages = workflowStagesByProgramKey[application.programKey] ?? []
@@ -692,10 +696,16 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
 
       application.statusReason = firstFailingRequirement?.statusReason ?? firstPendingRequirement?.statusReason
 
-      // the reviewer has begun (but not finished) their work when an APPROVAL requirement is still
-      // pending while one of its prompts already has data on file
-      const reviewInProgress = approvalRequirements.some(req => req.status === RequirementStatus.PENDING
-        && (promptLookup[req.id] ?? []).some(p => p.answered && data[p.key] != null))
+      // the reviewer has begun their work when any prompt belonging to an APPROVAL requirement has
+      // data on file. check for data rather than relying on prompt.answered because a reviewer prompt with
+      // no data may still be considered answered when its validation passes on an empty answer.
+      const reviewInProgress = approvalRequirements.some(req => (promptLookup[req.id] ?? [])
+        .some(p => !applicantPromptKeys.has(p.key) && p.answered && data[p.key] != null))
+      // remember even when the phase below lands somewhere else. Once every APPROVAL requirement
+      // resolves the application moves on to READY_FOR_WORKFLOW, and reversing a workflow drops it
+      // back here with all of that reviewer data still on file. request status
+      // must still read as in review rather than awaiting a reviewer.
+      if (phase === 'review' && reviewInProgress) reviewStartedApplicationIds.add(application.id)
 
       // awaitingCorrection suppresses the readiness phases: someone must re-answer an invalidated
       // prompt before the application can move forward, so hold the phase at the requirement that
@@ -789,7 +799,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
         if (appRequest.awaitingCorrection) appRequest.status = AppRequestStatus.APPROVAL
         else if (applications.length === 1 && !workflowStages.filter(s => s.blocking).length && (applications[0].phase === ApplicationPhase.READY_FOR_WORKFLOW || applications[0].phase === ApplicationPhase.REVIEW_COMPLETE)) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
         else if (applications.every(a => a.phase === ApplicationPhase.REVIEW_COMPLETE || (a.ineligiblePhase && [IneligiblePhases.PREQUAL, IneligiblePhases.QUALIFICATION].includes(a.ineligiblePhase)))) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
-        else appRequest.status = AppRequestStatus.APPROVAL
+        else appRequest.status = reviewStartedApplicationIds.size ? AppRequestStatus.REVIEW_IN_PROGRESS : AppRequestStatus.APPROVAL
       } else if (applications.some(a => a.ineligiblePhase === IneligiblePhases.ACCEPTANCE)) appRequest.status = AppRequestStatus.NOT_ACCEPTED
       else if (applications.some(a => a.ineligiblePhase === IneligiblePhases.APPROVAL || a.ineligiblePhase === IneligiblePhases.WORKFLOW)) appRequest.status = AppRequestStatus.NOT_APPROVED
       else appRequest.status = AppRequestStatus.DISQUALIFIED
@@ -798,16 +808,16 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
     // the reviewers can do the appRequest-level "Complete Review" right away instead of having to advance the application first.
     // READY_FOR_WORKFLOW is a review-phase (SUBMITTED) signal here, but in the non-blocking phase it means 'ready to send to complete' and is handled below, so restrict this to SUBMITTED.
     else if (appRequest.phase === AppRequestPhase.SUBMITTED && applications.length === 1 && !workflowStages.filter(s => s.blocking).length && (applications[0].phase === ApplicationPhase.READY_FOR_WORKFLOW || applications[0].phase === ApplicationPhase.REVIEW_COMPLETE) && !appRequest.awaitingCorrection) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
+    // once a reviewer has begun their work on any application, the whole request reads as in-progress so this trumps review-phase statuses
+    else if (applications.some(a => a.phase === ApplicationPhase.REVIEW_IN_PROGRESS)) appRequest.status = AppRequestStatus.REVIEW_IN_PROGRESS
     // exclude prequal and qual ineligible applications from affecting AppRequestStatus, since they never require approval to the next step and we don't want them blocking the appRequest from moving forward
-    else if (appRequest.phase === AppRequestPhase.SUBMITTED && applications.filter(a => a.status !== ApplicationStatus.INELIGIBLE || (a.ineligiblePhase && [IneligiblePhases.APPROVAL].includes(a.ineligiblePhase))).some(a => a.phase === ApplicationPhase.READY_FOR_WORKFLOW)) appRequest.status = AppRequestStatus.APPROVAL
+    // a reviewer who has answered everything or reversed a workflow back into review is mid-review, not awaiting review
+    else if (appRequest.phase === AppRequestPhase.SUBMITTED && applications.filter(a => a.status !== ApplicationStatus.INELIGIBLE || (a.ineligiblePhase && [IneligiblePhases.APPROVAL].includes(a.ineligiblePhase))).some(a => a.phase === ApplicationPhase.READY_FOR_WORKFLOW)) appRequest.status = reviewStartedApplicationIds.size ? AppRequestStatus.REVIEW_IN_PROGRESS : AppRequestStatus.APPROVAL
     else if (applications.some(a => a.phase === ApplicationPhase.REVIEW_COMPLETE) && !applications.some(a => a.status === ApplicationStatus.PENDING) && !appRequest.awaitingCorrection) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
     else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_ACCEPT) && !applications.some(a => a.status === ApplicationStatus.PENDING) && !appRequest.awaitingCorrection) appRequest.status = AppRequestStatus.READY_TO_ACCEPT
     else if (applications.some(a => a.phase === ApplicationPhase.ACCEPTANCE)) appRequest.status = AppRequestStatus.ACCEPTANCE
     else if (applications.some(a => a.phase === ApplicationPhase.PREAPPROVAL)) appRequest.status = AppRequestStatus.PREAPPROVAL
     else if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_BLOCKING)) appRequest.status = AppRequestStatus.APPROVAL
-    // once a reviewer has begun their work on any application, the whole request reads as in-progress
-    // rather than merely awaiting a reviewer, so this takes precedence over the APPROVAL check below
-    else if (applications.some(a => a.phase === ApplicationPhase.REVIEW_IN_PROGRESS)) appRequest.status = AppRequestStatus.REVIEW_IN_PROGRESS
     else if (applications.some(a => a.phase === ApplicationPhase.APPROVAL)) appRequest.status = AppRequestStatus.APPROVAL
     else if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_NONBLOCKING || a.phase === ApplicationPhase.READY_FOR_WORKFLOW)) appRequest.status = applications.some(a => a.status === ApplicationStatus.ACCEPTED) ? AppRequestStatus.ACCEPTED : AppRequestStatus.APPROVED
     else if (applications.every(a => a.phase === ApplicationPhase.COMPLETE || a.phase === ApplicationPhase.READY_TO_COMPLETE)) appRequest.status = applications.some(a => a.status === ApplicationStatus.ACCEPTED) ? AppRequestStatus.ACCEPTED : AppRequestStatus.APPROVED

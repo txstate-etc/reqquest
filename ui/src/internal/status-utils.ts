@@ -109,7 +109,7 @@ export const APP_REQUEST_STATUS_CONFIG: Record<AppRequestStatus, AppStatusConfig
   },
   REVIEW_COMPLETE: {
     tags: [{ label: 'Review complete', type: 'blue' }],
-    description: `Your ${uiRegistry.getWord('appRequest').toLowerCase()} is being reviewed.`,
+    description: `Your ${uiRegistry.getWord('appRequest').toLowerCase()} review is complete.`,
     buttonText: `Export ${uiRegistry.getWord('appRequest')}`,
     actionType: 'export',
     category: 'current'
@@ -128,7 +128,7 @@ export const APP_REQUEST_STATUS_CONFIG: Record<AppRequestStatus, AppStatusConfig
     actionType: 'none',
     category: 'past'
   },
-  NOT_ACCEPTED: {
+  NOT_ACCEPTED: { 
     tags: [{ label: 'Offer declined', type: 'gray' }],
     description: 'The offer was not accepted.',
     buttonText: '',
@@ -190,7 +190,7 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, { description: str
     description: 'Waiting for you to respond to the offer.',
     color: 'purple'
   },
-  ACCEPTED: {
+  ACCEPTED: { 
     label: 'Offer accepted',
     description: 'You have accepted an offer.',
     color: 'green'
@@ -215,7 +215,7 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, { description: str
     description: `Your ${uiRegistry.getWord('appRequest').toLowerCase()} was not approved.`,
     color: 'red'
   },
-  NOT_ACCEPTED: {
+  NOT_ACCEPTED: { 
     label: 'Offer declined',
     description: 'The offer was not accepted.',
     color: 'gray'
@@ -230,7 +230,7 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, { description: str
     description: `${uiRegistry.getWord('appRequest')} was withdrawn after submission.`,
     color: 'gray'
   },
-  DISQUALIFIED: {
+  DISQUALIFIED: { 
     label: 'Not qualified',
     description: `All ${uiRegistry.getPlural('appRequest').toLowerCase()} have been disqualified.`,
     color: 'red'
@@ -297,7 +297,7 @@ export function getApplicationStatusInfo (status: string, appRequestPhase: strin
       color: 'green'
     },
     ELIGIBLE: {
-      label: 'Eligible',
+      label: 'Approved',
       description: 'All requirements met, acceptance pending.',
       color: 'green'
     },
@@ -307,14 +307,14 @@ export function getApplicationStatusInfo (status: string, appRequestPhase: strin
       color: 'red'
     },
     PENDING: {
-      label: 'In progress',
+      label: 'Pending',
       description: 'Awaiting further information.',
       color: 'purple'
     },
     REJECTED: {
       label: 'Offer declined',
       description: 'Offer rejected or requirements not met.',
-      color: 'gray'
+      color: 'red'
     }
   }
   if (appRequestPhase !== enumAppRequestPhase.COMPLETE && appRequestPhase !== enumAppRequestPhase.WORKFLOW_NONBLOCKING && closedAt != null) {
