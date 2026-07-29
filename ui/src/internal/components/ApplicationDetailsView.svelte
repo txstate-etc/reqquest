@@ -92,7 +92,7 @@
   <div class="[ my-6 ] application-details flow">
     <!-- Application Status Panel -->
     <header class="[ mb-12 ] app-view-intro text-center">
-      <h2 class="[ text-xl mb-3 ]">{title}</h2>
+      <h2 class="[ text-2xl mb-3 font-bold ]">{title}</h2>
       <p class="app-view-subtitle mb-3">{subtitle}</p>
     </header>
     <section class="prompt-section">
@@ -233,6 +233,7 @@
 <style>
   .app-view-subtitle {
     color: var(--cds-text-02);
+    font-size: 0.9rem;
     /* margin-top: -0.5rem; */
     margin-bottom: 1rem;
   }
