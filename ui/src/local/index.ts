@@ -1,5 +1,5 @@
 import { PUBLIC_DEMO_INSTANCE } from '$env/static/public'
-import { UIRegistry } from '$lib'
+import { UIRegistry, type UIConfig } from '$lib'
 /** default */
 import DogWalker from 'carbon-icons-svelte/lib/DogWalker.svelte'
 import Gamification from 'carbon-icons-svelte/lib/Gamification.svelte'
@@ -163,7 +163,20 @@ import RCPreQualUserInfoPromptDisplay from './rc/PreQualUserInfoPromptDisplay.sv
 import OptOut from './rc/OptOut.svelte'
 import OptOutDisplay from './rc/OptOutDisplay.svelte'
 import RCIntroPanelDefaultSlot from './rc/IntroPanelDefaultSlot.svelte'
+import RCAuditSoftwareDevelopmentRegular from './rc/AuditSoftwareDevelopmentRegular.svelte'
+import RCAuditSoftwareDevelopmentRegularDisplay from './rc/AuditSoftwareDevelopmentRegularDisplay.svelte'
+import RCAuditSoftwareDevelopmentSubmitted from './rc/AuditSoftwareDevelopmentSubmitted.svelte'
+import RCAuditSoftwareDevelopmentSubmittedDisplay from './rc/AuditSoftwareDevelopmentSubmittedDisplay.svelte'
+import RCAuditSoftwareDevelopmentSubmitted2 from './rc/AuditSoftwareDevelopmentSubmitted2.svelte'
+import RCAuditSoftwareDevelopmentSubmittedDisplay2 from './rc/AuditSoftwareDevelopmentSubmittedDisplay2.svelte'
+import RCReviewerSoftwareDevelopmentSecondEyes from './rc/ReviewerSoftwareDevelopmentSecondEyes.svelte'
+import RCReviewerSoftwareDevelopmentSecondEyesDisplay from './rc/ReviewerSoftwareDevelopmentSecondEyesDisplay.svelte'
+import RCAuditSoftwareDevelopmentRegular2 from './rc/AuditSoftwareDevelopmentRegular2.svelte'
+import RCAuditSoftwareDevelopmentRegularDisplay2 from './rc/AuditSoftwareDevelopmentRegularDisplay2.svelte'
+
 import { api } from '$internal/api'
+import ApplicantPromptSkeleton from '$internal/components/ApplicantPromptSkeleton.svelte'
+import { GeneralTextSkeleton } from '@txstate-mws/carbon-svelte'
 
 const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, applicantReview, programs, requirements, prompts, userLookup, slots } = configureDemoInstanceParams()
 
@@ -180,7 +193,7 @@ export const uiRegistry = new UIRegistry({
   slots
 })
 
-function configureDemoInstanceParams () {
+function configureDemoInstanceParams (): UIConfig {
   /**
    * So here's a fun hack. PUBLIC_DEMO_INSTANCE is one of our environment variables, but we
    * have a bit of a custom system for injecting environment at startup time rather than build time.
@@ -447,7 +460,12 @@ function configureDemoInstanceParams () {
         { key: 'organization_req' },
         { key: 'assess_organization_req' },
         { key: 'reccomendation_letter_req' },
-        { key: 'assess_reccomendation_letter_req' }
+        { key: 'assess_reccomendation_letter_req' },
+        { key: 'audit_software_development_non_blocking_show_submitted_req'},
+        { key: 'audit_software_development_non_blocking_show_submitted_req2'},
+        { key: 'audit_software_development_non_blocking_show_regular_req'},
+        { key: 'audit_software_development_non_blocking_show_regular_req2'},
+        { key: 'reviewer_software_development_second_eyes_req'}
       ],
       prompts: [{
         key: 'pre_qual_prompt',
@@ -482,7 +500,8 @@ function configureDemoInstanceParams () {
       {
         key: 'data_related_puzzle_prompt',
         formComponent: DataRelatedPuzzle,
-        displayComponent: DataRelatedPuzzleDisplay
+        displayComponent: DataRelatedPuzzleDisplay,
+        loader: true
       },
       {
         key: 'assess_data_related_puzzle_prompt',
@@ -512,7 +531,10 @@ function configureDemoInstanceParams () {
       {
         key: 'communication_prompt',
         formComponent: Communication,
-        displayComponent: CommunicationDisplay
+        displayComponent: CommunicationDisplay,
+        loader: {
+          skeletonComponent: ApplicantPromptSkeleton
+        }
       },
       {
         key: 'assess_communication_prompt',
@@ -544,7 +566,10 @@ function configureDemoInstanceParams () {
         key: 'assess_technical_troubleshooting_prompt',
         formComponent: AssessTechnicalTroubleshooting,
         displayComponent: AssessTechnicalTroubleshootingDisplay,
-        formMode: 'full'
+        formMode: 'full',
+        loader: {
+          skeletonComponent: GeneralTextSkeleton
+        }
       },
       {
         key: 'support_communication_prompt',
@@ -595,6 +620,31 @@ function configureDemoInstanceParams () {
         key: 'project_management_opt_out_prompt',
         formComponent: OptOut,
         displayComponent: OptOutDisplay
+      },
+      {
+        key: 'audit_software_development_non_blocking_show_submitted_prompt',
+        formComponent: RCAuditSoftwareDevelopmentSubmitted,
+        displayComponent: RCAuditSoftwareDevelopmentSubmittedDisplay
+      },
+      {
+        key: 'audit_software_development_non_blocking_show_submitted_prompt2',
+        formComponent: RCAuditSoftwareDevelopmentSubmitted2,
+        displayComponent: RCAuditSoftwareDevelopmentSubmittedDisplay2
+      },
+      {
+        key: 'audit_software_development_non_blocking_show_regular_prompt',
+        formComponent: RCAuditSoftwareDevelopmentRegular,
+        displayComponent: RCAuditSoftwareDevelopmentRegularDisplay
+      },
+      {
+        key: 'audit_software_development_non_blocking_show_regular_prompt2',
+        formComponent: RCAuditSoftwareDevelopmentRegular2,
+        displayComponent: RCAuditSoftwareDevelopmentRegularDisplay2
+      },
+      {
+        key: 'reviewer_software_development_second_eyes_prompt',
+        formComponent: RCReviewerSoftwareDevelopmentSecondEyes,
+        displayComponent: RCReviewerSoftwareDevelopmentSecondEyesDisplay
       }
       ]
     }

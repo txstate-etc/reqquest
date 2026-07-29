@@ -4,9 +4,9 @@
   import DocExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
   import View from 'carbon-icons-svelte/lib/View.svelte'
   import { DateTime } from 'luxon'
-  import { onMount } from 'svelte'
+  import { onMount, tick } from 'svelte'
   import { toQuery } from 'txstate-utils'
-   import { goto } from '$app/navigation'
+  import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { api, REVIEWER_STATUS_CONFIG } from '$internal'
   import type { PageData } from './$types'
@@ -108,7 +108,13 @@
       {
         label: 'View',
         icon: View,
-        onClick: () => { goto(`/requests/${r.id}/approve`) }
+        // Heisenbug :) Resolved after console dumps slowed it down and worked.
+        // defer navigation one tick past the click's synchronous handling. goto() inside the handler
+        // raced with the action button's click and got dropped on the first uncached click after a fresh page load, required second click to navigate.
+        onClick: async () => {
+          await tick()
+          await goto(resolve(`/requests/${r.id}/approve`))
+        }
       }
     ]}
   >

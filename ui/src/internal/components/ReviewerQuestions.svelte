@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Form } from '@txstate-mws/svelte-forms'
   import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
-  import WarningAltFilled from 'carbon-icons-svelte/lib/WarningAltFilled.svelte'
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import { isInlineReviewerEditPrompt, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api } from '$internal'
@@ -13,6 +12,8 @@
   import type { PageData } from '../../routes/requests/[id]/approve/[programKey]/$types'
   import { invalidateAll } from '$app/navigation'
   import Review from "carbon-icons-svelte/lib/Review.svelte";
+  import DelayedSkeleton from '$lib/components/DelayedSkeleton.svelte';
+  import WarningIconYellow from './WarningIconYellow.svelte';
 
   export let sections: any[]
   export let promptIndicator: Record<string, any>
@@ -23,17 +24,20 @@
   type PromptExtraData = Awaited<ReturnType<typeof api.getPromptData>>
   type Prompt = PageData['appRequest']['applications'][0]['requirements'][0]['prompts'][0]
   type PromptWithExtra = Prompt & PromptExtraData
-  let promptBeingEdited: PromptWithExtra | undefined = undefined
+  let editingPromptWithData: PromptWithExtra | undefined = undefined
+  let promptBeingEdited: Prompt | undefined = undefined
   let showPromptDialog = false
   let fetchingEditPrompt = false
+
   function editPrompt (prompt: Prompt, allowSaveWithoutChanges: boolean = false) {
     return async () => {
       if (fetchingEditPrompt) return
+      promptBeingEdited = prompt
       fetchingEditPrompt = true
       showPromptDialog = true
       try {
         const extra = await api.getPromptData(appRequest.id, prompt.id)
-        promptBeingEdited = { ...prompt, ...extra, allowSaveWithoutChanges }
+        editingPromptWithData = { ...prompt, ...extra, allowSaveWithoutChanges }
       } finally {
         fetchingEditPrompt = false
       }
@@ -48,6 +52,7 @@
   function closePromptDialog () {
     fetchingEditPrompt = false
     showPromptDialog = false
+    editingPromptWithData = undefined
     promptBeingEdited = undefined
   }
 
@@ -98,7 +103,7 @@
                     {#if promptIndicator[prompt.key]?.indicator === PromptIndicators.AUTOMATION}
                         <MachineLearning size={20} />
                     {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.WARNING}
-                        <WarningAltFilled size={20} class="warning-icon" />
+                        <WarningIconYellow />
                     {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.DISQUALIFYING}
                         <WarningFilled size={20} class="disqualifying-icon" />
                     {/if}
@@ -144,42 +149,49 @@
   </Panel>
 {/each}
 
-{#if showPromptDialog}
+{#if showPromptDialog && promptBeingEdited}
+{@const formMode = uiRegistry.getPrompt(promptBeingEdited.key)?.formMode === 'full' ? 'large' : undefined}
   <PanelFormDialog
-    title={promptBeingEdited?.invalidated ? `Review correction "${promptBeingEdited?.title}"` : 'Edit Prompt'}
+    title={editingPromptWithData?.invalidated ? `Review correction "${editingPromptWithData?.title}"` : 'Edit Prompt'}
     bind:open={showPromptDialog}
     on:cancel={closePromptDialog}
-    submit={onPromptSubmit(promptBeingEdited)}
-    validate={onPromptValidate(promptBeingEdited)}
+    submit={onPromptSubmit(editingPromptWithData)}
+    validate={onPromptValidate(editingPromptWithData)}
     on:saved={onPromptSaved}
-    disableSaveUntilChanged={!promptBeingEdited?.allowSaveWithoutChanges} // allow saving without changes if prompt was previously invalidated ...accomodates reviewer saying no changes required on correction check
-    centered
-    size={uiRegistry.getPrompt(promptBeingEdited?.key)?.formMode === 'full' ? 'large' : undefined}
-    preload={promptBeingEdited?.preloadData}
+    disableSaveUntilChanged={!editingPromptWithData?.allowSaveWithoutChanges} // allow saving without changes if prompt was previously invalidated ...accomodates reviewer saying no changes required on correction check
+    centered={!formMode}
+    size={formMode}
+    preload={editingPromptWithData?.preloadData}
     let:data
   >
-    {#if promptBeingEdited}
-      {@const def = uiRegistry.getPrompt(promptBeingEdited.key)}
+    {#if editingPromptWithData}
+      {@const def = uiRegistry.getPrompt(editingPromptWithData.key)}
       <div class='font-medium text-center mt-2'>
-        <p class="text-xl font-medium ">{promptBeingEdited.title}</p>
+        <p class="text-xl font-medium ">{editingPromptWithData.title}</p>
       </div>
       <svelte:component
         this={def!.formComponent}
         appRequestId={appRequest.id}
         {data}
-        appRequestData={promptBeingEdited.data}
+        appRequestData={editingPromptWithData.data}
         prestageData={{
-          latest: promptBeingEdited.prestageData,
-          current: appRequest.data[promptBeingEdited.key]?.__prestage
+          latest: editingPromptWithData.prestageData,
+          current: appRequest.data[editingPromptWithData.key]?.__prestage
         }}
-        fetched={promptBeingEdited.fetchedData}
-        configData={promptBeingEdited.configurationData}
-        gatheredConfigData={promptBeingEdited.gatheredConfigData}
-        invalidated={promptBeingEdited.invalidated}
-        invalidatedReason={promptBeingEdited.invalidatedReason}
+        fetched={editingPromptWithData.fetchedData}
+        configData={editingPromptWithData.configurationData}
+        gatheredConfigData={editingPromptWithData.gatheredConfigData}
+        invalidated={editingPromptWithData.invalidated}
+        invalidatedReason={editingPromptWithData.invalidatedReason}
       />
-    {:else}
-      <GeneralTextSkeleton />
+    {:else if fetchingEditPrompt}
+      {@const loader = uiRegistry.getPrompt(promptBeingEdited.key)?.loader}
+      <div class='font-medium text-center mt-2'>
+        <p class="text-xl font-medium ">{promptBeingEdited.title}</p>
+      </div>
+      {#if loader}
+        <DelayedSkeleton {loader} />
+      {/if}
     {/if}
   </PanelFormDialog>
 {/if}
@@ -230,7 +242,7 @@
   .prompts dt :global(.warning-icon) {
     fill: var(--cds-inverse-support-03, #f1c21b);
   }
-  .prompts dt :global(.disqualifying-icon) {
+  :global(.disqualifying-icon) {
     fill: var(--cds-support-01, #da1e28);
   }
 </style>

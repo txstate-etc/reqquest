@@ -10,8 +10,7 @@ export const step1_prequal_req: RequirementDefinition<PreQualPromptData> = {
   promptKeys: ['pre_qual_prompt', 'pre_qual_user_info_prompt'],
   resolve: (data, config) => {
     const preQualPromptData = data['pre_qual_prompt'] as PreQualPromptData
-    const preQualUserInfoPromptData = data['pre_qual_pre_qual_user_info_prompt'] as PreQualUserInfoPromptData
-
+    const preQualUserInfoPromptData = data['pre_qual_user_info_prompt'] as PreQualUserInfoPromptData
     if (preQualPromptData?.availability == null) return { status: RequirementStatus.PENDING }    
     if (preQualPromptData?.gpa == null) return { status: RequirementStatus.PENDING }
     if (preQualPromptData?.acknowledgeExpectations == null) return { status: RequirementStatus.PENDING }

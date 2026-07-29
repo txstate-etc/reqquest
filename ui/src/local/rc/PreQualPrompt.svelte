@@ -5,7 +5,7 @@
   export let data: Partial<RCPreQual>
   export let prestageData
   $: prestage = prestageData.latest ?? prestageData.current
-  $: data.__prestage = prestage
+  $: if (data) data.__prestage = prestage
 </script>
 
 <!--<FieldNumber labelText='LSAT Score' path='data.__prestage.nodes.client.data.lsat' readonly defaultValue={prestage.nodes.client.data.lsat} />-->
