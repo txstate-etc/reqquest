@@ -23,7 +23,7 @@ class Mail {
 
   async sendsingle ({ replyTo, to, subject, body, extra }: { replyTo?: string, to: string, subject: any, body: any, extra?: Record<string, any> }) {
     const compiledSubject = subject({ to, replyTo, link_base: process.env.PUBLISHED_BASE_URL, ...extra })
-    const compiledBody = body({ to, replyTo, link_base: process.env.PUBLISHED_BASE_URL, ...extra })
+    const compiledBody = body({ to, replyTo, link_base: process.env.PUBLISHED_BASE_URL, ...extra }).trim().replace(/\r?\n/g, '<br>').replace(/(<br>){3,}/ig, '<br><br>')
     await this.transporter.sendMail({
       from: 'Reqquest <reqquest@txstate.edu>',
       replyTo: replyTo ?? 'Reqquest <reqquest@txstate.edu>',
