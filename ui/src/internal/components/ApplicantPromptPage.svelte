@@ -89,7 +89,7 @@
     <h2 id="prompt-title" tabindex="-1" autofocus class="font-bold text-2xl leading-normal text-center">{prompt.title}</h2>
     <p class="text-center"> {prompt.description}</p>
   </div>
-  <Form bind:store hideFallbackMessage unsavedWarning submit={onSubmit} validate={onValidate} preloadAsDraft={!prompt.hasSavedData} preload={prompt.preloadData} on:saved={onSaved} let:data>
+  <Form class={def!.applicantPromptPage?.formClass ?? uiRegistry.config.applicantPromptPage?.formClass} bind:store hideFallbackMessage unsavedWarning submit={onSubmit} validate={onValidate} preloadAsDraft={!prompt.hasSavedData} preload={prompt.preloadData} on:saved={onSaved} let:data>
     <svelte:component this={def!.formComponent} {data} appRequestId={appRequestForExport.id} appRequestData={appRequestForExport.data} prestageData={{latest: prompt.prestageData, current: appRequestForExport.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} />
     <svelte:fragment slot="submit" let:submitting>
       <div class='form-submit flex gap-12 justify-center mt-16'>
@@ -99,20 +99,18 @@
         <Button icon={submitting && !continueAfterSave ? ButtonLoadingIcon : null} type="submit" kind="secondary" disabled={submitting} on:click={() => { continueAfterSave = false }}>Save</Button>
         <Button icon={submitting && !continueAfterSave ? ButtonLoadingIcon : null} type="submit" disabled={submitting} on:click={() => { continueAfterSave = true }}>Continue</Button>
       </div>
-    </svelte:fragment>
-    <div class="flow max-w-screen-md">
+    </svelte:fragment>    
       <!-- Correction inline prompt notification -->
-      {#if prompt.invalidated && !$store?.hasUnsavedChanges}
-        <InlineNotification
-          kind="warning-alt"
-          title='Corrections needed:'
-          hideCloseButton={true}
-          lowContrast
-          subtitle={prompt.invalidatedReason ?? 'Must update form data before continuing'}
-        />
-      {/if}
-    </div>
-  </Form>
-  
+    {#if prompt.invalidated && !$store?.hasUnsavedChanges}
+      <InlineNotification
+        class={def!.applicantPromptPage?.invalidatedInlineNotificationClass ?? uiRegistry.config.applicantPromptPage?.invalidatedInlineNotificationClass}
+        kind="warning-alt"
+        title='Review needed'
+        hideCloseButton={true}
+        lowContrast
+        subtitle={prompt.invalidatedReason ?? 'Must update form data before continuing'}
+      />
+    {/if}    
+  </Form>  
 {/key}
 
