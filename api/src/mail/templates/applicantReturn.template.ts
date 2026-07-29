@@ -11,12 +11,12 @@ Please log in to the application to review the requested updates and submit any 
 Thank you,
 {{signature}}`
 
-export const applicantReturnTemplate = {
+export const appRequestReturnTemplate = {
   subject,
   body,
-  description: 'Template for when corrections are needed, gets sent to applicant',
+  description: 'Template for when corrections are needed, app request gets sent to applicant',
   audience: ['applicant'],
-  templateKey: 'applicant_return',
+  templateKey: 'app_request_return',
   variables: {
     loginLink: process.env.PUBLISHED_BASE_URL
   }

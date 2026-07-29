@@ -452,7 +452,6 @@ export class AppRequestService extends AuthService<AppRequest> {
         const oldPhase = beforeAppsByProgramKey[app.programKey]?.phase
         if (app.phase !== oldPhase) {
           await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, oldPhase)
-          await Promise.all(applicationPhaseNotifications.map(n => n(this.ctx, response.appRequest!, app.programKey, oldPhase)))
         }
       }
     } catch (err) {

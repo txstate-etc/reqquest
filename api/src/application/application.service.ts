@@ -1,6 +1,7 @@
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { advanceWorkflow, appConfig, Application, ApplicationPhase, AppRequest, AppRequestPhase, AppRequestService, AppRequestStatus, AppRequestStatusDB, appRequestTransaction, AuthService, evaluateAppRequest, getApplications, PeriodWorkflowStage, programRegistry, ProgramService, reverseWorkflow, ValidatedAppRequestResponse, WorkflowStage } from '../internal.js'
 import { BaseService } from '@txstate-mws/graphql-server'
+import { applicationPhaseNotifications } from '../util/notifications.js'
 
 const appByInternalIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -140,7 +141,10 @@ export class ApplicationService extends AuthService<Application> {
     const newApplication = (await this.findByInternalId(application.internalId))!
     await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, `Advanced ${application.navTitle} workflow from ${programRegistry.getWorkflowStageByKey(application.workflowStageKey)?.title ?? 'review'} to ${programRegistry.getWorkflowStageByKey(newApplication.workflowStageKey)?.title ?? (newApplication.appRequestPhase === AppRequestPhase.SUBMITTED ? 'review complete' : 'completion')}.`)
     if (resp.appRequest?.status !== application.appRequestComputedStatus) await appConfig.hooks?.appRequestStatus?.(this.ctx, resp.appRequest!, application.appRequestComputedStatus)
-    if (application.phase !== newApplication.phase) await appConfig.hooks?.applicationPhase?.(this.ctx, resp.appRequest!, newApplication.programKey, application.phase)
+    if (application.phase !== newApplication.phase) {
+      await appConfig.hooks?.applicationPhase?.(this.ctx, resp.appRequest!, newApplication.programKey, application.phase)
+      await Promise.all(applicationPhaseNotifications.map(n => n(this.ctx, resp.appRequest!, newApplication, application.phase)))
+    }
     return resp
   }
 
