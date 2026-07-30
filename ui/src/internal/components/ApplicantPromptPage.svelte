@@ -105,7 +105,7 @@
       <InlineNotification
         class={def!.applicantPromptPage?.invalidatedInlineNotificationClass ?? uiRegistry.config.applicantPromptPage?.invalidatedInlineNotificationClass}
         kind="warning-alt"
-        title='Review needed'
+        title='Corrections needed'
         hideCloseButton={true}
         lowContrast
         subtitle={prompt.invalidatedReason ?? 'Must update form data before continuing'}
