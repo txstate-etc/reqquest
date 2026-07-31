@@ -413,11 +413,13 @@
     {:else}
       <CardGrid cardSize="500px">
         {#each appRequests as request (request.id)}
-          <AppRequestCard
-            {request}
-            actions={buildCardActions(request)}
-            showAcceptanceButtons={true}
-          />
+          <div class="max-w-[680px]">
+            <AppRequestCard
+              {request}
+              actions={buildCardActions(request)}
+              showAcceptanceButtons={true}
+            />
+          </div>
         {/each}
       </CardGrid>
     {/if}
