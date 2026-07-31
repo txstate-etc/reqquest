@@ -42,7 +42,7 @@
           title: 'Review Your Submission',
           routeId: '/requests/[id]/apply/review'
         }, {
-          title: 'Program Review',
+          title: 'Program review',
           routeId: '/requests/[id]/apply/programs'
         }, {
           routeId: '/requests/[id]/apply/[promptId]',

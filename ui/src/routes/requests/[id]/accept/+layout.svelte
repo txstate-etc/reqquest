@@ -56,7 +56,7 @@
     lastprompt = undefined
     navItems.push({
       id: 'review',
-      label: 'Review Submission',
+      label: 'Review submission',
       href: resolve(`/requests/${appRequestForExport.id}/accept/review`),
       type: $page.route.id === '/requests/[id]/accept/review' ? 'current' : 'available',
       substeps: []
