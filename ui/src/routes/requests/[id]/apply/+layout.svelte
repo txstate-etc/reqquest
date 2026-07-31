@@ -67,7 +67,7 @@
       }
       const programReview: RootStepItem = {
         id: 'programs',
-        label: 'Program Review',
+        label: 'Program review',
         href: resolve(`/requests/${appRequestForExport.id}/apply/programs`),
         type: $page.route.id === '/requests/[id]/apply/programs' ? 'current' : 'available',
         substeps: []
@@ -153,7 +153,7 @@
       if ($page.route.id === '/requests/[id]/apply/review') pastProgramReview = true
       navItems.push({
         id: 'review',
-        label: 'Review Submission',
+        label: 'Review submission',
         href: resolve(`/requests/${appRequestForExport.id}/apply/review`),
         type: $page.route.id === '/requests/[id]/apply/review' ? 'current' : 'available',
         substeps: []
