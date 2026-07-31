@@ -20,6 +20,7 @@ export const statusVisibleToApplicantPhases = new Set<ApplicationPhase>([
   ApplicationPhase.PREQUAL,
   ApplicationPhase.QUALIFICATION,
   ApplicationPhase.READY_TO_SUBMIT,
+  ApplicationPhase.REVIEW_COMPLETE,
   ApplicationPhase.ACCEPTANCE,
   ApplicationPhase.READY_TO_ACCEPT,
   ApplicationPhase.WORKFLOW_NONBLOCKING,
@@ -97,6 +98,7 @@ export class ApplicationService extends AuthService<Application> {
 
   maySeeFullStatus (application: Application) {
     if (this.mayViewAsReviewer(application)) return true
+    if (application.appRequestPhase === AppRequestPhase.STARTED) return false // While the appRequest is still being filled out, prior to submission, an applicant must never see a decided eligibility status
     return statusVisibleToApplicantPhases.has(application.phase)
   }
 
