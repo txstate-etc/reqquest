@@ -8,7 +8,7 @@ import {
   getAppRequestData, appRequestTransaction, recordAppRequestActivity, appConfig, AppRequestData,
   AppRequestStatus, ApplicationPhase, ApplicationService, setRequirementPromptsInvalid,
   AppRequestServiceInternal, AppRequestPhase, appRequestPhaseReached, RequirementType, periodConfigCache, programRegistry,
-  statusVisibleToApplicantPhases, applicantRequirementTypes, setRequirementPromptsValid,
+  statusVisibleToApplicant, applicantRequirementTypes, setRequirementPromptsValid,
   RQContext,
   RequirementPromptFilter,
   PromptPreStagingRecurrence,
@@ -281,7 +281,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
 
   removeProperties (prompt: RequirementPrompt) {
     if (this.mayViewAsReviewer(prompt)) return prompt
-    if (statusVisibleToApplicantPhases.has(prompt.applicationPhase) && applicantRequirementTypes.has(prompt.requirementType)) return prompt
+    if (statusVisibleToApplicant(prompt.applicationPhase, prompt.appRequestDbPhase) && applicantRequirementTypes.has(prompt.requirementType)) return prompt
     const newPrompt = RequirementPrompt.clone(prompt)
     newPrompt.invalidated = false
     newPrompt.invalidatedReason = undefined

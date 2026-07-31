@@ -23,6 +23,8 @@ export const applicationPhaseNotifications: ApplicationPhaseNotificationCB[] = [
   async (ctx, ar, application, oldPhase) => {
     if (application.phase === ApplicationPhase.REVIEW_COMPLETE) {
       await ctx.svc(MailService).sendmulti({ userIds: [ar.userInternalId], templateKey: 'application_complete', extra: { ...appConfig.emailConfig, programName: application.title } })
+    if ([AppRequestStatus.APPROVAL, AppRequestStatus.REVIEW_IN_PROGRESS, AppRequestStatus.PREAPPROVAL, AppRequestStatus.REVIEW_COMPLETE].includes(oldAppRequestStatus)) {
+      await ctx.svc(MailService).sendmulti({ userIds: [ar.userInternalId], templateKey: 'applicant_return', extra: appConfig.emailConfig })
     }
   }
 ]

@@ -4,7 +4,7 @@ import {
   ApplicationRequirementFilter, PeriodProgramRequirement, getPeriodProgramRequirements,
   PeriodProgramKey, PeriodProgramRequirementKey, PeriodRequirementKey, AppRequest,
   AppRequestService, updatePeriodProgramRequirement, RequirementType,
-  ConfigurationService, statusVisibleToApplicantPhases, RequirementStatus
+  ConfigurationService, statusVisibleToApplicant, RequirementStatus
 } from '../internal.js'
 import { BaseService } from '@txstate-mws/graphql-server'
 
@@ -88,7 +88,7 @@ export class ApplicationRequirementService extends AuthService<ApplicationRequir
   // remove requirement statuses for review requirements
   removeProperties (req: ApplicationRequirement) {
     const redactTitle = this.isOwn(req) && !this.hasControl('AppRequest', 'review_own', req.appRequestTags)
-    const redactStatus = redactTitle && !statusVisibleToApplicantPhases.has(req.applicationPhase) && [RequirementType.APPROVAL, RequirementType.WORKFLOW].includes(req.type)
+    const redactStatus = redactTitle && !statusVisibleToApplicant(req.applicationPhase, req.appRequestPhase) && [RequirementType.APPROVAL, RequirementType.WORKFLOW].includes(req.type)
     const ret = redactTitle || redactStatus ? ApplicationRequirement.clone(req) : req
     if (redactTitle) {
       ret.title = ''

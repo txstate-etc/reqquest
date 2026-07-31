@@ -1,5 +1,5 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
-import { ApplicationPhase, ApplicationRequirementRow, PeriodProgramKey, PeriodProgramRequirementRow, programRegistry, RequirementDefinitionProcessed, requirementRegistry, WorkflowStage } from '../internal.js'
+import { ApplicationPhase, ApplicationRequirementRow, AppRequestPhase, PeriodProgramKey, PeriodProgramRequirementRow, programRegistry, RequirementDefinitionProcessed, requirementRegistry, WorkflowStage } from '../internal.js'
 
 @ObjectType({ description: 'A requirement for a program. Each program has an ordered array of requirements, all of which must pass for an application to the program to succeed.' })
 export class Requirement {
@@ -80,6 +80,7 @@ export class ApplicationRequirement extends Requirement {
   applicationInternalId: number
   applicationId: string
   applicationPhase: ApplicationPhase
+  appRequestPhase: AppRequestPhase
   userInternalId: number
   periodId: string
   programKey: string
@@ -101,6 +102,7 @@ export class ApplicationRequirement extends Requirement {
     this.applicationPhase = row.applicationPhase
     this.appRequestInternalId = row.appRequestId
     this.appRequestId = String(row.appRequestId)
+    this.appRequestPhase = row.appRequestPhase
     this.periodId = String(row.periodId)
     this.userInternalId = row.userId
     this.status = row.status
@@ -116,6 +118,7 @@ export class ApplicationRequirement extends Requirement {
       applicationId: req.applicationInternalId,
       applicationPhase: req.applicationPhase,
       appRequestId: req.appRequestInternalId,
+      appRequestPhase: req.appRequestPhase,
       periodId: Number(req.periodId),
       userId: req.userInternalId,
       requirementKey: req.key,
