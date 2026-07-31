@@ -2,7 +2,7 @@
   import { api, type ReviewData } from '$internal'
   import type { LayoutData } from '../$types.js'
   import { uiRegistry } from '../../../../local/index.js'
-  import { enumApplicationStatus, InfoCard } from '$lib'
+  import { enumApplicationStatus, enumRequirementStatus, InfoCard } from '$lib'
   import { Modal } from 'carbon-components-svelte'
   import { Information } from 'carbon-icons-svelte'
   import StatusMessageList from '$internal/components/StatusMessageList.svelte'
@@ -11,6 +11,17 @@
   export let basicRequestData: LayoutData['basicRequestData']
   export let appRequest: ReviewData
   let open = false
+
+   $: optedOutPrograms = appRequest?.applications
+    .filter(curr => curr.requirements.flatMap(r => r.prompts).find(r => r.optOut))
+    .reduce((acc, c) => {
+      const optOutRequirement = c.requirements.find(r => r.prompts.some(p => p.optOut))
+      return {
+        ...acc,
+        [c.id]: optOutRequirement?.status === enumRequirementStatus.DISQUALIFYING
+      }
+    }, {} as Record<string, boolean>) ?? {}
+
 </script>
 
 <div class="review-container">
@@ -45,21 +56,27 @@
 </div>
 
 <Modal passiveModal bind:open modalHeading="Ineligible programs">
+  {@const ineligiblePrograms = appRequest?.applications.filter(app => app.status === enumApplicationStatus.INELIGIBLE)}
   <div class='flex flex-col gap-4 text-base'>
-    {#each appRequest?.applications.filter(app => app.status === enumApplicationStatus.INELIGIBLE) as application}
-      {@const warningReqs = application.requirements.filter(r => r.status === 'WARNING' && r.statusReason)}
-      <span class='py-2'>{application.title}</span>
-      <StatusMessageList
-        icon
-        items={[{ id: '', message: `${titleCase(application.status)}${application.statusReason ? ':' : ''} ${application.statusReason ?? ''}` }]}
-        variant="error"
-        accordionTitle="Multiple warnings" />
-      <StatusMessageList
-        icon
-        items={warningReqs.map(r => ({ id: r.id, message: r.statusReason! }))}
-        variant="warning"
-        accordionTitle="Multiple warnings" />
-    {/each}
+    {#if ineligiblePrograms?.length}
+      {#each ineligiblePrograms as application}
+        {@const warningReqs = application.requirements.filter(r => r.status === 'WARNING' && r.statusReason)}
+        {@const message = `${titleCase(application.status)}${application.statusReason ?? optedOutPrograms[application.id] ? ':' : ''} ${optedOutPrograms[application.id] ? 'Opted out' : application.statusReason}`}
+        <span class='py-2'>{application.title}</span>
+        <StatusMessageList
+          icon
+          items={[{ id: '', message }]}
+          variant="error"
+          accordionTitle="Multiple warnings" />
+        <StatusMessageList
+          icon
+          items={warningReqs.map(r => ({ id: r.id, message: r.statusReason! }))}
+          variant="warning"
+          accordionTitle="Multiple warnings" />
+      {/each}
+    {:else}
+      <p class="text-center">No ineligible programs</p>
+    {/if}
   </div>
 </Modal>
 

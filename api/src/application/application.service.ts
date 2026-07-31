@@ -1,6 +1,7 @@
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { advanceWorkflow, appConfig, Application, ApplicationPhase, AppRequest, AppRequestPhase, AppRequestService, AppRequestStatus, AppRequestStatusDB, appRequestTransaction, AuthService, evaluateAppRequest, getApplications, PeriodWorkflowStage, programRegistry, ProgramService, reverseWorkflow, ValidatedAppRequestResponse, WorkflowStage } from '../internal.js'
 import { BaseService } from '@txstate-mws/graphql-server'
+import { applicationPhaseNotifications } from '../util/notifications.js'
 
 const appByInternalIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -20,12 +21,30 @@ export const statusVisibleToApplicantPhases = new Set<ApplicationPhase>([
   ApplicationPhase.PREQUAL,
   ApplicationPhase.QUALIFICATION,
   ApplicationPhase.READY_TO_SUBMIT,
+  ApplicationPhase.REVIEW_IN_PROGRESS,
+  ApplicationPhase.REVIEW_COMPLETE,
   ApplicationPhase.ACCEPTANCE,
   ApplicationPhase.READY_TO_ACCEPT,
   ApplicationPhase.WORKFLOW_NONBLOCKING,
   ApplicationPhase.READY_TO_COMPLETE,
   ApplicationPhase.COMPLETE
 ])
+
+/**
+ * Whether an application's results may be shown to the applicant, based on how far along it is.
+ *
+ * Phase alone is not enough because READY_FOR_WORKFLOW carries two very different meanings. While the
+ * request is still in review it means 'review finished, waiting for a reviewer to advance into the
+ * blocking workflow', nothing may be released yet, since a blocking stage can still change the
+ * outcome. Once the review has been completed it means 'non-blocking workflow finished, ready to
+ * complete', and the results were already released when the review completed.
+ */
+export function statusVisibleToApplicant (applicationPhase: ApplicationPhase, appRequestPhase: AppRequestPhase) {
+  if (applicationPhase === ApplicationPhase.READY_FOR_WORKFLOW) {
+    return appRequestPhase !== AppRequestPhase.STARTED && appRequestPhase !== AppRequestPhase.SUBMITTED
+  }
+  return statusVisibleToApplicantPhases.has(applicationPhase)
+}
 
 export class ApplicationServiceInternal extends BaseService<Application> {
   async findByInternalId (internalId: number, appRequestTags?: Record<string, string[]>) {
@@ -97,7 +116,8 @@ export class ApplicationService extends AuthService<Application> {
 
   maySeeFullStatus (application: Application) {
     if (this.mayViewAsReviewer(application)) return true
-    return statusVisibleToApplicantPhases.has(application.phase)
+    if (application.appRequestPhase === AppRequestPhase.STARTED) return false // While the appRequest is still being filled out, prior to submission, an applicant must never see a decided eligibility status
+    return statusVisibleToApplicant(application.phase, application.appRequestPhase)
   }
 
   mayAdvanceWorkflow (application: Application) {
@@ -158,7 +178,10 @@ export class ApplicationService extends AuthService<Application> {
     const newApplication = (await this.findByInternalId(application.internalId))!
     await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, `Advanced ${application.navTitle} workflow from ${programRegistry.getWorkflowStageByKey(application.workflowStageKey)?.title ?? 'review'} to ${programRegistry.getWorkflowStageByKey(newApplication.workflowStageKey)?.title ?? (newApplication.appRequestPhase === AppRequestPhase.SUBMITTED ? 'review complete' : 'completion')}.`)
     if (resp.appRequest?.status !== application.appRequestComputedStatus) await appConfig.hooks?.appRequestStatus?.(this.ctx, resp.appRequest!, application.appRequestComputedStatus)
-    if (application.phase !== newApplication.phase) await appConfig.hooks?.applicationPhase?.(this.ctx, resp.appRequest!, newApplication.programKey, application.phase)
+    if (application.phase !== newApplication.phase) {
+      await appConfig.hooks?.applicationPhase?.(this.ctx, resp.appRequest!, newApplication.programKey, application.phase)
+      await Promise.all(applicationPhaseNotifications.map(n => n(this.ctx, resp.appRequest!, newApplication, application.phase)))
+    }
     return resp
   }
 

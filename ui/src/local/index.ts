@@ -178,13 +178,14 @@ import { api } from '$internal/api'
 import ApplicantPromptSkeleton from '$internal/components/ApplicantPromptSkeleton.svelte'
 import { GeneralTextSkeleton } from '@txstate-mws/carbon-svelte'
 
-const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, applicantReview, programs, requirements, prompts, userLookup, slots } = configureDemoInstanceParams()
+const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, applicantPromptPage, applicantReview, programs, requirements, prompts, userLookup, slots } = configureDemoInstanceParams()
 
 export const uiRegistry = new UIRegistry({
   appName,
   applicantDashboardIntroHeader,
   applicantDashboardIntroDetail,
   applicantDashboardRecentDays,
+  applicantPromptPage,
   applicantReview,
   programs,
   requirements,
@@ -422,6 +423,10 @@ function configureDemoInstanceParams (): UIConfig {
       appName: 'MWS Technical Mentorship Experience',
       applicantDashboardIntroHeader: 'Apply for a technical mentorship here!',
       applicantDashboardIntroDetail: 'After applying for a mentorship, eligibilty will be determined based on your responses',
+      applicantPromptPage: {
+        formClass: 'max-w-[800px] mx-auto',
+        invalidatedInlineNotificationClass: 'w-full mx-auto'
+      },
       applicantReview: {
         title: 'Review your technical mentorship application',
         subTitle: 'Confirm the technical mentorship benefits shown are the ones you are requesting and that your responses are correct, or make changes before submitting.'
@@ -511,7 +516,10 @@ function configureDemoInstanceParams (): UIConfig {
       {
         key: 'outside_class_example_prompt',
         formComponent: OutsideClassExample,
-        displayComponent: OutsideClassExampleDisplay
+        displayComponent: OutsideClassExampleDisplay,
+        applicantPromptPage: {
+          formClass: 'max-w-[500px] mx-auto'
+        }
       },
       {
         key: 'assess_outside_class_example_prompt',
@@ -521,7 +529,10 @@ function configureDemoInstanceParams (): UIConfig {
       {
         key: 'critical_thinking_prompt',
         formComponent: CriticalThinking,
-        displayComponent: CriticalThinkingDisplay
+        displayComponent: CriticalThinkingDisplay,
+        applicantPromptPage: {
+          invalidatedInlineNotificationClass: 'max-w-[400px] mx-auto'
+        }
       },
       {
         key: 'assess_critical_thinking_prompt',

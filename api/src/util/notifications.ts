@@ -1,9 +1,10 @@
-import { AccessUserService, appConfig, AppRequest, AppRequestPhase, AppRequestStatus, MailService } from '../internal.js'
-import { RQContext } from './auth'
+import { appConfig, Application, ApplicationPhase, AppRequest, AppRequestPhase, AppRequestStatus, MailService } from '../internal.js'
+import type { RQContext } from './auth.js'
 
-type NotificationCB = (ctx: RQContext, appRequest: AppRequest, oldAppRequestStatus: AppRequestStatus) => void | Promise<void>
+type AppRequestNotificationCB = (ctx: RQContext, appRequest: AppRequest, oldAppRequestStatus: AppRequestStatus) => void | Promise<void>
+type ApplicationPhaseNotificationCB = (ctx: RQContext, appRequest: AppRequest, application: Application, oldPhase: ApplicationPhase) => void | Promise<void>
 
-export const internalNotifications: NotificationCB[] = [
+export const appRequestNotifications: AppRequestNotificationCB[] = [
   async (ctx, ar, oldAppRequestStatus) => {
     // Review complete
     if (ar.phase === AppRequestPhase.COMPLETE) {
@@ -11,9 +12,20 @@ export const internalNotifications: NotificationCB[] = [
     }
   },
   async (ctx, ar, oldAppRequestStatus) => {
-    // Returned back to applicant
-    if ([AppRequestStatus.APPROVAL, AppRequestStatus.PREAPPROVAL, AppRequestStatus.REVIEW_COMPLETE].includes(oldAppRequestStatus)) {
-      await ctx.svc(MailService).sendmulti({ userIds: [ar.userInternalId], templateKey: 'applicant_return', extra: appConfig.emailConfig })
+    // Returned back to applicant - the reviewer handed control back, so the request is in
+    // STARTED again. Without the phase check this would also fire on forward progress out
+    // of APPROVAL/PREAPPROVAL (e.g. completeReview).
+    if (ar.phase === AppRequestPhase.STARTED && [AppRequestStatus.APPROVAL, AppRequestStatus.PREAPPROVAL].includes(oldAppRequestStatus)) {
+      await ctx.svc(MailService).sendmulti({ userIds: [ar.userInternalId], templateKey: 'app_request_return', extra: appConfig.emailConfig })
+    }
+  }
+]
+
+export const applicationPhaseNotifications: ApplicationPhaseNotificationCB[] = [
+  async (ctx, ar, application, oldPhase) => {
+    // Individual application review complete
+    if (application.phase === ApplicationPhase.REVIEW_COMPLETE) {
+      await ctx.svc(MailService).sendmulti({ userIds: [ar.userInternalId], templateKey: 'application_complete', extra: { ...appConfig.emailConfig, programName: application.title } })
     }
   }
 ]

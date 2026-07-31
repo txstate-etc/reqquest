@@ -199,7 +199,7 @@
 <style>
   dl.prompts {
     display: grid;
-    grid-template-columns: auto 1fr;
+    grid-template-columns: fit-content(50%) minmax(0, 1fr);
     align-items: stretch;
     gap: 0;
     margin: -16px;
