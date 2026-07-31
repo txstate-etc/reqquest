@@ -113,6 +113,30 @@ export interface PromptDefinition {
    * A boolean value will result in a default skeleton loader. 
    */
   loader?: Loader
+
+  /**
+   * This is the same applicantPromptPage CSS configurations that exist at the UIConfig (global applicant page prompt) level.  Used in a situation where a specific prompt
+   * requires a specific layout that doesn't match default.  This will override global configuration
+   */
+  applicantPromptPage? : ApplicantPromptPageDefinition
+}
+
+/**
+ * Applicant prompts are wrapped by the default CL Form component, so any styling applied within the svelte prompt
+ * is independent (does not influence) of the layout of form elements that exist as part of the CL Form (eg. Validation notices).
+ * This can result in inconsistencies in desired layouts as CL Form elements are default left aligned while prompts could expect/desire
+ * center alignment.  This property allows the developer to set the global prompt page Form CSS class variable.  This can be overwritten at the
+ * individual prompt level if specific prompts desire specific layouts.  This definition is used for defining those elements if required
+ */
+export interface ApplicantPromptPageDefinition {
+  /**
+   * CSS class settings specific to the Form component that wraps the prompt
+   */
+  formClass?: string,        
+  /**
+   * CSS class settings specific to the corrections inline notification within the Form
+   */
+  invalidatedInlineNotificationClass?: string
 }
 
 export interface Terminologies {
@@ -168,6 +192,15 @@ export interface UIConfig {
    * Defaults to 30 if not specified.
    */
   applicantDashboardRecentDays?: number
+
+  /**
+ * Applicant prompts are wrapped by the default CL Form component, so any styling applied within the svelte prompt
+ * is independent (does not influence) of the layout of form elements that exist as part of the CL Form (eg. Validation notices).
+ * This can result in inconsistencies in desired layouts as CL Form elements are default left aligned while prompts could expect/desire
+ * center alignment.  This property allows the developer to set the global prompt page Form CSS class variable.  This can be overwritten at the
+ * individual prompt level if specific prompts desire specific layouts
+ */
+  applicantPromptPage? : ApplicantPromptPageDefinition
 
   /**
    * Applicant Review submission page title and subtitle text.
