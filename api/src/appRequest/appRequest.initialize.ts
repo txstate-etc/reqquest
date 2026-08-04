@@ -101,5 +101,14 @@ export const appRequestMigrations: DatabaseMigration[] = [
       const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_NAME = 'app_requests' AND COLUMN_NAME = 'computedAwaitingCorrection'")
       if (!exists) await db.execute('ALTER TABLE app_requests ADD COLUMN computedAwaitingCorrection TINYINT(1) NOT NULL DEFAULT 0 AFTER computedReadyToComplete')
     }
+  }, {
+    id: '20260804000000',
+    async execute (db: Queryable) {
+      // NOTE: Requires mysql version 5.7 which our systems support (may even be supported earlier)
+      //   https://dev.mysql.com/doc/refman/5.7/en/fulltext-natural-language.html
+      // However if this is an issue we can revert to searching with LIKEs.
+      const exists = await db.getval("SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_NAME = 'app_request_activity' AND INDEX_NAME = 'ft_description'")
+      if (!exists) await db.execute('ALTER TABLE app_request_activity ADD FULLTEXT INDEX ft_description (description)')
+    }
   }
 ]
