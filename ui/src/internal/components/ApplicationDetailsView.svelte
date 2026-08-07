@@ -32,7 +32,7 @@
   $: canMakeCorrections = CORRECTABLE_STATUSES.includes(appRequest.status)
   $: eligibleApplications = applications.filter(a => a.ineligiblePhase == null)
   $: ineligibleApplications = applications.filter(a => a.ineligiblePhase === enumIneligiblePhases.PREQUAL || a.ineligiblePhase === enumIneligiblePhases.QUALIFICATION)
-  
+
   // Group prompts by sections, with reviewer prompts nested within application sections
   $: sections = (() => {
     const sections: PromptSection[] = []
@@ -115,7 +115,7 @@
             <Panel title="Ineligible benefits" expandable={true} expanded={(eligibleApplications.length === 0)}>
               <ApplicantProgramList applications={ineligibleApplications} {appRequest} viewMode={statusDisplay === 'tags'} {showTooltipsAsText} />
             </Panel>
-         {/if}         
+         {/if}
       </div>
     </section>
 
@@ -127,7 +127,7 @@
     {:else if sections.length > 0}
       {#each sections as section (section.title)}
         {@const applicationStatusInfo = section.applicationStatus ? getApplicationStatusInfo(section.applicationStatus, appRequest.phase, appRequest.closedAt) : undefined}
-        <Panel title={section.title} {expandable} expanded>         
+        <Panel title={section.title} {expandable} expanded>
           {#if section.prompts.length}
             <dl class="prompt-list">
               {#each section.prompts as prompt (prompt.id)}
@@ -242,7 +242,7 @@
     border-bottom: 1px solid var(--cds-border-subtle);
   }
 
-  .prompt-answer :global(dl) {
+  .prompt-answer :global(dl:not(.prompt-display-grid)) {
     padding-block-start:1em;
     display:grid;
     grid-template-columns: 1fr 1fr;
@@ -298,6 +298,27 @@
   }
   .prompt-answer.large {
     grid-column: span 2;
+  }
+  /* When a display component's root is a PromptDisplayGrid, hand it our column tracks
+     via subgrid so its challenge/response rows align with the real prompt rows. */
+  .prompt-answer.large:has(> :global(.prompt-display-grid)) {
+    display: grid;
+    grid-template-columns: subgrid;
+    align-content: start;
+    padding: 0;
+    border-bottom: none;
+    --prompt-display-subgrid: subgrid;
+    --prompt-display-columns: 1fr 1fr;
+    --prompt-display-row-padding: 0.5rem 10px;
+    --prompt-display-challenge-padding-left: 10px;
+    --prompt-display-row-gap: 0.5rem;
+  }
+  .prompt-answer.large:has(> :global(.prompt-display-grid)) > :global(*) {
+    grid-column: 1 / -1;
+  }
+  .prompt-answer.large :global(.prompt-display-challenge) {
+    font-weight: 500;
+    color: var(--cds-text-01);
   }
 
   .correction-notice {

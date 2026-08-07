@@ -475,7 +475,8 @@ function configureDemoInstanceParams (): UIConfig {
       prompts: [{
         key: 'pre_qual_prompt',
         formComponent: PreQualPrompt,
-        displayComponent: PreQualDisplay
+        displayComponent: PreQualDisplay,
+        displayMode: 'large'
       },
       {
         key: 'pre_qual_user_info_prompt',
