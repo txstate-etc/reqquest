@@ -1,5 +1,5 @@
 import { Queryable } from 'mysql2-async'
-import { AppRequestPhase, AppRequestStatusDB, DatabaseMigration } from '../internal.js'
+import { AppRequestPhase, AppRequestStatus, AppRequestStatusDB, DatabaseMigration } from '../internal.js'
 
 export const appRequestMigrations: DatabaseMigration[] = [
   {
@@ -13,7 +13,7 @@ export const appRequestMigrations: DatabaseMigration[] = [
           reviewStarted TINYINT(1) NOT NULL DEFAULT 0,
           status VARCHAR(255) NOT NULL DEFAULT '${AppRequestStatusDB.OPEN}',
           phase VARCHAR(255) NOT NULL DEFAULT '${AppRequestPhase.STARTED}',
-          computedStatus VARCHAR(255) NOT NULL DEFAULT 'PREQUAL',
+          computedStatus VARCHAR(255) NOT NULL DEFAULT '${AppRequestStatus.STARTED}',
           computedReadyToComplete TINYINT(1) NOT NULL DEFAULT 0,
           computedAwaitingCorrection TINYINT(1) NOT NULL DEFAULT 0,
           createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -109,6 +109,11 @@ export const appRequestMigrations: DatabaseMigration[] = [
       // However if this is an issue we can revert to searching with LIKEs.
       const exists = await db.getval("SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_NAME = 'app_request_activity' AND INDEX_NAME = 'ft_description'")
       if (!exists) await db.execute('ALTER TABLE app_request_activity ADD FULLTEXT INDEX ft_description (description)')
+    }
+  }, {
+    id: '20260806000000',
+    async execute (db: Queryable) {
+      await db.execute(`ALTER TABLE app_requests ALTER COLUMN computedStatus SET DEFAULT '${AppRequestStatus.STARTED}'`)
     }
   }
 ]
