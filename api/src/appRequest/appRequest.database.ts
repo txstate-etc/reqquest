@@ -882,6 +882,10 @@ export async function getAppRequestActivity (filter: AppRequestActivityFilters, 
       where.push('impersonatedBy IS NULL')
     }
   }
+  if (isNotBlank(filter?.search)) {
+    where.push('MATCH(ara.description) AGAINST (? IN NATURAL LANGUAGE MODE)')
+    binds.push(filter.search)
+  }
   if (filter.happenedAfter) {
     where.push('createdAt >= ?')
     binds.push(filter.happenedAfter.toJSDate())

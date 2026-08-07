@@ -600,6 +600,9 @@ export default {
             "impersonatedUsers": [
                 49
             ],
+            "search": [
+                85
+            ],
             "users": [
                 49
             ],
