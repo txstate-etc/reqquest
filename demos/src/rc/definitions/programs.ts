@@ -1,14 +1,15 @@
-import { ProgramDefinition, AppRequestPhase } from '@reqquest/api'
+import { ProgramDefinition, AppRequestPhase, WorkflowStage } from '@reqquest/api'
 
-/*
-const overrideGpaWarningWorkflow = {
+
+
+const overrideGpaWarningWorkflow: WorkflowStage = {
   key: 'override_gpa_warning',
   nonBlocking: true,
   nonBlockingEmergence: AppRequestPhase.STARTED,
   title: 'Override GPA Warning',
   requirementKeys: ['reviewer_override_gpa_warning_req']
 }
-  */
+
 
 const operationsInfrastructure: ProgramDefinition = {
   key: 'operations_infrastructure',
@@ -22,6 +23,9 @@ const operationsInfrastructure: ProgramDefinition = {
     'rate_future_career_req',
     'reccomendation_letter_req',
     'assess_reccomendation_lettern_req'
+  ],
+  workflowStages: [
+    overrideGpaWarningWorkflow
   ]
 }
 const softwareDevelopment: ProgramDefinition = {
@@ -40,19 +44,12 @@ const softwareDevelopment: ProgramDefinition = {
     'assess_reccomendation_lettern_req'
   ],
   workflowStages: [
-   
+    overrideGpaWarningWorkflow,   
     {
       key: 'software_development_blocking_second_eyes',
       nonBlocking: false,
       title: 'Second reviewer assessment',
       requirementKeys: ['reviewer_software_development_second_eyes_req']
-    },
-    {
-      key: 'override_gpa_warning',
-      nonBlocking: true,
-      nonBlockingEmergence: AppRequestPhase.STARTED,
-      title: 'Override GPA Warning',
-      requirementKeys: ['reviewer_override_gpa_warning_req']
     },
     {
       key: 'software_development_non_blocking_show_submitted',
