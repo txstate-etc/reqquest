@@ -93,6 +93,9 @@ const projectManagement: ProgramDefinition = {
     'assess_organization_req',
     'reccomendation_letter_req',
     'assess_reccomendation_lettern_req'
+  ],
+  workflowStages: [
+    overrideGpaWarningWorkflow
   ]
 }
 const applicationManagement: ProgramDefinition = {
@@ -109,6 +112,9 @@ const applicationManagement: ProgramDefinition = {
     'assess_maintain_sys_documentation_req',
     'reccomendation_letter_req',
     'assess_reccomendation_lettern_req'
+  ],
+  workflowStages: [
+    overrideGpaWarningWorkflow
   ]
 }
 
