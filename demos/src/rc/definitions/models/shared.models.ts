@@ -33,3 +33,11 @@ export const AssessReccomendationLettersSchema = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type AssessReccomendationLettersData = FromSchema<typeof AssessReccomendationLettersSchema>
+
+export const OverrideGPAWarningSchema = {
+  type: 'object',
+  properties: {
+    override: { type: 'boolean'}
+  }
+} as const satisfies SchemaObject
+export type OverrideGPAWarningData = FromSchema<typeof OverrideGPAWarningSchema>
