@@ -238,8 +238,8 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
   }
 
   /**
-   * True when this prompt row hangs off a requirement that listed it in promptKeysNoDisplay. The
-   * applicant is never shown such a prompt, so they must not be able to answer it either, even
+   * true when this prompt row hangs off a requirement that listed it in promptKeysNoDisplay. The
+   * applicant is never shown such a prompt, so should not answer it either, even
    * though the requirement it belongs to is one of their own.
    */
   isNoDisplay (prompt: RequirementPrompt) {
