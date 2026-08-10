@@ -46,7 +46,7 @@
   function hideEditModalPromptOnLoading() { // keep the dialog in the DOM so onSave fires, but remove from view
     if (!showPromptDialog) return
     const editModalDialog = document.querySelector('.tcbs-dialog')
-    editModalDialog?.classList.add('invisible')   
+    editModalDialog?.classList.add('invisible')
   }
 
   function closePromptDialog () {
@@ -57,9 +57,9 @@
   }
 
   function onPromptSubmit (prompt: any) {
-    return async (data: any) => {   
-      loading = true      
-      hideEditModalPromptOnLoading()  
+    return async (data: any) => {
+      loading = true
+      hideEditModalPromptOnLoading()
       const response = (!prompt.allowSaveWithoutChanges)
         ? await api.updatePrompt(prompt.id, data, false)
         : await api.updatePrompt(prompt.id, data, false, undefined, true) // triggers from review corrections edit selection, allow saving without changes to handle invalidate prompts that require no changes
@@ -74,8 +74,8 @@
     }
   }
 
-  async function onPromptSaved (data: any) {        
-    await invalidateAll()     
+  async function onPromptSaved (data: any) {
+    await invalidateAll()
     closePromptDialog ()
     loading = false
   }
@@ -95,6 +95,15 @@
             {@const small = editMode && def.formMode !== 'full' ? def.formMode !== 'large' : def!.displayMode !== 'large'}
             {@const large = editMode && def.formMode !== 'full' ? def.formMode === 'large' : def!.displayMode === 'large'}
             {@const dtid = `dt-title-${prompt.id}`}
+            {#snippet editButtons()}
+              {#if prompt.actions.update}
+                {#if prompt.invalidated && !applicantRequirementTypes.has(requirement.type)}
+                  <Button kind="primary" size="field" class="prompt-edit mr-2" icon={Review} iconDescription="Review corrections" id="edit-btn-{prompt.id}" aria-labelledby="edit-btn-{prompt.id} {dtid}" on:click={editPrompt(prompt, true)} />
+                {:else}
+                  <Button kind="ghost" size="field" icon={Edit} iconDescription="Edit" class="prompt-edit" id="edit-btn-{prompt.id}" aria-labelledby="edit-btn-{prompt.id} {dtid}" on:click={editPrompt(prompt)} />
+                {/if}
+              {/if}
+            {/snippet}
             <dt class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation}>
             {#if promptIndicator[prompt.key]?.indicator}
                 <div class="indicator-tooltip">
@@ -115,6 +124,9 @@
             <div id={dtid}>
                 {prompt.title}
             </div>
+            {#if large && !editMode}
+              {@render editButtons()}
+            {/if}
             </dt>
             <dd class="flow" class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
             {#if editMode}
@@ -124,17 +136,14 @@
                     <FormInlineNotification {message} />
                   {/each}
                 </Form>
-              {:else} 
-                {#if prompt.actions.update}
-                  {#if prompt.invalidated && !applicantRequirementTypes.has(requirement.type)}
-                    <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot showInlineReviewNotification={true} />
-                    <Button kind="primary" size="field" class="prompt-edit mr-2" icon={Review} iconDescription="Review corrections" on:click={editPrompt(prompt, true)} />
-                  {:else}
-                    <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
-                    <Button kind="ghost" size="field" icon={Edit} iconDescription="Edit Prompt" class="prompt-edit" on:click={editPrompt(prompt)} />
-                  {/if}     
-                  {:else}
-                    <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
+              {:else}
+                {#if prompt.actions.update && prompt.invalidated && !applicantRequirementTypes.has(requirement.type)}
+                  <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot showInlineReviewNotification={true} />
+                {:else}
+                  <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
+                {/if}
+                {#if !large}
+                  {@render editButtons()}
                 {/if}
               {/if}
             </dd>
@@ -215,6 +224,31 @@
   .prompts dt.large, .prompts dd.large {
     grid-column: span 2;
   }
+  /* When a display component's root is a PromptDisplayGrid — directly, or through the
+     <form> of an inline edit (formMode 'large') — hand it our column tracks via subgrid
+     so its challenge/response rows align with the real prompt rows. */
+  .prompts dd.large:has(> :global(.prompt-display-grid)),
+  .prompts dd.large:has(> :global(form > .prompt-display-grid)) {
+    display: grid;
+    grid-template-columns: subgrid;
+    align-content: start;
+    padding: 0;
+    border-bottom: none;
+    --prompt-display-subgrid: subgrid;
+    --prompt-display-row-padding: 1rem 15px;
+    --prompt-display-challenge-padding-left: 32px;
+  }
+  .prompts dd.large:has(> :global(.prompt-display-grid)) > :global(*),
+  .prompts dd.large:has(> :global(form > .prompt-display-grid)) > :global(*) {
+    grid-column: 1 / -1;
+  }
+  .prompts dd.large > :global(form:has(> .prompt-display-grid)) {
+    display: grid;
+    grid-template-columns: subgrid;
+  }
+  .prompts dd.large > :global(form:has(> .prompt-display-grid) > *) {
+    grid-column: 1 / -1;
+  }
   .prompts dt.isReviewerQuestion, .prompts dd.isReviewerQuestion {
     background-color: var(--cds-tag-background-cyan);
   }
@@ -224,10 +258,12 @@
     gap: 4px;
     padding-left: 32px;
   }
+  .prompts dt :global(.bx--btn.prompt-edit),
   .prompts dd :global(.bx--btn.prompt-edit) {
     position: absolute;
-    top: 0;
+    top: 0.35rem;
     right: 0;
+    margin: 0;
   }
   .prompts dt .indicator-tooltip {
     display: inline-block;

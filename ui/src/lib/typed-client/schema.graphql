@@ -486,6 +486,9 @@ input AppRequestActivityFilters {
   """
   impersonatedUsers: [ID!]
 
+  """Filter activities by matching description content."""
+  search: String
+
   """
   Return activities that were performed by one of the given logins. Also returns activities that were performed while one of the given logins was impersonating someone else.
   """
@@ -726,6 +729,11 @@ enum AppRequestStatus {
   """
   REVIEW_COMPLETE
 
+  """
+  A reviewer has begun their part on at least one application, some APPROVAL requirement prompt data has been input, but application has not finished review yet.
+  """
+  REVIEW_IN_PROGRESS
+
   """Applicant has begun the process and has not yet submitted."""
   STARTED
 
@@ -847,7 +855,7 @@ enum ApplicationPhase {
   ACCEPTANCE
 
   """
-  The applicant has submitted the application and any PREAPPROVAL requirements are passing. The application is under review.
+  The applicant has submitted the application and any PREAPPROVAL requirements are passing. The application is pending review.
   """
   APPROVAL
 
@@ -892,9 +900,14 @@ enum ApplicationPhase {
   READY_TO_SUBMIT
 
   """
-  The application has been reviewed and any blocking workflow stages have been completed. The application is ready for results (whether eligible or not) to be released to the applicant. A reviewer must manually advanced the phase, and will do so for the whole appRequest, not one application at a time. So the application will sit in this state until all applications are REVIEW_COMPLETE. If there is no acceptance phase (because there are no acceptance requirements), or if the application is not eligible, the makeOffer prompt will move the phase to WORKFLOW_NONBLOCKING or COMPLETE.
+  The application has been reviewed and any blocking workflow stages have been completed. Its results (whether eligible or not) are released to the applicant as soon as it reaches this phase - the eligibility decision no longer waits for the appRequest Complete Review. A reviewer must still manually advance the appRequest phase, so the application will sit in this state until all applications are REVIEW_COMPLETE and the reviewer completes the review. If there is no acceptance phase, or if the application is not eligible, the makeOffer prompt will move the phase to WORKFLOW_NONBLOCKING or COMPLETE.
   """
   REVIEW_COMPLETE
+
+  """
+  The review for this application is currently in progress (some APPROVAL requirement prompt data has been input)
+  """
+  REVIEW_IN_PROGRESS
 
   """
   The application review has been completed and now there is a workflow process to audit the review BEFORE marking the application status as eligible or ineligible. It should remain pending until the blocking workflow stages have been completed. Workflow stages that evaluate to INELIGIBLE will also make the application status INELIGIBLE. Prompts from the applicant and review phases are locked.
@@ -1223,7 +1236,7 @@ type Mutation {
   ): ValidatedNoteResponse!
 
   """
-  Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation.
+  Moves the application to the next blocking workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. In the non-blocking (WORKFLOW_NONBLOCKING) phase the workflow is non-sequential with all non-blocking requirements editable at once and once they are all resolved this becomes a single "Send to Complete" action that moves the application to COMPLETE.
   """
   advanceWorkflow(applicationId: ID!): ValidatedAppRequestResponse!
 
@@ -1287,7 +1300,7 @@ type Mutation {
   returnToReview(appRequestId: ID!): ValidatedAppRequestResponse!
 
   """
-  Moves the application back to the previous workflow stage. If on the first blocking workflow stage, moves back to APPROVAL. If on the first non-blocking workflow, throws an error.
+  Moves the application back to the previous blocking workflow stage. Non-blocking workflow stages are excluded from the reverse order, so this only steps back through the blocking workflow during the review (SUBMITTED) phase.  If no blocking then moved to APPROVAL
   """
   reverseWorkflow(applicationId: ID!): ValidatedAppRequestResponse!
   roleAddGrant(grant: AccessRoleGrantCreate!, roleId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!

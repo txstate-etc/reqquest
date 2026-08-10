@@ -92,6 +92,10 @@ export interface PromptDefinition {
    *
    * There is no 'full' mode for displayComponent, since we always want to be able to print the
    * full information dump on a one-pager.
+   *
+   * If your prompt collects several question/answer pairs that should each read as their own
+   * row in the prompt list, set 'large' and build the displayComponent on `PromptDisplayGrid` /
+   * `PromptDisplayRow` — its rows will align with the surrounding prompt rows.
    */
   displayMode?: 'small' | 'large'
   /**

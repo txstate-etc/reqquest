@@ -380,6 +380,9 @@ export class AppRequestActivityFilters {
   @Field(type => [String], { nullable: true, description: 'Filter activities by action. This is a list of action names that should be matched. There are many potential action names, they are untyped.' })
   actions?: string[]
 
+  @Field(type => String, { nullable: true, description: 'Filter activities by matching description content.' })
+  search?: string
+
   @Field(type => DateTime, { nullable: true, description: 'Return activities that happened after this date.' })
   happenedAfter?: DateTime
 

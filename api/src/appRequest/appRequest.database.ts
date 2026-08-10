@@ -769,7 +769,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       if ([ApplicationPhase.REVIEW_COMPLETE].includes(application.phase)) {
         requirementsToLock.push(...reviewRequirements)
       } else if ([ApplicationPhase.READY_TO_COMPLETE, ApplicationPhase.COMPLETE].includes(application.phase)) {
-        requirementsToLock.push(...requirements)
+        requirementsToLock.push(...acceptRequirements)
       } else if (phase === 'blocking') {
         requirementsToLock.push(...reviewRequirements, ...blockingWorkflowRequirements.slice(0, findIndex(blockingWorkflowRequirements, r => r.workflowStageKey === application.workflowStageKey) ?? blockingWorkflowRequirements.length))
       } else if (phase === 'nonblocking') {
@@ -881,6 +881,10 @@ export async function getAppRequestActivity (filter: AppRequestActivityFilters, 
     } else {
       where.push('impersonatedBy IS NULL')
     }
+  }
+  if (isNotBlank(filter?.search)) {
+    where.push('MATCH(ara.description) AGAINST (? IN NATURAL LANGUAGE MODE)')
+    binds.push(filter.search)
   }
   if (filter.happenedAfter) {
     where.push('createdAt >= ?')
