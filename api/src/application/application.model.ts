@@ -106,6 +106,8 @@ export class Application {
     this.awaitingCorrection = !!row.computedAwaitingCorrection
     this.title = this.program.title
     this.navTitle = this.program.title ?? this.program.title
+    this.applicantDescription = this.program.applicantDescription
+    this.ineligibleDescription = this.program.ineligibleDescription
     this.authorizationKeys = { program: [this.program.key] }
     this.closed = row.appRequestStatus !== AppRequestStatusDB.OPEN
     this.appRequestPhase = row.appRequestPhase
@@ -136,6 +138,12 @@ export class Application {
 
   @Field({ description: 'The navigation title of the program this application is for.' })
   navTitle: string
+
+  @Field({ nullable: true, description: 'A brief description, written for applicants, of the program this application is for.' })
+  applicantDescription?: string
+
+  @Field({ nullable: true, description: 'A prose summary of the applicant-side requirements of the program this application is for. Intended to be shown alongside statusReason when the application becomes ineligible before submission, since an applicant disqualified early may never have seen the program\'s prompts and the statusReason alone lacks context.' })
+  ineligibleDescription?: string
 
   @Field({ description: 'The program key this application corresponds to.' })
   programKey: string

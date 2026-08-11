@@ -491,6 +491,8 @@ class API extends APIBase {
           statusReason: true,
           title: true,
           navTitle: true,
+          applicantDescription: true,
+          ineligibleDescription: true,
           requirements: {
             id: true,
             type: true,

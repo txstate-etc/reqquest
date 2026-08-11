@@ -2,9 +2,10 @@
   import { TagSet } from '@txstate-mws/carbon-svelte'
   import { Button } from 'carbon-components-svelte'
   import { Close, InProgress, CheckmarkFilled, Information, SubtractAlt } from 'carbon-icons-svelte'
-  import { ucfirst } from 'txstate-utils'
+  import { isNotBlank, ucfirst } from 'txstate-utils'
   import { type ApplicationForDetails, type AppRequestForDetails, enumApplicationStatus, enumIneligiblePhases, enumRequirementStatus, enumRequirementType, type OptOutApplication, type PromptDefinition } from '$lib'
   import { getApplicationStatusInfo } from '../status-utils.js'
+  import { isIneligiblePreSubmission } from '../appreq-utils.js'
   import ApplicantProgramListTooltip from './ApplicantProgramListTooltip.svelte'
   import WarningIconYellow from './WarningIconYellow.svelte'
   import { api } from '$internal/api.js'
@@ -96,6 +97,7 @@
   {#each applications as application (application.id)}
     {@const programStatus = programButtonStatus[application.id]}
     {@const programFirstPrompt = programFirstPromptId[application.id]}
+    {@const programDescriptions = isIneligiblePreSubmission(application) ? [application.applicantDescription, application.ineligibleDescription].filter(isNotBlank) : []}
     <div class="program column [ flex-col ]" style='align-items: start;'>
       <span>{application.title}</span>
       {#if !viewMode}
@@ -106,7 +108,7 @@
         {/if} 
       {/if}
     </div>
-    <div class="status column" class:no-tooltip={!application.statusReason?.length}>
+    <div class="status column" class:no-tooltip={!application.statusReason?.length && !programDescriptions.length}>
       {#if !viewMode}
         <div class="icon-and-tooltip" class:wide-icon={application.completionStatus === enumApplicationStatus.INELIGIBLE}>
           {#if optedOutPrograms[application.id]}
@@ -139,11 +141,16 @@
         <ApplicantProgramListTooltip {application} />
       {/if}
     </div>
-    {#if application.warningReasons.length || application.ineligibleReasons.length}
+    {#if application.warningReasons.length || application.ineligibleReasons.length || programDescriptions.length}
       <div class="tooltip-text-row" class:visible={showTooltipsAsText}>
         {#each application.ineligibleReasons as reason (reason)}
           <div class="tooltip-text-item">
             <Information size={16} /> {reason}
+          </div>
+        {/each}
+        {#each programDescriptions as description (description)}
+          <div class="tooltip-text-item">
+            <Information size={16} /> {description}
           </div>
         {/each}
         {#each application.warningReasons as reason (reason)}

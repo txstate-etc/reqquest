@@ -730,11 +730,17 @@ export default {
             "actions": [
                 34
             ],
+            "applicantDescription": [
+                85
+            ],
             "awaitingCorrection": [
                 41
             ],
             "id": [
                 49
+            ],
+            "ineligibleDescription": [
+                85
             ],
             "ineligiblePhase": [
                 52
@@ -1713,8 +1719,14 @@ export default {
             "actions": [
                 70
             ],
+            "applicantDescription": [
+                85
+            ],
             "enabled": [
                 41
+            ],
+            "ineligibleDescription": [
+                85
             ],
             "key": [
                 49
@@ -1830,6 +1842,12 @@ export default {
             ]
         },
         "Program": {
+            "applicantDescription": [
+                85
+            ],
+            "ineligibleDescription": [
+                85
+            ],
             "key": [
                 49
             ],

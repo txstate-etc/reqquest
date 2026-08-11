@@ -6,9 +6,9 @@
   import { afterNavigate } from '$app/navigation'
   import type { PageData } from './$types'
   import ProgressNavContainer from '../ProgressNavContainer.svelte'
-  import { ApplicantProgramList } from '$internal'
+  import { ApplicantProgramList, isIneligiblePreSubmission } from '$internal'
   import { uiRegistry } from '../../../../../local/index.js'
-  import { enumApplicationStatus, enumIneligiblePhases } from '$lib'
+  import { enumApplicationStatus } from '$lib'
 
   export let data: PageData
   $: ({ applicationsForNav, appRequestForExport } = data)
@@ -39,7 +39,7 @@
       </div>
     {/if}
   </div>
-  {@const ineligibleApplicationsForNav = applicationsForNav.filter(a => a.ineligiblePhase === enumIneligiblePhases.PREQUAL || a.ineligiblePhase === enumIneligiblePhases.QUALIFICATION)}
+  {@const ineligibleApplicationsForNav = applicationsForNav.filter(isIneligiblePreSubmission)}
   {#if ineligibleApplicationsForNav.length > 0}  
     <div class="max-w-screen-md mx-auto">    
       <Panel title="Ineligible benefits" expandable={true} expanded={true}>
