@@ -18,6 +18,8 @@ export const applicationMigrations: DatabaseMigration[] = [
           workflowStage VARCHAR(255) NULL,
           createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          rescindedStatus VARCHAR(16) NULL,
+          rescindedReason TEXT NULL,
           INDEX (programKey, evaluationOrder),
           INDEX (computedStatus),
           FOREIGN KEY (appRequestId) REFERENCES app_requests (id)

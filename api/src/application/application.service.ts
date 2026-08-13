@@ -1,5 +1,5 @@
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { advanceWorkflow, appConfig, Application, ApplicationPhase, AppRequest, AppRequestPhase, AppRequestService, AppRequestStatus, AppRequestStatusDB, appRequestTransaction, AuthService, evaluateAppRequest, getApplications, PeriodWorkflowStage, programRegistry, ProgramService, reverseWorkflow, ValidatedAppRequestResponse, WorkflowStage } from '../internal.js'
+import { advanceWorkflow, appConfig, Application, ApplicationPhase, ApplicationRescindedStatus, ApplicationStatus, AppRequest, AppRequestPhase, AppRequestService, AppRequestStatus, AppRequestStatusDB, appRequestTransaction, AuthService, evaluateAppRequest, getApplications, PeriodWorkflowStage, programRegistry, ProgramService, reverseWorkflow, ValidatedAppRequestResponse, WorkflowStage } from '../internal.js'
 import { BaseService } from '@txstate-mws/graphql-server'
 import { applicationPhaseNotifications } from '../util/notifications.js'
 
@@ -147,8 +147,10 @@ export class ApplicationService extends AuthService<Application> {
   }
 
   async mayRescindApplication (application: Application) {
-    if (application.closed) return false // only prevent rescinding if application is closed
-    if (![ApplicationPhase.READY_TO_ACCEPT, ApplicationPhase.WORKFLOW_NONBLOCKING, ApplicationPhase.READY_TO_COMPLETE, ApplicationPhase.COMPLETE].includes(application.phase)) return false
+    if (application.closed || application.rescindedStatus === ApplicationRescindedStatus.RESCINDED) return false // prevent rescinding if application is closed or already rescinded
+    if (![ApplicationPhase.REVIEW_COMPLETE, ApplicationPhase.ACCEPTANCE, ApplicationPhase.READY_TO_ACCEPT,
+      ApplicationPhase.WORKFLOW_NONBLOCKING, ApplicationPhase.READY_TO_COMPLETE, ApplicationPhase.COMPLETE].includes(application.phase)) return false // what app phase rescinding can occur in
+    if (![ApplicationStatus.ELIGIBLE, ApplicationStatus.ACCEPTED].includes(application.status)) return false // only allow rescinding if eligible or accepted (approved to applicant)
     if (this.isOwn(application) && !this.hasControl('AppRequest', 'review_own')) return false
     if (!this.hasControl('AppRequest', 'review', application.appRequestTags)) return false
     if (!this.hasControl('ApplicationApproved', 'rescind', application.appRequestTags)) return false
@@ -156,8 +158,7 @@ export class ApplicationService extends AuthService<Application> {
   }
 
   async mayRestoreApplication (application: Application) {
-    if (application.closed) return false
-    // TODO:  Additionall rules around individual restoration of rescinded apps (current stage, diff stage??)
+    if (application.closed || application.rescindedStatus !== ApplicationRescindedStatus.RESCINDED) return false // prevent restoring if closed or not currently rescinded
     if (this.isOwn(application) && !this.hasControl('AppRequest', 'review_own')) return false
     if (!this.hasControl('AppRequest', 'review', application.appRequestTags)) return false
     if (!this.hasControl('ApplicationApproved', 'restore', application.appRequestTags)) return false

@@ -1,6 +1,7 @@
 import db from 'mysql2-async/db'
-import { Application, ApplicationFilter, ApplicationPhase, ApplicationStatus, AppRequestPhase, AppRequestStatus, AppRequestStatusDB, IneligiblePhases, PeriodWorkflowRow, programRegistry } from '../internal.js'
+import { Application, ApplicationFilter, ApplicationPhase, ApplicationRescindedStatus, ApplicationStatus, AppRequestPhase, AppRequestStatus, AppRequestStatusDB, IneligiblePhases, PeriodWorkflowRow, programRegistry } from '../internal.js'
 import { Queryable } from 'mysql2-async'
+import { DateTime } from 'luxon'
 
 export interface ApplicationRow {
   id: number
@@ -17,6 +18,8 @@ export interface ApplicationRow {
   appRequestStatus: AppRequestStatusDB
   appRequestComputedStatus: AppRequestStatus
   appRequestPhase: AppRequestPhase
+  rescindedStatus?: ApplicationRescindedStatus
+  rescindedReason?: string
 }
 
 function processFilters (filter: ApplicationFilter) {
@@ -36,7 +39,9 @@ export async function getApplications (filter: ApplicationFilter, tdb: Queryable
   const whereClause = where.length > 0 ? `WHERE (${where.join(') AND (')})` : ''
   const rows = await tdb.getall<ApplicationRow>(`
     SELECT a.id, a.appRequestId, ar.periodId, a.programKey, ar.userId, a.computedStatus, a.computedStatusReason, a.computedPhase,
-      a.computedIneligiblePhase, a.computedAwaitingCorrection, a.workflowStage, ar.status AS appRequestStatus, ar.phase AS appRequestPhase, ar.computedStatus AS appRequestComputedStatus
+      a.computedIneligiblePhase, a.computedAwaitingCorrection, a.workflowStage,
+      a.rescindedStatus, a.rescindedReason, 
+      ar.status AS appRequestStatus, ar.phase AS appRequestPhase, ar.computedStatus AS appRequestComputedStatus       
     FROM applications a
     INNER JOIN app_requests ar ON ar.id = a.appRequestId
     ${whereClause}

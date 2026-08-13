@@ -87,6 +87,21 @@ registerEnumType(IneligiblePhases, {
   }
 })
 
+export enum ApplicationRescindedStatus {
+  RESCINDED = 'RESCINDED',
+  RESTORED = 'RESTORED'
+}
+registerEnumType(ApplicationRescindedStatus, {
+  name: 'ApplicationRescindedStatus',
+  description: `
+    The rescinded status of an application.
+  `,
+  valuesConfig: {
+    RESCINDED: { description: 'The application has been rescinded (pulled back from applicant) post approval.' },
+    RESTORED: { description: 'The application, which was previously rescinded, has now been restored to its state prior to rescinding.' }
+  }
+})
+
 @ObjectType({ description: 'An application represents the applicant applying to a specific program. Each appRequest has multiple applications - one per program defined in the system. Some applications are mutually exclusive and/or will be eliminated early based on PREQUAL requirements, but they all technically exist in the data model - there is no concept of picking one application over another, just two applications where one dies and the other survives.' })
 export class Application {
   constructor (row: ApplicationRow) {
@@ -111,6 +126,8 @@ export class Application {
     this.appRequestPhase = row.appRequestPhase
     this.appRequestStatus = row.appRequestStatus
     this.appRequestComputedStatus = row.appRequestComputedStatus
+    this.rescindedStatus = row.rescindedStatus
+    this.rescindedReason = row.rescindedReason
   }
 
   @Field(() => ID)
@@ -139,6 +156,12 @@ export class Application {
 
   @Field({ description: 'The program key this application corresponds to.' })
   programKey: string
+
+  @Field(type => ApplicationRescindedStatus, { nullable: true, description: 'The application rescinded status' })
+  rescindedStatus?: ApplicationRescindedStatus
+
+  @Field({ nullable: true, description: 'The reason the application was rescinded' })
+  rescindedReason?: string
 
   internalId: number
   appRequestInternalId: number
