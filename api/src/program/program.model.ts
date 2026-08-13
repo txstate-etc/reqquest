@@ -8,7 +8,7 @@ export class Program {
     this.title = definition.title
     this.navTitle = definition.navTitle ?? definition.title
     this.applicantDescription = definition.applicantDescription
-    this.ineligibleDescription = definition.ineligibleDescription
+    this.eligibilityDescription = definition.eligibilityDescription
     this.authorizationKeys = { program: [this.key] }
   }
 
@@ -25,7 +25,7 @@ export class Program {
   applicantDescription?: string
 
   @Field({ nullable: true, description: 'A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program\'s prompts.' })
-  ineligibleDescription?: string
+  eligibilityDescription?: string
 
   authorizationKeys: Record<string, string[]>
 }

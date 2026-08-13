@@ -5,7 +5,7 @@ const adopt_a_dog_program: ProgramDefinition = {
   key: 'adopt_a_dog_program',
   title: 'Adopt a Dog',
   applicantDescription: 'Matches you with a shelter dog looking for a forever home.',
-  ineligibleDescription: 'Adopting a dog requires living in an eligible state and having a yard and living space large enough for the dog, plus a commitment to regular exercise.',
+  eligibilityDescription: 'Adopting a dog requires living in an eligible state and having a yard and living space large enough for the dog, plus a commitment to regular exercise.',
   requirementKeys: [
     'which_state_req',
     'have_big_yard_req',
@@ -18,7 +18,7 @@ const adopt_a_cat_program: ProgramDefinition = {
   key: 'adopt_a_cat_program',
   title: 'Adopt a Cat',
   applicantDescription: 'Matches you with a shelter cat looking for a forever home.',
-  ineligibleDescription: 'Adopting a cat requires living in an eligible state, owning a cat tower, being tolerant of tuna, and introducing any cats already in your home.',
+  eligibilityDescription: 'Adopting a cat requires living in an eligible state, owning a cat tower, being tolerant of tuna, and introducing any cats already in your home.',
   requirementKeys: [
     'which_state_req',
     'have_a_cat_tower_req',

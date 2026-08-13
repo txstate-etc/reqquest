@@ -314,9 +314,9 @@ export interface Application {
     applicantDescription: (Scalars['String'] | null)
     /** True when at least one reachable prompt on this application has been invalidated and must be re-answered. Status is still computed from the answers on file, so pair status displays with this flag to indicate that a correction is outstanding. */
     awaitingCorrection: Scalars['Boolean']
-    id: Scalars['ID']
     /** A prose summary of the applicant-side requirements of the program this application is for. Intended to be shown alongside statusReason when the application becomes ineligible before submission, since an applicant disqualified early may never have seen the program's prompts and the statusReason alone lacks context. */
-    ineligibleDescription: (Scalars['String'] | null)
+    eligibilityDescription: (Scalars['String'] | null)
+    id: Scalars['ID']
     /** The phase in which this application became ineligible for benefits. Useful for reporting / filtering. Null if the application is not (yet) ineligible. */
     ineligiblePhase: (IneligiblePhases | null)
     /** The navigation title of the program this application is for. */
@@ -656,10 +656,10 @@ export interface PeriodProgram {
     actions: PeriodProgramActions
     /** A brief description of the program, written for applicants. */
     applicantDescription: (Scalars['String'] | null)
+    /** A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts. */
+    eligibilityDescription: (Scalars['String'] | null)
     /** Whether the program is enabled in this period. This is set by the system administrator. */
     enabled: Scalars['Boolean']
-    /** A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts. */
-    ineligibleDescription: (Scalars['String'] | null)
     key: Scalars['ID']
     navTitle: Scalars['String']
     period: Period
@@ -721,7 +721,7 @@ export interface Program {
     /** A brief description of the program, written for applicants. */
     applicantDescription: (Scalars['String'] | null)
     /** A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts. */
-    ineligibleDescription: (Scalars['String'] | null)
+    eligibilityDescription: (Scalars['String'] | null)
     key: Scalars['ID']
     navTitle: Scalars['String']
     title: Scalars['String']
@@ -1272,9 +1272,9 @@ export interface ApplicationGenqlSelection{
     applicantDescription?: boolean | number
     /** True when at least one reachable prompt on this application has been invalidated and must be re-answered. Status is still computed from the answers on file, so pair status displays with this flag to indicate that a correction is outstanding. */
     awaitingCorrection?: boolean | number
-    id?: boolean | number
     /** A prose summary of the applicant-side requirements of the program this application is for. Intended to be shown alongside statusReason when the application becomes ineligible before submission, since an applicant disqualified early may never have seen the program's prompts and the statusReason alone lacks context. */
-    ineligibleDescription?: boolean | number
+    eligibilityDescription?: boolean | number
+    id?: boolean | number
     /** The phase in which this application became ineligible for benefits. Useful for reporting / filtering. Null if the application is not (yet) ineligible. */
     ineligiblePhase?: boolean | number
     /** The navigation title of the program this application is for. */
@@ -1690,10 +1690,10 @@ export interface PeriodProgramGenqlSelection{
     actions?: PeriodProgramActionsGenqlSelection
     /** A brief description of the program, written for applicants. */
     applicantDescription?: boolean | number
+    /** A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts. */
+    eligibilityDescription?: boolean | number
     /** Whether the program is enabled in this period. This is set by the system administrator. */
     enabled?: boolean | number
-    /** A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts. */
-    ineligibleDescription?: boolean | number
     key?: boolean | number
     navTitle?: boolean | number
     period?: PeriodGenqlSelection
@@ -1762,7 +1762,7 @@ export interface ProgramGenqlSelection{
     /** A brief description of the program, written for applicants. */
     applicantDescription?: boolean | number
     /** A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts. */
-    ineligibleDescription?: boolean | number
+    eligibilityDescription?: boolean | number
     key?: boolean | number
     navTitle?: boolean | number
     title?: boolean | number

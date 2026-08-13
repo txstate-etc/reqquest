@@ -30,7 +30,7 @@ export interface ProgramDefinition {
    * change each period and this description will not, so a quoted value could silently
    * contradict the actual requirement.
    */
-  ineligibleDescription?: string
+  eligibilityDescription?: string
   /**
    * The list of requirements for this program, carefully ordered so that
    * the users are presented them in a logical order.

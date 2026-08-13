@@ -97,7 +97,7 @@
   {#each applications as application (application.id)}
     {@const programStatus = programButtonStatus[application.id]}
     {@const programFirstPrompt = programFirstPromptId[application.id]}
-    {@const programDescriptions = isIneligiblePreSubmission(application) ? [application.applicantDescription, application.ineligibleDescription].filter(isNotBlank) : []}
+    {@const programDescriptions = isIneligiblePreSubmission(application) ? [application.applicantDescription, application.eligibilityDescription].filter(isNotBlank) : []}
     <div class="program column [ flex-col ]" style='align-items: start;'>
       <span>{application.title}</span>
       {#if !viewMode}

@@ -736,11 +736,11 @@ export default {
             "awaitingCorrection": [
                 41
             ],
+            "eligibilityDescription": [
+                85
+            ],
             "id": [
                 49
-            ],
-            "ineligibleDescription": [
-                85
             ],
             "ineligiblePhase": [
                 52
@@ -1722,11 +1722,11 @@ export default {
             "applicantDescription": [
                 85
             ],
+            "eligibilityDescription": [
+                85
+            ],
             "enabled": [
                 41
-            ],
-            "ineligibleDescription": [
-                85
             ],
             "key": [
                 49
@@ -1845,7 +1845,7 @@ export default {
             "applicantDescription": [
                 85
             ],
-            "ineligibleDescription": [
+            "eligibilityDescription": [
                 85
             ],
             "key": [

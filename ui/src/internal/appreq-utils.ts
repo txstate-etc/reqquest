@@ -3,7 +3,7 @@ import { enumIneligiblePhases, type IneligiblePhases } from '../lib'
 /**
  * True when this application was found ineligible before submission, i.e. during PREQUAL or
  * QUALIFICATION. These are the applications that land in the "Ineligible benefits" panel on
- * the applicant screens, and the ones whose program `ineligibleDescription` should be shown.
+ * the applicant screens, and the ones whose program `eligibilityDescription` should be shown.
  * Anywhere that cares about membership in that panel should go through this function so the
  * panel and the extra messaging can't drift out of sync.
  */

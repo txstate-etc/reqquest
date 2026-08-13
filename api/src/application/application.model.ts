@@ -107,7 +107,7 @@ export class Application {
     this.title = this.program.title
     this.navTitle = this.program.title ?? this.program.title
     this.applicantDescription = this.program.applicantDescription
-    this.ineligibleDescription = this.program.ineligibleDescription
+    this.eligibilityDescription = this.program.eligibilityDescription
     this.authorizationKeys = { program: [this.program.key] }
     this.closed = row.appRequestStatus !== AppRequestStatusDB.OPEN
     this.appRequestPhase = row.appRequestPhase
@@ -143,7 +143,7 @@ export class Application {
   applicantDescription?: string
 
   @Field({ nullable: true, description: 'A prose summary of the applicant-side requirements of the program this application is for. Intended to be shown alongside statusReason when the application becomes ineligible before submission, since an applicant disqualified early may never have seen the program\'s prompts and the statusReason alone lacks context.' })
-  ineligibleDescription?: string
+  eligibilityDescription?: string
 
   @Field({ description: 'The program key this application corresponds to.' })
   programKey: string

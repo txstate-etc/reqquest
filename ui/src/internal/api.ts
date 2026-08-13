@@ -441,10 +441,11 @@ class API extends APIBase {
             warningReasonsFull.push(req.statusReason)
           }
         // DISQUALIFYING, eligibility is already known by app ineligiblePhase, but always log ineligible reasons
+        // showWarnings above already limits PREQUAL-dead apps to their PREQUAL requirements' reasons
         } else if (req.status === enumRequirementStatus.DISQUALIFYING) {
           if (req.statusReason && showWarnings) {
             if (requirementTypesForNavigation.has(req.type)) ineligibleReasons.push(req.statusReason)
-            if (application.ineligiblePhase !== enumIneligiblePhases.PREQUAL || req.type !== enumRequirementType.PREQUAL) ineligibleReasonsFull.push(req.statusReason)
+            ineligibleReasonsFull.push(req.statusReason)
           }
         // MET, eligibility is already known by app ineligiblePhase, but always log MET reasons
         } else if (req.status === enumRequirementStatus.MET) {
@@ -492,7 +493,7 @@ class API extends APIBase {
           title: true,
           navTitle: true,
           applicantDescription: true,
-          ineligibleDescription: true,
+          eligibilityDescription: true,
           requirements: {
             id: true,
             type: true,

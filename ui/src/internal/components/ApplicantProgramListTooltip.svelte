@@ -10,19 +10,16 @@
   // program is and a summary of what it would have required. An applicant disqualified early may
   // never have seen the program's prompts, so the statusReason alone lacks context.
   $: programDescriptions = isIneligiblePreSubmission(application)
-    ? [application.applicantDescription, application.ineligibleDescription].filter(isNotBlank)
+    ? [application.applicantDescription, application.eligibilityDescription].filter(isNotBlank)
     : []
 </script>
 
 {#if application.warningReasons.length || application.ineligibleReasons.length || application.metReasons.length || programDescriptions.length}
   <Tooltip align="end" direction="bottom" triggerText="" class="reason-tooltip">
     {#if application.ineligibleReasons.length || programDescriptions.length}
-      {#if application.ineligibleReasons.length}
-        <p><strong>Ineligible Because:</strong></p>
-        {#each application.ineligibleReasons as reason (reason)}
-          <p>{reason}</p>
-        {/each}
-      {/if}
+      {#each application.ineligibleReasons as reason (reason)}
+        <p>{reason}</p>
+      {/each}
       {#each programDescriptions as description (description)}
         <p class="program-description">{description}</p>
       {/each}
