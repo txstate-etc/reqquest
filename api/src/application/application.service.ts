@@ -146,7 +146,7 @@ export class ApplicationService extends AuthService<Application> {
     return !currentStage?.nonBlocking
   }
 
-  async mayRescindApplication (application: Application) {
+  mayRescindApplication (application: Application) {
     if (application.closed || application.rescindedStatus === ApplicationRescindedStatus.RESCINDED) return false // prevent rescinding if application is closed or already rescinded
     if (![ApplicationPhase.REVIEW_COMPLETE, ApplicationPhase.ACCEPTANCE, ApplicationPhase.READY_TO_ACCEPT,
       ApplicationPhase.WORKFLOW_NONBLOCKING, ApplicationPhase.READY_TO_COMPLETE, ApplicationPhase.COMPLETE].includes(application.phase)) return false // what app phase rescinding can occur in
@@ -157,7 +157,7 @@ export class ApplicationService extends AuthService<Application> {
     return true
   }
 
-  async mayRestoreApplication (application: Application) {
+  mayRestoreApplication (application: Application) {
     if (application.closed || application.rescindedStatus !== ApplicationRescindedStatus.RESCINDED) return false // prevent restoring if closed or not currently rescinded
     if (this.isOwn(application) && !this.hasControl('AppRequest', 'review_own')) return false
     if (!this.hasControl('AppRequest', 'review', application.appRequestTags)) return false

@@ -68,12 +68,12 @@ export class ApplicationActionsResolver {
   }
 
   @FieldResolver(returns => Boolean)
-  async rescindApplication (@Ctx() ctx: RQContext, @Root() application: Application) {
+  rescindApplication (@Ctx() ctx: RQContext, @Root() application: Application) {
     return ctx.svc(ApplicationService).mayRescindApplication(application)
   }
 
   @FieldResolver(returns => Boolean)
-  async restoreApplication (@Ctx() ctx: RQContext, @Root() application: Application) {
+  restoreApplication (@Ctx() ctx: RQContext, @Root() application: Application) {
     return ctx.svc(ApplicationService).mayRestoreApplication(application)
   }
 }
