@@ -140,8 +140,8 @@ export async function initAccess () {
       view: { description: 'View application as a reviewer in an AppRequest.' }
     }
   }
-  controlGroups.ApplicationPostAcceptance = {
-    title: 'Admin - Application post acceptance',
+  controlGroups.ApplicationApproved = {
+    title: 'Admin - Application post approval',
     tags: [programTags(), ...appRequestTags],
     controls: {
       rescind: { description: 'Rescind an application' },
