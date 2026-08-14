@@ -20,6 +20,7 @@ export const applicationMigrations: DatabaseMigration[] = [
           updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           rescindedStatus VARCHAR(16) NULL,
           rescindedReason TEXT NULL,
+          restoredReason TEXT NULL,
           INDEX (programKey, evaluationOrder),
           INDEX (computedStatus),
           FOREIGN KEY (appRequestId) REFERENCES app_requests (id)

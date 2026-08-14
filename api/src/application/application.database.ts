@@ -20,6 +20,7 @@ export interface ApplicationRow {
   appRequestPhase: AppRequestPhase
   rescindedStatus?: ApplicationRescindedStatus
   rescindedReason?: string
+  restoredReason?: string
 }
 
 function processFilters (filter: ApplicationFilter) {
@@ -40,7 +41,7 @@ export async function getApplications (filter: ApplicationFilter, tdb: Queryable
   const rows = await tdb.getall<ApplicationRow>(`
     SELECT a.id, a.appRequestId, ar.periodId, a.programKey, ar.userId, a.computedStatus, a.computedStatusReason, a.computedPhase,
       a.computedIneligiblePhase, a.computedAwaitingCorrection, a.workflowStage,
-      a.rescindedStatus, a.rescindedReason, 
+      a.rescindedStatus, a.rescindedReason, a.restoredReason,
       ar.status AS appRequestStatus, ar.phase AS appRequestPhase, ar.computedStatus AS appRequestComputedStatus       
     FROM applications a
     INNER JOIN app_requests ar ON ar.id = a.appRequestId

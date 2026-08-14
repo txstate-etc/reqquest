@@ -128,6 +128,7 @@ export class Application {
     this.appRequestComputedStatus = row.appRequestComputedStatus
     this.rescindedStatus = row.rescindedStatus
     this.rescindedReason = row.rescindedReason
+    this.restoredReason = row.restoredReason
   }
 
   @Field(() => ID)
@@ -162,6 +163,9 @@ export class Application {
 
   @Field({ nullable: true, description: 'The reason the application was rescinded' })
   rescindedReason?: string
+
+  @Field({ nullable: true, description: 'The reason the application was restored after previously being rescinded' })
+  restoredReason?: string
 
   internalId: number
   appRequestInternalId: number
