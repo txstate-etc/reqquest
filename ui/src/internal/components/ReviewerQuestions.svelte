@@ -114,7 +114,7 @@
                     {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.WARNING}
                         <WarningIconYellow />
                     {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.DISQUALIFYING}
-                        <WarningFilled size={20} class="disqualifying-icon" style="fill: #da1e28;" />
+                        <WarningFilled size={20} class="disqualifying-icon" style="fill: var(--cds-support-01, #da1e28)" />
                     {/if}
                     </svelte:fragment>
                     {promptIndicator[prompt.key]?.reason}
