@@ -10,13 +10,12 @@
   import { enumApplicationStatus } from '$lib'
   import { enumAppRequestPhase, phaseChangeMutations, type PhaseChangeMutations, enumRequirementType, enumRequirementStatus } from '$lib'
   import { Loading } from "carbon-components-svelte"
-  import { enumApplicationPhase } from '$lib'
-  import { excludeAppsByIneligibiltyPhase } from '$internal'
+  import { excludePreSubmissionIneligibleApps } from '$internal'
 
   export let data: LayoutData
   $: ({ basicRequestData, requestId } = data)
   $: tabs = [
-    ...(excludeAppsByIneligibiltyPhase([basicRequestData], [enumApplicationPhase.PREQUAL, enumApplicationPhase.QUALIFICATION])[0].applications.map(a => ({
+    ...(excludePreSubmissionIneligibleApps([basicRequestData])[0].applications.map(a => ({
       label: a.navTitle,
       href: resolve(`/requests/${requestId}/approve/${a.programKey}`)
     }))),

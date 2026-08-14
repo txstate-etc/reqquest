@@ -750,9 +750,19 @@ type Application {
   actions: ApplicationActions!
 
   """
+  A brief description, written for applicants, of the program this application is for.
+  """
+  applicantDescription: String
+
+  """
   True when at least one reachable prompt on this application has been invalidated and must be re-answered. Status is still computed from the answers on file, so pair status displays with this flag to indicate that a correction is outstanding.
   """
   awaitingCorrection: Boolean!
+
+  """
+  A prose summary of the applicant-side requirements of the program this application is for. Intended to be shown alongside statusReason when the application becomes ineligible before submission, since an applicant disqualified early may never have seen the program's prompts and the statusReason alone lacks context.
+  """
+  eligibilityDescription: String
   id: ID!
 
   """
@@ -1518,6 +1528,14 @@ input PeriodFilters {
 type PeriodProgram {
   actions: PeriodProgramActions!
 
+  """A brief description of the program, written for applicants."""
+  applicantDescription: String
+
+  """
+  A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts.
+  """
+  eligibilityDescription: String
+
   """
   Whether the program is enabled in this period. This is set by the system administrator.
   """
@@ -1619,6 +1637,13 @@ type PeriodWorkflowStage {
 }
 
 type Program {
+  """A brief description of the program, written for applicants."""
+  applicantDescription: String
+
+  """
+  A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts.
+  """
+  eligibilityDescription: String
   key: ID!
   navTitle: String!
   title: String!
