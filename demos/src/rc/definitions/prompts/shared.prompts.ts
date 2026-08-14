@@ -1,5 +1,5 @@
 import { PromptDefinition, MutationMessage } from '@reqquest/api'
-import { AssessReccomendationLettersData, AssessReccomendationLettersSchema, ReccomendationLettersData, ReccomendationLettersSchema } from '../models/index.js'
+import { AssessReccomendationLettersData, AssessReccomendationLettersSchema, OverrideGPAWarningData, OverrideGPAWarningSchema, ReccomendationLettersData, ReccomendationLettersSchema } from '../models/index.js'
 import { MutationMessageType } from '@txstate-mws/graphql-server'
 import { fileHandler } from 'fastify-txstate'
 
@@ -36,6 +36,18 @@ export const assess_reccomendation_letter_prompt: PromptDefinition<AssessReccome
     const messages: MutationMessage[] = []
     if (data.score == null) messages.push({ type: MutationMessageType.error, message: 'This field is required', arg: 'score' })
 
+    return messages
+  }
+}
+
+export const reviewer_override_gpa_warning_prompt: PromptDefinition<OverrideGPAWarningData> = {
+  key: 'reviewer_override_gpa_warning_prompt',
+  title: 'Override GPA Warning',
+  description: 'Override GPA Warning frm showing',
+  schema: OverrideGPAWarningSchema,
+  validate: (data, config) => {
+    const messages: MutationMessage[] = []
+    if (data.override == null) messages.push({ type: MutationMessageType.error, message: 'Override determination is required', arg: 'override' })
     return messages
   }
 }

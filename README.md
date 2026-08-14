@@ -409,6 +409,22 @@ the applicant's response to their offer.
 program's application. We'd definitely not want to show another application's prompt, we just want to wait
 until they get to that point in the other application.
 
+Notice that both examples want the requirement to *wait*. That's the default: until a `promptKeysNoDisplay`
+prompt has been answered, the requirement stays PENDING and none of its own prompts are shown, since making
+a determination on missing data would be premature.
+
+Occasionally you need the opposite - a dependency on data that may never arrive. The usual case is an
+override: an applicant is disqualified by a requirement, and a reviewer may (or may not) open the
+unsubmitted request and unlock them. Waiting is not an option there, because the applicant would be stuck
+behind a prompt only a reviewer can answer. List the prompt as `{ key: 'some_prompt', gate: false }` and it
+will no longer hold the requirement back - `resolve` receives `undefined` for it and runs again if the data
+shows up later.
+
+Requirements that do this are knowingly breaking the rule that a status is stable once it goes non-PENDING,
+so `resolve` must tolerate the data being absent, and a late answer should only ever move the applicant
+forward. Flipping a requirement to DISQUALIFYING after the applicant has already moved past it pulls the
+rug out from under them.
+
 ## Prompts and PromptAnswers
 Prompts represent the collection of data from our users (both applicants and reviewers). Each
 prompt defines a single screen with fields to fill in (though it could use a tabbed UI to feel

@@ -237,12 +237,23 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     return promptRegistry.isUserPrompt(prompt.key) || (prompt.definition.exposeToApplicant != null && prompt.appRequestDbPhase !== AppRequestPhase.SUBMITTED)
   }
 
+  /**
+   * true when this prompt row hangs off a requirement that listed it in promptKeysNoDisplay. The
+   * applicant is never shown such a prompt, so should not answer it either, even
+   * though the requirement it belongs to is one of their own.
+   */
+  isNoDisplay (prompt: RequirementPrompt) {
+    return requirementRegistry.get(prompt.requirementKey)?.noDisplayPromptKeySet.has(prompt.key) ?? false
+  }
+
   mayUpdate (prompt: RequirementPrompt): boolean {
     if (prompt.appRequestDbStatus !== AppRequestStatusDB.OPEN) return false
     if (prompt.locked) return false
     if (this.isOwn(prompt)) {
-      if (prompt.appRequestDbPhase === AppRequestPhase.STARTED && preSubmitTypes.has(prompt.requirementType)) return true
-      if (prompt.appRequestDbPhase === AppRequestPhase.ACCEPTANCE && prompt.requirementType === RequirementType.ACCEPTANCE) return true
+      if (!this.isNoDisplay(prompt)) {
+        if (prompt.appRequestDbPhase === AppRequestPhase.STARTED && preSubmitTypes.has(prompt.requirementType)) return true
+        if (prompt.appRequestDbPhase === AppRequestPhase.ACCEPTANCE && prompt.requirementType === RequirementType.ACCEPTANCE) return true
+      }
       if (!this.hasControl('AppRequest', 'review_own', prompt.appRequestTags)) return false
     }
     const hasUpdate = this.hasControl('PromptAnswer', 'update', { ...prompt.authorizationKeys, ...prompt.appRequestTags })

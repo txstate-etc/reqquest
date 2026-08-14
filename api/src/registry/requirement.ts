@@ -2,6 +2,37 @@ import { type ValidateFunction } from 'ajv'
 import { applicantRequirementTypes, AppRequestData, ConfigurationDefinition, programRegistry, promptRegistry, RequirementStatus, RequirementType, registryAjv, Prompt } from '../internal.js'
 import { isNotEmpty } from 'txstate-utils'
 
+export interface NoDisplayPromptKey {
+  /**
+   * The key of a prompt this requirement depends on but that should not be displayed
+   * beneath it.
+   */
+  key: string
+
+  /**
+   * Whether an unanswered prompt should hold this requirement back. Defaults to true.
+   *
+   * When true (the default), the requirement will not be evaluated against any of its own
+   * prompts until this prompt has been answered - its prompts stay hidden and the requirement
+   * stays PENDING. This is what you want when the dependency represents "not yet": data that
+   * is on its way from another program, another phase, or an external system, and making a
+   * determination without it would be premature.
+   *
+   * When false, an unanswered prompt does not gate anything. Your `resolve` will be called
+   * with `undefined` for this prompt's data, and it will be called again if the data arrives
+   * later. This is what you want when the dependency represents "maybe never": a reviewer's
+   * override that may or may not be granted, and the applicant should be moved along in the
+   * meantime.
+   *
+   * Requirements that opt out of gating are deliberately opting out of the rule that a
+   * requirement's status is stable once it goes non-PENDING, since the whole point is that a
+   * later answer may change the outcome. Make sure `resolve` tolerates the data being absent,
+   * and be careful that a late answer only ever moves the applicant forward - flipping a
+   * requirement to DISQUALIFYING after the applicant has moved past it is a bad experience.
+   */
+  gate?: boolean
+}
+
 export interface RequirementDefinition<ConfigurationDataType = any> {
   /**
    * A globally unique, human and machine readable key. This will be used to match up with
@@ -97,8 +128,15 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    * the prompt for the cat, but you don't want to show the cat prompt to the user when they are
    * applying for the dog. You just want the dog requirement to fail when they say "yes" to the cat
    * and vice versa.
+   *
+   * By default, listing a prompt here means the requirement waits for it: until the prompt has
+   * been answered, none of this requirement's own prompts will be shown and it will stay PENDING.
+   * That is usually what you want, but it makes the dependency useless for data that may never
+   * arrive, such as a reviewer override that unlocks an applicant who has been disqualified. For
+   * that case, list the prompt as `{ key: 'some_prompt', gate: false }` and `resolve` will be
+   * called with `undefined` for it until (and unless) it is answered. See `NoDisplayPromptKey`.
    */
-  promptKeysNoDisplay?: string[]
+  promptKeysNoDisplay?: (string | NoDisplayPromptKey)[]
 
   /**
    * Provide a function that can evaluate the requirement based on answers to prompts.
@@ -124,6 +162,10 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    * application process could change the determination made earlier in the process. You'll
    * have to carefully design and order your requirements to ensure that the data you need
    * is available to you.
+   *
+   * The one exception is a prompt listed in `promptKeysNoDisplay` with `gate: false`, which is
+   * explicitly allowed to show up late and change this requirement's determination. Anything
+   * you receive that way may be `undefined` on one call and populated on the next.
    */
   resolve: (appRequestData: AppRequestData, config: ConfigurationDataType, configLookup: Record<string, any>) => { status: RequirementStatus, reason?: string }
   /**
@@ -147,6 +189,8 @@ export interface RequirementDefinitionProcessed extends RequirementDefinition {
   promptKeySet: Set<string>
   anyOrderPromptKeySet: Set<string>
   noDisplayPromptKeySet: Set<string>
+  // the subset of noDisplayPromptKeySet that must not hold the requirement back while unanswered
+  ungatedPromptKeySet: Set<string>
 }
 
 class RequirementRegistry {
@@ -160,7 +204,9 @@ class RequirementRegistry {
   public reachable: RequirementDefinitionProcessed[] = []
 
   register (definition: RequirementDefinition) {
-    const allPromptKeys = [...(definition.promptKeys ?? []), ...(definition.promptKeysAnyOrder ?? []), ...(definition.promptKeysNoDisplay ?? [])]
+    const noDisplayEntries = (definition.promptKeysNoDisplay ?? []).map(entry => typeof entry === 'string' ? { key: entry, gate: true } : { gate: true, ...entry })
+    const noDisplayPromptKeys = noDisplayEntries.map(entry => entry.key)
+    const allPromptKeys = [...(definition.promptKeys ?? []), ...(definition.promptKeysAnyOrder ?? []), ...noDisplayPromptKeys]
     const visiblePromptKeys = [...(definition.promptKeys ?? []), ...(definition.promptKeysAnyOrder ?? [])]
     const definitionProcessed: RequirementDefinitionProcessed = {
       ...definition,
@@ -169,12 +215,15 @@ class RequirementRegistry {
       visiblePrompts: [],
       promptKeySet: new Set(allPromptKeys),
       anyOrderPromptKeySet: new Set(definition.promptKeysAnyOrder ?? []),
-      noDisplayPromptKeySet: new Set(definition.promptKeysNoDisplay ?? [])
+      noDisplayPromptKeySet: new Set(noDisplayPromptKeys),
+      ungatedPromptKeySet: new Set(noDisplayEntries.filter(entry => !entry.gate).map(entry => entry.key))
     }
     this.requirements[definition.key] = definitionProcessed
     this.requirementsList.push(definitionProcessed)
     if (applicantRequirementTypes.has(definition.type)) {
-      for (const key of allPromptKeys) promptRegistry.setUserPrompt(key)
+      // deliberately not allPromptKeys: a no-display prompt is never shown to the applicant, so it
+      // must not become one of their prompts just because an applicant requirement reads it
+      for (const key of visiblePromptKeys) promptRegistry.setUserPrompt(key)
     }
     if (isNotEmpty(definition.configuration?.schema)) this.configValidators[definition.key] = registryAjv.compile(definition.configuration.schema)
   }

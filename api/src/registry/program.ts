@@ -72,7 +72,7 @@ export interface WorkflowStage {
    * which preserves the legacy behavior of only surfacing non-blocking workflow requirements once the
    * request reaches the WORKFLOW_NONBLOCKING phase.
    */
-  nonBlockingEmergence?: AppRequestPhase.SUBMITTED | AppRequestPhase.ACCEPTANCE | AppRequestPhase.WORKFLOW_NONBLOCKING
+  nonBlockingEmergence?: AppRequestPhase.STARTED | AppRequestPhase.SUBMITTED | AppRequestPhase.ACCEPTANCE | AppRequestPhase.WORKFLOW_NONBLOCKING
   /**
    * The title of the stage, displayed to the user.
    */
