@@ -1,10 +1,11 @@
 <script lang="ts">
   import { getAppRequestStatusInfo, getApplicationStatusInfo, applicantRequirementTypes, reviewRequirementTypes } from '../status-utils.js'
+  import { isIneligiblePreSubmission } from '../appreq-utils.js'
   import { Panel, TagSet } from '@txstate-mws/carbon-svelte'
   import { Button, InlineNotification, Tooltip } from 'carbon-components-svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import type { AnsweredPrompt, PromptSection, AppRequestForDetails, ApplicationForDetails, Scalars } from '$lib'
-  import { enumRequirementType, enumIneligiblePhases, enumApplicationStatus } from '$lib'
+  import { enumRequirementType } from '$lib'
   import type { UIRegistry } from '../../lib/registry.js'
   import RenderDisplayComponent from './RenderDisplayComponent.svelte'
   import ApplicantProgramList from './ApplicantProgramList.svelte'
@@ -31,7 +32,7 @@
 
   $: canMakeCorrections = CORRECTABLE_STATUSES.includes(appRequest.status)
   $: eligibleApplications = applications.filter(a => a.ineligiblePhase == null)
-  $: ineligibleApplications = applications.filter(a => a.ineligiblePhase === enumIneligiblePhases.PREQUAL || a.ineligiblePhase === enumIneligiblePhases.QUALIFICATION)
+  $: ineligibleApplications = applications.filter(isIneligiblePreSubmission)
 
   // Group prompts by sections, with reviewer prompts nested within application sections
   $: sections = (() => {

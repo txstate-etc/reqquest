@@ -1,5 +1,5 @@
 import { RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
-import { AssessReccomendationLettersData, ReccomendationLettersData } from '../models'
+import { AssessReccomendationLettersData, OverrideGPAWarningData, ReccomendationLettersData } from '../models'
 
 export const reccomendation_letter_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
@@ -25,6 +25,20 @@ export const assess_reccomendation_letter_req: RequirementDefinition = {
   resolve: (data, config) => {
     const niceData = data['assess_reccomendation_letter_prompt'] as AssessReccomendationLettersData
     if (niceData?.score == null) return { status: RequirementStatus.PENDING }
+    return { status: RequirementStatus.MET }
+  }
+}
+
+export const reviewer_override_gpa_warning_req: RequirementDefinition = {
+  type: RequirementType.WORKFLOW,
+  key: 'reviewer_override_gpa_warning_req',
+  title: 'Override GPA Warning',
+  navTitle: 'Override GPA Warning',
+  description: 'Override GPA minimum requirement to not show warning',
+  promptKeys: ['reviewer_override_gpa_warning_prompt'],
+  resolve: (data, config) => {
+    const overrideGpaWarningData = data['reviewer_override_gpa_warning_prompt'] as OverrideGPAWarningData
+    if (overrideGpaWarningData?.override == null) return { status: RequirementStatus.PENDING }
     return { status: RequirementStatus.MET }
   }
 }

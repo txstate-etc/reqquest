@@ -730,8 +730,14 @@ export default {
             "actions": [
                 34
             ],
+            "applicantDescription": [
+                85
+            ],
             "awaitingCorrection": [
                 41
+            ],
+            "eligibilityDescription": [
+                85
             ],
             "id": [
                 49
@@ -1713,6 +1719,12 @@ export default {
             "actions": [
                 70
             ],
+            "applicantDescription": [
+                85
+            ],
+            "eligibilityDescription": [
+                85
+            ],
             "enabled": [
                 41
             ],
@@ -1830,6 +1842,12 @@ export default {
             ]
         },
         "Program": {
+            "applicantDescription": [
+                85
+            ],
+            "eligibilityDescription": [
+                85
+            ],
             "key": [
                 49
             ],

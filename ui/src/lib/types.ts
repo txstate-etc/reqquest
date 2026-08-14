@@ -47,6 +47,8 @@ export interface AppRequestForDetails {
 export interface ApplicationForDetails {
   id: string
   title: string
+  applicantDescription?: string | null
+  eligibilityDescription?: string | null
   ineligiblePhase: IneligiblePhases | null
   status: ApplicationStatus
   statusReason?: string | null
