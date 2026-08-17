@@ -1,4 +1,4 @@
-import type { ApplicationStatus, AppRequestPhase, AppRequestStatus, IneligiblePhases, RequirementType } from './typed-client/index.js'
+import type { ApplicationRescindedStatus, ApplicationStatus, AppRequestPhase, AppRequestStatus, IneligiblePhases, RequirementType } from './typed-client/index.js'
 
 export type CompletionStatus = 'ELIGIBLE' | 'INELIGIBLE' | 'PENDING'
 
@@ -28,6 +28,7 @@ export interface PromptSection {
   prompts: AnsweredPrompt[]
   subsections?: PromptSection[]
   applicationStatus?: ApplicationStatus
+  applicationRescindedStatus?: ApplicationRescindedStatus | null
 }
 
 // what the ApplicationDetailsView needs
@@ -51,6 +52,7 @@ export interface ApplicationForDetails {
   eligibilityDescription?: string | null
   ineligiblePhase: IneligiblePhases | null
   status: ApplicationStatus
+  rescindedStatus?: ApplicationRescindedStatus | null
   statusReason?: string | null
   completionStatus: CompletionStatus
   hasWarning: boolean  

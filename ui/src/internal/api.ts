@@ -142,6 +142,7 @@ class API extends APIBase {
           id: true,
           title: true,
           status: true,
+          rescindedStatus: true,
           statusReason: true,
           ineligiblePhase: true,
           requirements: {
@@ -488,6 +489,7 @@ class API extends APIBase {
         applications: {
           id: true,
           status: true,
+          rescindedStatus: true,
           ineligiblePhase: true,
           statusReason: true,
           title: true,

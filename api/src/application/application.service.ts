@@ -171,7 +171,7 @@ export class ApplicationService extends AuthService<Application> {
     if (!application) throw new Error(`Application not found: ${applicationId}`)
     if (!this.mayRescindApplication(application)) throw new Error('You may not rescind this application.')
     const resp = new ValidatedAppRequestResponse({ success: true, messages: [] })
-    if (isBlank(reason)) resp.addMessage('Please provide a reason for rescinding this application.', 'reason')
+    if (isBlank(reason)) resp.addMessage('Please provide a reason for rescinding this benefit.', 'reason')
     if (validateOnly || resp.hasErrors()) return resp
     await appRequestTransaction(application.appRequestInternalId, async db => {
       await rescindApplication(application.id, reason, db)
@@ -190,7 +190,7 @@ export class ApplicationService extends AuthService<Application> {
     if (!application) throw new Error(`Application not found: ${applicationId}`)
     if (!this.mayRestoreApplication(application)) throw new Error('You may not restore this application.')
     const resp = new ValidatedAppRequestResponse({ success: true, messages: [] })
-    if (isBlank(reason)) resp.addMessage('Please provide a reason for restoring this application.', 'reason')
+    if (isBlank(reason)) resp.addMessage('Please provide a reason for restoring this benefit.', 'reason')
     if (validateOnly || resp.hasErrors()) return resp
     await appRequestTransaction(application.appRequestInternalId, async db => {
       await restoreApplication(application.id, reason, db)

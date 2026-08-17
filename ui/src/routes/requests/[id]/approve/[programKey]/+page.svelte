@@ -161,7 +161,7 @@
     ...blockingWorkflowStages,
     ...nonBlockingWorkflowStages
   ].filter(s => (!!s.requirements[0]?.workflowStage) || (s.requirements.length > 0 && s.requirements.some(r => r.prompts.length > 0)))
-  $: applicationStatusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt)
+  $: applicationStatusTags = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt, application.rescindedStatus).map(info => ({ label: info.label, type: info.color }))
   $: loading = false
   let showLoading = false
   let loadingTimer: NodeJS.Timeout | undefined
@@ -266,11 +266,11 @@
 
 <ApproveLayout {basicRequestData} {appRequest}>
   <svelte:fragment slot="sidebar">
-    <InfoCard title={application.title} tags={[{ label: applicationStatusInfo.label, type: applicationStatusInfo.color }]} tagsInBody>
+    <InfoCard title={application.title} tags={applicationStatusTags} tagsInBody>
       <!--
       <dl class="card">
         <dt>Status</dt>
-        <dd><TagSet tags={[{ label: applicationStatusInfo.label, type: applicationStatusInfo.color }]} /></dd>
+        <dd><TagSet tags={applicationStatusTags} /></dd>
       </dl>
       -->
     </InfoCard>
