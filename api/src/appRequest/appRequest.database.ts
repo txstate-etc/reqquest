@@ -6,7 +6,7 @@ import db from 'mysql2-async/db'
 import { clone, findIndex, groupby, isNotBlank, keyby, omit, stringify } from 'txstate-utils'
 import {
   ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters,
-  AppRequestFilter, AppRequestPhase, appRequestPhaseReached, AppRequestStatus, getApplications, getPeriodWorkflowStages, IneligiblePhases, Pagination,
+  AppRequestFilter, AppRequestPhase, appRequestPhaseReached, AppRequestStatus, deriveApplicationStatus, getApplications, getPeriodWorkflowStages, IneligiblePhases, Pagination,
   PaginationInfoWithTotalItems, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt, RequirementStatus,
   RequirementType, RQContext, syncApplications, syncPromptRecords, syncRequirementRecords, updateApplicationsComputed,
   updatePromptComputed, updateRequirementComputed, type AppRequestData
@@ -469,8 +469,10 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
     const appRequest = (await getAppRequests({ internalIds: [appRequestInternalId] }, db))[0]
     if (!appRequest) throw new Error(`AppRequest ${appRequestInternalId} not found`)
 
-    // if the appRequest is closed or complete, we don't need to evaluate
-    if (appRequest.dbStatus !== AppRequestStatusDB.OPEN || appRequest.phase === AppRequestPhase.COMPLETE) return
+    // if the appRequest is closed, we don't need to evaluate. *NEW* COMPLETE requests are still evaluated
+    // because an application can be RESCINDED or restored after completion and the request-level
+    // status has to follow it.
+    if (appRequest.dbStatus !== AppRequestStatusDB.OPEN) return
 
     const data = (await getAppRequestData([appRequest.internalId], db))[0].data
 
@@ -685,8 +687,8 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       // status intentionally ignores invalidation: it is the best assessment of the data currently
       // on file, so disqualified applications remain INELIGIBLE while a correction is outstanding.
       // awaitingCorrection carries the "must be re-answered" fact and holds back the phase below.
-      application.status = phase === 'nonblocking' || phase === 'complete'
-        ? application.status
+      application.computedStatus = phase === 'nonblocking' || phase === 'complete'
+        ? application.computedStatus
         : phase === 'acceptance'
           ? requirementsResolution === 'pass'
             ? ApplicationStatus.ACCEPTED
@@ -698,6 +700,10 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
             : requirementsResolution === 'fail'
               ? ApplicationStatus.INELIGIBLE
               : ApplicationStatus.ELIGIBLE
+
+      // computedStatus is what gets persisted; status carries the rescind override and is what the
+      // request-level rollup below reads, so it has to be refreshed after every recomputation
+      application.status = deriveApplicationStatus(application.computedStatus, application.rescindedStatus)
 
       application.statusReason = firstFailingRequirement?.statusReason ?? firstPendingRequirement?.statusReason
 
@@ -799,7 +805,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
     // precisely because fixing it would gain the applicant a benefit
     appRequest.awaitingCorrection = applications.some(a => a.awaitingCorrection)
 
-    if (applications.every(a => a.status === ApplicationStatus.INELIGIBLE || a.status === ApplicationStatus.REJECTED)) {
+    if (applications.every(a => a.status === ApplicationStatus.INELIGIBLE || a.status === ApplicationStatus.REJECTED || a.status === ApplicationStatus.RESCINDED)) {
       if (appRequest.phase === AppRequestPhase.SUBMITTED) {
         if (appRequest.awaitingCorrection) appRequest.status = AppRequestStatus.APPROVAL
         else if (applications.length === 1 && !workflowStages.filter(s => s.blocking).length && (applications[0].phase === ApplicationPhase.READY_FOR_WORKFLOW || applications[0].phase === ApplicationPhase.REVIEW_COMPLETE)) appRequest.status = AppRequestStatus.REVIEW_COMPLETE
@@ -807,6 +813,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
         else appRequest.status = reviewStartedApplicationIds.size ? AppRequestStatus.REVIEW_IN_PROGRESS : AppRequestStatus.APPROVAL
       } else if (applications.some(a => a.ineligiblePhase === IneligiblePhases.ACCEPTANCE)) appRequest.status = AppRequestStatus.NOT_ACCEPTED
       else if (applications.some(a => a.ineligiblePhase === IneligiblePhases.APPROVAL || a.ineligiblePhase === IneligiblePhases.WORKFLOW)) appRequest.status = AppRequestStatus.NOT_APPROVED
+      else if (applications.some(a => a.status === ApplicationStatus.RESCINDED)) appRequest.status = AppRequestStatus.NOT_APPROVED
       else appRequest.status = AppRequestStatus.DISQUALIFIED
     } else if (applications.some(a => a.phase === ApplicationPhase.READY_TO_SUBMIT) && !applications.some(a => a.status === ApplicationStatus.PENDING) && !appRequest.awaitingCorrection) appRequest.status = AppRequestStatus.READY_TO_SUBMIT
     // special case for single-program systems with no blocking workflow stages - we set the appRequest to REVIEW_COMPLETE so

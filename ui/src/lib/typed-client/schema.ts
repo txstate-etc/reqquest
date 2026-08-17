@@ -364,6 +364,7 @@ export interface ApplicationMetric {
     closed: Scalars['Float']
     denied: Scalars['Float']
     entries: ApplicationMetricEntry[]
+    rescinded: Scalars['Float']
     started: Scalars['Float']
     submitted: Scalars['Float']
     toDecision: ApplicationMetricTiming
@@ -457,7 +458,7 @@ export type ApplicationRescindedStatus = 'RESCINDED' | 'RESTORED'
  *     closure / cancellation.
  *   
  */
-export type ApplicationStatus = 'ACCEPTED' | 'ELIGIBLE' | 'INELIGIBLE' | 'PENDING' | 'REJECTED'
+export type ApplicationStatus = 'ACCEPTED' | 'ELIGIBLE' | 'INELIGIBLE' | 'PENDING' | 'REJECTED' | 'RESCINDED'
 
 export interface Category {
     /** This is indexed name of the category. Categories are indexed to allow for quick filtering of a list of items. e.g. institutionalRoles */
@@ -1344,6 +1345,7 @@ export interface ApplicationMetricGenqlSelection{
     closed?: boolean | number
     denied?: boolean | number
     entries?: ApplicationMetricEntryGenqlSelection
+    rescinded?: boolean | number
     started?: boolean | number
     submitted?: boolean | number
     toDecision?: ApplicationMetricTimingGenqlSelection
@@ -2439,7 +2441,8 @@ export const enumApplicationStatus = {
    ELIGIBLE: 'ELIGIBLE' as const,
    INELIGIBLE: 'INELIGIBLE' as const,
    PENDING: 'PENDING' as const,
-   REJECTED: 'REJECTED' as const
+   REJECTED: 'REJECTED' as const,
+   RESCINDED: 'RESCINDED' as const
 }
 
 export const enumIneligiblePhases = {

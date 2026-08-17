@@ -60,7 +60,7 @@ function metricApplicationFilters (filters?: MetricApplicationFilters) {
 export async function getApplicationMetricEntries (filters?: MetricApplicationFilters) {
   const { where, binds } = metricApplicationFilters(filters)
   const rows = await db.getall<ApplicationMetricEntry>(`
-    SELECT app.id as applicationId, app.createdAt, app.updatedAt, app.computedStatus , app.computedPhase , app.computedIneligiblePhase, app.programKey,
+    SELECT app.id as applicationId, app.createdAt, app.updatedAt, app.computedStatus , app.computedPhase , app.computedIneligiblePhase, app.rescindedStatus, app.programKey,
     ar.submittedAt, ar.closedAt, ar.id as appRequestId,
     au.id as applicantId, au.login as applicantLogin, au.fullname as applicantFullname,
     per.id as periodId, per.name as periodName, per.code as periodCode

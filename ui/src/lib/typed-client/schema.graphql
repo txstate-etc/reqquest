@@ -837,6 +837,7 @@ type ApplicationMetric {
   closed: Float!
   denied: Float!
   entries: [ApplicationMetricEntry!]!
+  rescinded: Float!
   started: Float!
   submitted: Float!
   toDecision: ApplicationMetricTiming!
@@ -1039,6 +1040,11 @@ enum ApplicationStatus {
   An offer was made to the applicant and at least one ACCEPTANCE requirement is not met (the applicant rejected the offer).
   """
   REJECTED
+
+  """
+  The application has been rescinded (pulled back from applicant) post approval.
+  """
+  RESCINDED
 }
 
 type Category {

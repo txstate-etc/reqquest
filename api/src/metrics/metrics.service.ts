@@ -67,6 +67,10 @@ export class ApplicationMetricService extends AuthService<ApplicationMetricEntry
     return applicationMetric.entries?.filter(entry => entry.phase === ApplicationPhase.COMPLETE && entry.status === ApplicationStatus.INELIGIBLE && (entry.ineligiblePhase !== IneligiblePhases.PREQUAL && entry.ineligiblePhase !== IneligiblePhases.QUALIFICATION)) ?? []
   }
 
+  getRescinded (applicationMetric: ApplicationMetric): ApplicationMetricEntry[] {
+    return applicationMetric.entries?.filter(entry => entry.status === ApplicationStatus.RESCINDED) ?? []
+  }
+
   getSubmissionTimings (applicationMetric: ApplicationMetric): ApplicationMetricTiming {
     const submitted = this.getSubmitted(applicationMetric)
     const submissionTimes = submitted.map(entry => (entry.submittedAt!.toMillis() - entry.createdAt!.toMillis()) / 1000)
@@ -78,7 +82,7 @@ export class ApplicationMetricService extends AuthService<ApplicationMetricEntry
   }
 
   getDecisionTimings (applicationMetric: ApplicationMetric): ApplicationMetricTiming {
-    const completed = [...this.getApproved(applicationMetric), ...this.getDenied(applicationMetric)]
+    const completed = [...this.getApproved(applicationMetric), ...this.getDenied(applicationMetric), ...this.getRescinded(applicationMetric).filter(entry => entry.phase === ApplicationPhase.COMPLETE)]
     const decisionTimes: number[] = []
     for (const c of completed) {
       let lastMaxAt = Math.max(...completed.filter(entry => entry.updatedAt!.toMillis() < c.updatedAt!.toMillis() && entry.internalAppRequestId === c.internalAppRequestId && entry.internalApplicationId !== c.internalApplicationId).map(entry => entry.updatedAt!.toMillis()))

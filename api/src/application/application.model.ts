@@ -104,6 +104,17 @@ registerEnumType(ApplicationRescindedStatus, {
   }
 })
 
+/**
+ * rescinded is derived rather than stored. The underlying status stays in the computedStatus column
+ * so that restoring an application recovers the exact status it had before it was rescinded. required
+ * because there are phases where the status is frozen and could not be recomputed from the requirements.
+ */
+export function deriveApplicationStatus (computedStatus: ApplicationStatus, rescindedStatus?: ApplicationRescindedStatus) {
+  return rescindedStatus === ApplicationRescindedStatus.RESCINDED && (computedStatus === ApplicationStatus.ELIGIBLE || computedStatus === ApplicationStatus.ACCEPTED)
+    ? ApplicationStatus.RESCINDED
+    : computedStatus
+}
+
 @ObjectType({ description: 'An application represents the applicant applying to a specific program. Each appRequest has multiple applications - one per program defined in the system. Some applications are mutually exclusive and/or will be eliminated early based on PREQUAL requirements, but they all technically exist in the data model - there is no concept of picking one application over another, just two applications where one dies and the other survives.' })
 export class Application {
   constructor (row: ApplicationRow) {
@@ -118,7 +129,9 @@ export class Application {
     this.phase = row.computedPhase
     this.ineligiblePhase = row.computedIneligiblePhase
     this.workflowStageKey = row.workflowStage
-    this.status = row.computedStatus
+    this.computedStatus = row.computedStatus
+    this.rescindedStatus = row.rescindedStatus
+    this.status = deriveApplicationStatus(this.computedStatus, this.rescindedStatus)
     this.statusReason = row.computedStatusReason
     this.awaitingCorrection = !!row.computedAwaitingCorrection
     this.title = this.program.title
@@ -130,7 +143,6 @@ export class Application {
     this.appRequestPhase = row.appRequestPhase
     this.appRequestStatus = row.appRequestStatus
     this.appRequestComputedStatus = row.appRequestComputedStatus
-    this.rescindedStatus = row.rescindedStatus
     this.rescindedReason = row.rescindedReason
     this.restoredReason = row.restoredReason
   }
@@ -178,6 +190,7 @@ export class Application {
   restoredReason?: string
 
   internalId: number
+  computedStatus: ApplicationStatus
   appRequestInternalId: number
   appRequestId: string
   appRequestTags?: Record<string, string[]>

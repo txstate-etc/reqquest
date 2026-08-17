@@ -315,6 +315,11 @@ export function getApplicationStatusInfo (status: string, appRequestPhase: strin
       label: 'Offer declined',
       description: 'Offer rejected or requirements not met.',
       color: 'red'
+    },
+    RESCINDED: {
+      label: 'Rescinded',
+      description: 'Previously approved and has since been rescinded.',
+      color: 'red'
     }
   }
   if (appRequestPhase !== enumAppRequestPhase.COMPLETE && appRequestPhase !== enumAppRequestPhase.WORKFLOW_NONBLOCKING && closedAt != null) {

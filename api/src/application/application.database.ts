@@ -77,7 +77,7 @@ export async function syncApplications (appRequestId: number, activeProgramKeySe
 
 export async function updateApplicationsComputed (applications: Application[], db: Queryable) {
   for (const application of applications) {
-    await db.update('UPDATE applications SET computedStatus = ?, computedStatusReason = ?, computedPhase = ?, computedIneligiblePhase = ?, computedAwaitingCorrection = ? WHERE id = ?', [application.status, application.statusReason, application.phase, application.ineligiblePhase, application.awaitingCorrection ? 1 : 0, application.internalId])
+    await db.update('UPDATE applications SET computedStatus = ?, computedStatusReason = ?, computedPhase = ?, computedIneligiblePhase = ?, computedAwaitingCorrection = ? WHERE id = ?', [application.computedStatus, application.statusReason, application.phase, application.ineligiblePhase, application.awaitingCorrection ? 1 : 0, application.internalId])
   }
 }
 
