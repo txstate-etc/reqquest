@@ -6,7 +6,8 @@ export enum ApplicationStatus {
   ELIGIBLE = 'ELIGIBLE',
   INELIGIBLE = 'INELIGIBLE',
   ACCEPTED = 'ACCEPTED',
-  REJECTED = 'REJECTED'
+  REJECTED = 'REJECTED',
+  RESCINDED = 'RESCINDED'
 }
 registerEnumType(ApplicationStatus, {
   name: 'ApplicationStatus',
@@ -21,7 +22,8 @@ registerEnumType(ApplicationStatus, {
     ELIGIBLE: { description: 'All application requirements up to and including WORKFLOW_BLOCKING requirements are resolving as MET (or NOT_APPLICABLE or WARNING). If there is an acceptance phase, the acceptance is still pending.' },
     INELIGIBLE: { description: 'At least one application requirement up to and including WORKFLOW_BLOCKING requirements is not met. The review cannot proceed, but the first or current stage of the workflow should still continue.' },
     ACCEPTED: { description: 'An offer was made to the applicant and all ACCEPTANCE requirements are met (the applicant accepted the offer).' },
-    REJECTED: { description: 'An offer was made to the applicant and at least one ACCEPTANCE requirement is not met (the applicant rejected the offer).' }
+    REJECTED: { description: 'An offer was made to the applicant and at least one ACCEPTANCE requirement is not met (the applicant rejected the offer).' },
+    RESCINDED: { description: 'The application has been rescinded (pulled back from applicant) post approval.' }
   }
 })
 

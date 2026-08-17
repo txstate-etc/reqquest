@@ -50,13 +50,13 @@ export class ApplicationResolver {
   }
 
   @Mutation(returns => ValidatedAppRequestResponse, { description: 'Rescinds the approved and/or accepted application.' })
-  async rescind (@Ctx() ctx: RQContext, @Arg('applicationId', type => ID) applicationId: string, @Arg('reason', type => ID) reason: string) {
-    return await ctx.svc(ApplicationService).rescindApplication(applicationId, reason)
+  async rescind (@Ctx() ctx: RQContext, @Arg('applicationId', type => ID) applicationId: string, @Arg('reason') reason: string, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
+    return await ctx.svc(ApplicationService).rescindApplication(applicationId, reason, validateOnly)
   }
 
   @Mutation(returns => ValidatedAppRequestResponse, { description: 'Restores a previously rescinded application to its previous state.' })
-  async restore (@Ctx() ctx: RQContext, @Arg('applicationId', type => ID) applicationId: string, @Arg('reason', type => ID) reason: string) {
-    return await ctx.svc(ApplicationService).restoreApplication(applicationId, reason)
+  async restore (@Ctx() ctx: RQContext, @Arg('applicationId', type => ID) applicationId: string, @Arg('reason') reason: string, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
+    return await ctx.svc(ApplicationService).restoreApplication(applicationId, reason, validateOnly)
   }
 }
 

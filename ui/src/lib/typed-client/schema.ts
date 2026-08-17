@@ -330,6 +330,12 @@ export interface Application {
     /** The program key this application corresponds to. */
     programKey: Scalars['String']
     requirements: ApplicationRequirement[]
+    /** The reason the application was rescinded */
+    rescindedReason: (Scalars['String'] | null)
+    /** The application rescinded status */
+    rescindedStatus: (ApplicationRescindedStatus | null)
+    /** The reason the application was restored after previously being rescinded */
+    restoredReason: (Scalars['String'] | null)
     status: ApplicationStatus
     /** When one of the application's requirements is failing or throwing a warning, its reason will be copied here for convenience. If there is a warning and then later a failure, the failure reason will win. */
     statusReason: (Scalars['String'] | null)
@@ -344,6 +350,8 @@ export interface Application {
 
 export interface ApplicationActions {
     advanceWorkflow: Scalars['Boolean']
+    rescindApplication: Scalars['Boolean']
+    restoreApplication: Scalars['Boolean']
     reverseWorkflow: Scalars['Boolean']
     viewAsReviewer: Scalars['Boolean']
     __typename: 'ApplicationActions'
@@ -431,6 +439,14 @@ export interface ApplicationRequirement {
     workflowStage: (PeriodWorkflowStage | null)
     __typename: 'ApplicationRequirement'
 }
+
+
+/**
+ * 
+ *     The rescinded status of an application.
+ *   
+ */
+export type ApplicationRescindedStatus = 'RESCINDED' | 'RESTORED'
 
 
 /**
@@ -533,6 +549,10 @@ export interface Mutation {
     markPeriodReviewed: ValidatedPeriodResponse
     /** Reopen the app request. This is only available if the app request is in a state that allows reopening. */
     reopenAppRequest: ValidatedAppRequestResponse
+    /** Rescinds the approved and/or accepted application. */
+    rescind: ValidatedAppRequestResponse
+    /** Restores a previously rescinded application to its previous state. */
+    restore: ValidatedAppRequestResponse
     /** Return the app request to the applicant phase. This is only available if the app request is in a state that allows returning. */
     returnToApplicant: ValidatedAppRequestResponse
     /** If request is complete, undo and return to non-blocking workflow. */
@@ -1288,6 +1308,12 @@ export interface ApplicationGenqlSelection{
     /** The program key this application corresponds to. */
     programKey?: boolean | number
     requirements?: ApplicationRequirementGenqlSelection
+    /** The reason the application was rescinded */
+    rescindedReason?: boolean | number
+    /** The application rescinded status */
+    rescindedStatus?: boolean | number
+    /** The reason the application was restored after previously being rescinded */
+    restoredReason?: boolean | number
     status?: boolean | number
     /** When one of the application's requirements is failing or throwing a warning, its reason will be copied here for convenience. If there is a warning and then later a failure, the failure reason will win. */
     statusReason?: boolean | number
@@ -1303,6 +1329,8 @@ export interface ApplicationGenqlSelection{
 
 export interface ApplicationActionsGenqlSelection{
     advanceWorkflow?: boolean | number
+    rescindApplication?: boolean | number
+    restoreApplication?: boolean | number
     reverseWorkflow?: boolean | number
     viewAsReviewer?: boolean | number
     __typename?: boolean | number
@@ -1533,6 +1561,10 @@ export interface MutationGenqlSelection{
     markPeriodReviewed?: (ValidatedPeriodResponseGenqlSelection & { __args: {periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     /** Reopen the app request. This is only available if the app request is in a state that allows reopening. */
     reopenAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
+    /** Rescinds the approved and/or accepted application. */
+    rescind?: (ValidatedAppRequestResponseGenqlSelection & { __args: {applicationId: Scalars['ID'], reason: Scalars['String'], validateOnly?: (Scalars['Boolean'] | null)} })
+    /** Restores a previously rescinded application to its previous state. */
+    restore?: (ValidatedAppRequestResponseGenqlSelection & { __args: {applicationId: Scalars['ID'], reason: Scalars['String'], validateOnly?: (Scalars['Boolean'] | null)} })
     /** Return the app request to the applicant phase. This is only available if the app request is in a state that allows returning. */
     returnToApplicant?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** If request is complete, undo and return to non-blocking workflow. */
@@ -2395,6 +2427,11 @@ export const enumApplicationPhase = {
    REVIEW_IN_PROGRESS: 'REVIEW_IN_PROGRESS' as const,
    WORKFLOW_BLOCKING: 'WORKFLOW_BLOCKING' as const,
    WORKFLOW_NONBLOCKING: 'WORKFLOW_NONBLOCKING' as const
+}
+
+export const enumApplicationRescindedStatus = {
+   RESCINDED: 'RESCINDED' as const,
+   RESTORED: 'RESTORED' as const
 }
 
 export const enumApplicationStatus = {

@@ -1,6 +1,7 @@
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { rescindApplication, restoreApplication, advanceWorkflow, appConfig, Application, ApplicationPhase, ApplicationRescindedStatus, ApplicationStatus, AppRequest, AppRequestPhase, AppRequestService, AppRequestStatus, AppRequestStatusDB, appRequestTransaction, AuthService, evaluateAppRequest, getApplications, PeriodWorkflowStage, programRegistry, ProgramService, reverseWorkflow, ValidatedAppRequestResponse, WorkflowStage } from '../internal.js'
 import { BaseService } from '@txstate-mws/graphql-server'
+import { isBlank } from 'txstate-utils'
 import { applicationPhaseNotifications, applicationRescindNotifications } from '../util/notifications.js'
 
 const appByInternalIdLoader = new PrimaryKeyLoader({
@@ -165,16 +166,18 @@ export class ApplicationService extends AuthService<Application> {
     return true
   }
 
-  async rescindApplication (applicationId: string, reason: string) {
+  async rescindApplication (applicationId: string, reason: string, validateOnly?: boolean) {
     const [application] = await getApplications({ ids: [applicationId] })
     if (!application) throw new Error(`Application not found: ${applicationId}`)
     if (!this.mayRescindApplication(application)) throw new Error('You may not rescind this application.')
+    const resp = new ValidatedAppRequestResponse({ success: true, messages: [] })
+    if (isBlank(reason)) resp.addMessage('Please provide a reason for rescinding this application.', 'reason')
+    if (validateOnly || resp.hasErrors()) return resp
     await appRequestTransaction(application.appRequestInternalId, async db => {
       await rescindApplication(application.id, reason, db)
       await evaluateAppRequest(application.appRequestInternalId, db)
     })
     this.loaders.clear()
-    const resp = new ValidatedAppRequestResponse({ success: true, messages: [] })
     resp.appRequest = await this.svc(AppRequestService).findByInternalId(application.appRequestInternalId)
     await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, `Rescinded ${application.navTitle}: ${reason}.`)
     const newApplication = (await this.findByInternalId(application.internalId))!
@@ -182,16 +185,18 @@ export class ApplicationService extends AuthService<Application> {
     return resp
   }
 
-  async restoreApplication (applicationId: string, reason: string) {
+  async restoreApplication (applicationId: string, reason: string, validateOnly?: boolean) {
     const [application] = await getApplications({ ids: [applicationId] })
     if (!application) throw new Error(`Application not found: ${applicationId}`)
     if (!this.mayRestoreApplication(application)) throw new Error('You may not restore this application.')
+    const resp = new ValidatedAppRequestResponse({ success: true, messages: [] })
+    if (isBlank(reason)) resp.addMessage('Please provide a reason for restoring this application.', 'reason')
+    if (validateOnly || resp.hasErrors()) return resp
     await appRequestTransaction(application.appRequestInternalId, async db => {
       await restoreApplication(application.id, reason, db)
       await evaluateAppRequest(application.appRequestInternalId, db)
     })
     this.loaders.clear()
-    const resp = new ValidatedAppRequestResponse({ success: true, messages: [] })
     resp.appRequest = await this.svc(AppRequestService).findByInternalId(application.appRequestInternalId)
     await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, `Restored ${application.navTitle}: ${reason}.`)
     const newApplication = (await this.findByInternalId(application.internalId))!

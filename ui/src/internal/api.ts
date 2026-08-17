@@ -641,6 +641,38 @@ class API extends APIBase {
     return this.mutationForDialog(response.reverseWorkflow)
   }
 
+  async rescind (applicationId: string, reason: string, validateOnly?: boolean) {
+    const response = await this.client.mutation({
+      __name: 'Rescind',
+      rescind: {
+        __args: { applicationId, reason, validateOnly },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.rescind)
+  }
+
+  async restore (applicationId: string, reason: string, validateOnly?: boolean) {
+    const response = await this.client.mutation({
+      __name: 'Restore',
+      restore: {
+        __args: { applicationId, reason, validateOnly },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.restore)
+  }
+
   async addNote (appRequestId: string, content: string, persistent?: boolean, validateOnly?: boolean) {
     const response = await this.client.mutation({
       __name: 'AddNote',
@@ -879,6 +911,7 @@ class API extends APIBase {
           title: true,
           navTitle: true,
           programKey: true,
+          rescindedStatus: true,
           workflowStage: {
             key: true,
             blocking: true
@@ -893,7 +926,9 @@ class API extends APIBase {
           },
           actions: {
             advanceWorkflow: true,
-            reverseWorkflow: true
+            reverseWorkflow: true,
+            rescindApplication: true,
+            restoreApplication: true
           },
           requirements: {
             id: true,

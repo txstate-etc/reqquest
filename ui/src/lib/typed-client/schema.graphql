@@ -791,6 +791,17 @@ type Application {
   """The program key this application corresponds to."""
   programKey: String!
   requirements: [ApplicationRequirement!]!
+
+  """The reason the application was rescinded"""
+  rescindedReason: String
+
+  """The application rescinded status"""
+  rescindedStatus: ApplicationRescindedStatus
+
+  """
+  The reason the application was restored after previously being rescinded
+  """
+  restoredReason: String
   status: ApplicationStatus!
 
   """
@@ -814,6 +825,8 @@ type Application {
 
 type ApplicationActions {
   advanceWorkflow: Boolean!
+  rescindApplication: Boolean!
+  restoreApplication: Boolean!
   reverseWorkflow: Boolean!
   viewAsReviewer: Boolean!
 }
@@ -985,6 +998,19 @@ type ApplicationRequirement {
   The stage of the workflow for this requirement. Null if not part of a workflow stage
   """
   workflowStage: PeriodWorkflowStage
+}
+
+"\n    The rescinded status of an application.\n  "
+enum ApplicationRescindedStatus {
+  """
+  The application has been rescinded (pulled back from applicant) post approval.
+  """
+  RESCINDED
+
+  """
+  The application, which was previously rescinded, has now been restored to its state prior to rescinding.
+  """
+  RESTORED
 }
 
 "\n    The status of an application. This is usually a computed field, not stored in the database. The status\n    is computed based on the status of the appRequest and of the requirements for the program. If\n    the appRequest is CLOSED or CANCELLED, this status will remain frozen wherever it was before the\n    closure / cancellation.\n  "
@@ -1290,6 +1316,12 @@ type Mutation {
   Reopen the app request. This is only available if the app request is in a state that allows reopening.
   """
   reopenAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
+
+  """Rescinds the approved and/or accepted application."""
+  rescind(applicationId: ID!, reason: String!, validateOnly: Boolean): ValidatedAppRequestResponse!
+
+  """Restores a previously rescinded application to its previous state."""
+  restore(applicationId: ID!, reason: String!, validateOnly: Boolean): ValidatedAppRequestResponse!
 
   """
   Return the app request to the applicant phase. This is only available if the app request is in a state that allows returning.
