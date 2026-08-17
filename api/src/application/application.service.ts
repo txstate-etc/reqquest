@@ -1,5 +1,5 @@
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
-import { advanceWorkflow, appConfig, Application, ApplicationPhase, ApplicationRescindedStatus, ApplicationStatus, AppRequest, AppRequestPhase, AppRequestService, AppRequestStatus, AppRequestStatusDB, appRequestTransaction, AuthService, evaluateAppRequest, getApplications, PeriodWorkflowStage, programRegistry, ProgramService, reverseWorkflow, ValidatedAppRequestResponse, WorkflowStage } from '../internal.js'
+import { rescindApplication, restoreApplication, advanceWorkflow, appConfig, Application, ApplicationPhase, ApplicationRescindedStatus, ApplicationStatus, AppRequest, AppRequestPhase, AppRequestService, AppRequestStatus, AppRequestStatusDB, appRequestTransaction, AuthService, evaluateAppRequest, getApplications, PeriodWorkflowStage, programRegistry, ProgramService, reverseWorkflow, ValidatedAppRequestResponse, WorkflowStage } from '../internal.js'
 import { BaseService } from '@txstate-mws/graphql-server'
 import { applicationPhaseNotifications } from '../util/notifications.js'
 
@@ -124,7 +124,7 @@ export class ApplicationService extends AuthService<Application> {
     // any reviewer can advance the workflow if the requirements have been met, we already
     // control who can answer the prompts so I don't think it's necessary to lock down
     // the advancement
-    if (application.closed) return false
+    if (application.closed || application.rescindedStatus === ApplicationRescindedStatus.RESCINDED) return false
     if (application.phase !== ApplicationPhase.READY_FOR_WORKFLOW) return false
     if (application.appRequestComputedStatus === AppRequestStatus.REVIEW_COMPLETE) return false
     if (this.isOwn(application) && !this.hasControl('AppRequest', 'review_own')) return false
@@ -132,7 +132,7 @@ export class ApplicationService extends AuthService<Application> {
   }
 
   mayReverseWorkflow (application: Application) {
-    if (application.closed || application.appRequestPhase === AppRequestPhase.COMPLETE) return false
+    if (application.closed || application.rescindedStatus === ApplicationRescindedStatus.RESCINDED || application.appRequestPhase === AppRequestPhase.COMPLETE) return false
     if (![ApplicationPhase.WORKFLOW_BLOCKING, ApplicationPhase.REVIEW_COMPLETE, ApplicationPhase.READY_FOR_WORKFLOW].includes(application.phase)) return false
     // READY_FOR_WORKFLOW could mean we are at the end of a workflow or at the end of review, if end of review we can't reverse
     if (application.phase === ApplicationPhase.READY_FOR_WORKFLOW && !application.workflowStageKey) return false
@@ -163,6 +163,36 @@ export class ApplicationService extends AuthService<Application> {
     if (!this.hasControl('AppRequest', 'review', application.appRequestTags)) return false
     if (!this.hasControl('ApplicationApproved', 'restore', application.appRequestTags)) return false
     return true
+  }
+
+  async rescindApplication (applicationId: string, reason: string) {
+    const [application] = await getApplications({ ids: [applicationId] })
+    if (!application) throw new Error(`Application not found: ${applicationId}`)
+    if (!this.mayRescindApplication(application)) throw new Error('You may not rescind this application.')
+    await appRequestTransaction(application.appRequestInternalId, async db => {
+      await rescindApplication(application.id, reason, db)
+      await evaluateAppRequest(application.appRequestInternalId, db)
+    })
+    this.loaders.clear()
+    const resp = new ValidatedAppRequestResponse({ success: true, messages: [] })
+    resp.appRequest = await this.svc(AppRequestService).findByInternalId(application.appRequestInternalId)
+    await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, `Rescinded ${application.navTitle}: ${reason}.`)
+    return resp
+  }
+
+  async restoreApplication (applicationId: string, reason: string) {
+    const [application] = await getApplications({ ids: [applicationId] })
+    if (!application) throw new Error(`Application not found: ${applicationId}`)
+    if (!this.mayRestoreApplication(application)) throw new Error('You may not restore this application.')
+    await appRequestTransaction(application.appRequestInternalId, async db => {
+      await restoreApplication(application.id, reason, db)
+      await evaluateAppRequest(application.appRequestInternalId, db)
+    })
+    this.loaders.clear()
+    const resp = new ValidatedAppRequestResponse({ success: true, messages: [] })
+    resp.appRequest = await this.svc(AppRequestService).findByInternalId(application.appRequestInternalId)
+    await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, `Restored ${application.navTitle}: ${reason}.`)
+    return resp
   }
 
   async advanceWorkflow (applicationId: string) {

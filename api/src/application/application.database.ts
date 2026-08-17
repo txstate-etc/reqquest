@@ -81,6 +81,18 @@ export async function updateApplicationsComputed (applications: Application[], d
   }
 }
 
+export async function rescindApplication (applicationId: string, reason: string, tdb: Queryable = db) {
+  const [application] = await getApplications({ ids: [applicationId] }, tdb)
+  if (!application) throw new Error(`Application not found: ${applicationId}`)
+  await tdb.update('UPDATE applications SET rescindedStatus = ?, rescindedReason = ? WHERE id = ?', [ApplicationRescindedStatus.RESCINDED, reason, applicationId])
+}
+
+export async function restoreApplication (applicationId: string, reason: string, tdb: Queryable = db) {
+  const [application] = await getApplications({ ids: [applicationId] }, tdb)
+  if (!application) throw new Error(`Application not found: ${applicationId}`)
+  await tdb.update('UPDATE applications SET rescindedStatus = ?, restoredReason = ? WHERE id = ?', [ApplicationRescindedStatus.RESTORED, reason, applicationId])
+}
+
 export async function advanceWorkflow (applicationId: string, tdb: Queryable = db) {
   const [application] = await getApplications({ ids: [applicationId] }, tdb)
   if (!application) throw new Error(`Application not found: ${applicationId}`)
