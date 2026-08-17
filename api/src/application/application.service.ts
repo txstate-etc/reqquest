@@ -1,7 +1,7 @@
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { rescindApplication, restoreApplication, advanceWorkflow, appConfig, Application, ApplicationPhase, ApplicationRescindedStatus, ApplicationStatus, AppRequest, AppRequestPhase, AppRequestService, AppRequestStatus, AppRequestStatusDB, appRequestTransaction, AuthService, evaluateAppRequest, getApplications, PeriodWorkflowStage, programRegistry, ProgramService, reverseWorkflow, ValidatedAppRequestResponse, WorkflowStage } from '../internal.js'
 import { BaseService } from '@txstate-mws/graphql-server'
-import { applicationPhaseNotifications } from '../util/notifications.js'
+import { applicationPhaseNotifications, applicationRescindNotifications } from '../util/notifications.js'
 
 const appByInternalIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -177,6 +177,8 @@ export class ApplicationService extends AuthService<Application> {
     const resp = new ValidatedAppRequestResponse({ success: true, messages: [] })
     resp.appRequest = await this.svc(AppRequestService).findByInternalId(application.appRequestInternalId)
     await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, `Rescinded ${application.navTitle}: ${reason}.`)
+    const newApplication = (await this.findByInternalId(application.internalId))!
+    await Promise.all(applicationRescindNotifications.map(n => n(this.ctx, resp.appRequest!, newApplication, reason)))
     return resp
   }
 
@@ -192,6 +194,8 @@ export class ApplicationService extends AuthService<Application> {
     const resp = new ValidatedAppRequestResponse({ success: true, messages: [] })
     resp.appRequest = await this.svc(AppRequestService).findByInternalId(application.appRequestInternalId)
     await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, `Restored ${application.navTitle}: ${reason}.`)
+    const newApplication = (await this.findByInternalId(application.internalId))!
+    await Promise.all(applicationRescindNotifications.map(n => n(this.ctx, resp.appRequest!, newApplication, reason)))
     return resp
   }
 
