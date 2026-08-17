@@ -1240,6 +1240,8 @@ indexes?: (AppRequestIndexFilter[] | null),
 logins?: (Scalars['ID'][] | null),
 /** Only return appRequests that are owned by the current user. */
 own?: (Scalars['Boolean'] | null),periodIds?: (Scalars['ID'][] | null),
+/** Only return appRequests where at least one application is in one of the given rescinded states. Rescinding is per-application, so this is independent of the appRequest status. */
+rescindedStatus?: (ApplicationRescindedStatus[] | null),
 /** Only return appRequests that have had their review started. true -> return review started, false -> return not started. Note that this is NOT mutually exclusive with complete or closed, it very simply means that a non-applicant has taken an action on it. */
 reviewStarted?: (Scalars['Boolean'] | null),
 /** Search for appRequests that match this search term. This will do a prefix search across all fields that are indexed. */

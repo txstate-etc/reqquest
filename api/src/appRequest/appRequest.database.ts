@@ -96,6 +96,10 @@ function processFilters (filter?: AppRequestFilter) {
   if (filter?.status?.length) {
     where.push(`ar.computedStatus IN (${db.in(binds, filter.status)})`)
   }
+  if (filter?.rescindedStatus?.length) {
+    // EXISTS rather than a join so a multi-program request cannot duplicate rows or throw off the pagination count.
+    where.push(`EXISTS (SELECT 1 FROM applications resc WHERE resc.appRequestId = ar.id AND resc.rescindedStatus IN (${db.in(binds, filter.rescindedStatus)}))`)
+  }
   if (filter?.periodIds?.length) {
     where.push(`ar.periodId IN (${db.in(binds, filter.periodIds)})`)
   }

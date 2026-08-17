@@ -534,6 +534,11 @@ input AppRequestFilter {
   periodIds: [ID!]
 
   """
+  Only return appRequests where at least one application is in one of the given rescinded states. Rescinding is per-application, so this is independent of the appRequest status.
+  """
+  rescindedStatus: [ApplicationRescindedStatus!]
+
+  """
   Only return appRequests that have had their review started. true -> return review started, false -> return not started. Note that this is NOT mutually exclusive with complete or closed, it very simply means that a non-applicant has taken an action on it.
   """
   reviewStarted: Boolean

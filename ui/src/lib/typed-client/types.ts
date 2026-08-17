@@ -645,6 +645,9 @@ export default {
             "periodIds": [
                 50
             ],
+            "rescindedStatus": [
+                40
+            ],
             "reviewStarted": [
                 42
             ],
