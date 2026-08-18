@@ -183,8 +183,8 @@
   // open rescind and restore panelformdialog
   let reasonAction: 'rescind' | 'restore' | undefined = undefined
   $: reasonActionInfo = reasonAction === 'restore'
-    ? { title: `Restore ${application.navTitle} benefit`, instructions: 'You will need to provide a reason why this benefit should be restored. The program will be restored to the state it was in before it was rescinded.', submitText: 'Restore benefit', successMessage: 'Benefit restored.' }
-    : { title: `Rescind ${application.navTitle} benefit`, instructions: 'You will need to provide a reason why this benefit should be rescinded. The applicant will no longer be able to use these benefits after rescinding.', submitText: 'Rescind benefit', successMessage: 'Benefit rescinded.' }
+    ? { title: `Restore ${application.navTitle} benefit`, instructions: 'You will need to provide a reason why this benefit should be restored. The benefit will be restored to the state it was in before it was rescinded.', submitText: 'Restore benefit', successMessage: 'Benefit restored.' }
+    : { title: `Rescind ${application.navTitle} benefit`, instructions: 'You will need to provide a reason why this benefit should be rescinded. The applicant will no longer be able to use this benefit after rescinding.', submitText: 'Rescind benefit', successMessage: 'Benefit rescinded.' }
 
   async function onAppAction () {
     if (appAction === 'advanceWorkflow') {
@@ -334,7 +334,7 @@
     centered
   >
     <div>{reasonActionInfo.instructions}</div>
-    <FieldTextArea path="reason" labelText={`Reason to ${reasonAction} these benefits.`} required notNull rows={4} />
+    <FieldTextArea path="reason" labelText={`Reason to ${reasonAction} this benefit.`} required notNull rows={4} />
     <div class="bx--form__helper-text">This reason will be recorded in the request activity and included in the email sent to the applicant.</div>
   </PanelFormDialog>
 {/if}
