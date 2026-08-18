@@ -1,6 +1,7 @@
 import { uiRegistry } from '../local'
-import { api, reviewerRequirementTypes, type PromptDataLegion, type ReviewData } from '$internal'
-import type { AppRequest, PromptDefinition, PromptSection, AnsweredPrompt } from '$lib'
+import { reviewerRequirementTypes, type PromptDataLegion, type ReviewData } from '$internal'
+
+export type CoalescedAppRequest = ReturnType<typeof coalesceAppRequestPrompts>
 
 export const getInlineReviewerEditPrompts = (appRequest: ReviewData) => {
   const prompts = appRequest?.applications.flatMap(application => application.requirements.filter(
@@ -16,16 +17,19 @@ export const isInlineReviewerEditPrompt = (def, req, prompt): boolean => {
   return def != null && isReviewerQuestion && prompt.actions.update && def.formMode !== 'full' && !(prompt.invalidated && prompt.answered)
 }
 
-export const coalesceAppRequestPrompts = (appRequest: ReviewData, prompts?: PromptDataLegion) => {
-  appRequest?.applications.forEach(application => {
-    application.requirements.forEach(requirement => {
-      requirement.prompts.forEach(reqPrompt => {
+export const coalesceAppRequestPrompts = (appRequest: NonNullable<ReviewData>, prompts?: PromptDataLegion) => {
+  const coalescedApplications = appRequest.applications.map(application => ({
+    ...application,
+    requirements: application.requirements.map(requirement => ({
+      ...requirement,
+      prompts: requirement.prompts.map(reqPrompt => {
         const updatedPrompt = prompts?.find(prompt => prompt.id === reqPrompt.id)
-        if (updatedPrompt) {
-          Object.assign(reqPrompt, updatedPrompt)
-        }
+        return { ...reqPrompt, ...updatedPrompt}
       })
-    })
-  })
-  return appRequest
+    }))
+  }))
+  return {
+    ...appRequest,
+    applications: coalescedApplications ?? []
+  }
 } 

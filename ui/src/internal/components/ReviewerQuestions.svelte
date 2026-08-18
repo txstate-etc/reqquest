@@ -4,8 +4,8 @@
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import { isInlineReviewerEditPrompt, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api } from '$internal'
-  import { PromptIndicators } from '$lib'
-  import { FormInlineNotification, GeneralTextSkeleton, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
+  import { enumRequirementStatus, enumRequirementType, PromptIndicators } from '$lib'
+  import { FormInlineNotification, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { Tooltip } from 'carbon-components-svelte'
   import { uiRegistry } from '../../local';
   import { Button } from 'carbon-components-svelte'
@@ -14,12 +14,15 @@
   import Review from "carbon-icons-svelte/lib/Review.svelte";
   import DelayedSkeleton from '$lib/components/DelayedSkeleton.svelte';
   import WarningIconYellow from './WarningIconYellow.svelte';
+  import { toasts } from '@txstate-mws/svelte-components';
 
-  export let sections: any[]
+  type ApplicationRequirement = (typeof appRequest)['applications'][number]['requirements'][number]
+
+  export let sections: { title: string, requirements: ApplicationRequirement[] }[]
   export let promptIndicator: Record<string, any>
   export let loading = false
   export let appRequest: PageData['appRequest']
-  export let application: PageData['appRequest']
+  export let application: PageData['appRequest']['applications'][0]
 
   type PromptExtraData = Awaited<ReturnType<typeof api.getPromptData>>
   type Prompt = PageData['appRequest']['applications'][0]['requirements'][0]['prompts'][0]
@@ -80,7 +83,47 @@
     loading = false
   }
 
+  async function advanceWorkflow () {
+    loading = true
+    const response = await api.advanceWorkflow(application.id)     
+    await invalidateAll()    
+    loading = false   
+    if (!response.success) {
+      toasts.add({
+        type: 'error',
+        title: 'Could not advance application',
+        message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
+      })
+    } else {
+      toasts.add({
+        type: 'success',
+        message: 'Application advanced.'
+      })
+    }    
+  }
 
+  async function reverseWorkflow () {
+    loading = true
+    const response = await api.reverseWorkflow(application.id)     
+    await invalidateAll()    
+    loading = false   
+    if (!response.success) {
+      toasts.add({
+        type: 'error',
+        title: 'Could not reverse application workflow',
+        message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
+      })
+    } else {
+      toasts.add({
+        type: 'success',
+        message: 'Application workflow reversed.'
+      })
+    }
+  }
+
+
+console.log(application)
+console.log(sections)
 </script>
 {#each sections as section (section.title)}
   <Panel title={section.title} expandable expanded>
@@ -145,6 +188,19 @@
       No questions need to be answered in this section. You may advance to the next step.
     {:else}
       No questions in this section.
+    {/if}
+    {#if !section.requirements.some(r => r.type === enumRequirementType.PREQUAL)}
+      <div class="flex justify-end mt-8">
+        {#if application.phase === 'REVIEW_COMPLETE'}
+
+
+        {:else if application.actions?.advanceWorkflow && section.requirements[0]?.workflowStage?.key === application.workflowStage?.key}
+          <Button size="small" on:click={advanceWorkflow}>Mark answers complete</Button>
+        <!-- {:else if application.actions?.reverseWorkflow && section.requirements.every(r => r.status === enumRequirementStatus.MET || r.status === enumRequirementStatus.NOT_APPLICABLE) && section.requirements[0]?.workflowStage?.key === application.previousWorkflowStage?.key} -->
+        {:else if application.actions?.reverseWorkflow && section.requirements.every(r => r.status === enumRequirementStatus.MET || r.status === enumRequirementStatus.NOT_APPLICABLE)}
+          <Button kind='secondary' size="small" on:click={reverseWorkflow}>Edit answers</Button>
+        {/if}
+      </div>
     {/if}
   </Panel>
 {/each}

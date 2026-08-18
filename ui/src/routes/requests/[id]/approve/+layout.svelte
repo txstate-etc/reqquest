@@ -1,16 +1,10 @@
 <script lang="ts">
   import { TabLinks } from '@txstate-mws/carbon-svelte'
-  import { toasts } from '@txstate-mws/svelte-components'
-  import { Button, Select, SelectItem } from 'carbon-components-svelte'
-  import { invalidateAll } from '$app/navigation'
   import { resolve } from '$app/paths'
   import type { LayoutData } from './$types.js'
-  import { api, IntroPanel, applicantStatuses, REVIEWER_STATUS_CONFIG, longNumericTime } from '$internal'
+  import { IntroPanel, applicantStatuses, REVIEWER_STATUS_CONFIG, longNumericTime } from '$internal'
   import { uiRegistry } from '../../../../local/index.js'
-  import { enumApplicationStatus } from '$lib'
-  import { enumAppRequestPhase, phaseChangeMutations, type PhaseChangeMutations, enumRequirementType, enumRequirementStatus } from '$lib'
-  import { Loading } from "carbon-components-svelte"
-  import { enumApplicationPhase } from '$lib'
+  import { enumApplicationPhase, enumAppRequestPhase } from '$lib'
   import { excludeAppsByIneligibiltyPhase } from '$internal'
 
   export let data: LayoutData
@@ -25,90 +19,8 @@
       href: resolve(`/requests/${requestId}/approve/activity`)
     }
   ]
-  $: loading = false
 
-  const translateMutations = {
-    submitAppRequest: 'submitted request for review.',
-    returnToApplicant: 'returned request to applicant',
-    completeReview: 'completed request review',
-    returnToReview: 'returned request to review',
-    acceptOffer: 'accepted offer',
-    returnToOffer: 'returned request to applicant to accept offer',
-    completeRequest: 'marked request as complete',
-    returnToNonBlocking: 'returned request to non-blocking workflow tasks'
-  }
-
-  let appRequestAction: '' | PhaseChangeMutations | 'reopen' | 'close' = ''
-  async function onAppRequestAction () {
-    loading = true
-    if ((phaseChangeMutations as readonly string[]).includes(appRequestAction)) {
-      await appRequestPhaseChange(appRequestAction as PhaseChangeMutations)
-    } else if (appRequestAction === 'close') {
-      await closeRequest()
-    } else if (appRequestAction === 'reopen') {
-      await reopenRequest()
-    }
-    appRequestAction = ''
-    loading = false
-  }
-
-  async function appRequestPhaseChange (action: PhaseChangeMutations) {
-    const response = await api.appRequestPhaseChange(requestId, action)
-    await invalidateAll()
-    loading = false
-    if (!response.success) {
-      toasts.add({
-        type: 'error',
-        title: 'Action Failed',
-        message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
-      })
-    } else {
-      toasts.add({
-        type: 'success',
-        message: `Successfully ${translateMutations[action]}.`
-      })
-    }
-    await invalidateAll()
-  }
-
-  async function closeRequest () {
-    const response = await api.closeAppRequest(requestId)
-    await invalidateAll()
-    if (!response.success) {
-      toasts.add({
-        type: 'error',
-        title: `Could not close ${uiRegistry.getWord('appRequest').toLowerCase()}`,
-        message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
-      })
-    } else {
-      toasts.add({
-        type: 'success',
-        message: `${uiRegistry.getWord('appRequest')} closed.`
-      })
-    }
-    
-  }
-
-  async function reopenRequest () {
-    const response = await api.reopenAppRequest(requestId)
-    await invalidateAll()
-    if (!response.success) {
-      toasts.add({
-        type: 'error',
-        title: `Could not reopen ${uiRegistry.getWord('appRequest').toLowerCase()}`,
-        message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
-      })
-    } else {
-      toasts.add({
-        type: 'success',
-        message: `${uiRegistry.getWord('appRequest')} reopened.`
-      })
-    }
-  }
 </script>
-{#if loading}  
-    <Loading />    
-{/if}
 
 <IntroPanel
   title={basicRequestData.period.name + (basicRequestData.period.code ? ` (${basicRequestData.period.code})` : '')}
@@ -156,42 +68,6 @@
         </div>
       </dl>
     </section>
-    {#if basicRequestData.actions.completeReview || basicRequestData.actions.completeRequest || basicRequestData.actions.reopen || basicRequestData.actions.close || basicRequestData.actions.returnToApplicant || basicRequestData.actions.returnToOffer || basicRequestData.actions.returnToReview || basicRequestData.actions.returnToNonBlocking || basicRequestData.actions.submit || basicRequestData.actions.acceptOffer}
-      <Select bind:selected={appRequestAction} labelText={`${uiRegistry.getWord('appRequest')} action`} size="sm">
-        <SelectItem value="" text="Choose one" />
-        {#if basicRequestData.actions.completeReview}
-          <SelectItem value="completeReview" text="Complete Review" />
-        {/if}
-        {#if basicRequestData.actions.completeRequest}
-          <SelectItem value="completeRequest" text="Complete Request" />
-        {/if}
-        {#if basicRequestData.actions.reopen}
-          <SelectItem value="reopen" text="Reopen Request" />
-        {/if}
-        {#if basicRequestData.actions.close}
-          <SelectItem value="close" text="Close Request" />
-        {/if}
-        {#if basicRequestData.actions.returnToApplicant}
-          <SelectItem value="returnToApplicant" text="Return To Applicant" />
-        {/if}
-        {#if basicRequestData.actions.returnToOffer}
-          <SelectItem value="returnToOffer" text="Return To Offer" />
-        {/if}
-        {#if basicRequestData.actions.returnToReview}
-          <SelectItem value="returnToReview" text="Return To Review" />
-        {/if}
-        {#if basicRequestData.actions.returnToNonBlocking}
-          <SelectItem value="returnToNonBlocking" text="Return To Final Workflow Tasks" />
-        {/if}
-        {#if basicRequestData.actions.submit}
-          <SelectItem value="submitAppRequest" text="Submit On Behalf Of Applicant" />
-        {/if}
-        {#if basicRequestData.actions.acceptOffer}
-          <SelectItem value="acceptOffer" text="Accept Offer On Behalf Of Applicant" />
-        {/if}
-      </Select>
-      <Button on:click={onAppRequestAction} size="small" class="ml-[4px]">Apply</Button>
-    {/if}
   </div>
 </IntroPanel>
 <TabLinks {tabs} />

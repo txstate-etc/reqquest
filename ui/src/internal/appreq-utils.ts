@@ -1,6 +1,6 @@
 import { enumApplicationPhase } from "../lib"
-
-export const excludeAppsByIneligibiltyPhase = (appRequests: any[], phase: typeof enumApplicationPhase[]) => {
+type PhaseKey = keyof typeof enumApplicationPhase
+export const excludeAppsByIneligibiltyPhase = (appRequests: any[], phase: PhaseKey[]) => {
   const appRequestsSansIneligibleApps: any[] = []
   for (const ar of appRequests){
     appRequestsSansIneligibleApps.push({

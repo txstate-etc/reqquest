@@ -1,7 +1,7 @@
 <script lang="ts">
   import { BadgeNumber, FieldTextArea, PanelDialog, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
-  import ReviewerQuestions from '$internal/components/ReviewerQuestions.svelte'
+  import { ReviewerQuestions, AppRequestActions } from '$internal/components'
   import { Button, InlineNotification, Select, SelectItem } from 'carbon-components-svelte'
   import DocumentExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
@@ -14,7 +14,6 @@
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../../local'
   import ApproveLayout from '../ApproveLayout.svelte'
-  import { Loading } from "carbon-components-svelte";
 
 
   /**
@@ -23,9 +22,9 @@
    * any available prompts to fill in more data.
    */
   export let data: PageData
-  $: ({ basicRequestData, appRequest, programKey } = data)
+  $: ({ basicRequestData, appRequest, programKey, requestId } = data)
   $: application = appRequest.applications.find(a => a.programKey === programKey)!
-  $: notes = appRequest.notes
+  $: notes = appRequest?.notes ?? []
   $: latestNote = notes[0]
 
   let showNotesDialog = false
@@ -179,67 +178,13 @@
     }
   }
 
-  let appAction: '' | 'advanceWorkflow' | 'reverseWorkflow' = ''
-  async function onAppAction () {
-    if (appAction === 'advanceWorkflow') {
-      await advanceWorkflow()
-    } else if (appAction === 'reverseWorkflow') {
-      await reverseWorkflow()
-    }
-  }
 
-  async function advanceWorkflow () {
-    loading = true
-    const response = await api.advanceWorkflow(application.id)     
-    await invalidateAll()    
-    loading = false   
-    if (!response.success) {
-      toasts.add({
-        type: 'error',
-        title: 'Could not advance application',
-        message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
-      })
-    } else {
-      toasts.add({
-        type: 'success',
-        message: 'Application advanced.'
-      })
-    }    
-  }
-
-  async function reverseWorkflow () {
-    loading = true
-    const response = await api.reverseWorkflow(application.id)     
-    await invalidateAll()    
-    loading = false   
-    if (!response.success) {
-      toasts.add({
-        type: 'error',
-        title: 'Could not reverse application workflow',
-        message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
-      })
-    } else {
-      toasts.add({
-        type: 'success',
-        message: 'Application workflow reversed.'
-      })
-    }
-  }
 </script>
-{#if showLoading}  
-    <Loading />    
-{/if}
 
 <ApproveLayout {basicRequestData} {appRequest}>
   <svelte:fragment slot="sidebar">
-    <InfoCard title={application.title} tags={[{ label: applicationStatusInfo.label, type: applicationStatusInfo.color }]} tagsInBody>
-      <!--
-      <dl class="card">
-        <dt>Status</dt>
-        <dd><TagSet tags={[{ label: applicationStatusInfo.label, type: applicationStatusInfo.color }]} /></dd>
-      </dl>
-      -->
-    </InfoCard>
+    <InfoCard title={application.title} tags={[{ label: applicationStatusInfo.label, type: applicationStatusInfo.color }]} tagsInBody />
+    <AppRequestActions {application} {basicRequestData} {requestId} />
     <InfoCard
       title="Application Notes"
       actions={[
@@ -251,11 +196,11 @@
       <div class="active-note">
         {#if latestNote}
           <CommentCard
-          authorName={latestNote.author.fullname}
-          authorLogin={latestNote.author.login}
-          content={latestNote.content}
-          createdAt={latestNote.createdAt}
-          noborder
+            authorName={latestNote.author.fullname}
+            authorLogin={latestNote.author.login}
+            content={latestNote.content}
+            createdAt={latestNote.createdAt}
+            noborder
           />
         {:else}
           <InlineNotification kind="info" lowContrast hideCloseButton title="No application notes." subtitle="Add a note to see it here."></InlineNotification>
@@ -264,21 +209,10 @@
     </InfoCard>
   </svelte:fragment>
   <ReviewerQuestions {sections} {appRequest} {application} {promptIndicator} />
-  <div class="app-actions [ flex items-end ]">
-    {#if application.actions.advanceWorkflow || application.actions.reverseWorkflow}
-      <Select bind:selected={appAction} labelText="Next step" size="sm">
-        <SelectItem value="" text="Choose one" />
-        {#if application.actions.advanceWorkflow}
-          <SelectItem value="advanceWorkflow" text={'Send to ' + (application.nextWorkflowStage?.title ?? (!application.workflowStage?.blocking ? 'Complete' : 'Review Complete'))} />
-        {/if}
-        {#if application.actions.reverseWorkflow}
-          <SelectItem value="reverseWorkflow" text={'Return to ' + (application.previousWorkflowStage?.title ?? 'Review')} />
-        {/if}
-      </Select>
-      <Button on:click={onAppAction} size="small" class="ml-[4px]">Confirm</Button>
-    {/if}
-    <Button href={`/requests/${appRequest.id}/approve/export`} kind="secondary" size="small" icon={DocumentExport} class="ml-[32px]">Export</Button>
-  </div>
+  <!-- <div class="app-actions [ flex items-end ]"> -->
+    <!-- <Button size="small" class="ml-[4px]" disabled={application.actions.advanceWorkflow}>Mark answers complete</Button> -->
+    <!-- <Button href={`/requests/${appRequest.id}/approve/export`} kind="secondary" size="small" icon={DocumentExport} class="ml-[32px]">Export</Button> -->
+  <!-- </div> -->
 </ApproveLayout>
 
 
