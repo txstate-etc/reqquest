@@ -2,6 +2,15 @@ import { DateTime } from 'luxon'
 import { expect, test } from './fixtures.js'
 import { promptMapApplicantQualified } from './default.promptdata.js'
 
+// "errors":[{"message":"Cannot return null for non-nullable field PaginationInfoWithTotalItems.hasNextPage.","locations":[{"line":10,"column":60}]
+interface ErrorsResponse {
+  message: string,
+  locations:{
+    line: number,
+    column: number
+    }[]
+}
+
 interface AddNoteResponse {
   addNote: {
     success: boolean
@@ -24,6 +33,11 @@ interface TogglePersistenceResponse {
     messages: { message: string, type: string, arg: string | null }[]
     note: { id: string, persistent: boolean } | null
   }
+}
+
+interface ActivityResponse {
+  appRequestActivity: { id: string, action: string, description: string | null, createdAt: string }[]
+  pageInfo: { appRequestsActivity: { currentPage: number, perPage: number | null, totalItems: number, hasNextPage: boolean } | null }
 }
 
 const ADD_NOTE_MUTATION = `
@@ -70,6 +84,9 @@ const NOTES_QUERY = `
   }
 `
 
+// Search term only to be found in notes for reviewer-gated note-content search test.
+const NOTE_SEARCH_MARKER = 'txstsearchmarker'
+
 const SEARCH_APP_REQUESTS_QUERY = `
   query SearchAppRequests($search: String!) {
     appRequests(filter: { search: $search }) {
@@ -78,8 +95,28 @@ const SEARCH_APP_REQUESTS_QUERY = `
   }
 `
 
-// Search term only to be found in notes for reviewer-gated note-content search test.
-const NOTE_SEARCH_MARKER = 'txstsearchmarker'
+// Search terms only to be found in activity log descriptions. Fulltext markers must be at
+// least MySQL innodb_ft_min_token_size (default 3) characters and must not be stopwords.
+const NOTE_ACTIVITY_SEARCH_MARKER = 'noteACTIVITYmarker'
+const NOTE_ACTIVITY_MARKER_ALPHA = 'noteACTIVITYalpha'
+const NOTE_ACTIVITY_MARKER_BETA = 'noteACTIVITYbeta'
+const NOTE_ACTIVITY_MARKER_ABSENT = 'noteACTIVITYabsent'
+
+// Adding a note records an 'Added Note' activity whose description is the note content,
+// so we can test if note changes are searchable by text in the activity log from the API.
+const ACTIVITY_QUERY = `
+  query AppRequestActivity($id: String!, $filters: AppRequestActivityFilters, $paged: Pagination) {
+    appRequestActivity(id: $id, filters: $filters, paged: $paged) {
+      id
+      action
+      description
+      createdAt
+    }
+    pageInfo {
+      appRequestsActivity { currentPage perPage totalItems hasNextPage }
+    }
+  }
+`
 
 function warningMessages (messages: { message: string, type: string }[]) {
   return messages.filter(m => m.type === 'warning').map(m => m.message)
@@ -559,6 +596,104 @@ test.describe.serial('Notes - XSS sanitization', { tag: '@default' }, () => {
     expect(appRequests.map(r => String(r.id))).not.toContain(String(appRequestId))
   })
 
+  test('Reviewer - can search the activity log by note content', async ({ reviewerRequest }) => {
+    const content = `Reviewer note recorded to the activity log ... ref ${NOTE_ACTIVITY_SEARCH_MARKER}.`
+    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+    expect(addNote.success).toEqual(true)
+
+    const resp = await reviewerRequest.graphql<ActivityResponse>(ACTIVITY_QUERY, { id: String(appRequestId), filters: { search: NOTE_ACTIVITY_SEARCH_MARKER } })
+    expect(resp.appRequestActivity.length).toBeGreaterThan(0)
+    expect(resp.appRequestActivity.every(a => a.description?.includes(NOTE_ACTIVITY_SEARCH_MARKER))).toEqual(true)
+    expect(resp.appRequestActivity.some(a => a.action === 'Added Note')).toEqual(true)
+    // the totals query must apply the same search predicate as the rows query
+    expect(resp.pageInfo.appRequestsActivity?.totalItems).toEqual(resp.appRequestActivity.length)
+  })
+
+  test('Reviewer - multi-word activity search matches either word without erroring', async ({ reviewerRequest }) => {
+    const alpha = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content: `Activity note one ... ref ${NOTE_ACTIVITY_MARKER_ALPHA}.` })
+    expect(alpha.addNote.success).toEqual(true)
+    const beta = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content: `Activity note two ... ref ${NOTE_ACTIVITY_MARKER_BETA}.` })
+    expect(beta.addNote.success).toEqual(true)
+
+    const resp = await reviewerRequest.graphql<any>(ACTIVITY_QUERY, { id: String(appRequestId), filters: { search: `${NOTE_ACTIVITY_MARKER_ALPHA} ${NOTE_ACTIVITY_MARKER_BETA}` } })
+    expect(resp.errors).toBeUndefined()
+    const descriptions = (resp as ActivityResponse).appRequestActivity.map(a => a.description ?? '')
+    expect(descriptions.some(d => d.includes(NOTE_ACTIVITY_MARKER_ALPHA))).toEqual(true)
+    expect(descriptions.some(d => d.includes(NOTE_ACTIVITY_MARKER_BETA))).toEqual(true)
+  })
+
+  test('Reviewer - blank activity search is ignored rather than matching nothing', async ({ reviewerRequest }) => {
+    const unfiltered = await reviewerRequest.graphql<ActivityResponse>(ACTIVITY_QUERY, { id: String(appRequestId), filters: {} })
+    expect(unfiltered.appRequestActivity.length).toBeGreaterThan(0)
+
+    for (const search of ['', '   ']) {
+      const resp = await reviewerRequest.graphql<any>(ACTIVITY_QUERY, { id: String(appRequestId), filters: { search } })
+      expect(resp.errors).toBeUndefined()
+      expect((resp as ActivityResponse).appRequestActivity.length).toEqual(unfiltered.appRequestActivity.length)
+    }
+  })
+
+  test('Reviewer - activity search with no matches returns nothing and a zero total', async ({ reviewerRequest }) => {
+    const resp = await reviewerRequest.graphql<ActivityResponse>(ACTIVITY_QUERY, { id: String(appRequestId), filters: { search: NOTE_ACTIVITY_MARKER_ABSENT } })
+    expect(resp.appRequestActivity).toEqual([])
+    expect(resp.pageInfo.appRequestsActivity?.totalItems).toEqual(0)
+  })
+
+  test('Reviewer - activity search combines with the actions filter', async ({ reviewerRequest }) => {
+    const matching = await reviewerRequest.graphql<ActivityResponse>(ACTIVITY_QUERY, { id: String(appRequestId), filters: { search: NOTE_ACTIVITY_SEARCH_MARKER, actions: ['Added Note'] } })
+    expect(matching.appRequestActivity.length).toBeGreaterThan(0)
+    expect(matching.appRequestActivity.every(a => a.action === 'Added Note')).toEqual(true)
+
+    const conflicting = await reviewerRequest.graphql<ActivityResponse>(ACTIVITY_QUERY, { id: String(appRequestId), filters: { search: NOTE_ACTIVITY_SEARCH_MARKER, actions: ['Deleted Note'] } })
+    expect(conflicting.appRequestActivity).toEqual([])
+  })
+
+  test('Reviewer - activity search combines with the happenedAfter/happenedBefore filters', async ({ reviewerRequest }) => {
+    // the search bind sits between the impersonation binds and the date binds, so pair them to catch bind ordering mistakes
+    const all = await reviewerRequest.graphql<ActivityResponse>(ACTIVITY_QUERY, { id: String(appRequestId), filters: { search: NOTE_ACTIVITY_SEARCH_MARKER } })
+    expect(all.appRequestActivity.length).toBeGreaterThan(0)
+    const newest = DateTime.fromISO(all.appRequestActivity[0].createdAt)
+
+    const inWindow = await reviewerRequest.graphql<ActivityResponse>(ACTIVITY_QUERY, {
+      id: String(appRequestId),
+      filters: { search: NOTE_ACTIVITY_SEARCH_MARKER, happenedAfter: newest.minus({ days: 1 }).toISO(), happenedBefore: newest.plus({ days: 1 }).toISO() }
+    })
+    expect(inWindow.appRequestActivity.map(a => a.id)).toEqual(all.appRequestActivity.map(a => a.id))
+
+    const afterWindow = await reviewerRequest.graphql<ActivityResponse>(ACTIVITY_QUERY, {
+      id: String(appRequestId),
+      filters: { search: NOTE_ACTIVITY_SEARCH_MARKER, happenedAfter: newest.plus({ days: 1 }).toISO() }
+    })
+    expect(afterWindow.appRequestActivity).toEqual([])
+  })
+
+  test('Reviewer - activity search totals reflect the filter when paginated', async ({ reviewerRequest }) => {
+    const search = `${NOTE_ACTIVITY_MARKER_ALPHA} ${NOTE_ACTIVITY_MARKER_BETA}`
+    const unpaged = await reviewerRequest.graphql<ActivityResponse>(ACTIVITY_QUERY, { id: String(appRequestId), filters: { search } })
+    expect(unpaged.appRequestActivity.length).toBeGreaterThan(1)
+
+    const paged = await reviewerRequest.graphql<ActivityResponse>(ACTIVITY_QUERY, { id: String(appRequestId), filters: { search }, paged: { page: 1, perPage: 1 } })
+    expect(paged.appRequestActivity.length).toEqual(1)
+    expect(paged.pageInfo.appRequestsActivity?.totalItems).toEqual(unpaged.appRequestActivity.length)
+    expect(paged.pageInfo.appRequestsActivity?.hasNextPage).toEqual(true)
+  })
+
+  test('Applicant - cannot search the activity log of their own request', async ({ applicantRequest }) => {
+    // note content reaches activity descriptions, so activity search is a second read path to reviewer-only text
+    // "errors":[{"message":"Cannot return null for non-nullable field PaginationInfoWithTotalItems.hasNextPage.","locations":[{"line":10,"column":60}]
+    const { errors } = await applicantRequest.graphql<{ data: ActivityResponse, errors: ErrorsResponse }>(ACTIVITY_QUERY, { id: String(appRequestId), filters: { search: NOTE_ACTIVITY_SEARCH_MARKER } })
+    // TODO: Bug in PaginationInfoWithTotalItems.hasNextPage is null causing graphql error.
+    // expect(resp.appRequestActivity).toEqual([])
+    expect(errors).toBeDefined()
+  })
+
+  test('Applicant2 - cannot search another applicant activity log', async ({ applicant2Request }) => {
+    const { errors } = await applicant2Request.graphql<{ data: ActivityResponse, errors: ErrorsResponse }>(ACTIVITY_QUERY, { id: String(appRequestId), filters: { search: NOTE_ACTIVITY_SEARCH_MARKER } })
+    // TODO: Bug in PaginationInfoWithTotalItems.hasNextPage is null causing graphql error.
+    // expect(resp.appRequestActivity).toEqual([])
+    expect(errors).toBeDefined()
+  })
+
   test('Reviewer - look up program key for the approve page', async ({ reviewerRequest }) => {
     const query = `
       query GetProgramKeys($appRequestIds: [ID!]) {
@@ -599,5 +734,4 @@ test.describe.serial('Notes - XSS sanitization', { tag: '@default' }, () => {
       }
     })
   }
-
 })

@@ -4,13 +4,13 @@
   import type { LayoutData } from './$types.js'
   import { IntroPanel, applicantStatuses, REVIEWER_STATUS_CONFIG, longNumericTime } from '$internal'
   import { uiRegistry } from '../../../../local/index.js'
-  import { enumApplicationPhase, enumAppRequestPhase } from '$lib'
-  import { excludeAppsByIneligibiltyPhase } from '$internal'
+  import { enumAppRequestPhase } from '$lib'
+  import { excludePreSubmissionIneligibleApps } from '$internal'
 
   export let data: LayoutData
   $: ({ basicRequestData, requestId } = data)
   $: tabs = [
-    ...(excludeAppsByIneligibiltyPhase([basicRequestData], [enumApplicationPhase.PREQUAL, enumApplicationPhase.QUALIFICATION])[0].applications.map(a => ({
+    ...(excludePreSubmissionIneligibleApps([basicRequestData])[0].applications.map(a => ({
       label: a.navTitle,
       href: resolve(`/requests/${requestId}/approve/${a.programKey}`)
     }))),

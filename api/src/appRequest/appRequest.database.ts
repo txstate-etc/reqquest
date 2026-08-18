@@ -595,10 +595,12 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
                 : reviewRequirements
 
       // requirements from non-blocking workflow stages whose reached emergence phase are
-      // surfaced alongside the phase's normal requirements in the earlier phases.
-      // in non-blocking phase they are already all in sortedRequirements
+      // surfaced alongside the phase's normal requirements in the earlier phases. this includes the
+      // applicant phase, since a stage may emerge as early as STARTED, and must match PromptService.mayUpdate,
+      // which grants edit access from the emergence phase onward.
+      // in non-blocking phase they are already all in sortedRequirements, and complete deliberately shows nothing.
       // They are appended after sortedRequirements and excluded from eligibility decisions.
-      const emergedExtraRequirements = phase === 'acceptance' || phase === 'blocking' || phase === 'review'
+      const emergedExtraRequirements = phase !== 'nonblocking' && phase !== 'complete'
         ? emergedNonblockingWorkflowRequirements.filter(req => !sortedRequirements.includes(req))
         : []
       const displayedRequirements = [...sortedRequirements, ...emergedExtraRequirements]
@@ -620,8 +622,11 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
         let hasUnanswered = false
         for (const prompt of noDisplayPrompts) {
           prompt.visibility = PromptVisibility.UNREACHABLE
-          if (!prompt.answered) hasUnanswered = true
-          else requiredData[prompt.key] = data[prompt.key]
+          // an ungated dependency means "this data may never arrive" - typically a reviewer
+          // override - so we resolve without it rather than hiding this requirement's own
+          // prompts until it shows up. resolve() will run again if it does arrive.
+          if (prompt.answered) requiredData[prompt.key] = data[prompt.key]
+          else if (!requirement.definition.ungatedPromptKeySet.has(prompt.key)) hasUnanswered = true
         }
         let resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
 
@@ -769,7 +774,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       if ([ApplicationPhase.REVIEW_COMPLETE].includes(application.phase)) {
         requirementsToLock.push(...reviewRequirements)
       } else if ([ApplicationPhase.READY_TO_COMPLETE, ApplicationPhase.COMPLETE].includes(application.phase)) {
-        requirementsToLock.push(...requirements)
+        requirementsToLock.push(...acceptRequirements)
       } else if (phase === 'blocking') {
         requirementsToLock.push(...reviewRequirements, ...blockingWorkflowRequirements.slice(0, findIndex(blockingWorkflowRequirements, r => r.workflowStageKey === application.workflowStageKey) ?? blockingWorkflowRequirements.length))
       } else if (phase === 'nonblocking') {
@@ -881,6 +886,10 @@ export async function getAppRequestActivity (filter: AppRequestActivityFilters, 
     } else {
       where.push('impersonatedBy IS NULL')
     }
+  }
+  if (isNotBlank(filter?.search)) {
+    where.push('MATCH(ara.description) AGAINST (? IN NATURAL LANGUAGE MODE)')
+    binds.push(filter.search)
   }
   if (filter.happenedAfter) {
     where.push('createdAt >= ?')

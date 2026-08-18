@@ -6,8 +6,7 @@ import { extractMergedFilters } from '@txstate-mws/carbon-svelte'
 import { sortby, unique } from 'txstate-utils'
 import { uiRegistry } from '../../../local/index.js'
 import type { PageLoad } from './$types'
-import { enumApplicationPhase } from '$lib'
-import { excludeAppsByIneligibiltyPhase } from '$internal'
+import { excludePreSubmissionIneligibleApps } from '$internal'
 
 function statusLabelsToEnums (labels: string[]): AppRequestStatus[] {
   const keys = Object.keys(APP_REQUEST_STATUS_CONFIG) as AppRequestStatus[]
@@ -43,7 +42,7 @@ export const load: PageLoad = async ({ url, depends, parent }) => {
     api.getOpenPeriods()
   ])
 
-  const allRequestsSansIneligibleApps = excludeAppsByIneligibiltyPhase(allRequests, [enumApplicationPhase.PREQUAL, enumApplicationPhase.QUALIFICATION])
+  const allRequestsSansIneligibleApps = excludePreSubmissionIneligibleApps(allRequests)
   if (currentTab === 'past_applications') {
     const allPastRequests = allRequestsSansIneligibleApps.filter(isPastApp)
 

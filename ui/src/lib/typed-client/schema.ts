@@ -304,14 +304,18 @@ export type AppRequestPhase = 'ACCEPTANCE' | 'COMPLETE' | 'STARTED' | 'SUBMITTED
  *     the database and the status of each application.
  *   
  */
-export type AppRequestStatus = 'ACCEPTANCE' | 'ACCEPTED' | 'APPROVAL' | 'APPROVED' | 'CANCELLED' | 'DISQUALIFIED' | 'NOT_ACCEPTED' | 'NOT_APPROVED' | 'PREAPPROVAL' | 'READY_TO_ACCEPT' | 'READY_TO_SUBMIT' | 'REVIEW_IN_PROGRESS' | 'REVIEW_COMPLETE' | 'STARTED' | 'WITHDRAWN'
+export type AppRequestStatus = 'ACCEPTANCE' | 'ACCEPTED' | 'APPROVAL' | 'APPROVED' | 'CANCELLED' | 'DISQUALIFIED' | 'NOT_ACCEPTED' | 'NOT_APPROVED' | 'PREAPPROVAL' | 'READY_TO_ACCEPT' | 'READY_TO_SUBMIT' | 'REVIEW_COMPLETE' | 'REVIEW_IN_PROGRESS' | 'STARTED' | 'WITHDRAWN'
 
 
 /** An application represents the applicant applying to a specific program. Each appRequest has multiple applications - one per program defined in the system. Some applications are mutually exclusive and/or will be eliminated early based on PREQUAL requirements, but they all technically exist in the data model - there is no concept of picking one application over another, just two applications where one dies and the other survives. */
 export interface Application {
     actions: ApplicationActions
+    /** A brief description, written for applicants, of the program this application is for. */
+    applicantDescription: (Scalars['String'] | null)
     /** True when at least one reachable prompt on this application has been invalidated and must be re-answered. Status is still computed from the answers on file, so pair status displays with this flag to indicate that a correction is outstanding. */
     awaitingCorrection: Scalars['Boolean']
+    /** A prose summary of the applicant-side requirements of the program this application is for. Intended to be shown alongside statusReason when the application becomes ineligible before submission, since an applicant disqualified early may never have seen the program's prompts and the statusReason alone lacks context. */
+    eligibilityDescription: (Scalars['String'] | null)
     id: Scalars['ID']
     /** The phase in which this application became ineligible for benefits. Useful for reporting / filtering. Null if the application is not (yet) ineligible. */
     ineligiblePhase: (IneligiblePhases | null)
@@ -510,7 +514,7 @@ export interface Mutation {
     acceptOffer: ValidatedAppRequestResponse
     /** Add a note to the app request. */
     addNote: ValidatedNoteResponse
-    /** Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation. */
+    /** Moves the application to the next blocking workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. In the non-blocking (WORKFLOW_NONBLOCKING) phase the workflow is non-sequential with all non-blocking requirements editable at once and once they are all resolved this becomes a single "Send to Complete" action that moves the application to COMPLETE. */
     advanceWorkflow: ValidatedAppRequestResponse
     /** Cancel or withdraw the app request, depending on its current phase. This is only available if the app request is in a cancellable state. */
     cancelAppRequest: ValidatedAppRequestResponse
@@ -537,7 +541,7 @@ export interface Mutation {
     returnToOffer: ValidatedAppRequestResponse
     /** Return the app request to the review phase from acceptance, non-blocking workflow, or completion. */
     returnToReview: ValidatedAppRequestResponse
-    /** Moves the application back to the previous workflow stage. If on the first blocking workflow stage, moves back to APPROVAL. If on the first non-blocking workflow, throws an error. */
+    /** Moves the application back to the previous blocking workflow stage. Non-blocking workflow stages are excluded from the reverse order, so this only steps back through the blocking workflow during the review (SUBMITTED) phase.  If no blocking then moved to APPROVAL */
     reverseWorkflow: ValidatedAppRequestResponse
     roleAddGrant: AccessRoleValidatedResponse
     roleCreate: AccessRoleValidatedResponse
@@ -650,6 +654,10 @@ export interface PeriodActions {
 
 export interface PeriodProgram {
     actions: PeriodProgramActions
+    /** A brief description of the program, written for applicants. */
+    applicantDescription: (Scalars['String'] | null)
+    /** A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts. */
+    eligibilityDescription: (Scalars['String'] | null)
     /** Whether the program is enabled in this period. This is set by the system administrator. */
     enabled: Scalars['Boolean']
     key: Scalars['ID']
@@ -710,6 +718,10 @@ export interface PeriodWorkflowStage {
 }
 
 export interface Program {
+    /** A brief description of the program, written for applicants. */
+    applicantDescription: (Scalars['String'] | null)
+    /** A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts. */
+    eligibilityDescription: (Scalars['String'] | null)
     key: Scalars['ID']
     navTitle: Scalars['String']
     title: Scalars['String']
@@ -1183,6 +1195,8 @@ impersonated?: (Scalars['Boolean'] | null),
 impersonatedBy?: (Scalars['ID'][] | null),
 /** Return activities that were performed while one of the given logins was being impersonated by someone else. */
 impersonatedUsers?: (Scalars['ID'][] | null),
+/** Filter activities by matching description content. */
+search?: (Scalars['String'] | null),
 /** Return activities that were performed by one of the given logins. Also returns activities that were performed while one of the given logins was impersonating someone else. */
 users?: (Scalars['ID'][] | null)}
 
@@ -1254,8 +1268,12 @@ ids?: (Scalars['ID'][] | null)}
 /** An application represents the applicant applying to a specific program. Each appRequest has multiple applications - one per program defined in the system. Some applications are mutually exclusive and/or will be eliminated early based on PREQUAL requirements, but they all technically exist in the data model - there is no concept of picking one application over another, just two applications where one dies and the other survives. */
 export interface ApplicationGenqlSelection{
     actions?: ApplicationActionsGenqlSelection
+    /** A brief description, written for applicants, of the program this application is for. */
+    applicantDescription?: boolean | number
     /** True when at least one reachable prompt on this application has been invalidated and must be re-answered. Status is still computed from the answers on file, so pair status displays with this flag to indicate that a correction is outstanding. */
     awaitingCorrection?: boolean | number
+    /** A prose summary of the applicant-side requirements of the program this application is for. Intended to be shown alongside statusReason when the application becomes ineligible before submission, since an applicant disqualified early may never have seen the program's prompts and the statusReason alone lacks context. */
+    eligibilityDescription?: boolean | number
     id?: boolean | number
     /** The phase in which this application became ineligible for benefits. Useful for reporting / filtering. Null if the application is not (yet) ineligible. */
     ineligiblePhase?: boolean | number
@@ -1494,7 +1512,7 @@ export interface MutationGenqlSelection{
     addNote?: (ValidatedNoteResponseGenqlSelection & { __args: {appRequestId: Scalars['ID'], 
     /** The content of the note. HTML is expected. */
     content: Scalars['String'], persistent?: (Scalars['Boolean'] | null), validateOnly?: (Scalars['Boolean'] | null)} })
-    /** Moves the application to the next workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. If on the last non-blocking workflow, moves the application to COMPLETE. If all applications are COMPLETE, automatically triggers the app request close mutation. */
+    /** Moves the application to the next blocking workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. In the non-blocking (WORKFLOW_NONBLOCKING) phase the workflow is non-sequential with all non-blocking requirements editable at once and once they are all resolved this becomes a single "Send to Complete" action that moves the application to COMPLETE. */
     advanceWorkflow?: (ValidatedAppRequestResponseGenqlSelection & { __args: {applicationId: Scalars['ID']} })
     /** Cancel or withdraw the app request, depending on its current phase. This is only available if the app request is in a cancellable state. */
     cancelAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID'], 
@@ -1523,7 +1541,7 @@ export interface MutationGenqlSelection{
     returnToOffer?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Return the app request to the review phase from acceptance, non-blocking workflow, or completion. */
     returnToReview?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
-    /** Moves the application back to the previous workflow stage. If on the first blocking workflow stage, moves back to APPROVAL. If on the first non-blocking workflow, throws an error. */
+    /** Moves the application back to the previous blocking workflow stage. Non-blocking workflow stages are excluded from the reverse order, so this only steps back through the blocking workflow during the review (SUBMITTED) phase.  If no blocking then moved to APPROVAL */
     reverseWorkflow?: (ValidatedAppRequestResponseGenqlSelection & { __args: {applicationId: Scalars['ID']} })
     roleAddGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grant: AccessRoleGrantCreate, roleId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     roleCreate?: (AccessRoleValidatedResponseGenqlSelection & { __args: {copyRoleId?: (Scalars['ID'] | null), role: AccessRoleInput, validateOnly?: (Scalars['Boolean'] | null)} })
@@ -1670,6 +1688,10 @@ opensBefore?: (Scalars['DateTime'] | null)}
 
 export interface PeriodProgramGenqlSelection{
     actions?: PeriodProgramActionsGenqlSelection
+    /** A brief description of the program, written for applicants. */
+    applicantDescription?: boolean | number
+    /** A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts. */
+    eligibilityDescription?: boolean | number
     /** Whether the program is enabled in this period. This is set by the system administrator. */
     enabled?: boolean | number
     key?: boolean | number
@@ -1737,6 +1759,10 @@ export interface PeriodWorkflowStageGenqlSelection{
 }
 
 export interface ProgramGenqlSelection{
+    /** A brief description of the program, written for applicants. */
+    applicantDescription?: boolean | number
+    /** A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts. */
+    eligibilityDescription?: boolean | number
     key?: boolean | number
     navTitle?: boolean | number
     title?: boolean | number

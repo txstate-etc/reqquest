@@ -12,6 +12,26 @@ export interface ProgramDefinition {
    */
   navTitle?: string
   /**
+   * A brief description of the program, written for applicants. Shown in applicant-facing
+   * screens where the program title alone doesn't carry enough context, such as the tooltip
+   * on the applicant's program review screen.
+   */
+  applicantDescription?: string
+  /**
+   * When an applicant is disqualified from a program before submitting, all they see by
+   * default is the statusReason from the first requirement that failed - something like
+   * "Applicant must be under 21". They may never have seen the program's own prompts, so
+   * they have no sense of what the program is or what else it would have asked of them.
+   * Provide a prose summary of the applicant-side requirements here and it will be shown
+   * alongside the failing reason wherever the program is listed as ineligible pre-submission
+   * (currently the "Ineligible benefits" panel).
+   *
+   * Keep it general rather than quoting specific configuration values - configuration can
+   * change each period and this description will not, so a quoted value could silently
+   * contradict the actual requirement.
+   */
+  eligibilityDescription?: string
+  /**
    * The list of requirements for this program, carefully ordered so that
    * the users are presented them in a logical order.
    */
@@ -52,7 +72,7 @@ export interface WorkflowStage {
    * which preserves the legacy behavior of only surfacing non-blocking workflow requirements once the
    * request reaches the WORKFLOW_NONBLOCKING phase.
    */
-  nonBlockingEmergence?: AppRequestPhase.SUBMITTED | AppRequestPhase.ACCEPTANCE | AppRequestPhase.WORKFLOW_NONBLOCKING
+  nonBlockingEmergence?: AppRequestPhase.STARTED | AppRequestPhase.SUBMITTED | AppRequestPhase.ACCEPTANCE | AppRequestPhase.WORKFLOW_NONBLOCKING
   /**
    * The title of the stage, displayed to the user.
    */
