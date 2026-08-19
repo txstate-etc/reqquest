@@ -162,7 +162,7 @@
     ...nonBlockingWorkflowStages
   ].filter(s => (!!s.requirements[0]?.workflowStage) || (s.requirements.length > 0 && s.requirements.some(r => r.prompts.length > 0)))
   $: applicationStatusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt)
-  $: loading = false
+  let loading = false
   let showLoading = false
   let loadingTimer: NodeJS.Timeout | undefined
   $: {
@@ -263,7 +263,7 @@
       </div>
     </InfoCard>
   </svelte:fragment>
-  <ReviewerQuestions {sections} {appRequest} {application} {promptIndicator} />
+  <ReviewerQuestions {sections} {appRequest} {application} {promptIndicator} bind:loading />
   <div class="app-actions [ flex items-end ]">
     {#if application.actions.advanceWorkflow || application.actions.reverseWorkflow}
       <Select bind:selected={appAction} labelText="Next step" size="sm">
