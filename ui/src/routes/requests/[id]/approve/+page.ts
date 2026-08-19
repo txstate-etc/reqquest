@@ -7,7 +7,10 @@ export const load: PageLoad = async ({ params, parent }) => {
   const { basicRequestData } = await parent()
   // exclude previously ineligible applications from default landing
   const eligibleApps = excludePreSubmissionIneligibleApps([basicRequestData])
-  const key = eligibleApps[0]?.applications[0]?.programKey
+  let key = eligibleApps[0]?.applications[0]?.programKey  
+  if (!key) { // no eligible apps so get first ineligible app to show
+    key = basicRequestData.applications[0]?.programKey
+  }
   if (!key) throw error(404, 'Program not found')
   throw redirect(303, `${base}/requests/${params.id}/approve/${key}`)
 }
