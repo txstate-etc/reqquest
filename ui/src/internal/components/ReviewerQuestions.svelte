@@ -74,7 +74,9 @@
           ? await api.updatePrompt(prompt.id, data, false)
           : await api.updatePrompt(prompt.id, data, false, undefined, true) // triggers from review corrections edit selection, allow saving without changes to handle invalidate prompts that require no changes
         if (modal && !response.success) { loading = false; showEditModalPrompt() }
-        return response
+        // prev resp.data was replacing the store's data with a wrongly-shaped object and
+        // re-baselines beforeUserChanges to it. Reduce to this prompt's slice like ApplicantPromptPage.onSubmit
+        return { ...response, data: response.data?.[prompt.key] }
       } catch (e) {
         if (modal) { loading = false; showEditModalPrompt() }
         throw e

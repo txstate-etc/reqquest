@@ -9,6 +9,13 @@ export const operations_infrastructure_opt_out_prompt: PromptDefinition<OptOutDa
   description: 'Opt Out',
   schema: OptOutSchema,
   optOut: true,
+  preload: () => {
+    return {
+      optOut: false,
+      optInUnderstand: false,
+      optOutUnderstand: false
+    }
+  },
   validate: (data, config) => {
     return []
   }

@@ -14,18 +14,20 @@
   export let optOutSelected: OptOutApplication | undefined
 
   $: def = uiRegistry.getPrompt(prompt.key)
-  $: loading = false
+  let loading = false
 
 
   let store: FormStore | undefined
 
   async function submit (data: any) {
     loading = true
-    const { success, messages } = await api.updatePrompt(prompt.id, data, false)
-    return {
-      success,
-      messages,
-      data
+    try {
+      const { success, messages } = await api.updatePrompt(prompt.id, data, false)
+      if (!success) loading = false
+      return { success, messages, data }
+    } catch (e) {
+      loading = false
+      throw e
     }
   }
 
@@ -57,7 +59,7 @@
   centered
   open={open}
   on:cancel={() => { open = false }}
-  on:validate={onValidate}
+  validate={onValidate}
   on:saved={saved}
   disableSaveUntilChanged={true}
   {submit}
