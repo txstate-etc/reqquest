@@ -27,7 +27,6 @@
       href: resolve(`/requests/${requestId}/approve/activity`)
     }
   ]
-  // the panel snippet can only be declared in markup, so it is composed onto this tab down there
   $: ineligibleTab = {
     label: 'Ineligible programs',
     disabled: !ineligibleApplications.length,
