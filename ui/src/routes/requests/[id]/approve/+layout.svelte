@@ -16,7 +16,7 @@
   $: ({ basicRequestData, requestId } = data)
   $: eligibleApplications = basicRequestData.applications.filter(a => !isIneligiblePreSubmission(a))
   $: ineligibleApplications = basicRequestData.applications.filter(a => isIneligiblePreSubmission(a))
-  $: ineligibleHrefs = ineligibleApplications.map(a => resolve(`/requests/${requestId}/approve/${a.programKey}`))
+  $: activeIneligible = ineligibleApplications.find(a => resolve(`/requests/${requestId}/approve/${a.programKey}`) === $page.url.pathname)
   $: navTabs = [
     ...(eligibleApplications.map(a => ({
       label: a.navTitle,
@@ -28,9 +28,9 @@
     }
   ]
   $: ineligibleTab = {
-    label: 'Ineligible programs',
+    label: activeIneligible?.navTitle ?? 'Ineligible programs',
     disabled: !ineligibleApplications.length,
-    selected: ineligibleHrefs.includes($page.url.pathname)
+    selected: activeIneligible != null
   }
   $: loading = false
 

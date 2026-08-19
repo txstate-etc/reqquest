@@ -229,6 +229,15 @@
   button.bx--tabs__nav-link:disabled {
     cursor: default;
   }
+  /*
+    Mark the disclosure tab as a menu. Carbon colors the tab link per state with selectors up to
+    (0,6,0) - hover, :focus, and selected+:focus all repaint it - so this has to outrank them to
+    hold one colour across every state. Excluding disabled twice (item class and :disabled) leaves
+    carbon's disabled grey in charge.
+  */
+  .cs-tabs.tab-links .bx--tabs__nav-item:not(.bx--tabs__nav-item--disabled) button.bx--tabs__nav-link:not(:disabled) {
+    color: var(--cds-link-01, #0071ad);
+  }
   .caret {
     display: inline-flex;
     margin-left: 4px;
