@@ -5,7 +5,7 @@
   import { resolve } from '$app/paths'
   import { page } from '$app/stores'
   import { submissionRequirementTypes } from '$internal'
-  import { enumRequirementType } from '$lib'
+  import { enumPromptVisibility, enumRequirementType } from '$lib'
   import type { LayoutData } from './$types'
 
   export let data: LayoutData
@@ -40,8 +40,10 @@
         substeps: []
       })
     }
-    if (prequalPrompts.some(p => !p.answered || p.invalidated)) {
-      nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${prequalPrompts.find(p => !p.answered || p.invalidated)!.id}`)
+    const outstandingPrequal = prequalPrompts.find(p =>
+      (!p.answered || p.invalidated) && p.visibility === enumPromptVisibility.AVAILABLE && !p.moot)
+    if (outstandingPrequal) {
+      nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${outstandingPrequal.id}`)
     } else {
       if (foundCurrent) nextHref = resolve(`/requests/${appRequestForExport.id}/apply/programs`)
       foundCurrent = false

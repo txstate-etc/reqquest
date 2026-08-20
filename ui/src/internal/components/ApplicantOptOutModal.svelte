@@ -21,10 +21,10 @@
 
   async function submit (data: any) {
     loading = true
-    try {
-      const { success, messages } = await api.updatePrompt(prompt.id, data, false)
+    try {      
+      const { success, messages, data: newData } = await api.updatePrompt(prompt.id, data, false)
       if (!success) loading = false
-      return { success, messages, data }
+      return { success, messages, data: newData?.[prompt.key] }
     } catch (e) {
       loading = false
       throw e
