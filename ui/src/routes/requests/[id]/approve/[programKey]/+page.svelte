@@ -208,7 +208,7 @@
       </div>
     </InfoCard>
   </svelte:fragment>
-  <ReviewerQuestions {sections} {appRequest} {application} {promptIndicator} />
+  <ReviewerQuestions {sections} {appRequest} {application} {promptIndicator} {basicRequestData} />
   <!-- <div class="app-actions [ flex items-end ]"> -->
     <!-- <Button size="small" class="ml-[4px]" disabled={application.actions.advanceWorkflow}>Mark answers complete</Button> -->
     <!-- <Button href={`/requests/${appRequest.id}/approve/export`} kind="secondary" size="small" icon={DocumentExport} class="ml-[32px]">Export</Button> -->
