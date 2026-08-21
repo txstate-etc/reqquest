@@ -1,6 +1,7 @@
 import db from 'mysql2-async/db'
-import { Application, ApplicationFilter, ApplicationPhase, ApplicationStatus, AppRequestPhase, AppRequestStatus, AppRequestStatusDB, IneligiblePhases, PeriodWorkflowRow, programRegistry } from '../internal.js'
+import { Application, ApplicationFilter, ApplicationPhase, ApplicationRescindedStatus, ApplicationStatus, AppRequestPhase, AppRequestStatus, AppRequestStatusDB, IneligiblePhases, PeriodWorkflowRow, programRegistry } from '../internal.js'
 import { Queryable } from 'mysql2-async'
+import { DateTime } from 'luxon'
 
 export interface ApplicationRow {
   id: number
@@ -17,6 +18,9 @@ export interface ApplicationRow {
   appRequestStatus: AppRequestStatusDB
   appRequestComputedStatus: AppRequestStatus
   appRequestPhase: AppRequestPhase
+  rescindedStatus?: ApplicationRescindedStatus
+  rescindedReason?: string
+  restoredReason?: string
 }
 
 function processFilters (filter: ApplicationFilter) {
@@ -36,7 +40,9 @@ export async function getApplications (filter: ApplicationFilter, tdb: Queryable
   const whereClause = where.length > 0 ? `WHERE (${where.join(') AND (')})` : ''
   const rows = await tdb.getall<ApplicationRow>(`
     SELECT a.id, a.appRequestId, ar.periodId, a.programKey, ar.userId, a.computedStatus, a.computedStatusReason, a.computedPhase,
-      a.computedIneligiblePhase, a.computedAwaitingCorrection, a.workflowStage, ar.status AS appRequestStatus, ar.phase AS appRequestPhase, ar.computedStatus AS appRequestComputedStatus
+      a.computedIneligiblePhase, a.computedAwaitingCorrection, a.workflowStage,
+      a.rescindedStatus, a.rescindedReason, a.restoredReason,
+      ar.status AS appRequestStatus, ar.phase AS appRequestPhase, ar.computedStatus AS appRequestComputedStatus       
     FROM applications a
     INNER JOIN app_requests ar ON ar.id = a.appRequestId
     ${whereClause}
@@ -71,8 +77,20 @@ export async function syncApplications (appRequestId: number, activeProgramKeySe
 
 export async function updateApplicationsComputed (applications: Application[], db: Queryable) {
   for (const application of applications) {
-    await db.update('UPDATE applications SET computedStatus = ?, computedStatusReason = ?, computedPhase = ?, computedIneligiblePhase = ?, computedAwaitingCorrection = ? WHERE id = ?', [application.status, application.statusReason, application.phase, application.ineligiblePhase, application.awaitingCorrection ? 1 : 0, application.internalId])
+    await db.update('UPDATE applications SET computedStatus = ?, computedStatusReason = ?, computedPhase = ?, computedIneligiblePhase = ?, computedAwaitingCorrection = ? WHERE id = ?', [application.computedStatus, application.statusReason, application.phase, application.ineligiblePhase, application.awaitingCorrection ? 1 : 0, application.internalId])
   }
+}
+
+export async function rescindApplication (applicationId: string, reason: string, tdb: Queryable = db) {
+  const [application] = await getApplications({ ids: [applicationId] }, tdb)
+  if (!application) throw new Error(`Application not found: ${applicationId}`)
+  await tdb.update('UPDATE applications SET rescindedStatus = ?, rescindedReason = ? WHERE id = ?', [ApplicationRescindedStatus.RESCINDED, reason, applicationId])
+}
+
+export async function restoreApplication (applicationId: string, reason: string, tdb: Queryable = db) {
+  const [application] = await getApplications({ ids: [applicationId] }, tdb)
+  if (!application) throw new Error(`Application not found: ${applicationId}`)
+  await tdb.update('UPDATE applications SET rescindedStatus = ?, restoredReason = ? WHERE id = ?', [ApplicationRescindedStatus.RESTORED, reason, applicationId])
 }
 
 export async function advanceWorkflow (applicationId: string, tdb: Queryable = db) {

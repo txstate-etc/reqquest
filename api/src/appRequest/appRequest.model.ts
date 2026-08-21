@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon'
 import { Field, ID, InputType, Int, ObjectType, registerEnumType } from 'type-graphql'
-import { AppRequestActivityRow, AppRequestRow, AppRequestStatusDB, JsonData, PromptTagDefinition } from '../internal.js'
+import { ApplicationRescindedStatus, AppRequestActivityRow, AppRequestRow, AppRequestStatusDB, JsonData, PromptTagDefinition } from '../internal.js'
 import { ValidatedResponse } from '@txstate-mws/graphql-server'
 
 export enum AppRequestStatus {
@@ -262,6 +262,9 @@ export class AppRequestFilter {
 
   @Field(type => [AppRequestStatus], { nullable: true })
   status?: AppRequestStatus[]
+
+  @Field(type => [ApplicationRescindedStatus], { nullable: true, description: 'Only return appRequests where at least one application is in one of the given rescinded states. Rescinding is per-application, so this is independent of the appRequest status.' })
+  rescindedStatus?: ApplicationRescindedStatus[]
 
   @Field(type => [ID], { nullable: true })
   periodIds?: string[]

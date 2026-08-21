@@ -7,6 +7,7 @@
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { api, REVIEWER_STATUS_CONFIG } from '$internal'
+  import { enumApplicationRescindedStatus } from '$lib'
   import { uiRegistry } from '../../local/index.js'
   import type { PageData } from './$types.js'
   import { _defaultRequestListFilters } from './+page.js'
@@ -81,6 +82,15 @@
         label="Status"
         placeholder="Status"
         items={Object.entries(REVIEWER_STATUS_CONFIG).map(([value, config]) => ({ value, label: config.label }))}
+      />
+      <FieldMultiselect
+        path="rescindedStatus"
+        label="Rescind status"
+        placeholder="Rescind status"
+        items={[
+          { value: enumApplicationRescindedStatus.RESCINDED, label: 'Rescinded' },
+          { value: enumApplicationRescindedStatus.RESTORED, label: 'Restored' }
+        ]}
       />
       {#each filterIndexes as filterIdx, i (filterIdx.category)}
         {#if i < 2}

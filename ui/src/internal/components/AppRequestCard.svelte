@@ -64,14 +64,14 @@
           .filter(p => p.visibility === enumPromptVisibility.AVAILABLE && p.invalidated && p.invalidatedReason)
         }
         {@const warningReqs = application.requirements.filter(r => r.status === 'WARNING' && r.statusReason)}
-        {@const appStatusTag = invalidatedPrompts.length > 0
-          ? { label: 'Needs corrections', color: 'magenta' as const }
-          : getApplicationStatusInfo(application.status, request.phase, request.closedAt)}
+        {@const appStatusTags = invalidatedPrompts.length > 0
+          ? [{ label: 'Needs corrections', type: 'magenta' as const }]
+          : getApplicationStatusInfo(application.status, request.phase, request.closedAt, application.rescindedStatus).map(info => ({ label: info.label, type: info.color }))}
         <div class="program-status py-2 px-4 mb-4">
           <div class="flex items-center">
             <span class="font-medium">{application.title}</span>
             <div class="tagwrap">
-              <TagSet tags={[{ label: appStatusTag.label, type: appStatusTag.color }]} />
+              <TagSet tags={appStatusTags} />
             </div>
             {#if (application.status === 'PENDING' || application.status === 'ELIGIBLE') && warningReqs.length > 0}
               <WarningIconYellow size={20} />

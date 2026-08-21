@@ -1,4 +1,5 @@
 import db from 'mysql2-async/db'
+import { Queryable } from 'mysql2-async'
 
 export interface MailTemplateRow {
   id: number
@@ -27,10 +28,13 @@ export interface MailOutboxRow {
   updatedAt: Date
 }
 
-export const createMailTemplate = async ({ templateKey, description, audience, variables, subject, body }: Pick<MailTemplateRow, 'templateKey' | 'description' | 'audience' | 'variables' | 'subject' | 'body'>) => {
-  return await db.insert(`
+export const createMailTemplate = async ({ templateKey, description, audience, variables, subject, body }: Pick<MailTemplateRow, 'templateKey' | 'description' | 'audience' | 'variables' | 'subject' | 'body'>, tdb: Queryable = db) => {
+  // seeding runs again whenever new templates are added, so leave any existing row
+  // which may have been edited or disabled as it is
+  return await tdb.insert(`
     INSERT INTO mail_templates (templateKey, description, audience, variables, subject, body, enabled)
     VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE templateKey = templateKey
   `, [templateKey, description, audience, variables, subject, body, true])
 }
 
