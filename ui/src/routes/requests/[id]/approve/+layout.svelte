@@ -1,21 +1,24 @@
 <script lang="ts">
-  import { TabLinks } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
   import { Button, Select, SelectItem } from 'carbon-components-svelte'
   import { invalidateAll } from '$app/navigation'
   import { resolve } from '$app/paths'
+  import { page } from '$app/stores'
   import type { LayoutData } from './$types.js'
-  import { api, IntroPanel, applicantStatuses, REVIEWER_STATUS_CONFIG, longNumericTime } from '$internal'
+  import { api, IntroPanel, TabLinks, applicantStatuses, REVIEWER_STATUS_CONFIG, longNumericTime } from '$internal'
   import { uiRegistry } from '../../../../local/index.js'
   import { enumApplicationStatus } from '$lib'
   import { enumAppRequestPhase, phaseChangeMutations, type PhaseChangeMutations, enumRequirementType, enumRequirementStatus } from '$lib'
   import { Loading } from "carbon-components-svelte"
-  import { excludePreSubmissionIneligibleApps } from '$internal'
+  import { isIneligiblePreSubmission } from '$internal'
 
   export let data: LayoutData
   $: ({ basicRequestData, requestId } = data)
-  $: tabs = [
-    ...(excludePreSubmissionIneligibleApps([basicRequestData])[0].applications.map(a => ({
+  $: eligibleApplications = basicRequestData.applications.filter(a => !isIneligiblePreSubmission(a))
+  $: ineligibleApplications = basicRequestData.applications.filter(a => isIneligiblePreSubmission(a))
+  $: activeIneligible = ineligibleApplications.find(a => resolve(`/requests/${requestId}/approve/${a.programKey}`) === $page.url.pathname)
+  $: navTabs = [
+    ...(eligibleApplications.map(a => ({
       label: a.navTitle,
       href: resolve(`/requests/${requestId}/approve/${a.programKey}`)
     }))),
@@ -24,6 +27,11 @@
       href: resolve(`/requests/${requestId}/approve/activity`)
     }
   ]
+  $: ineligibleTab = {
+    label: activeIneligible?.navTitle ?? 'Ineligible programs',
+    disabled: !ineligibleApplications.length,
+    selected: activeIneligible != null
+  }
   $: loading = false
 
   const translateMutations = {
@@ -193,7 +201,16 @@
     {/if}
   </div>
 </IntroPanel>
-<TabLinks {tabs} />
+{#snippet ineligibleProgramList()}
+  <ul class="ineligible-programs">
+    {#each ineligibleApplications as a}
+      <li>
+        <a href={resolve(`/requests/${requestId}/approve/${a.programKey}`)}>{a.navTitle}</a>
+      </li>
+    {/each}
+  </ul>
+{/snippet}
+<TabLinks tabs={[...navTabs, { ...ineligibleTab, panel: ineligibleProgramList }]} />
 <slot />
 <style>
   .block-end :global(.bx--label) {
@@ -201,5 +218,19 @@
     top: 0;
     left: 0;
     transform: translateY(-100%);
+  }
+  .ineligible-programs {
+    padding: 0.25rem 0;
+    margin: 0;
+    list-style: none;
+  }
+  .ineligible-programs a {
+    display: block;
+    padding: 0.5rem 1rem;
+    color: var(--cds-text-01, #161616);
+    text-decoration: none;
+  }
+  .ineligible-programs a:hover {
+    background-color: var(--cds-hover-ui, #e5e5e5);
   }
 </style>
