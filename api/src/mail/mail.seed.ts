@@ -1,7 +1,8 @@
+import { Queryable } from 'mysql2-async'
 import { createMailTemplate } from '../internal.js'
 import * as mailTemplates from './templates/index.js'
 
-export async function seedMailTemplates () {
+export async function seedMailTemplates (tdb?: Queryable) {
   await Promise.all(Object.values(mailTemplates).map(async ({ subject, body, description, audience, templateKey, variables }) => {
     await createMailTemplate({
       templateKey,
@@ -10,6 +11,6 @@ export async function seedMailTemplates () {
       subject,
       body,
       variables: JSON.stringify(variables)
-    })
+    }, tdb)
   }))
 }

@@ -35,7 +35,21 @@ export const mailMigrations: DatabaseMigration[] = [
           updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `)
-      await seedMailTemplates()
+      await seedMailTemplates(db)
+    }
+  },
+  {
+    id: '20260817000000',
+    async execute (db) {
+      // seed the templates added since the initial migration (rescind/restore), leaving existing rows untouched
+      await seedMailTemplates(db)
+    }
+  },
+  {
+    id: '20260817000100',
+    async execute (db) {
+      // application_complete shipped with a variable name 'applicationName' nothing supplies, so it rendered blank.
+      await db.update("UPDATE mail_templates SET body = REPLACE(body, '{{applicationName}}', '{{appName}}') WHERE templateKey = 'application_complete'")
     }
   }
 ]

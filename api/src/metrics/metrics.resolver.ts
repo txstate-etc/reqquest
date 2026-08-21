@@ -33,6 +33,11 @@ export class ApplicationMetricResolver {
     return (await ctx.svc(ApplicationMetricService).getDenied(applicationMetric)).length
   }
 
+  @FieldResolver(returns => Number, { description: 'The count of applications that were approved and later rescinded. Not restricted to completed applications, since an application can be rescinded as soon as its review is complete.' })
+  async rescinded (@Ctx() ctx: RQContext, @Root() applicationMetric: ApplicationMetric): Promise<Number> {
+    return (await ctx.svc(ApplicationMetricService).getRescinded(applicationMetric)).length
+  }
+
   @FieldResolver(returns => ApplicationMetricTiming, { description: 'Timings (seconds), for applications from started to submitted.' })
   async toSubmit (@Ctx() ctx: RQContext, @Root() applicationMetric: ApplicationMetric): Promise<ApplicationMetricTiming> {
     return await ctx.svc(ApplicationMetricService).getSubmissionTimings(applicationMetric)

@@ -161,8 +161,8 @@
     ...blockingWorkflowStages,
     ...nonBlockingWorkflowStages
   ].filter(s => (!!s.requirements[0]?.workflowStage) || (s.requirements.length > 0 && s.requirements.some(r => r.prompts.length > 0)))
-  $: applicationStatusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt)
-  let loading = false
+  $: applicationStatusTags = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt, application.rescindedStatus).map(info => ({ label: info.label, type: info.color }))
+  $: loading = false
   let showLoading = false
   let loadingTimer: NodeJS.Timeout | undefined
   $: {
@@ -179,13 +179,47 @@
     }
   }
 
-  let appAction: '' | 'advanceWorkflow' | 'reverseWorkflow' = ''
+  let appAction: '' | 'advanceWorkflow' | 'reverseWorkflow' | 'rescind' | 'restore' = ''
+  // open rescind and restore panelformdialog
+  let reasonAction: 'rescind' | 'restore' | undefined = undefined
+  $: reasonActionInfo = reasonAction === 'restore'
+    ? { title: `Restore ${application.navTitle} benefit`, instructions: 'You will need to provide a reason why this benefit should be restored. The benefit will be restored to the state it was in before it was rescinded.', submitText: 'Restore benefit', successMessage: 'Benefit restored.' }
+    : { title: `Rescind ${application.navTitle} benefit`, instructions: 'You will need to provide a reason why this benefit should be rescinded. The applicant will no longer be able to use this benefit after rescinding.', submitText: 'Rescind benefit', successMessage: 'Benefit rescinded.' }
+
   async function onAppAction () {
     if (appAction === 'advanceWorkflow') {
       await advanceWorkflow()
     } else if (appAction === 'reverseWorkflow') {
       await reverseWorkflow()
+    } else if (appAction === 'rescind' || appAction === 'restore') {
+      reasonAction = appAction
     }
+  }
+
+  async function onReasonValidate (data: { reason: string }) {
+    const response = reasonAction === 'restore'
+      ? await api.restore(application.id, data.reason, true)
+      : await api.rescind(application.id, data.reason, true)
+    return response.messages
+  }
+
+  async function onReasonSubmit (data: { reason: string }) {
+    const response = reasonAction === 'restore'
+      ? await api.restore(application.id, data.reason, false)
+      : await api.rescind(application.id, data.reason, false)
+    return { ...response, data }
+  }
+
+  async function onReasonSaved () {
+    const message = reasonActionInfo.successMessage
+    onReasonCancel()
+    await invalidateAll()
+    toasts.add({ type: 'success', message })
+  }
+
+  function onReasonCancel () {
+    reasonAction = undefined
+    appAction = ''
   }
 
   async function advanceWorkflow () {
@@ -232,11 +266,11 @@
 
 <ApproveLayout {basicRequestData} {appRequest}>
   <svelte:fragment slot="sidebar">
-    <InfoCard title={application.title} tags={[{ label: applicationStatusInfo.label, type: applicationStatusInfo.color }]} tagsInBody>
+    <InfoCard title={application.title} tags={applicationStatusTags} tagsInBody>
       <!--
       <dl class="card">
         <dt>Status</dt>
-        <dd><TagSet tags={[{ label: applicationStatusInfo.label, type: applicationStatusInfo.color }]} /></dd>
+        <dd><TagSet tags={applicationStatusTags} /></dd>
       </dl>
       -->
     </InfoCard>
@@ -265,14 +299,20 @@
   </svelte:fragment>
   <ReviewerQuestions {sections} {appRequest} {application} {promptIndicator} bind:loading />
   <div class="app-actions [ flex items-end ]">
-    {#if application.actions.advanceWorkflow || application.actions.reverseWorkflow}
-      <Select bind:selected={appAction} labelText="Next step" size="sm">
+    {#if application.actions.advanceWorkflow || application.actions.reverseWorkflow || application.actions.rescindApplication || application.actions.restoreApplication}
+      <Select bind:selected={appAction} labelText="Actions" size="sm">
         <SelectItem value="" text="Choose one" />
         {#if application.actions.advanceWorkflow}
           <SelectItem value="advanceWorkflow" text={'Send to ' + (application.nextWorkflowStage?.title ?? (!application.workflowStage?.blocking ? 'Complete' : 'Review Complete'))} />
         {/if}
         {#if application.actions.reverseWorkflow}
           <SelectItem value="reverseWorkflow" text={'Return to ' + (application.previousWorkflowStage?.title ?? 'Review')} />
+        {/if}
+        {#if application.actions.rescindApplication}
+          <SelectItem value="rescind" text="Rescind" />
+        {/if}
+        {#if application.actions.restoreApplication}
+          <SelectItem value="restore" text="Restore" />
         {/if}
       </Select>
       <Button on:click={onAppAction} size="small" class="ml-[4px]">Confirm</Button>
@@ -281,6 +321,23 @@
   </div>
 </ApproveLayout>
 
+
+{#if reasonAction}
+  <PanelFormDialog
+    title={reasonActionInfo.title}
+    open
+    on:cancel={onReasonCancel}
+    on:saved={onReasonSaved}
+    validate={onReasonValidate}
+    submit={onReasonSubmit}
+    submitText={reasonActionInfo.submitText}
+    centered
+  >
+    <div>{reasonActionInfo.instructions}</div>
+    <FieldTextArea path="reason" labelText={`Reason to ${reasonAction} this benefit.`} required notNull rows={4} />
+    <div class="bx--form__helper-text">This reason will be recorded in the request activity and included in the email sent to the applicant.</div>
+  </PanelFormDialog>
+{/if}
 
 {#if showUpdateNoteDialog && noteBeingEdited}
   <PanelFormDialog

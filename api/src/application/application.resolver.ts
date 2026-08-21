@@ -48,6 +48,16 @@ export class ApplicationResolver {
   async reverseWorkflow (@Ctx() ctx: RQContext, @Arg('applicationId', type => ID) applicationId: string) {
     return await ctx.svc(ApplicationService).reverseWorkflow(applicationId)
   }
+
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Rescinds the approved and/or accepted application.' })
+  async rescind (@Ctx() ctx: RQContext, @Arg('applicationId', type => ID) applicationId: string, @Arg('reason') reason: string, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
+    return await ctx.svc(ApplicationService).rescindApplication(applicationId, reason, validateOnly)
+  }
+
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Restores a previously rescinded application to its previous state.' })
+  async restore (@Ctx() ctx: RQContext, @Arg('applicationId', type => ID) applicationId: string, @Arg('reason') reason: string, @Arg('validateOnly', { nullable: true }) validateOnly?: boolean) {
+    return await ctx.svc(ApplicationService).restoreApplication(applicationId, reason, validateOnly)
+  }
 }
 
 @Resolver(of => ApplicationActions)
@@ -65,5 +75,15 @@ export class ApplicationActionsResolver {
   @FieldResolver(returns => Boolean)
   reverseWorkflow (@Ctx() ctx: RQContext, @Root() application: Application) {
     return ctx.svc(ApplicationService).mayReverseWorkflow(application)
+  }
+
+  @FieldResolver(returns => Boolean)
+  rescindApplication (@Ctx() ctx: RQContext, @Root() application: Application) {
+    return ctx.svc(ApplicationService).mayRescindApplication(application)
+  }
+
+  @FieldResolver(returns => Boolean)
+  restoreApplication (@Ctx() ctx: RQContext, @Root() application: Application) {
+    return ctx.svc(ApplicationService).mayRestoreApplication(application)
   }
 }

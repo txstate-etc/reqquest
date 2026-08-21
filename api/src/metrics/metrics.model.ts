@@ -1,5 +1,5 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
-import { DateTimeScalar, Period } from '../internal.js'
+import { DateTimeScalar, deriveApplicationStatus, Period } from '../internal.js'
 import { DateTime } from 'luxon'
 
 @ObjectType({ description: 'Application metric entry' })
@@ -13,7 +13,7 @@ export class ApplicationMetricEntry {
     this.updatedAt = DateTime.fromJSDate(row.updatedAt)
     this.submittedAt = row.submittedAt != null ? DateTime.fromJSDate(row.submittedAt) : undefined
     this.closedAt = row.closedAt != null ? DateTime.fromJSDate(row.closedAt) : undefined
-    this.status = row.computedStatus
+    this.status = deriveApplicationStatus(row.computedStatus, row.rescindedStatus)
     this.phase = row.computedPhase
     this.ineligiblePhase = row.computedIneligiblePhase
     this.programKey = row.programKey
@@ -108,6 +108,9 @@ export class ApplicationMetric {
 
   @Field(type => Number)
   denied?: number
+
+  @Field(type => Number)
+  rescinded?: number
 
   @Field(type => ApplicationMetricTiming)
   toSubmit?: ApplicationMetricTiming
