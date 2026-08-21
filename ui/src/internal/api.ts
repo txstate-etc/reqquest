@@ -9,9 +9,8 @@ import {
   type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleGroup, type AccessRoleInput, type AccessUserFilter,
   type AppRequestActivityFilters, type AppRequestFilter, type IneligiblePhases, type Pagination, type PeriodUpdate, type PromptVisibility,
   type RequirementStatus, type RequirementType, type PhaseChangeMutations, type CompletionStatus,
-  type PeriodFilters, type RequirementPromptFilter
+  type PeriodFilters
 } from '$lib'
-import { applicantRequirementTypes } from './status-utils.js'
 
 export const showDupePrompts = PUBLIC_SHOW_DUPLICATE_PROMPTS.trim() === 'true'
 export type DashboardAppRequest = Awaited<ReturnType<typeof api.getApplicantRequests>>[number]
@@ -19,6 +18,7 @@ export type AppRequestForExportResponse = Awaited<ReturnType<typeof api.getAppRe
 export type PromptForEditing = Awaited<ReturnType<typeof api.getApplicantPrompt>>['prompt']
 export type ReviewData = Awaited<ReturnType<typeof api.getReviewData>>
 export type PromptDataLegion = Awaited<ReturnType<typeof api.getPromptDataLegion>>
+export type BasicRequestData = Awaited<ReturnType<typeof api.getBasicRequestData>>
 
 class API extends APIBase {
   baseUrl = PUBLIC_API_BASE
@@ -992,7 +992,7 @@ class API extends APIBase {
     })
     if (response.appRequests.length === 0) return undefined
     const appRequest = response.appRequests[0]
-    return { ...appRequest, applications: appRequest.applications.map(a => ({ ...a, requirements: a.requirements.map(r => ({ ...r, prompts: r.prompts.filter(p => visibilities.includes(p.visibility)) })) })) }
+    return { ...appRequest, applications: appRequest.applications.map(a => ({ ...a, requirements: a.requirements.map(r => ({ ...r, prompts: r.prompts })) })) }
   }
 
   async getRequestActivity (appRequestId: string, filters?: AppRequestActivityFilters, paged?: Pagination) {
