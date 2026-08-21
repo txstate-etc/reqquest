@@ -4,7 +4,7 @@
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import { enumRequirementStatus, enumRequirementType, PromptIndicators, translateMutations, type PhaseChangeMutations } from '$lib'
-  import { isInlineReviewerEditPrompt, InlinePromptStore, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api, type BasicRequestData } from '$internal'
+  import { isInlineReviewerEditPrompt, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api, type BasicRequestData } from '$internal'
   import { FormInlineNotification, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { Tooltip } from 'carbon-components-svelte'
   import { uiRegistry } from '../../local';
@@ -29,7 +29,6 @@
   type PromptExtraData = Awaited<ReturnType<typeof api.getPromptData>>
   type Prompt = PageData['appRequest']['applications'][0]['requirements'][0]['prompts'][0]
   type PromptWithExtra = Prompt & PromptExtraData
-  type InlinePrompt = Prompt & Partial<PromptExtraData>
   let editingPromptWithData: PromptWithExtra | undefined = undefined
   let promptBeingEdited: Prompt | undefined = undefined
   let showPromptDialog = false
@@ -174,45 +173,6 @@
     await refreshReviewData()
   }
 
-  // One long-lived store per inline reviewer promptto prevent refresh landing mid-typing and reverting
-  // whatever the reviewer just typed. Owning the store lets us preload once at first render, and
-  // afterwards only for forms the reviewer has not touched.
-  const promptStores = new Map<string, InlinePromptStore<any>>()
-
-  function promptStore (prompt: InlinePrompt) {
-    let store = promptStores.get(prompt.id)
-    // a discarded store has been reset by unmount() and would render blank, so rebuild instead
-    if (store == null || store.discarded) {
-      store = new InlinePromptStore(onPromptSubmit(prompt), onPromptValidate(prompt))
-      // must precede preload so setDirtyForm takes the autoSave branch and does not show on every field's validation errors on load
-      store.autoSave = true
-      if (prompt.preloadData != null) void store.preload(prompt.preloadData).catch(console.error)
-      promptStores.set(prompt.id, store)
-    }
-    return store
-  }
-
-  // An untouched inline form may still need fresh server data, because one prompt's answer can
-  // change another prompt's preloadData via PromptDefinition.preload.
-  function syncPromptStores (..._: any[]) {
-    const live = new Set<string>()
-    for (const section of sections) {
-      for (const requirement of section.requirements) {
-        for (const prompt of requirement.prompts) {
-          if (prompt.optOut) continue
-          if (!isInlineReviewerEditPrompt(uiRegistry.getPrompt(prompt.key), requirement, prompt)) continue
-          live.add(prompt.id)
-          const store = promptStores.get(prompt.id)
-          if (store != null && !store.touched && !store.discarded && prompt.preloadData != null) {
-            void store.preload(prompt.preloadData).catch(console.error)
-          }
-        }
-      }
-    }
-    for (const id of [...promptStores.keys()]) if (!live.has(id)) promptStores.delete(id)
-  }
-  $: syncPromptStores(sections)
-
 </script>
 {#each sections as section (section.title)}
   <Panel title={section.title} expandable expanded>
@@ -264,7 +224,7 @@
             </dt>
             <dd class="flow" class:small class:large class:isReviewerQuestion class:disabled={disabled} class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
               {#if editMode}
-                <Form store={promptStore(prompt)} submit={onPromptSubmit(prompt)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptAutoSaved} let:data let:messages>
+                <Form preload={prompt.preloadData} submit={onPromptSubmit(prompt)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptAutoSaved} let:data let:messages>
                     <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason}  />
                     {#each messages as message (message.message, message.type)}
                       <FormInlineNotification {message} />
