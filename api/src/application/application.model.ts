@@ -6,7 +6,8 @@ export enum ApplicationStatus {
   ELIGIBLE = 'ELIGIBLE',
   INELIGIBLE = 'INELIGIBLE',
   ACCEPTED = 'ACCEPTED',
-  REJECTED = 'REJECTED'
+  REJECTED = 'REJECTED',
+  RESCINDED = 'RESCINDED'
 }
 registerEnumType(ApplicationStatus, {
   name: 'ApplicationStatus',
@@ -21,7 +22,8 @@ registerEnumType(ApplicationStatus, {
     ELIGIBLE: { description: 'All application requirements up to and including WORKFLOW_BLOCKING requirements are resolving as MET (or NOT_APPLICABLE or WARNING). If there is an acceptance phase, the acceptance is still pending.' },
     INELIGIBLE: { description: 'At least one application requirement up to and including WORKFLOW_BLOCKING requirements is not met. The review cannot proceed, but the first or current stage of the workflow should still continue.' },
     ACCEPTED: { description: 'An offer was made to the applicant and all ACCEPTANCE requirements are met (the applicant accepted the offer).' },
-    REJECTED: { description: 'An offer was made to the applicant and at least one ACCEPTANCE requirement is not met (the applicant rejected the offer).' }
+    REJECTED: { description: 'An offer was made to the applicant and at least one ACCEPTANCE requirement is not met (the applicant rejected the offer).' },
+    RESCINDED: { description: 'The application has been rescinded (pulled back from applicant) post approval.' }
   }
 })
 
@@ -87,6 +89,32 @@ registerEnumType(IneligiblePhases, {
   }
 })
 
+export enum ApplicationRescindedStatus {
+  RESCINDED = 'RESCINDED',
+  RESTORED = 'RESTORED'
+}
+registerEnumType(ApplicationRescindedStatus, {
+  name: 'ApplicationRescindedStatus',
+  description: `
+    The rescinded status of an application.
+  `,
+  valuesConfig: {
+    RESCINDED: { description: 'The application has been rescinded (pulled back from applicant) post approval.' },
+    RESTORED: { description: 'The application, which was previously rescinded, has now been restored to its state prior to rescinding.' }
+  }
+})
+
+/**
+ * rescinded is derived rather than stored. The underlying status stays in the computedStatus column
+ * so that restoring an application recovers the exact status it had before it was rescinded. required
+ * because there are phases where the status is frozen and could not be recomputed from the requirements.
+ */
+export function deriveApplicationStatus (computedStatus: ApplicationStatus, rescindedStatus?: ApplicationRescindedStatus) {
+  return rescindedStatus === ApplicationRescindedStatus.RESCINDED && (computedStatus === ApplicationStatus.ELIGIBLE || computedStatus === ApplicationStatus.ACCEPTED)
+    ? ApplicationStatus.RESCINDED
+    : computedStatus
+}
+
 @ObjectType({ description: 'An application represents the applicant applying to a specific program. Each appRequest has multiple applications - one per program defined in the system. Some applications are mutually exclusive and/or will be eliminated early based on PREQUAL requirements, but they all technically exist in the data model - there is no concept of picking one application over another, just two applications where one dies and the other survives.' })
 export class Application {
   constructor (row: ApplicationRow) {
@@ -101,7 +129,9 @@ export class Application {
     this.phase = row.computedPhase
     this.ineligiblePhase = row.computedIneligiblePhase
     this.workflowStageKey = row.workflowStage
-    this.status = row.computedStatus
+    this.computedStatus = row.computedStatus
+    this.rescindedStatus = row.rescindedStatus
+    this.status = deriveApplicationStatus(this.computedStatus, this.rescindedStatus)
     this.statusReason = row.computedStatusReason
     this.awaitingCorrection = !!row.computedAwaitingCorrection
     this.title = this.program.title
@@ -113,6 +143,8 @@ export class Application {
     this.appRequestPhase = row.appRequestPhase
     this.appRequestStatus = row.appRequestStatus
     this.appRequestComputedStatus = row.appRequestComputedStatus
+    this.rescindedReason = row.rescindedReason
+    this.restoredReason = row.restoredReason
   }
 
   @Field(() => ID)
@@ -148,7 +180,17 @@ export class Application {
   @Field({ description: 'The program key this application corresponds to.' })
   programKey: string
 
+  @Field(type => ApplicationRescindedStatus, { nullable: true, description: 'The application rescinded status' })
+  rescindedStatus?: ApplicationRescindedStatus
+
+  @Field({ nullable: true, description: 'The reason the application was rescinded' })
+  rescindedReason?: string
+
+  @Field({ nullable: true, description: 'The reason the application was restored after previously being rescinded' })
+  restoredReason?: string
+
   internalId: number
+  computedStatus: ApplicationStatus
   appRequestInternalId: number
   appRequestId: string
   appRequestTags?: Record<string, string[]>

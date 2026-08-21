@@ -3,18 +3,20 @@
   import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
-  import { isInlineReviewerEditPrompt, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api, type BasicRequestData } from '$internal'
   import { enumRequirementStatus, enumRequirementType, PromptIndicators, type PhaseChangeMutations } from '$lib'
-  import { FormInlineNotification, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
+  import { isInlineReviewerEditPrompt, InlinePromptStore, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api, type BasicRequestData } from '$internal'
+  import { PromptIndicators } from '$lib'
+  import { FormInlineNotification, GeneralTextSkeleton, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { Tooltip } from 'carbon-components-svelte'
   import { uiRegistry } from '../../local';
   import { Button } from 'carbon-components-svelte'
   import type { PageData } from '../../routes/requests/[id]/approve/[programKey]/$types'
-  import { invalidateAll } from '$app/navigation'
+  import { invalidate } from '$app/navigation'
   import Review from "carbon-icons-svelte/lib/Review.svelte";
   import DelayedSkeleton from '$lib/components/DelayedSkeleton.svelte';
   import WarningIconYellow from './WarningIconYellow.svelte';
   import { toasts } from '@txstate-mws/svelte-components';
+  import { randomid } from 'txstate-utils'
 
   type ApplicationRequirement = (typeof appRequest)['applications'][number]['requirements'][number]
 
@@ -28,6 +30,7 @@
   type PromptExtraData = Awaited<ReturnType<typeof api.getPromptData>>
   type Prompt = PageData['appRequest']['applications'][0]['requirements'][0]['prompts'][0]
   type PromptWithExtra = Prompt & PromptExtraData
+  type InlinePrompt = Prompt & Partial<PromptExtraData>
   let editingPromptWithData: PromptWithExtra | undefined = undefined
   let promptBeingEdited: Prompt | undefined = undefined
   let showPromptDialog = false
@@ -47,10 +50,19 @@
       }
     }
   }
-  function hideEditModalPromptOnLoading() { // keep the dialog in the DOM so onSave fires, but remove from view
+  // Diff issue, but needed because a bare document.querySelector('.tcbs-dialog') grabs the first
+  // dialog in document order, and the page keeps note form and the notes list permanently mounted.
+  // so need to be specific
+  const editDialogFormId = randomid()
+  function editDialogElement () {
+    return document.getElementById(editDialogFormId)?.closest('.tcbs-dialog') ?? undefined
+  }
+  function hideEditModalPrompt () { // keep the dialog in the DOM so on:saved fires, but remove from view
     if (!showPromptDialog) return
-    const editModalDialog = document.querySelector('.tcbs-dialog')
-    editModalDialog?.classList.add('invisible')
+    editDialogElement()?.classList.add('invisible')
+  }
+  function showEditModalPrompt () {
+    editDialogElement()?.classList.remove('invisible')
   }
 
   function closePromptDialog () {
@@ -59,15 +71,21 @@
     editingPromptWithData = undefined
     promptBeingEdited = undefined
   }
-
-  function onPromptSubmit (prompt: any) {
+  function onPromptSubmit (prompt: any, modal = false) {
     return async (data: any) => {
-      loading = true
-      hideEditModalPromptOnLoading()
-      const response = (!prompt.allowSaveWithoutChanges)
-        ? await api.updatePrompt(prompt.id, data, false)
-        : await api.updatePrompt(prompt.id, data, false, undefined, true) // triggers from review corrections edit selection, allow saving without changes to handle invalidate prompts that require no changes
-      return response
+      if (modal) { loading = true; hideEditModalPrompt() }
+      try {
+        const response = (!prompt.allowSaveWithoutChanges)
+          ? await api.updatePrompt(prompt.id, data, false)
+          : await api.updatePrompt(prompt.id, data, false, undefined, true) // triggers from review corrections edit selection, allow saving without changes to handle invalidate prompts that require no changes
+        if (modal && !response.success) { loading = false; showEditModalPrompt() }
+        // prev resp.data was replacing the store's data with a wrongly-shaped object and
+        // re-baselines beforeUserChanges to it. Reduce to this prompt's slice like ApplicantPromptPage.onSubmit
+        return { ...response, data: response.data?.[prompt.key] }
+      } catch (e) {
+        if (modal) { loading = false; showEditModalPrompt() }
+        throw e
+      }
     }
   }
 
@@ -78,10 +96,9 @@
     }
   }
 
-  async function onPromptSaved (data: any) {
-    await invalidateAll()
-    closePromptDialog ()
-    loading = false
+  async function refreshReviewData () {
+    // Scoped instead of invalidateAll()
+    await Promise.all([invalidate('request:approve'), invalidate('request:id')])
   }
 
     async function appRequestPhaseChange (action: PhaseChangeMutations) {
@@ -145,6 +162,56 @@
 
   $: readyForWorkflow = application.phase === 'READY_FOR_WORKFLOW' ? sections.filter(s => s.requirements.filter(r => r.type === 'WORKFLOW').length).pop()?.title : undefined
   $: latestWorkflow = readyForWorkflow ?? sections.filter(section => section.requirements.every(r => !r.workflowStage?.key)).pop()?.title
+  /** inline autoSave forms: refresh statuses/indicators only, never touch the live form */
+  async function onPromptAutoSaved () {
+    await refreshReviewData()
+  }
+
+  /** modal edit form: close first, so the dialog is not left hidden for the whole refresh */
+  async function onPromptSaved () {
+    loading = false
+    closePromptDialog()
+    await refreshReviewData()
+  }
+
+  // One long-lived store per inline reviewer promptto prevent refresh landing mid-typing and reverting
+  // whatever the reviewer just typed. Owning the store lets us preload once at first render, and
+  // afterwards only for forms the reviewer has not touched.
+  const promptStores = new Map<string, InlinePromptStore<any>>()
+
+  function promptStore (prompt: InlinePrompt) {
+    let store = promptStores.get(prompt.id)
+    // a discarded store has been reset by unmount() and would render blank, so rebuild instead
+    if (store == null || store.discarded) {
+      store = new InlinePromptStore(onPromptSubmit(prompt), onPromptValidate(prompt))
+      // must precede preload so setDirtyForm takes the autoSave branch and does not show on every field's validation errors on load
+      store.autoSave = true
+      if (prompt.preloadData != null) void store.preload(prompt.preloadData).catch(console.error)
+      promptStores.set(prompt.id, store)
+    }
+    return store
+  }
+
+  // An untouched inline form may still need fresh server data, because one prompt's answer can
+  // change another prompt's preloadData via PromptDefinition.preload.
+  function syncPromptStores (..._: any[]) {
+    const live = new Set<string>()
+    for (const section of sections) {
+      for (const requirement of section.requirements) {
+        for (const prompt of requirement.prompts) {
+          if (prompt.optOut) continue
+          if (!isInlineReviewerEditPrompt(uiRegistry.getPrompt(prompt.key), requirement, prompt)) continue
+          live.add(prompt.id)
+          const store = promptStores.get(prompt.id)
+          if (store != null && !store.touched && !store.discarded && prompt.preloadData != null) {
+            void store.preload(prompt.preloadData).catch(console.error)
+          }
+        }
+      }
+    }
+    for (const id of [...promptStores.keys()]) if (!live.has(id)) promptStores.delete(id)
+  }
+  $: syncPromptStores(sections)
 
 </script>
 {#each sections as section (section.title)}
@@ -181,7 +248,7 @@
                     {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.WARNING}
                         <WarningIconYellow />
                     {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.DISQUALIFYING}
-                        <WarningFilled size={20} class="disqualifying-icon" style="fill: #da1e28;" />
+                        <WarningFilled size={20} class="disqualifying-icon" style="fill: var(--cds-support-01, #da1e28)" />
                     {/if}
                     </svelte:fragment>
                     {promptIndicator[prompt.key]?.reason}
@@ -197,13 +264,13 @@
             </dt>
             <dd class="flow" class:small class:large class:isReviewerQuestion class:disabled={disabled} class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
               {#if editMode}
-                <Form preload={prompt.preloadData} submit={onPromptSubmit(prompt)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptSaved} let:data let:messages>
-                  <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason}  />
-                  {#each messages as message (message.message, message.type)}
-                    <FormInlineNotification {message} />
-                  {/each}
-                </Form>
-                {:else}
+                <Form store={promptStore(prompt)} submit={onPromptSubmit(prompt)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptAutoSaved} let:data let:messages>
+                    <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason}  />
+                    {#each messages as message (message.message, message.type)}
+                      <FormInlineNotification {message} />
+                    {/each}
+                  </Form>
+              {:else}
                 <div class="pr-4">
                   <RenderDisplayComponent
                     {def}
@@ -243,10 +310,11 @@
 {#if showPromptDialog && promptBeingEdited}
 {@const formMode = uiRegistry.getPrompt(promptBeingEdited.key)?.formMode === 'full' ? 'large' : undefined}
   <PanelFormDialog
+    id={editDialogFormId}
     title={editingPromptWithData?.invalidated ? `Review correction "${editingPromptWithData?.title}"` : 'Edit Prompt'}
     bind:open={showPromptDialog}
     on:cancel={closePromptDialog}
-    submit={onPromptSubmit(editingPromptWithData)}
+    submit={onPromptSubmit(editingPromptWithData, true)}
     validate={onPromptValidate(editingPromptWithData)}
     on:saved={onPromptSaved}
     disableSaveUntilChanged={!editingPromptWithData?.allowSaveWithoutChanges} // allow saving without changes if prompt was previously invalidated ...accomodates reviewer saying no changes required on correction check

@@ -3,7 +3,6 @@
   import { toasts } from '@txstate-mws/svelte-components'
   import { ReviewerQuestions, AppRequestActions } from '$internal/components'
   import { Button, InlineNotification, Select, SelectItem } from 'carbon-components-svelte'
-  import DocumentExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import Pen from 'carbon-icons-svelte/lib/Pen.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
@@ -160,7 +159,7 @@
     ...blockingWorkflowStages,
     ...nonBlockingWorkflowStages
   ].filter(s => (!!s.requirements[0]?.workflowStage) || (s.requirements.length > 0 && s.requirements.some(r => r.prompts.length > 0)))
-  $: applicationStatusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt)
+  $: applicationStatusTags = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt, application.rescindedStatus).map(info => ({ label: info.label, type: info.color }))
   $: loading = false
   let showLoading = false
   let loadingTimer: NodeJS.Timeout | undefined
@@ -177,14 +176,50 @@
       showLoading = false
     }
   }
+  // open rescind and restore panelformdialog
+  let reasonAction: 'rescind' | 'restore' | undefined = undefined
+  $: reasonActionInfo = reasonAction === 'restore'
+    ? { title: `Restore ${application.navTitle} benefit`, instructions: 'You will need to provide a reason why this benefit should be restored. The benefit will be restored to the state it was in before it was rescinded.', submitText: 'Restore benefit', successMessage: 'Benefit restored.' }
+    : { title: `Rescind ${application.navTitle} benefit`, instructions: 'You will need to provide a reason why this benefit should be rescinded. The applicant will no longer be able to use this benefit after rescinding.', submitText: 'Rescind benefit', successMessage: 'Benefit rescinded.' }
 
+  async function onReasonValidate (data: { reason: string }) {
+    const response = reasonAction === 'restore'
+      ? await api.restore(application.id, data.reason, true)
+      : await api.rescind(application.id, data.reason, true)
+    return response.messages
+  }
 
+  async function onReasonSubmit (data: { reason: string }) {
+    const response = reasonAction === 'restore'
+      ? await api.restore(application.id, data.reason, false)
+      : await api.rescind(application.id, data.reason, false)
+    return { ...response, data }
+  }
+
+  async function onReasonSaved () {
+    const message = reasonActionInfo.successMessage
+    onReasonCancel()
+    await invalidateAll()
+    toasts.add({ type: 'success', message })
+  }
+
+  function onReasonCancel () {
+    reasonAction = undefined
+  }
 </script>
 
 <ApproveLayout {basicRequestData} {appRequest}>
   <svelte:fragment slot="sidebar">
-    <InfoCard title={application.title} tags={[{ label: applicationStatusInfo.label, type: applicationStatusInfo.color }]} tagsInBody />
+    <InfoCard title={application.title} tags={applicationStatusTags} tagsInBody />
     <AppRequestActions {application} {basicRequestData} {requestId} />
+    <!-- <InfoCard title={application.title} tags={applicationStatusTags} tagsInBody> -->
+      <!--
+      <dl class="card">
+        <dt>Status</dt>
+        <dd><TagSet tags={applicationStatusTags} /></dd>
+      </dl>
+      -->
+    <!-- </InfoCard> -->
     <InfoCard
       title="Application Notes"
       actions={[
@@ -207,14 +242,40 @@
         {/if}
       </div>
     </InfoCard>
+
+    {#if application.actions.rescindApplication || application.actions.restoreApplication}
+      <InfoCard title="Rescind / Restore Benefit">
+        <div class="flow">
+          {#if application.actions.rescindApplication}
+            <Button size="small" class="[ w-full ]" kind="danger" on:click={() => { reasonAction = 'rescind' }}>Rescind benefit</Button>
+          {/if}
+          {#if application.actions.restoreApplication}
+            <Button size="small" class="[ w-full ]" kind="danger-ghost" on:click={() => { reasonAction = 'restore' }}>Restore benefit</Button>
+          {/if}
+        </div>
+      </InfoCard>
+    {/if}
   </svelte:fragment>
-  <ReviewerQuestions {sections} {appRequest} {application} {promptIndicator} {basicRequestData} />
-  <!-- <div class="app-actions [ flex items-end ]"> -->
-    <!-- <Button size="small" class="ml-[4px]" disabled={application.actions.advanceWorkflow}>Mark answers complete</Button> -->
-    <!-- <Button href={`/requests/${appRequest.id}/approve/export`} kind="secondary" size="small" icon={DocumentExport} class="ml-[32px]">Export</Button> -->
-  <!-- </div> -->
+  <ReviewerQuestions {sections} {appRequest} {application} {promptIndicator} {basicRequestData} bind:loading/>
 </ApproveLayout>
 
+
+{#if reasonAction}
+  <PanelFormDialog
+    title={reasonActionInfo.title}
+    open
+    on:cancel={onReasonCancel}
+    on:saved={onReasonSaved}
+    validate={onReasonValidate}
+    submit={onReasonSubmit}
+    submitText={reasonActionInfo.submitText}
+    centered
+  >
+    <div>{reasonActionInfo.instructions}</div>
+    <FieldTextArea path="reason" labelText={`Reason to ${reasonAction} this benefit.`} required notNull rows={4} />
+    <div class="bx--form__helper-text">This reason will be recorded in the request activity and included in the email sent to the applicant.</div>
+  </PanelFormDialog>
+{/if}
 
 {#if showUpdateNoteDialog && noteBeingEdited}
   <PanelFormDialog

@@ -63,7 +63,8 @@
           title: application.title,
           prompts: applicantPrompts,
           subsections,
-          applicationStatus: application.status
+          applicationStatus: application.status,
+          applicationRescindedStatus: application.rescindedStatus
         })
       }
     }
@@ -127,7 +128,7 @@
       </Panel>
     {:else if sections.length > 0}
       {#each sections as section (section.title)}
-        {@const applicationStatusInfo = section.applicationStatus ? getApplicationStatusInfo(section.applicationStatus, appRequest.phase, appRequest.closedAt) : undefined}
+        {@const applicationStatusInfo = section.applicationStatus ? getApplicationStatusInfo(section.applicationStatus, appRequest.phase, appRequest.closedAt, section.applicationRescindedStatus) : undefined}
         <Panel title={section.title} {expandable} expanded>
           {#if section.prompts.length}
             <dl class="prompt-list">

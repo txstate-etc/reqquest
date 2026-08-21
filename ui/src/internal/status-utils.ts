@@ -1,5 +1,5 @@
 import type { TagItem } from '@txstate-mws/carbon-svelte'
-import { enumAppRequestPhase, enumAppRequestStatus, enumRequirementType, type AppRequestPhase, type AppRequestStatus, type RequirementType } from '$lib'
+import { enumApplicationRescindedStatus, enumAppRequestPhase, enumAppRequestStatus, enumRequirementType, type AppRequestPhase, type AppRequestStatus, type RequirementType } from '$lib'
 import { longNumericTime } from './util.js'
 import { uiRegistry } from '../local/index.js'
 
@@ -288,8 +288,13 @@ export function getStatusActionType (status: AppRequestStatus): 'navigate' | 'do
 // === Application Status ===
 // ========================================
 
-// Map ApplicationStatus enum to display info
-export function getApplicationStatusInfo (status: string, appRequestPhase: string, closedAt: string | null | undefined): ApplicationStatusTagInfo {
+/**
+ * Map ApplicationStatus enum to display info.
+ *
+ * Returns a list because a restored application carries two tags - the status it was returned to
+ * plus a 'Restored' tag noting that it had been rescinded. Every other case returns a single tag.
+ */
+export function getApplicationStatusInfo (status: string, appRequestPhase: string, closedAt: string | null | undefined, rescindedStatus?: string | null): ApplicationStatusTagInfo[] {
   const statusMap: Record<string, ApplicationStatusTagInfo> = {
     ACCEPTED: {
       label: 'Offer accepted',
@@ -315,24 +320,37 @@ export function getApplicationStatusInfo (status: string, appRequestPhase: strin
       label: 'Offer declined',
       description: 'Offer rejected or requirements not met.',
       color: 'red'
+    },
+    RESCINDED: {
+      label: 'Rescinded',
+      description: 'Previously approved and has since been rescinded.',
+      color: 'red'
     }
   }
   if (appRequestPhase !== enumAppRequestPhase.COMPLETE && appRequestPhase !== enumAppRequestPhase.WORKFLOW_NONBLOCKING && closedAt != null) {
     if (appRequestPhase === enumAppRequestPhase.STARTED) {
-      return {
+      return [{
         label: 'Cancelled',
         description: `${uiRegistry.getWord('appRequest')} was cancelled before submission.`,
         color: 'gray'
-      }
+      }]
     } else {
-      return {
+      return [{
         label: 'Incomplete',
         description: 'This was closed before being completed.',
         color: 'red'
-      }
+      }]
     }
   }
-  return statusMap[status] ?? { label: status, description: 'Unknown status.', color: 'gray' }
+  const tags = [statusMap[status] ?? { label: status, description: 'Unknown status.', color: 'gray' as const }]
+  if (rescindedStatus === enumApplicationRescindedStatus.RESTORED) {
+    tags.push({
+      label: 'Restored',
+      description: 'This was rescinded and has since been restored.',
+      color: 'teal'
+    })
+  }
+  return tags
 }
 
 export const applicantStatuses = new Set<AppRequestStatus>([

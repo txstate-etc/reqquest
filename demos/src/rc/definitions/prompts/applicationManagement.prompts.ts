@@ -11,6 +11,13 @@ export const application_management_opt_out_prompt: PromptDefinition<OptOutData>
   description: 'Opt Out',
   schema: OptOutSchema,
   optOut: true,
+  preload: () => {
+    return {
+      optOut: false,
+      optInUnderstand: false,
+      optOutUnderstand: false
+    }
+  },
   validate: (data, config) => {
     return []
   }
