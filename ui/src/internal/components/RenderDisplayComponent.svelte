@@ -17,8 +17,6 @@
 <svelte:boundary onerror={e => console.error(e)}>
   {#if showMoot && prompt.moot}
     <em>Already disqualified.</em>
-  {:else if !prompt.answered}
-    <em>Incomplete</em>
   {:else if !def?.displayComponent}
     <em>No display component registered.</em>
     <pre>{JSON.stringify(appData[prompt.key] ?? {}, null, 2)}</pre>

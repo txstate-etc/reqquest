@@ -5,10 +5,10 @@ import { getInlineReviewerEditPrompts, coalesceAppRequestPrompts } from '$intern
 
 export const load: PageLoad = async ({ params, depends }) => {
   const appRequest = await api.getReviewData(params.id)
+  if (!appRequest) throw error(404, 'App Request not found')
   const inlinePrompts = getInlineReviewerEditPrompts(appRequest)
   const inlinePromptsWithData = await api.getPromptDataLegion(params.id, (inlinePrompts ?? []).map(prompt => prompt.id))
   const coalescedAppRequest = coalesceAppRequestPrompts(appRequest, inlinePromptsWithData)
-  if (!coalescedAppRequest) throw error(404, 'App Request not found')
   depends('request:approve')
-  return { appRequest: coalescedAppRequest, programKey: params.programKey }
+  return { appRequest: coalescedAppRequest, programKey: params.programKey, requestId: params.id }
 }

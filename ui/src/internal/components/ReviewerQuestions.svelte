@@ -3,24 +3,28 @@
   import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
-  import { isInlineReviewerEditPrompt, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api } from '$internal'
-  import { PromptIndicators } from '$lib'
-  import { FormInlineNotification, GeneralTextSkeleton, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
+  import { enumRequirementStatus, enumRequirementType, PromptIndicators, translateMutations, type PhaseChangeMutations } from '$lib'
+  import { isInlineReviewerEditPrompt, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api, type BasicRequestData } from '$internal'
+  import { FormInlineNotification, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { Tooltip } from 'carbon-components-svelte'
   import { uiRegistry } from '../../local';
   import { Button } from 'carbon-components-svelte'
   import type { PageData } from '../../routes/requests/[id]/approve/[programKey]/$types'
-  import { invalidate } from '$app/navigation'
+  import { invalidate, invalidateAll } from '$app/navigation'
   import Review from "carbon-icons-svelte/lib/Review.svelte";
   import DelayedSkeleton from '$lib/components/DelayedSkeleton.svelte';
   import WarningIconYellow from './WarningIconYellow.svelte';
+  import { toasts } from '@txstate-mws/svelte-components';
   import { randomid } from 'txstate-utils'
 
-  export let sections: any[]
+  type ApplicationRequirement = (typeof appRequest)['applications'][number]['requirements'][number]
+
+  export let sections: { title: string, requirements: ApplicationRequirement[] }[]
   export let promptIndicator: Record<string, any>
   export let loading = false
   export let appRequest: PageData['appRequest']
-  export let application: PageData['appRequest']
+  export let application: PageData['appRequest']['applications'][0]
+  export let basicRequestData: BasicRequestData
 
   type PromptExtraData = Awaited<ReturnType<typeof api.getPromptData>>
   type Prompt = PageData['appRequest']['applications'][0]['requirements'][0]['prompts'][0]
@@ -95,6 +99,68 @@
     await Promise.all([invalidate('request:approve'), invalidate('request:id')])
   }
 
+    async function appRequestPhaseChange (action: PhaseChangeMutations) {
+    const response = await api.appRequestPhaseChange(appRequest.id, action)
+    await invalidateAll()
+    loading = false
+    if (!response.success) {
+      toasts.add({
+        type: 'error',
+        title: 'Action Failed',
+        message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
+      })
+    } else {
+      toasts.add({
+        type: 'success',
+        message: `Successfully ${translateMutations[action]}.`
+      })
+    }
+    await invalidateAll()
+  }
+
+  async function advanceWorkflow () {
+    loading = true
+    const response = await api.advanceWorkflow(application.id)     
+    await invalidateAll()
+    if (basicRequestData?.actions.completeReview) return await appRequestPhaseChange('completeReview')
+    if (basicRequestData?.actions.completeRequest) return await appRequestPhaseChange('completeRequest')
+    loading = false   
+    if (!response.success) {
+      toasts.add({
+        type: 'error',
+        title: 'Could not advance application',
+        message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
+      })
+    } else {
+      toasts.add({
+        type: 'success',
+        message: 'Application advanced.'
+      })
+    }    
+  }
+
+  async function reverseWorkflow () {
+    loading = true
+    const response = await api.reverseWorkflow(application.id)     
+    await invalidateAll()    
+    loading = false   
+    if (!response.success) {
+      toasts.add({
+        type: 'error',
+        title: 'Could not reverse application workflow',
+        message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
+      })
+    } else {
+      toasts.add({
+        type: 'success',
+        message: 'Application workflow reversed.'
+      })
+    }
+  }
+
+  $: readyForWorkflow = !application.nextWorkflowStage && application.phase === 'READY_FOR_WORKFLOW' ? sections.filter(s => s.requirements.filter(r => r.type === 'WORKFLOW').length).pop()?.title : undefined
+  $: latestWorkflow = readyForWorkflow ?? sections.filter(section => section.requirements.every(r => !r.workflowStage?.key)).pop()?.title
+  
   /** inline autoSave forms: refresh statuses/indicators only, never touch the live form */
   async function onPromptAutoSaved () {
     await refreshReviewData()
@@ -117,10 +183,12 @@
             {@const def = uiRegistry.getPrompt(prompt.key)}
             {@const isReviewerQuestion = reviewerRequirementTypes.has(requirement.type) && !def?.automation}
             {@const isAutomation = !!def?.automation}
-            {@const editMode = isInlineReviewerEditPrompt(def, requirement, prompt)}
-            {@const small = editMode && def.formMode !== 'full' ? def.formMode !== 'large' : def!.displayMode !== 'large'}
-            {@const large = editMode && def.formMode !== 'full' ? def.formMode === 'large' : def!.displayMode === 'large'}
+            {@const editMode = isInlineReviewerEditPrompt(def, requirement.type, prompt)}
+            {@const small = editMode && def?.formMode !== 'full' ? def?.formMode !== 'large' : def!.displayMode !== 'large'}
+            {@const large = editMode && def?.formMode !== 'full' ? def?.formMode === 'large' : def!.displayMode === 'large'}
             {@const dtid = `dt-title-${prompt.id}`}
+            {@const currentWorkflow = application.workflowStage ? application.workflowStage?.key === section.requirements[0]?.workflowStage?.key : undefined}
+            {@const disabled = ((!editMode && def?.formMode !== 'full') && (currentWorkflow || requirement.status !== enumRequirementStatus.MET))}
             {#snippet editButtons()}
               {#if prompt.actions.update}
                 {#if prompt.invalidated && !applicantRequirementTypes.has(requirement.type)}
@@ -130,7 +198,7 @@
                 {/if}
               {/if}
             {/snippet}
-            <dt class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation}>
+            <dt class:small class:large class:isReviewerQuestion class:disabled={disabled} class:bg-tagyellow-200={isAutomation}>
             {#if promptIndicator[prompt.key]?.indicator}
                 <div class="indicator-tooltip">
                 <Tooltip align="start" direction="bottom">
@@ -154,7 +222,7 @@
               {@render editButtons()}
             {/if}
             </dt>
-            <dd class="flow" class:small class:large class:isReviewerQuestion class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
+            <dd class="flow" class:small class:large class:isReviewerQuestion class:disabled={disabled} class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
               {#if editMode}
                 <Form preload={prompt.preloadData} submit={onPromptSubmit(prompt)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptAutoSaved} let:data let:messages>
                     <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason}  />
@@ -164,11 +232,15 @@
                   </Form>
               {:else}
                 <div class="pr-4">
-                  {#if prompt.actions.update && prompt.invalidated && !applicantRequirementTypes.has(requirement.type)}
-                    <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot showInlineReviewNotification={true} />
-                  {:else}
-                    <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appRequest.data} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} showMoot />
-                  {/if}
+                  <RenderDisplayComponent
+                    {def}
+                    appRequestId={appRequest.id}
+                    appData={appRequest.data}
+                    prompt={prompt}
+                    prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}}
+                    configData={prompt.configurationData}
+                    gatheredConfigData={prompt.gatheredConfigData} showMoot
+                    showInlineReviewNotification={prompt.actions.update && prompt.invalidated && !applicantRequirementTypes.has(requirement.type)} />
                 </div>
                 {#if !large}
                   {@render editButtons()}
@@ -182,6 +254,15 @@
       No questions need to be answered in this section. You may advance to the next step.
     {:else}
       No questions in this section.
+    {/if}
+    {#if !section.requirements.every(r => r.type === enumRequirementType.PREQUAL) && (application.actions?.advanceWorkflow || application.actions?.reverseWorkflow)}
+      <div class="flex justify-end mt-8">
+        {#if application.actions?.advanceWorkflow && (application.workflowStage?.key ? application.workflowStage?.key === section.requirements[0]?.workflowStage?.key : section.title === latestWorkflow)}
+          <Button size="small" on:click={advanceWorkflow}>{'Send to ' + (application.nextWorkflowStage?.title ?? (!application.workflowStage?.blocking ? 'Complete' : 'Review Complete'))}</Button>
+        {:else if application.actions?.reverseWorkflow && section.requirements.every(r => r.status === enumRequirementStatus.MET || r.status === enumRequirementStatus.NOT_APPLICABLE) && application.previousWorkflowStage?.key === section.requirements[0]?.workflowStage?.key}
+          <Button kind='secondary' size="small" on:click={reverseWorkflow}>Edit answers</Button>
+        {/if}
+      </div>
     {/if}
   </Panel>
 {/each}
@@ -281,6 +362,10 @@
   .prompts dt.isReviewerQuestion, .prompts dd.isReviewerQuestion {
     background-color: var(--cds-tag-background-cyan);
   }
+  .prompts dt.isReviewerQuestion.disabled, .prompts dd.isReviewerQuestion.disabled {
+    background-color: #f2f2f2;
+    color: #8C8C8C;
+  }
   .prompts dt {
     display: flex;
     align-items: center;
@@ -309,5 +394,8 @@
   }
   :global(.disqualifying-icon) {
     fill: var(--cds-support-01, #da1e28);
+  }
+  :global(.panel:has(.isReviewerQuestion.disabled) .panel-header) {
+    background-color: #8C8C8C !important;
   }
 </style>

@@ -1,9 +1,8 @@
 <script lang="ts">
   import { BadgeNumber, FieldTextArea, PanelDialog, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
-  import ReviewerQuestions from '$internal/components/ReviewerQuestions.svelte'
+  import { ReviewerQuestions, AppRequestActions } from '$internal/components'
   import { Button, InlineNotification, Select, SelectItem } from 'carbon-components-svelte'
-  import DocumentExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import Pen from 'carbon-icons-svelte/lib/Pen.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
@@ -14,7 +13,6 @@
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../../local'
   import ApproveLayout from '../ApproveLayout.svelte'
-  import { Loading } from "carbon-components-svelte";
 
 
   /**
@@ -23,9 +21,9 @@
    * any available prompts to fill in more data.
    */
   export let data: PageData
-  $: ({ basicRequestData, appRequest, programKey } = data)
+  $: ({ basicRequestData, appRequest, programKey, requestId } = data)
   $: application = appRequest.applications.find(a => a.programKey === programKey)!
-  $: notes = appRequest.notes
+  $: notes = appRequest?.notes ?? []
   $: latestNote = notes[0]
 
   let showNotesDialog = false
@@ -178,23 +176,11 @@
       showLoading = false
     }
   }
-
-  let appAction: '' | 'advanceWorkflow' | 'reverseWorkflow' | 'rescind' | 'restore' = ''
   // open rescind and restore panelformdialog
   let reasonAction: 'rescind' | 'restore' | undefined = undefined
   $: reasonActionInfo = reasonAction === 'restore'
     ? { title: `Restore ${application.navTitle} benefit`, instructions: 'You will need to provide a reason why this benefit should be restored. The benefit will be restored to the state it was in before it was rescinded.', submitText: 'Restore benefit', successMessage: 'Benefit restored.' }
     : { title: `Rescind ${application.navTitle} benefit`, instructions: 'You will need to provide a reason why this benefit should be rescinded. The applicant will no longer be able to use this benefit after rescinding.', submitText: 'Rescind benefit', successMessage: 'Benefit rescinded.' }
-
-  async function onAppAction () {
-    if (appAction === 'advanceWorkflow') {
-      await advanceWorkflow()
-    } else if (appAction === 'reverseWorkflow') {
-      await reverseWorkflow()
-    } else if (appAction === 'rescind' || appAction === 'restore') {
-      reasonAction = appAction
-    }
-  }
 
   async function onReasonValidate (data: { reason: string }) {
     const response = reasonAction === 'restore'
@@ -219,61 +205,21 @@
 
   function onReasonCancel () {
     reasonAction = undefined
-    appAction = ''
-  }
-
-  async function advanceWorkflow () {
-    loading = true
-    const response = await api.advanceWorkflow(application.id)     
-    await invalidateAll()    
-    loading = false   
-    if (!response.success) {
-      toasts.add({
-        type: 'error',
-        title: 'Could not advance application',
-        message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
-      })
-    } else {
-      toasts.add({
-        type: 'success',
-        message: 'Application advanced.'
-      })
-    }    
-  }
-
-  async function reverseWorkflow () {
-    loading = true
-    const response = await api.reverseWorkflow(application.id)     
-    await invalidateAll()    
-    loading = false   
-    if (!response.success) {
-      toasts.add({
-        type: 'error',
-        title: 'Could not reverse application workflow',
-        message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
-      })
-    } else {
-      toasts.add({
-        type: 'success',
-        message: 'Application workflow reversed.'
-      })
-    }
   }
 </script>
-{#if showLoading}  
-    <Loading />    
-{/if}
 
 <ApproveLayout {basicRequestData} {appRequest}>
   <svelte:fragment slot="sidebar">
-    <InfoCard title={application.title} tags={applicationStatusTags} tagsInBody>
+    <InfoCard title={application.title} tags={applicationStatusTags} tagsInBody />
+    <AppRequestActions {application} {basicRequestData} {requestId} />
+    <!-- <InfoCard title={application.title} tags={applicationStatusTags} tagsInBody> -->
       <!--
       <dl class="card">
         <dt>Status</dt>
         <dd><TagSet tags={applicationStatusTags} /></dd>
       </dl>
       -->
-    </InfoCard>
+    <!-- </InfoCard> -->
     <InfoCard
       title="Application Notes"
       actions={[
@@ -285,40 +231,32 @@
       <div class="active-note">
         {#if latestNote}
           <CommentCard
-          authorName={latestNote.author.fullname}
-          authorLogin={latestNote.author.login}
-          content={latestNote.content}
-          createdAt={latestNote.createdAt}
-          noborder
+            authorName={latestNote.author.fullname}
+            authorLogin={latestNote.author.login}
+            content={latestNote.content}
+            createdAt={latestNote.createdAt}
+            noborder
           />
         {:else}
           <InlineNotification kind="info" lowContrast hideCloseButton title="No application notes." subtitle="Add a note to see it here."></InlineNotification>
         {/if}
       </div>
     </InfoCard>
-  </svelte:fragment>
-  <ReviewerQuestions {sections} {appRequest} {application} {promptIndicator} bind:loading />
-  <div class="app-actions [ flex items-end ]">
-    {#if application.actions.advanceWorkflow || application.actions.reverseWorkflow || application.actions.rescindApplication || application.actions.restoreApplication}
-      <Select bind:selected={appAction} labelText="Actions" size="sm">
-        <SelectItem value="" text="Choose one" />
-        {#if application.actions.advanceWorkflow}
-          <SelectItem value="advanceWorkflow" text={'Send to ' + (application.nextWorkflowStage?.title ?? (!application.workflowStage?.blocking ? 'Complete' : 'Review Complete'))} />
-        {/if}
-        {#if application.actions.reverseWorkflow}
-          <SelectItem value="reverseWorkflow" text={'Return to ' + (application.previousWorkflowStage?.title ?? 'Review')} />
-        {/if}
-        {#if application.actions.rescindApplication}
-          <SelectItem value="rescind" text="Rescind" />
-        {/if}
-        {#if application.actions.restoreApplication}
-          <SelectItem value="restore" text="Restore" />
-        {/if}
-      </Select>
-      <Button on:click={onAppAction} size="small" class="ml-[4px]">Confirm</Button>
+
+    {#if application.actions.rescindApplication || application.actions.restoreApplication}
+      <InfoCard title="Rescind / Restore Benefit">
+        <div class="flow">
+          {#if application.actions.rescindApplication}
+            <Button size="small" class="[ w-full ]" kind="danger" on:click={() => { reasonAction = 'rescind' }}>Rescind benefit</Button>
+          {/if}
+          {#if application.actions.restoreApplication}
+            <Button size="small" class="[ w-full ]" kind="danger-ghost" on:click={() => { reasonAction = 'restore' }}>Restore benefit</Button>
+          {/if}
+        </div>
+      </InfoCard>
     {/if}
-    <Button href={`/requests/${appRequest.id}/approve/export`} kind="secondary" size="small" icon={DocumentExport} class="ml-[32px]">Export</Button>
-  </div>
+  </svelte:fragment>
+  <ReviewerQuestions {sections} {appRequest} {application} {promptIndicator} {basicRequestData} bind:loading/>
 </ApproveLayout>
 
 
