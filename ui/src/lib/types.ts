@@ -78,3 +78,14 @@ export enum PromptIndicators {
   WARNING = 2,
   DISQUALIFYING = 3
 }
+
+  export const translateMutations = {
+    submitAppRequest: 'submitted request for review.',
+    returnToApplicant: 'returned request to applicant',
+    completeReview: 'completed request review',
+    returnToReview: 'returned request to review',
+    acceptOffer: 'accepted offer',
+    returnToOffer: 'returned request to applicant to accept offer',
+    completeRequest: 'marked request as complete',
+    returnToNonBlocking: 'returned request to non-blocking workflow tasks'
+  }

@@ -3,15 +3,14 @@
   import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
-  import { enumRequirementStatus, enumRequirementType, PromptIndicators, type PhaseChangeMutations } from '$lib'
+  import { enumRequirementStatus, enumRequirementType, PromptIndicators, translateMutations, type PhaseChangeMutations } from '$lib'
   import { isInlineReviewerEditPrompt, InlinePromptStore, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api, type BasicRequestData } from '$internal'
-  import { PromptIndicators } from '$lib'
-  import { FormInlineNotification, GeneralTextSkeleton, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
+  import { FormInlineNotification, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { Tooltip } from 'carbon-components-svelte'
   import { uiRegistry } from '../../local';
   import { Button } from 'carbon-components-svelte'
   import type { PageData } from '../../routes/requests/[id]/approve/[programKey]/$types'
-  import { invalidate } from '$app/navigation'
+  import { invalidate, invalidateAll } from '$app/navigation'
   import Review from "carbon-icons-svelte/lib/Review.svelte";
   import DelayedSkeleton from '$lib/components/DelayedSkeleton.svelte';
   import WarningIconYellow from './WarningIconYellow.svelte';
@@ -114,8 +113,7 @@
     } else {
       toasts.add({
         type: 'success',
-        // message: `Successfully ${translateMutations[action]}.`
-        message: `Success`
+        message: `Successfully ${translateMutations[action]}.`
       })
     }
     await invalidateAll()
@@ -126,6 +124,7 @@
     const response = await api.advanceWorkflow(application.id)     
     await invalidateAll()
     if (basicRequestData?.actions.completeReview) return await appRequestPhaseChange('completeReview')
+    if (basicRequestData?.actions.completeRequest) return await appRequestPhaseChange('completeRequest')
     loading = false   
     if (!response.success) {
       toasts.add({
@@ -160,8 +159,9 @@
     }
   }
 
-  $: readyForWorkflow = application.phase === 'READY_FOR_WORKFLOW' ? sections.filter(s => s.requirements.filter(r => r.type === 'WORKFLOW').length).pop()?.title : undefined
+  $: readyForWorkflow = !application.nextWorkflowStage && application.phase === 'READY_FOR_WORKFLOW' ? sections.filter(s => s.requirements.filter(r => r.type === 'WORKFLOW').length).pop()?.title : undefined
   $: latestWorkflow = readyForWorkflow ?? sections.filter(section => section.requirements.every(r => !r.workflowStage?.key)).pop()?.title
+  
   /** inline autoSave forms: refresh statuses/indicators only, never touch the live form */
   async function onPromptAutoSaved () {
     await refreshReviewData()

@@ -2,12 +2,14 @@
   import { toasts } from '@txstate-mws/svelte-components'
   import { Loading } from "carbon-components-svelte"
   import { Button, Select, SelectItem } from 'carbon-components-svelte'
-  import { InfoCard } from '$lib'
+  import { InfoCard, translateMutations } from '$lib'
   import { phaseChangeMutations, type PhaseChangeMutations } from '$lib'
   import { invalidateAll } from '$app/navigation'
   import { api, type BasicRequestData } from '$internal/api'
   import type { PageData } from '../../routes/requests/[id]/approve/[programKey]/$types'
   import { uiRegistry } from '../../local'
+  import DocumentExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
+
   
   export let application: PageData['appRequest']['applications'][0]
   export let basicRequestData: BasicRequestData
@@ -15,16 +17,7 @@
 
   $: loading = false
 
-  const translateMutations = {
-    submitAppRequest: 'submitted request for review.',
-    returnToApplicant: 'returned request to applicant',
-    completeReview: 'completed request review',
-    returnToReview: 'returned request to review',
-    acceptOffer: 'accepted offer',
-    returnToOffer: 'returned request to applicant to accept offer',
-    completeRequest: 'marked request as complete',
-    returnToNonBlocking: 'returned request to non-blocking workflow tasks'
-  }
+
 
   let appRequestAction: '' | PhaseChangeMutations | 'reopen' | 'close' = ''
   async function onAppRequestAction () {
@@ -147,6 +140,9 @@
 {/if}
 
 <InfoCard title='Reviewer Actions'>
+<div slot='header-right'>
+  <Button aria-label='export' href={`/requests/${requestId}/approve/export`} kind="secondary" size="small" icon={DocumentExport} class="ml-[32px]" />
+</div>
   <div class="flow">
     <!-- <Select bind:selected={appAction} labelText="Next step" size="sm">
       <SelectItem value="" text="Choose one" />
