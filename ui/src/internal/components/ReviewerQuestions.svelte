@@ -143,10 +143,8 @@
     }
   }
 
-  $: currentWorkflowTitle = sections.filter(section => section.requirements.every(r => !r.workflowStage?.key)).pop()?.title
-
-  console.log(application)
-  console.log(currentWorkflowTitle)
+  $: readyForWorkflow = application.phase === 'READY_FOR_WORKFLOW' ? sections.filter(s => s.requirements.filter(r => r.type === 'WORKFLOW').length).pop()?.title : undefined
+  $: latestWorkflow = readyForWorkflow ?? sections.filter(section => section.requirements.every(r => !r.workflowStage?.key)).pop()?.title
 
 </script>
 {#each sections as section (section.title)}
@@ -232,7 +230,7 @@
     {/if}
     {#if !section.requirements.every(r => r.type === enumRequirementType.PREQUAL) && (application.actions?.advanceWorkflow || application.actions?.reverseWorkflow)}
       <div class="flex justify-end mt-8">
-        {#if application.actions?.advanceWorkflow && (application.workflowStage?.key ? application.workflowStage?.key === section.requirements[0]?.workflowStage?.key : section.title === currentWorkflowTitle)}
+        {#if application.actions?.advanceWorkflow && (application.workflowStage?.key ? application.workflowStage?.key === section.requirements[0]?.workflowStage?.key : section.title === latestWorkflow)}
           <Button size="small" on:click={advanceWorkflow}>{'Send to ' + (application.nextWorkflowStage?.title ?? (!application.workflowStage?.blocking ? 'Complete' : 'Review Complete'))}</Button>
         {:else if application.actions?.reverseWorkflow && section.requirements.every(r => r.status === enumRequirementStatus.MET || r.status === enumRequirementStatus.NOT_APPLICABLE) && application.previousWorkflowStage?.key === section.requirements[0]?.workflowStage?.key}
           <Button kind='secondary' size="small" on:click={reverseWorkflow}>Edit answers</Button>
