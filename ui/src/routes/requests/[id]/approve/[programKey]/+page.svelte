@@ -297,7 +297,7 @@
       </div>
     </InfoCard>
   </svelte:fragment>
-  <ReviewerQuestions {sections} {appRequest} {application} {promptIndicator} />
+  <ReviewerQuestions {sections} {appRequest} {application} {promptIndicator} bind:loading />
   <div class="app-actions [ flex items-end ]">
     {#if application.actions.advanceWorkflow || application.actions.reverseWorkflow || application.actions.rescindApplication || application.actions.restoreApplication}
       <Select bind:selected={appAction} labelText="Actions" size="sm">
