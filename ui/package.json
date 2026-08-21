@@ -1,6 +1,9 @@
 {
   "name": "@reqquest/ui",
-  "version": "1.9.1",
+  "version": "1.10.0",
+  "overrides": {
+    "esrap": "2.3.2"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
