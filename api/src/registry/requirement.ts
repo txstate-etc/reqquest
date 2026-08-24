@@ -167,7 +167,7 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    * explicitly allowed to show up late and change this requirement's determination. Anything
    * you receive that way may be `undefined` on one call and populated on the next.
    */
-  resolve: (appRequestData: AppRequestData, config: ConfigurationDataType, configLookup: Record<string, any>) => { status: RequirementStatus, reason?: string }
+  resolve: (appRequestData: AppRequestData, config: ConfigurationDataType, configLookup: Record<string, any>) => { status: RequirementStatus, reason?: string, blame?: string[] }
   /**
    * Often, you will want to allow application administrators to control various aspects of
    * how requirements will be evaluated. For example, you might want administrators to
