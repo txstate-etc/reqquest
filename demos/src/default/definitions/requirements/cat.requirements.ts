@@ -55,13 +55,13 @@ export const other_cats_applicant_req: RequirementDefinition<OtherCatsPromptData
   promptKeys: ['other_cats_prompt', 'other_cats_vaccines_prompt'],
   resolve: (data, config) => {
     const otherCatsData = data['other_cats_prompt'] as OtherCatsPromptData
-    if (otherCatsData?.hasOtherCats == null) return { status: RequirementStatus.PENDING, reason: 'Applicant must indicate whether they have other cats.' }
+    if (otherCatsData?.hasOtherCats == null) return { status: RequirementStatus.PENDING, reason: 'Applicant must indicate whether they have other cats.', blame: ['other_cats_prompt'] }
     if (!otherCatsData.hasOtherCats) return { status: RequirementStatus.NOT_APPLICABLE }
     const vaccinesData = data['other_cats_vaccines_prompt'] as VaccinePromptData
     if (vaccinesData?.distemperDoc && vaccinesData?.rabiesDoc && vaccinesData?.felineLeukemiaDoc && vaccinesData?.felineHIVDoc) {
       return { status: RequirementStatus.MET }
     }
-    return { status: RequirementStatus.PENDING, reason: 'Applicant must provide vaccination records for their other cats.' }
+    return { status: RequirementStatus.PENDING, reason: 'Applicant must provide vaccination records for their other cats.', blame: ['other_cats_vaccines_prompt'] }
   }
 }
 
@@ -75,11 +75,11 @@ export const other_cats_reviewer_req: RequirementDefinition = {
     const otherCatsData = data['other_cats_prompt'] as OtherCatsPromptData
     if (otherCatsData?.hasOtherCats === false) return { status: RequirementStatus.NOT_APPLICABLE }
     const reviewData = data['vaccine_review_prompt'] as VaccineReviewPromptData
-    if (!reviewData) return { status: RequirementStatus.PENDING, reason: 'Reviewer must assess all vaccine records.' }
+    if (!reviewData) return { status: RequirementStatus.PENDING, reason: 'Reviewer must assess all vaccine records.', blame: ['vaccine_review_prompt'] }
     const keys: (keyof VaccineReviewPromptData)[] = ['distemper', 'rabies', 'felineLeukemia', 'felineHIV']
     for (const key of keys) {
-      if (!reviewData[key]) return { status: RequirementStatus.PENDING, reason: 'Reviewer is still assessing vaccine records.' }
-      if (!reviewData[key]!.satisfactory) return { status: RequirementStatus.DISQUALIFYING, reason: `The ${key} vaccine record is unsatisfactory.` }
+      if (!reviewData[key]) return { status: RequirementStatus.PENDING, reason: 'Reviewer is still assessing vaccine records.', blame: ['vaccine_review_prompt'] }
+      if (!reviewData[key]!.satisfactory) return { status: RequirementStatus.DISQUALIFYING, reason: `The ${key} vaccine record is unsatisfactory.`, blame: ['other_cats_vaccines_prompt'] }
     }
     return { status: RequirementStatus.MET }
   }
