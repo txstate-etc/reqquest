@@ -150,6 +150,16 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    * for the MET status, but it will be shown if provided. Note that the application will
    * only ever show a single reason, the last one provided by a failing or pending requirement.
    *
+   * Optionally provide `blame`, an array of prompt keys naming the answer or answers responsible
+   * for the status you are returning. The reviewer UI attaches the status indicator to those
+   * prompts instead of every prompt this requirement consults, so a requirement that reads three
+   * answers can point at the one that actually failed. Omit it and all of this requirement's
+   * prompts are indicated, which is the historical behavior and is usually right for a
+   * requirement that only has one prompt. The keys need not belong to this requirement - a
+   * reviewer requirement may blame the upstream applicant prompt whose answer it just judged.
+   * Nothing is validated or filtered; a key that matches no prompt the viewer can see simply has
+   * no effect.
+   *
    * These values will be cached until the appRequest is updated in some way.
    *
    * You'll receive the appRequestData, the configuration data, and a lookup object that

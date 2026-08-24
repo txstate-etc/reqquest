@@ -666,6 +666,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
 
         requirement.status = resolveInfo.status
         requirement.statusReason = resolveInfo.reason
+        requirement.blame = resolveInfo.blame?.length ? resolveInfo.blame : undefined
         if (requirement.status === RequirementStatus.DISQUALIFYING && isResolutionRequirement) applicationIsIneligible = true
 
         // an invalidated prompt that the user can currently reach must be re-answered before the

@@ -17,6 +17,8 @@ export interface ApplicationRequirementRow {
   evaluationOrder: number
   status: RequirementStatus
   statusReason?: string
+  // JSON array of prompt keys as stored; the model parses it into ApplicationRequirement.blame
+  blame?: string
 }
 
 async function processFilters (filter: ApplicationRequirementFilter) {
@@ -87,7 +89,7 @@ export async function syncRequirementRecords (application: Application, enabledK
 
 export async function updateRequirementComputed (requirements: ApplicationRequirement[], db: Queryable) {
   for (const requirement of requirements) {
-    await db.update('UPDATE application_requirements SET status = ?, statusReason = ? WHERE id = ?', [requirement.status, requirement.statusReason ?? null, requirement.internalId])
+    await db.update('UPDATE application_requirements SET status = ?, statusReason = ?, blame = ? WHERE id = ?', [requirement.status, requirement.statusReason ?? null, requirement.blame?.length ? JSON.stringify(requirement.blame) : null, requirement.internalId])
   }
 }
 
