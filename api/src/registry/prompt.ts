@@ -173,8 +173,13 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Pres
    *
    * Do not use the same key for a prompt and a requirement, as the keys will be used as
    * tag names in our authorization scheme and need to not clash.
+   *
+   * You may omit this when you hand your prompts to `RQServer.start` as a keyed object - for
+   * instance a module of definitions - in which case the name the prompt is registered under
+   * becomes its key, and you avoid writing the same identifier twice. Set `key`
+   * explicitly whenever a key needs to outlive a rename.
    */
-  key: KeyLiteral
+  key?: KeyLiteral
   /**
    * Display title for the prompt. Will be shown to any user that can see the prompt.
    */
@@ -419,6 +424,14 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Pres
   optOut?: boolean
 }
 
+/**
+ * A prompt definition after registration, when its key, either the one it declared or the name it
+ * was registered under, has been resolved and stamped onto it.
+ */
+export interface PromptDefinitionProcessed extends PromptDefinition {
+  key: string
+}
+
 export interface InvalidatedResponse {
   promptKey: string
   reason?: string
@@ -454,8 +467,8 @@ addFormats(registryAjv)
 addErrors(registryAjv)
 
 class PromptRegistry {
-  protected prompts: Record<string, PromptDefinition> = {}
-  protected promptsList: PromptDefinition[] = []
+  protected prompts: Record<string, PromptDefinitionProcessed> = {}
+  protected promptsList: PromptDefinitionProcessed[] = []
   protected userPrompts: Set<string> = new Set()
   protected unsortedMigrations: AppRequestMigration[] = []
   protected sortedMigrations: AppRequestMigration[] = []
@@ -466,18 +479,26 @@ class PromptRegistry {
   public indexCategories: PromptIndexDefinition[] = []
   public indexCategoryMap: Record<string, PromptIndexDefinition> = {}
   public tagCategories: PromptTagDefinition[] = []
-  public reachable: PromptDefinition[] = []
+  public reachable: PromptDefinitionProcessed[] = []
   public authorizationKeys: Record<string, string[]> = {}
 
-  register (prompt: PromptDefinition) {
-    this.prompts[prompt.key] = prompt
-    this.promptsList.push(prompt)
+  /**
+   * `registeredName` is the name the definition was handed over under.
+   * It becomes the prompt's key unless the definition carries an explicit one.
+   */
+  register (prompt: PromptDefinition, registeredName?: string) {
+    const key = prompt.key ?? registeredName
+    if (key == null) throw new Error('Registered a prompt with no key. Either set `key` on the definition, or pass your prompts to RQServer.start as a keyed object (e.g. `prompts: myPrompts`) so the name each is exported under can be used.')
+    const processed = prompt as PromptDefinitionProcessed
+    processed.key = key
+    this.prompts[key] = processed
+    this.promptsList.push(processed)
     this.unsortedMigrations.push(...(prompt.migrations ?? []))
-    if (isNotEmpty(prompt.schema)) this.validators[prompt.key] = registryAjv.compile(prompt.schema)
-    if (isNotEmpty(prompt.configuration?.schema)) this.configValidators[prompt.key] = registryAjv.compile(prompt.configuration.schema)
-    if (prompt.invalidUponChange == null) this.promptInvalidators[prompt.key] = () => []
-    else if (Array.isArray(prompt.invalidUponChange)) this.promptInvalidators[prompt.key] = () => prompt.invalidUponChange as InvalidatedResponse[]
-    else this.promptInvalidators[prompt.key] = prompt.invalidUponChange
+    if (isNotEmpty(prompt.schema)) this.validators[key] = registryAjv.compile(prompt.schema)
+    if (isNotEmpty(prompt.configuration?.schema)) this.configValidators[key] = registryAjv.compile(prompt.configuration.schema)
+    if (prompt.invalidUponChange == null) this.promptInvalidators[key] = () => []
+    else if (Array.isArray(prompt.invalidUponChange)) this.promptInvalidators[key] = () => prompt.invalidUponChange as InvalidatedResponse[]
+    else this.promptInvalidators[key] = prompt.invalidUponChange
   }
 
   get (key: string) {

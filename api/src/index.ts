@@ -43,8 +43,29 @@ export interface RQStartOpts extends Omit<GQLStartOpts, 'resolvers'> {
    * screens.
    */
   pastPrograms?: ProgramDefinition[]
-  requirements: RequirementDefinition[]
-  prompts: PromptDefinition[]
+  requirements: DefinitionSet<RequirementDefinition>
+  prompts: DefinitionSet<PromptDefinition>
+}
+
+/**
+ * Definitions may be handed over as an object keyed by the name each should be registered under -
+ * typically a module, `import * as prompts from './prompts/index.js'` then `prompts: prompts` - or
+ * as a plain array, in which case every definition must carry its own `key`.
+ *
+ * Prefer the keyed form: the name becomes the key, so the identifier is written once instead of
+ * twice. Note that a module namespace iterates its keys alphabetically rather than in declaration
+ * order, which is harmless for prompts and requirements - their order comes from `promptKeys` and
+ * `requirementKeys` - but is why `programs` does not accept this shape.
+ */
+export type DefinitionSet<T> = Record<string, T> | T[]
+
+/**
+ * Yields each definition with the name it was registered under, or undefined for the array form.
+ */
+function definitionEntries<T> (definitions: DefinitionSet<T>): [T, string | undefined][] {
+  return Array.isArray(definitions)
+    ? definitions.map(definition => [definition, undefined])
+    : Object.entries(definitions).map(([registeredName, definition]) => [definition, registeredName])
 }
 
 export class RQServer extends GQLServer {
@@ -121,8 +142,8 @@ export class RQServer extends GQLServer {
 
     Object.assign(appConfig, options.appConfig)
     appConfig.customContext = options.customContext as RQContextClass
-    for (const prompt of options.prompts) promptRegistry.register(prompt)
-    for (const requirement of options.requirements) requirementRegistry.register(requirement)
+    for (const [prompt, registeredName] of definitionEntries(options.prompts)) promptRegistry.register(prompt, registeredName)
+    for (const [requirement, registeredName] of definitionEntries(options.requirements)) requirementRegistry.register(requirement, registeredName)
     for (const program of options.programs) programRegistry.register(program, true)
     for (const program of options.pastPrograms ?? []) programRegistry.register(program, false)
     programRegistry.finalize()

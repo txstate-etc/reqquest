@@ -1,5 +1,5 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
-import { ApplicationPhase, AppRequestPhase, AppRequestStatusDB, PromptDefinition, promptRegistry, PromptRow, RequirementType } from '../internal.js'
+import { ApplicationPhase, AppRequestPhase, AppRequestStatusDB, PromptDefinitionProcessed, promptRegistry, PromptRow, RequirementType } from '../internal.js'
 import { JsonData } from '../internal.js'
 import { DEFAULT_EXPIRY } from '../util/crypto/hmac.js'
 
@@ -40,7 +40,7 @@ registerEnumType(PromptVisibility, {
 
 @ObjectType({ description: 'This is the generic definition of a prompt. It is not attached to an appRequest. We will use this type for the administration interface to allow administrators to grant access to prompts and edit their configuration.' })
 export class Prompt {
-  constructor (public definition: PromptDefinition) {
+  constructor (public definition: PromptDefinitionProcessed) {
     this.key = definition.key
     this.title = definition.title
     this.navTitle = definition.navTitle ?? definition.title

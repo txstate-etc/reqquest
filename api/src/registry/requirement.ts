@@ -40,8 +40,13 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    *
    * Do not use the same key for a prompt and a requirement, as the keys will be used as
    * tag names in our authorization scheme and need to not clash.
+   *
+   * You may omit this when you hand your requirements to `RQServer.start` as a keyed object - for
+   * instance a module of definitions - in which case the name the requirement is registered under
+   * becomes its key, and you avoid writing the same identifier twice:.
+   * Set `key` explicitly whenever a key needs to outlive a rename.
    */
-  key: string
+  key?: string
 
   type: RequirementType
 
@@ -183,6 +188,7 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
 }
 
 export interface RequirementDefinitionProcessed extends RequirementDefinition {
+  key: string
   allPromptKeys: string[]
   visiblePromptKeys: string[]
   visiblePrompts: Prompt[]
@@ -203,13 +209,20 @@ class RequirementRegistry {
   // registered so that historical data can be interpreted/rendered
   public reachable: RequirementDefinitionProcessed[] = []
 
-  register (definition: RequirementDefinition) {
+  /**
+   * `registeredName` is the name the definition was handed over under.
+   * It becomes the requirement's key unless the definition carries an explicit one.
+   */
+  register (definition: RequirementDefinition, registeredName?: string) {
+    const key = definition.key ?? registeredName
+    if (key == null) throw new Error('Registered a requirement with no key. Either set `key` on the definition, or pass your requirements to RQServer.start as a keyed object (e.g. `requirements: myRequirements`) so the name each is exported under can be used.')
     const noDisplayEntries = (definition.promptKeysNoDisplay ?? []).map(entry => typeof entry === 'string' ? { key: entry, gate: true } : { gate: true, ...entry })
     const noDisplayPromptKeys = noDisplayEntries.map(entry => entry.key)
     const allPromptKeys = [...(definition.promptKeys ?? []), ...(definition.promptKeysAnyOrder ?? []), ...noDisplayPromptKeys]
     const visiblePromptKeys = [...(definition.promptKeys ?? []), ...(definition.promptKeysAnyOrder ?? [])]
     const definitionProcessed: RequirementDefinitionProcessed = {
       ...definition,
+      key,
       allPromptKeys,
       visiblePromptKeys,
       visiblePrompts: [],
@@ -218,14 +231,14 @@ class RequirementRegistry {
       noDisplayPromptKeySet: new Set(noDisplayPromptKeys),
       ungatedPromptKeySet: new Set(noDisplayEntries.filter(entry => !entry.gate).map(entry => entry.key))
     }
-    this.requirements[definition.key] = definitionProcessed
+    this.requirements[key] = definitionProcessed
     this.requirementsList.push(definitionProcessed)
     if (applicantRequirementTypes.has(definition.type)) {
       // deliberately not allPromptKeys: a no-display prompt is never shown to the applicant, so it
       // must not become one of their prompts just because an applicant requirement reads it
-      for (const key of visiblePromptKeys) promptRegistry.setUserPrompt(key)
+      for (const promptKey of visiblePromptKeys) promptRegistry.setUserPrompt(promptKey)
     }
-    if (isNotEmpty(definition.configuration?.schema)) this.configValidators[definition.key] = registryAjv.compile(definition.configuration.schema)
+    if (isNotEmpty(definition.configuration?.schema)) this.configValidators[key] = registryAjv.compile(definition.configuration.schema)
   }
 
   keys () {

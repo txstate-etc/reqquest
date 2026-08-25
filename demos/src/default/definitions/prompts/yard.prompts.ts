@@ -3,7 +3,6 @@ import { type MutationMessage, MutationMessageType } from '@txstate-mws/graphql-
 import { YardPromptData, YardPromptPreStageData, YardPromptPreStageSchema, YardPromptSchema } from '../models/index.js'
 
 export const have_yard_prompt: PromptDefinition<YardPromptData, YardPromptData> = {
-  key: 'have_yard_prompt',
   title: 'Tell us about your yard',
   description: 'Applicants will enter information about their yard including how large it is and how many pets will share it.',
   schema: YardPromptSchema,
