@@ -7,6 +7,7 @@ import db from 'mysql2-async/db'
 import { Cache, isNotBlank, isNotEmpty, sortby } from 'txstate-utils'
 import { AppRequest, getIndexesInUse, Period, programRegistry, PROMPT_PRESTAGE_NS, requirementRegistry, RQContext, TagDefinition, type AppRequestData, type PromptPreStagingRecurrence } from '../internal.js'
 import type { Queryable } from 'mysql2-async'
+import type { PromptKey } from './keys.js'
 
 export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVersion'>> {
   /**
@@ -19,7 +20,7 @@ export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVer
   up: (data: DataType) => DataType | Promise<DataType>
 }
 
-export interface PromptIndexDefinition<PromptKey extends string = string, DataType = any> {
+export interface PromptIndexDefinition<KeyLiteral extends string = string, DataType = any> {
   /**
    * A unique, case-insensitive, stable key for the index. This will be used to namespace
    * individual index values.
@@ -62,7 +63,7 @@ export interface PromptIndexDefinition<PromptKey extends string = string, DataTy
    * Provide a function that will take the data from the AppRequest and return any index
    * values that are associated.
    */
-  extract: (data: AppRequestData & Record<PromptKey, DataType>) => string[]
+  extract: (data: AppRequestData & Record<KeyLiteral, DataType>) => string[]
   /**
    * This function should return a tag label for the given value in this category. This is used to
    * display the tags on a saved grant or generated from the AppRequest.
@@ -75,7 +76,7 @@ export interface PromptIndexDefinition<PromptKey extends string = string, DataTy
   getLabel?: (tag: string) => Promise<string | undefined> | string | undefined
 }
 
-export interface PromptTagDefinition<PromptKey extends string = string, DataType = any> extends PromptIndexDefinition<PromptKey, DataType> {
+export interface PromptTagDefinition<KeyLiteral extends string = string, DataType = any> extends PromptIndexDefinition<KeyLiteral, DataType> {
   /**
    * A brief sentence or two describing the tag category. This will be shown to administrators to help
    * explain the full meaning of the tag category as they are assigning permissions.
@@ -433,12 +434,12 @@ export interface PromptDefinitionProcessed extends PromptDefinition {
 }
 
 export interface InvalidatedResponse {
-  promptKey: string
+  promptKey: PromptKey
   reason?: string
 }
 
 export type InvalidatorFunction = (data: any, config: any, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) => InvalidatedResponse[]
-export type RevalidatorFunction = (data: any, config: any, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) => string[]
+export type RevalidatorFunction = (data: any, config: any, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) => PromptKey[]
 
 const labelLookupCache = new Cache(async (tag: { category: string, value: string }) => {
   return await (promptRegistry as any).indexLookups[tag.category]?.(tag.value) ?? tag.value

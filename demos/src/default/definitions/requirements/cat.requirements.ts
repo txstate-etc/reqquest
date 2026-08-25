@@ -1,7 +1,7 @@
 import { type RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
 import { CatTowerPromptData, NicePromptData, OtherCatsPromptData, TunaAllergyPromptData, VaccinePromptData, VaccineReviewPromptData } from '../models/index.js'
 
-export const cat_tower_req: RequirementDefinition = {
+export const cat_tower_req: RequirementDefinition & { key: 'have_a_cat_tower_req' } = {
   type: RequirementType.QUALIFICATION,
   key: 'have_a_cat_tower_req',
   title: 'Applicant must own a cat tower',

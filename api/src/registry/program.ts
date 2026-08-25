@@ -1,4 +1,5 @@
 import { AppRequest, AppRequestPhase, requirementRegistry } from '../internal.js'
+import type { RequirementKey } from './keys.js'
 
 export interface ProgramDefinition {
   key: string
@@ -35,7 +36,7 @@ export interface ProgramDefinition {
    * The list of requirements for this program, carefully ordered so that
    * the users are presented them in a logical order.
    */
-  requirementKeys: string[]
+  requirementKeys: RequirementKey[]
   /**
    * Add one or more workflow stages for this program. A workflow stage is a set of requirements and prompts
    * intended to audit the review process. The audit workflow needs to be completed regardless of whether the
@@ -80,7 +81,7 @@ export interface WorkflowStage {
   /**
    * The list of requirement keys that must be met to complete this stage.
    */
-  requirementKeys: string[]
+  requirementKeys: RequirementKey[]
 }
 
 export class ProgramRegistry {

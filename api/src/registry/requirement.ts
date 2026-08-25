@@ -1,13 +1,14 @@
 import { type ValidateFunction } from 'ajv'
 import { applicantRequirementTypes, AppRequestData, ConfigurationDefinition, programRegistry, promptRegistry, RequirementStatus, RequirementType, registryAjv, Prompt } from '../internal.js'
 import { isNotEmpty } from 'txstate-utils'
+import type { PromptKey } from './keys.js'
 
 export interface NoDisplayPromptKey {
   /**
    * The key of a prompt this requirement depends on but that should not be displayed
    * beneath it.
    */
-  key: string
+  key: PromptKey
 
   /**
    * Whether an unanswered prompt should hold this requirement back. Defaults to true.
@@ -93,7 +94,7 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    * information, and we don't know until we run `resolve` whether the next prompt will be necessary, so
    * we cannot add it to the navigation structure until we know we need it.
    */
-  promptKeys?: string[]
+  promptKeys?: PromptKey[]
 
   /**
    * Prompts listed as `promptKeys` will be revealed to the user in the order provided. The user
@@ -118,7 +119,7 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    *   the same prompt appearing twice in the navigation is confusing.
    * - The user cannot proceed unless they happen to go back and answer prompt B under Requirement 1.
    */
-  promptKeysAnyOrder?: string[]
+  promptKeysAnyOrder?: PromptKey[]
 
   /**
    * An array of prompt keys for prompts that this requirement depends on, but that should not be
@@ -141,7 +142,7 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    * that case, list the prompt as `{ key: 'some_prompt', gate: false }` and `resolve` will be
    * called with `undefined` for it until (and unless) it is answered. See `NoDisplayPromptKey`.
    */
-  promptKeysNoDisplay?: (string | NoDisplayPromptKey)[]
+  promptKeysNoDisplay?: (PromptKey | NoDisplayPromptKey)[]
 
   /**
    * Provide a function that can evaluate the requirement based on answers to prompts.

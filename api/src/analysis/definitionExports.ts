@@ -18,6 +18,21 @@ export interface DefinitionExport {
    * undefined when the key is computed, or when the definition has no object literal initializer.
    */
   key?: string
+  /**
+   * The key this definition registers under at runtime: its declared `key`, or else its name.
+   */
+  effectiveKey: string
+  /**
+   * The key the *type system* will infer for it, which is what `KeyOf` in the registry produces and
+   * therefore what autocomplete on `promptKeys` / `requirementKeys` will offer.
+   *
+   * This differs from `effectiveKey` when a definition declares a `key` in a way that does not
+   * survive into its type - a plain `const x: PromptDefinition = { key: 'other' }` widens `key` to
+   * `string | undefined`, so the literal is lost and the type system falls back to the name. Such a
+   * definition registers under one key while the types advertise another; `auditDefinitionKeys`
+   * exists to find them.
+   */
+  inferredKey: string
   /** Absolute path of the file declaring it. */
   file: string
   /** 1-based line of the declaration, for reporting. */
@@ -84,10 +99,15 @@ export function findDefinitionExports (options: FindDefinitionExportsOptions): F
       if (!statement.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)) continue
       for (const declaration of statement.declarationList.declarations) {
         if (!ts.isIdentifier(declaration.name)) continue
-        if (!isMarkedType(checker.getTypeAtLocation(declaration.name), marker.symbol)) continue
+        const type = checker.getTypeAtLocation(declaration.name)
+        if (!isMarkedType(type, marker.symbol)) continue
+        const name = declaration.name.text
+        const key = declaredKey(declaration)
         definitions.push({
-          name: declaration.name.text,
-          key: declaredKey(declaration),
+          name,
+          key,
+          effectiveKey: key ?? name,
+          inferredKey: inferredKey(checker, type, declaration, name),
           file: sourceFile.fileName,
           line: sourceFile.getLineAndCharacterOfPosition(declaration.getStart(sourceFile)).line + 1
         })
@@ -160,6 +180,31 @@ function isMarkedType (type: ts.Type, marker: ts.Symbol): boolean {
   if (type.isIntersection()) return type.types.some(t => isMarkedType(t, marker))
   if (type.isUnion()) return type.types.every(t => isMarkedType(t, marker))
   return false
+}
+
+/**
+ * Reproduces `KeyOf` from the registry against the declaration's *type*: a `key` whose type is a
+ * string literal wins, anything else falls back to the name. Deliberately mirrors the type-level
+ * rule rather than the AST, so comparing it against `effectiveKey` reveals where the two disagree.
+ */
+function inferredKey (checker: ts.TypeChecker, type: ts.Type, declaration: ts.VariableDeclaration, name: string): string {
+  const keyProp = checker.getPropertyOfType(type, 'key')
+  if (keyProp == null) return name
+  const keyType = checker.getTypeOfSymbolAtLocation(keyProp, declaration)
+  return keyType.isStringLiteral() ? keyType.value : name
+}
+
+/**
+ * Definitions whose runtime key and type-level key disagree.
+ *
+ * These are the dangerous ones: the definition registers under `effectiveKey`, but autocomplete on
+ * `promptKeys` / `requirementKeys` offers `inferredKey`, so the editor confidently suggests a key
+ * that does not exist and rejects the one that does. Declaring the definition with an intersection
+ * (`PromptDefinition & { key: 'the_key' }`) keeps the literal in the type and resolves it, as does
+ * simply dropping a redundant `key`.
+ */
+export function auditDefinitionKeys (options: FindDefinitionExportsOptions): DefinitionExport[] {
+  return findDefinitionExports(options).definitions.filter(d => d.effectiveKey !== d.inferredKey)
 }
 
 /** Reads the `key` property off the declaration's own object literal, by AST rather than by text. */

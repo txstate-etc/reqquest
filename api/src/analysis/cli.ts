@@ -2,7 +2,7 @@ import path from 'node:path'
 import type ts from 'typescript'
 import { findPromptExports } from './promptExports.js'
 import { findRequirementExports } from './requirementExports.js'
-import type { DefinitionExport } from './definitionExports.js'
+import { auditDefinitionKeys, type DefinitionExport } from './definitionExports.js'
 
 /**
  * Prints the definitions found in a project.
@@ -38,15 +38,22 @@ function main (argv: string[]) {
     if (i === -1) return undefined
     return args.splice(i, 2)[1]
   }
+  const auditIndex = args.indexOf('--audit')
+  const audit = auditIndex !== -1
+  if (audit) args.splice(auditIndex, 1)
   const kind = flag('--kind') ?? 'prompt'
   const pathsFlag = flag('--paths')
   const project = args[0]
   if (project == null || !(kind in kinds)) {
-    console.error(`usage: node dist/analysis/cli.js <tsconfig-or-directory> [--kind ${Object.keys(kinds).join('|')}] [--paths <specifier>=<file>]`)
+    console.error(`usage: node dist/analysis/cli.js <tsconfig-or-directory> [--kind ${Object.keys(kinds).join('|')}] [--audit] [--paths <specifier>=<file>]`)
     process.exit(2)
   }
 
   const compilerOptions = pathsFlag != null ? pathsFromFlag(pathsFlag) : undefined
+  if (audit) {
+    runAudit({ project, compilerOptions })
+    return
+  }
   const { found, markerFile, label } = kinds[kind as keyof typeof kinds]({ project, compilerOptions })
 
   console.log(`${found.length} ${label} export${found.length === 1 ? '' : 's'}`)
@@ -63,6 +70,30 @@ function main (argv: string[]) {
     const key = definition.key ?? '(not a literal)'
     console.log(`  ${definition.name}${key === definition.name ? '' : `  key=${key}`}`)
   }
+}
+
+/**
+ * Reports definitions that register under one key while the type system advertises another
+ */
+function runAudit (options: ScanOptions) {
+  let total = 0
+  for (const typeName of ['PromptDefinition', 'RequirementDefinition']) {
+    const mismatches = auditDefinitionKeys({ ...options, typeName })
+    total += mismatches.length
+    for (const d of mismatches) {
+      console.error(`${path.relative(process.cwd(), d.file)}:${d.line}  ${typeName} \`${d.name}\``)
+      console.error(`    registers as    ${d.effectiveKey}`)
+      console.error(`    types infer     ${d.inferredKey}`)
+    }
+  }
+  if (total === 0) {
+    console.log('No key mismatches. Every definition registers under the key its type advertises.')
+    return
+  }
+  console.error(`\n${total} definition${total === 1 ? '' : 's'} whose runtime key differs from the key autocomplete will offer.`)
+  console.error('Either drop the redundant `key`, or keep the literal in the type with an intersection:')
+  console.error("  export const x: PromptDefinition & { key: 'the_key' } = { key: 'the_key', ... }")
+  process.exit(1)
 }
 
 function pathsFromFlag (flag: string) {

@@ -97,7 +97,7 @@ export const owner_dog_allergy_prompt: PromptDefinition = {
   invalidUponChange: [{ promptKey: 'review_applicant_dog_info_prompt' }]
 }
 
-export const dog_min_exercise_prompt: PromptDefinition = {
+export const dog_min_exercise_prompt: PromptDefinition & { key: 'dog_exercise_prompt' } = {
   key: 'dog_exercise_prompt',
   title: 'Dog exercise',
   description: 'Applicant will identify expected exercise hours for dog.',

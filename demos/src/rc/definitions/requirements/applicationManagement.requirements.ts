@@ -29,7 +29,7 @@ export const technical_troubleshooting_req: RequirementDefinition = {
   }
 }
 
-export const assess_technical_troubleshooting_req: RequirementDefinition = {
+export const assess_technical_troubleshooting_req: RequirementDefinition & { key: 'assess_technical_troubleshootingn_req' } = {
   type: RequirementType.APPROVAL,
   key: 'assess_technical_troubleshootingn_req',
   title: 'Assess Technical Troubleshooting',
@@ -58,7 +58,7 @@ export const support_communication_req: RequirementDefinition = {
   }
 }
 
-export const assess_support_communication_req: RequirementDefinition = {
+export const assess_support_communication_req: RequirementDefinition & { key: 'assess_support_communicationn_req' } = {
   type: RequirementType.APPROVAL,
   key: 'assess_support_communicationn_req',
   title: 'Assess Communication',

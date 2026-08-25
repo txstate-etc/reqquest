@@ -15,7 +15,7 @@ export const reccomendation_letter_req: RequirementDefinition = {
   }
 }
 
-export const assess_reccomendation_letter_req: RequirementDefinition = {
+export const assess_reccomendation_letter_req: RequirementDefinition & { key: 'assess_reccomendation_lettern_req' } = {
   type: RequirementType.APPROVAL,
   key: 'assess_reccomendation_lettern_req',
   title: 'Assess Technical Troubleshooting',
