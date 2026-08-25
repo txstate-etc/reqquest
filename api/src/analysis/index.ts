@@ -8,4 +8,6 @@
  * import { findPromptExports } from '@reqquest/api/analysis'
  * ```
  */
+export * from './definitionExports.js'
 export * from './promptExports.js'
+export * from './requirementExports.js'
