@@ -10,6 +10,8 @@ ReqQuest is a **platform** (not a finished app) for building benefit-application
 - [test/](test/) — Playwright e2e tests. Run with root `./test.sh`. `up.sh` to run one of the demos (CLI args to choose a demo).
 - [docs/](docs/) — sitemap and user stories.
 
+**Run `npm install` in [demos/](demos/) before relying on your editor there.** It is the one package that is not needed for the docker workflow, so it is easy to leave uninstalled — and when it is, `@reqquest/api` and five other modules do not resolve, every type in `demos/src` becomes an error type, and nothing is checked. Typed key references (`promptKeys`, `requirementKeys`) then silently accept typos in the editor while still failing in the container. `@reqquest/api` resolves to `api/dist`, which is bind-mounted and rebuilt by the running stack, so restart the stack after changing `api/src` to refresh the types the editor sees.
+
 ## Domain model (condensed)
 
 - **Period** — an application window with open/close/archive dates. Configurations/enabling/disabling (of prompts/requirements/programs) are per-period and lock as reviews begin.
