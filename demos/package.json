@@ -6,7 +6,9 @@
   "scripts": {
     "start:nodemon": "nodemon",
     "build": "rm -rf dist && tsc",
-    "start": "node --no-warnings --enable-source-maps ./dist/index.js"
+    "start": "node --no-warnings --enable-source-maps ./dist/index.js",
+    "keys:generate": "node ../api/dist/analysis/cli.js . --emit-keys src/keys.generated.d.ts",
+    "keys:check": "node ../api/dist/analysis/cli.js . --check-keys src/keys.generated.d.ts"
   },
   "dependencies": {
     "@reqquest/api": "file:../api",

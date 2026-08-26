@@ -3,7 +3,9 @@ import type ts from 'typescript'
 import { findPromptExports } from './promptExports.js'
 import { findRequirementExports } from './requirementExports.js'
 import { findProgramExports } from './programExports.js'
-import { auditDefinitionKeys, type DefinitionExport } from './definitionExports.js'
+import type { DefinitionExport } from './definitionExports.js'
+import { emitKeyDeclarations, keyDeclarationsAreCurrent } from './emitKeys.js'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
 /**
  * Prints the definitions found in a project.
@@ -43,21 +45,33 @@ function main (argv: string[]) {
     if (i === -1) return undefined
     return args.splice(i, 2)[1]
   }
-  const auditIndex = args.indexOf('--audit')
-  const audit = auditIndex !== -1
-  if (audit) args.splice(auditIndex, 1)
+  const emitTo = flag('--emit-keys')
+  const checkTo = flag('--check-keys')
   const kind = flag('--kind') ?? 'prompt'
   const pathsFlag = flag('--paths')
   const project = args[0]
   if (project == null || !(kind in kinds)) {
-    console.error(`usage: node dist/analysis/cli.js <tsconfig-or-directory> [--kind ${Object.keys(kinds).join('|')}] [--audit] [--paths <specifier>=<file>]`)
+    console.error(`usage: node dist/analysis/cli.js <tsconfig-or-directory> [--kind ${Object.keys(kinds).join('|')}] [--emit-keys <file>] [--check-keys <file>] [--paths <specifier>=<file>]`)
     process.exit(2)
   }
 
   const compilerOptions = pathsFlag != null ? pathsFromFlag(pathsFlag) : undefined
-  if (audit) {
-    runAudit({ project, compilerOptions })
+  if (emitTo != null) {
+    writeFileSync(emitTo, emitKeyDeclarations({ project, compilerOptions }))
+    console.log(`wrote ${emitTo}`)
     return
+  }
+  if (checkTo != null) {
+    if (!existsSync(checkTo)) {
+      console.error(`${checkTo} does not exist. Run with --emit-keys to create it.`)
+      process.exit(1)
+    }
+    if (keyDeclarationsAreCurrent(readFileSync(checkTo, 'utf8'), { project, compilerOptions })) {
+      console.log(`${checkTo} is up to date.`)
+      return
+    }
+    console.error(`${checkTo} is stale - a definition was added, removed, renamed, or re-keyed. Re-run with --emit-keys.`)
+    process.exit(1)
   }
   const { found, markerFile, label } = kinds[kind as keyof typeof kinds]({ project, compilerOptions })
 
@@ -75,30 +89,6 @@ function main (argv: string[]) {
     const key = definition.key ?? '(not a literal)'
     console.log(`  ${definition.name}${key === definition.name ? '' : `  key=${key}`}`)
   }
-}
-
-/**
- * Reports definitions that register under one key while the type system advertises another
- */
-function runAudit (options: ScanOptions) {
-  let total = 0
-  for (const typeName of ['PromptDefinition', 'RequirementDefinition', 'ProgramDefinition']) {
-    const mismatches = auditDefinitionKeys({ ...options, typeName })
-    total += mismatches.length
-    for (const d of mismatches) {
-      console.error(`${path.relative(process.cwd(), d.file)}:${d.line}  ${typeName} \`${d.name}\``)
-      console.error(`    registers as    ${d.effectiveKey}`)
-      console.error(`    types infer     ${d.inferredKey}`)
-    }
-  }
-  if (total === 0) {
-    console.log('No key mismatches. Every definition registers under the key its type advertises.')
-    return
-  }
-  console.error(`\n${total} definition${total === 1 ? '' : 's'} whose runtime key differs from the key autocomplete will offer.`)
-  console.error('Either drop the redundant `key`, or keep the literal in the type with an intersection:')
-  console.error("  export const x: PromptDefinition & { key: 'the_key' } = { key: 'the_key', ... }")
-  process.exit(1)
 }
 
 function pathsFromFlag (flag: string) {

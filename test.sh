@@ -1,3 +1,16 @@
+# The demo key declarations are generated from the definitions (see demos/src/keys.generated.d.ts).
+# A stale file offers keys that no longer exist, so fail here rather than after minutes of container
+# boot. Needs api built: api/dist is bind-mounted and refreshed by the dev stack, but a fresh clone
+# will not have it yet.
+if [ ! -f api/dist/analysis/cli.js ]; then
+  echo "api is not built - run 'npm run build' in api/ (or bring the dev stack up) before ./test.sh" >&2
+  exit 1
+fi
+if ! (cd demos && npm run --silent keys:check); then
+  echo "Regenerate with 'npm run keys:generate' in demos/, then re-run ./test.sh" >&2
+  exit 1
+fi
+
 override=''
 if [ -e docker-compose.test.override.yml ]; then
   override='-f docker-compose.test.override.yml'

@@ -9,6 +9,7 @@
  * ```
  */
 export * from './definitionExports.js'
+export * from './emitKeys.js'
 export * from './programExports.js'
 export * from './promptExports.js'
 export * from './requirementExports.js'

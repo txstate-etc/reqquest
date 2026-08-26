@@ -1,5 +1,4 @@
 import { CategoryTag, RQServer } from '@reqquest/api'
-import './keys.js'
 import { analyticsPlugin, unifiedAuthenticate } from 'fastify-txstate'
 import { DateTime } from 'luxon'
 

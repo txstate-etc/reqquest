@@ -12,7 +12,7 @@ const adopt_a_dog_program: ProgramDefinition = {
   ]
 }
 
-const cat_program_with_legacy_key: ProgramDefinition & { key: 'adopt_a_cat_program' } = {
+const cat_program_with_legacy_key: ProgramDefinition = {
   key: 'adopt_a_cat_program',
   title: 'Adopt a Cat',
   applicantDescription: 'Matches you with a shelter cat looking for a forever home.',
