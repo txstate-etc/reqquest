@@ -5,6 +5,8 @@ export interface EmitKeyDeclarationsOptions extends Omit<FindDefinitionExportsOp
   slots?: Record<string, string>
 }
 
+// Workflow stages carry keys too but are deliberately not a slot: they are declared inline inside a
+// program, may be shared between programs, and nothing references a stage key. See WorkflowStage.key.
 const defaultSlots = {
   prompts: 'PromptDefinition',
   requirements: 'RequirementDefinition',

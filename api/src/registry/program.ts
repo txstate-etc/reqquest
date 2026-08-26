@@ -71,7 +71,13 @@ export interface ProgramDefinition {
 export interface WorkflowStage {
   /**
    * Give each workflow stage a unique, permanent key so that we can refer to it in the database
-   * even if the workflow stages are reordered.
+   * even if the workflow stages are reordered. It is stored in `applications.workflowStage`,
+   * `period_workflow_stages.workflowStageKey`, and `application_requirements.workflowStage`, so it
+   * has to stay stable across releases.
+   *
+   * Required, deliberately - unlike `PromptDefinition`, `RequirementDefinition` and
+   * `ProgramDefinition`, which default their key to the name they are registered under. Stages are a
+   * different shape and none of that machinery fits them.
    */
   key: string
   /**
