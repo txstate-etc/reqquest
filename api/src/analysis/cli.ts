@@ -57,6 +57,13 @@ function main (argv: string[]) {
 
   const compilerOptions = pathsFlag != null ? pathsFromFlag(pathsFlag) : undefined
   if (emitTo != null) {
+    // Skip the write when nothing changed. This runs on every hot reload, and rewriting a file
+    // inside the watched tree is how you get a restart loop - nodemon's `ignore` is the real guard,
+    // this just avoids pointless churn.
+    if (existsSync(emitTo) && keyDeclarationsAreCurrent(readFileSync(emitTo, 'utf8'), { project, compilerOptions })) {
+      console.log(`${emitTo} unchanged`)
+      return
+    }
     writeFileSync(emitTo, emitKeyDeclarations({ project, compilerOptions }))
     console.log(`wrote ${emitTo}`)
     return

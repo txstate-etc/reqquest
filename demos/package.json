@@ -24,11 +24,14 @@
     "typescript": "^5.1.6"
   },
   "nodemonConfig": {
-    "exec": "cd ../api && npm run build && cd ../demos && npm run build && node --no-warnings --enable-source-maps ./dist/index.js",
+    "exec": "cd ../api && npm run build && cd ../demos && npm run keys:generate && npm run build && node --no-warnings --enable-source-maps ./dist/index.js",
     "ext": "js,ts",
     "watch": [
       "/usr/app/demos/src",
       "/usr/app/api/src"
+    ],
+    "ignore": [
+      "/usr/app/demos/src/keys.generated.d.ts"
     ]
   }
 }

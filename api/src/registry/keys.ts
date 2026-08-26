@@ -41,6 +41,11 @@
  * offers keys that no longer exist. Gate it in CI with `--check-keys`, which exits non-zero when the
  * committed file no longer matches the project.
  *
+ * Wire `--emit-keys` into your dev watcher too, before the build step, or adding a prompt and
+ * referencing it in the same save fails to compile on a key that is perfectly valid. Exclude the
+ * generated file from the watcher while you are at it - writing it back into a watched tree
+ * retriggers the watcher, which regenerates, which retriggers it.
+ *
  * Leaving a slot unaugmented degrades its key type to `string`, which is how ReqQuest behaved before
  * this existed, so augmenting is entirely optional.
  */

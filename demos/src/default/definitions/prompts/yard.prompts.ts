@@ -9,18 +9,18 @@ export const have_yard_prompt: PromptDefinition<YardPromptData, YardPromptData> 
   prestage: {
     recur: PromptPreStagingRecurrence.ALWAYS,
     schema: YardPromptPreStageSchema,
-    fetch: (appRequest, config, allPeriodConfig, ctx): YardPromptPreStageData  => {
+    fetch: (appRequest, config, allPeriodConfig, ctx): YardPromptPreStageData => {
       return {
         surveyedYard: false
       }
-    }    
+    }
   },
   preload: async (appRequest, config, data, allPeriodConfig, ctx) => {
     await new Promise(resolve => setTimeout(resolve, 1000))
     return {
       haveYard: true,
-      squareFootage: 6700,
-      //TODO: Test for missing data causing early validation --totalPets: 67
+      squareFootage: 6700
+      // TODO: Test for missing data causing early validation --totalPets: 67
     }
   },
   validate: (data, config) => {

@@ -57,6 +57,11 @@ export interface FindDefinitionExportsResult {
   markerFile: string
 }
 
+export interface FindManyDefinitionExportsOptions extends Omit<FindDefinitionExportsOptions, 'typeName'> {
+  /** One marker interface per kind you want back, e.g. `['PromptDefinition', 'ProgramDefinition']`. */
+  typeNames: string[]
+}
+
 /**
  * Finds every export in a TypeScript project whose type is the given marker interface.
  *
@@ -71,15 +76,30 @@ export interface FindDefinitionExportsResult {
  * are declared that way today, come back empty.
  */
 export function findDefinitionExports (options: FindDefinitionExportsOptions): FindDefinitionExportsResult {
+  return findManyDefinitionExports({ ...options, typeNames: [options.typeName] })[options.typeName]
+}
+
+/**
+ * The same search for several marker interfaces over **one** TypeScript program.
+ *
+ * Calling `findDefinitionExports` once per kind builds a fresh program each time, which for this
+ * repo's demos is three full type-checks of the same sources. Worth avoiding whenever more than one
+ * kind is wanted - notably when emitting key declarations, which runs on every hot reload.
+ */
+export function findManyDefinitionExports (options: FindManyDefinitionExportsOptions): Record<string, FindDefinitionExportsResult> {
   const { program, checker, rootFileNames, configPath } = createProgramFor(options)
   const moduleSpecifier = options.moduleSpecifier ?? '@reqquest/api'
 
-  const marker = resolveMarker(program, checker, rootFileNames, configPath, moduleSpecifier, options.typeName)
+  const markers = options.typeNames.map(typeName => ({
+    typeName,
+    ...resolveMarker(program, checker, rootFileNames, configPath, moduleSpecifier, typeName)
+  }))
+  const results: Record<string, FindDefinitionExportsResult> = {}
+  for (const marker of markers) results[marker.typeName] = { definitions: [], markerFile: marker.file }
 
   // Only the project's own files. Walking declarations rather than module exports means a definition
   // re-exported through several barrels is reported once, at the place it is declared.
   const projectFiles = new Set(rootFileNames.map(f => path.resolve(f)))
-  const definitions: DefinitionExport[] = []
   for (const sourceFile of program.getSourceFiles()) {
     if (sourceFile.isDeclarationFile) continue
     if (!projectFiles.has(path.resolve(sourceFile.fileName))) continue
@@ -89,24 +109,26 @@ export function findDefinitionExports (options: FindDefinitionExportsOptions): F
       for (const declaration of statement.declarationList.declarations) {
         if (!ts.isIdentifier(declaration.name)) continue
         const type = checker.getTypeAtLocation(declaration.name)
-        if (isMarkedType(type, marker.symbol)) {
-          definitions.push(describe(sourceFile, declaration, declaration.name.text))
+        const direct = markers.find(m => isMarkedType(type, m.symbol))
+        if (direct != null) {
+          results[direct.typeName].definitions.push(describe(sourceFile, declaration, declaration.name.text))
           continue
         }
         // Programs are declared as unexported consts and handed over in one ordered object literal,
         // so the definitions are properties of an exported object rather than exports themselves.
         for (const property of collectionMembers(declaration)) {
           const memberType = checker.getTypeAtLocation(property.reference)
-          if (!isMarkedType(memberType, marker.symbol)) continue
-          definitions.push(describe(sourceFile, property.declaration ?? declaration, property.name))
+          const member = markers.find(m => isMarkedType(memberType, m.symbol))
+          if (member == null) continue
+          results[member.typeName].definitions.push(describe(sourceFile, property.declaration ?? declaration, property.name))
         }
       }
     }
   }
-  return { definitions, markerFile: marker.file }
+  return results
 }
 
-function createProgramFor (options: FindDefinitionExportsOptions) {
+function createProgramFor (options: Pick<FindDefinitionExportsOptions, 'project' | 'compilerOptions'>) {
   const configPath = ts.sys.directoryExists(options.project)
     ? path.join(options.project, 'tsconfig.json')
     : options.project

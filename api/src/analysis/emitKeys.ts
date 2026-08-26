@@ -1,4 +1,4 @@
-import { findDefinitionExports, type FindDefinitionExportsOptions } from './definitionExports.js'
+import { findManyDefinitionExports, type FindDefinitionExportsOptions } from './definitionExports.js'
 
 export interface EmitKeyDeclarationsOptions extends Omit<FindDefinitionExportsOptions, 'typeName'> {
   /** Marker interface per slot. Defaults to the three ReqQuest definition kinds. */
@@ -44,9 +44,12 @@ export function emitKeyDeclarations (options: EmitKeyDeclarationsOptions): strin
     "declare module '@reqquest/api' {",
     '  interface ReqQuestKeys {'
   ]
+  // one program for all three markers - this runs on every hot reload, so three type-checks of the
+  // same sources is not affordable
+  const found = findManyDefinitionExports({ ...options, typeNames: Object.values(slots) })
   for (const [slot, typeName] of Object.entries(slots)) {
     // effectiveKey is the key the registry actually uses: the declared one, or else the name
-    const keys = [...new Set(findDefinitionExports({ ...options, typeName }).definitions.map(d => d.effectiveKey))].sort()
+    const keys = [...new Set(found[typeName].definitions.map(d => d.effectiveKey))].sort()
     lines.push(`    ${slot}:`)
     lines.push(...(keys.length === 0 ? ['      never'] : keys.map(k => `      | '${k}'`)))
   }
