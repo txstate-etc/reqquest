@@ -33,8 +33,11 @@ export interface RQStartOpts extends Omit<GQLStartOpts, 'resolvers'> {
   /**
    * Include programs here that are part of the current application process. Any programs that
    * have been discontinued should be included in `pastPrograms`.
+   *
+   * Must be an **ordered object literal** or an array, never a module namespace - the declared order
+   * is persisted as `applications.evaluationOrder`. See `DefinitionSet`.
    */
-  programs: ProgramDefinition[]
+  programs: DefinitionSet<ProgramDefinition>
   /**
    * When you first create the project, the programs go in `programs`. When a program is discontinued,
    * you may either leave it in `programs` and disable it in the current period, or do a software release
@@ -42,7 +45,7 @@ export interface RQStartOpts extends Omit<GQLStartOpts, 'resolvers'> {
    * it will not be available to be re-enabled in new periods and will not show up in the configuration
    * screens.
    */
-  pastPrograms?: ProgramDefinition[]
+  pastPrograms?: DefinitionSet<ProgramDefinition>
   requirements: DefinitionSet<RequirementDefinition>
   prompts: DefinitionSet<PromptDefinition>
 }
@@ -53,9 +56,13 @@ export interface RQStartOpts extends Omit<GQLStartOpts, 'resolvers'> {
  * as a plain array, in which case every definition must carry its own `key`.
  *
  * Prefer the keyed form: the name becomes the key, so the identifier is written once instead of
- * twice. Note that a module namespace iterates its keys alphabetically rather than in declaration
- * order, which is harmless for prompts and requirements - their order comes from `promptKeys` and
- * `requirementKeys` - but is why `programs` does not accept this shape.
+ * twice.
+ *
+ * There are two ways to produce that object, and for programs the difference matters. A module
+ * namespace iterates its keys **alphabetically**, not in declaration order. That is harmless for
+ * prompts and requirements, whose order comes from `promptKeys` and `requirementKeys`, but programs
+ * register in the order given and that order is persisted as `applications.evaluationOrder` - so
+ * programs must come from an ordered object literal, and `RQServer.start` rejects a namespace.
  */
 export type DefinitionSet<T> = Record<string, T> | T[]
 
@@ -66,6 +73,20 @@ function definitionEntries<T> (definitions: DefinitionSet<T>): [T, string | unde
   return Array.isArray(definitions)
     ? definitions.map(definition => [definition, undefined])
     : Object.entries(definitions).map(([registeredName, definition]) => [definition, registeredName])
+}
+
+/**
+ * Guards the definition sets whose order is meaningful.
+ *
+ * Program order is persisted as `applications.evaluationOrder`, where it decides the order programs
+ * are shown, the reviewer's default tab, which prompt the applicant is sent to next, and which
+ * program owns a prompt shared between programs. A module namespace iterates alphabetically, so
+ * accepting one would quietly reorder all of that - and would keep doing so to existing app
+ * requests, which pick the new order up on their next evaluation.
+ */
+function assertOrdered<T> (definitions: DefinitionSet<T> | undefined, field: string) {
+  if ((definitions as any)?.[Symbol.toStringTag] !== 'Module') return
+  throw new Error(`\`${field}\` was passed as a module namespace (\`import * as ...\`), whose keys are alphabetical rather than declaration order. Program order is meaningful - it becomes applications.evaluationOrder, deciding the order programs are shown, the reviewer's default tab, and which program owns a shared prompt. Export an ordered object literal instead: \`export const programs = { first_program, second_program }\`.`)
 }
 
 export class RQServer extends GQLServer {
@@ -144,8 +165,10 @@ export class RQServer extends GQLServer {
     appConfig.customContext = options.customContext as RQContextClass
     for (const [prompt, registeredName] of definitionEntries(options.prompts)) promptRegistry.register(prompt, registeredName)
     for (const [requirement, registeredName] of definitionEntries(options.requirements)) requirementRegistry.register(requirement, registeredName)
-    for (const program of options.programs) programRegistry.register(program, true)
-    for (const program of options.pastPrograms ?? []) programRegistry.register(program, false)
+    assertOrdered(options.programs, 'programs')
+    assertOrdered(options.pastPrograms, 'pastPrograms')
+    for (const [program, registeredName] of definitionEntries(options.programs)) programRegistry.register(program, true, registeredName)
+    for (const [program, registeredName] of definitionEntries(options.pastPrograms ?? [])) programRegistry.register(program, false, registeredName)
     programRegistry.finalize()
     await initializeDb([...periodMigrations, ...promptMigrations, ...requirementMigrations, ...accessMigrations, ...appRequestMigrations, ...applicationMigrations, ...noteMigrations, ...schedulerMigration, ...mailMigrations, ...(options?.migrations ?? [])])
     await initAccess()

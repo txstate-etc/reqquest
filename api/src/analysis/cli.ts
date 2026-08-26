@@ -2,6 +2,7 @@ import path from 'node:path'
 import type ts from 'typescript'
 import { findPromptExports } from './promptExports.js'
 import { findRequirementExports } from './requirementExports.js'
+import { findProgramExports } from './programExports.js'
 import { auditDefinitionKeys, type DefinitionExport } from './definitionExports.js'
 
 /**
@@ -28,6 +29,10 @@ const kinds: Record<string, (options: ScanOptions) => ScanResult> = {
   requirement: options => {
     const { requirements, markerFile } = findRequirementExports(options)
     return { found: requirements, markerFile, label: 'RequirementDefinition' }
+  },
+  program: options => {
+    const { programs, markerFile } = findProgramExports(options)
+    return { found: programs, markerFile, label: 'ProgramDefinition' }
   }
 }
 
@@ -77,7 +82,7 @@ function main (argv: string[]) {
  */
 function runAudit (options: ScanOptions) {
   let total = 0
-  for (const typeName of ['PromptDefinition', 'RequirementDefinition']) {
+  for (const typeName of ['PromptDefinition', 'RequirementDefinition', 'ProgramDefinition']) {
     const mismatches = auditDefinitionKeys({ ...options, typeName })
     total += mismatches.length
     for (const d of mismatches) {

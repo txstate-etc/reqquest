@@ -2,7 +2,28 @@ import { AppRequest, AppRequestPhase, requirementRegistry } from '../internal.js
 import type { RequirementKey } from './keys.js'
 
 export interface ProgramDefinition {
-  key: string
+  /**
+   * A globally unique, human and machine readable key. Use lowercase snake_case, alphanumeric and
+   * underscore only.
+   *
+   * You may omit this when you hand your programs to `RQServer.start` as a keyed object, in which
+   * case the name the program is registered under becomes its key:
+   *
+   * ```ts
+   * const adopt_a_dog_program: ProgramDefinition = { title: '...', requirementKeys: [...] }
+   * export const programs = { adopt_a_dog_program, adopt_a_cat_program }
+   * ```
+   *
+   * Note that programs must be handed over as an **ordered object literal**, never as a module
+   * (`import * as programs`). A module namespace iterates its keys alphabetically rather than in
+   * declaration order, and program order is meaningful - it is persisted as
+   * `applications.evaluationOrder`. `RQServer.start` rejects a namespace here for that reason.
+   *
+   * BEWARE that the key is persisted and is what the UI registers components against. When the key
+   * comes from the name, renaming that name renames the key along with it. Set `key` explicitly
+   * whenever a key needs to outlive a rename.
+   */
+  key?: string
   /**
    * The name of the program.
    */
@@ -84,35 +105,52 @@ export interface WorkflowStage {
   requirementKeys: RequirementKey[]
 }
 
+/**
+ * A program definition after registration, when its key - either the one it declared or the name it
+ * was registered under - has been resolved and stamped onto it.
+ */
+export interface ProgramDefinitionProcessed extends ProgramDefinition {
+  key: string
+}
+
 export class ProgramRegistry {
-  private programs: Record<string, ProgramDefinition> = {}
-  private programList: ProgramDefinition[] = []
-  private activeList: ProgramDefinition[] = []
+  private programs: Record<string, ProgramDefinitionProcessed> = {}
+  private programList: ProgramDefinitionProcessed[] = []
+  private activeList: ProgramDefinitionProcessed[] = []
   public workflowStagesByKey: Record<string, WorkflowStage> = {}
   public allRequirementKeys: Record<string, Set<string>> = {}
   public workflowStageByProgramAndRequirementKey: Record<string, Record<string, WorkflowStage | undefined>> = {}
 
-  public register (program: ProgramDefinition, active: boolean) {
-    this.programs[program.key] = program
-    this.programList.push(program)
-    if (active) this.activeList.push(program)
+  /**
+   * `registeredName` is the name the definition was handed over under - its property name in the
+   * ordered object passed to `RQServer.start`. It becomes the program's key unless the definition
+   * carries an explicit one.
+   */
+  public register (program: ProgramDefinition, active: boolean, registeredName?: string) {
+    const key = program.key ?? registeredName
+    if (key == null) throw new Error('Registered a program with no key. Either set `key` on the definition, or pass your programs to RQServer.start as an ordered object literal (e.g. `programs: myPrograms`) so the name each is declared under can be used.')
+    const processed = program as ProgramDefinitionProcessed
+    processed.key = key
+    this.programs[key] = processed
+    this.programList.push(processed)
+    if (active) this.activeList.push(processed)
     for (const requirementKey of program.requirementKeys) {
-      this.allRequirementKeys[program.key] ??= new Set()
-      this.allRequirementKeys[program.key].add(requirementKey)
+      this.allRequirementKeys[key] ??= new Set()
+      this.allRequirementKeys[key].add(requirementKey)
     }
     for (const stage of program.workflowStages ?? []) {
       for (const requirementKey of stage.requirementKeys) {
-        this.allRequirementKeys[program.key] ??= new Set()
-        this.allRequirementKeys[program.key].add(requirementKey)
+        this.allRequirementKeys[key] ??= new Set()
+        this.allRequirementKeys[key].add(requirementKey)
       }
     }
   }
 
-  public get (key: string): ProgramDefinition {
+  public get (key: string): ProgramDefinitionProcessed {
     return this.programs[key]
   }
 
-  public list (): ProgramDefinition[] {
+  public list (): ProgramDefinitionProcessed[] {
     return this.programList
   }
 

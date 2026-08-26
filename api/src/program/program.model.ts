@@ -1,9 +1,9 @@
 import { Field, ID, InputType, ObjectType } from 'type-graphql'
-import { PeriodProgramRow, ProgramDefinition, programRegistry } from '../internal.js'
+import { PeriodProgramRow, ProgramDefinitionProcessed, programRegistry } from '../internal.js'
 
 @ObjectType()
 export class Program {
-  constructor (public definition: ProgramDefinition) {
+  constructor (public definition: ProgramDefinitionProcessed) {
     this.key = definition.key
     this.title = definition.title
     this.navTitle = definition.navTitle ?? definition.title

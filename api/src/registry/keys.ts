@@ -3,30 +3,32 @@
  * augmented, every place a key is referenced - `promptKeys`, `requirementKeys`,
  * `promptKeysNoDisplay`, `invalidUponChange` - autocompletes and rejects typos at compile time.
  *
- * Compute the unions in their own module with `KeysOfModule`, then reference those aliases here:
+ * One file is all it takes. Name a type alias per barrel with `KeysOfModule`, then reference those
+ * aliases from the slots:
  *
  * ```ts
- * // definitions/keys.ts
+ * // keys.ts - import it once from your entry point
  * import type { KeysOfModule } from '@reqquest/api'
- * export type PromptKey = KeysOfModule<typeof import('./prompts/index.js')>
- * export type RequirementKey = KeysOfModule<typeof import('./requirements/index.js')>
  *
- * // keys.ts
- * import type { PromptKey, RequirementKey } from './definitions/keys.js'
+ * type PromptKey = KeysOfModule<typeof import('./definitions/prompts/index.js')>
+ * type RequirementKey = KeysOfModule<typeof import('./definitions/requirements/index.js')>
+ * type ProgramKey = KeysOfModule<typeof import('./definitions/programs.js')>
+ *
  * declare module '@reqquest/api' {
  *   interface ReqQuestKeys {
  *     prompts: PromptKey
  *     requirements: RequirementKey
+ *     programs: ProgramKey
  *   }
  * }
  * ```
  *
- * IMPORTANTE: the slots must reference aliases declared in another module. Writing
- * `typeof import('./definitions/prompts/index.js')` directly inside this block instead creates a
- * resolution cycle - those barrels import '@reqquest/api' themselves, so augmenting it with a type
- * that depends on them makes the entire module resolve as having no exports, and every import from
- * '@reqquest/api' across the project fails at once. Computing the alias in a separate module breaks
- * the cycle.
+ * IMPORTANT: reach the barrel through a **named type alias**. Writing
+ * `typeof import('./definitions/prompts/index.js')` inline inside the block below instead is
+ * circular - those barrels import '@reqquest/api' themselves, so augmenting it with a type that
+ * depends on them makes the entire module resolve as having no exports, and every import from
+ * '@reqquest/api' across the project fails at once with "has no exported member". The alias may live
+ * in this same file; it just may not be inlined into the slot.
  *
  * Leaving a slot unaugmented degrades its key type to `string`, which is how ReqQuest behaved
  * before this existed, so augmenting is entirely optional.
@@ -71,3 +73,5 @@ type SlotUnion<S extends keyof any> = [Slot<S>] extends [never] ? string : Extra
 export type PromptKey = SlotUnion<'prompts'>
 /** Every requirement key in this application, or `string` when the `requirements` slot is not augmented. */
 export type RequirementKey = SlotUnion<'requirements'>
+/** Every program key in this application, or `string` when the `programs` slot is not augmented. */
+export type ProgramKey = SlotUnion<'programs'>

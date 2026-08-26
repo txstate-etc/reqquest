@@ -100,17 +100,17 @@ export function findDefinitionExports (options: FindDefinitionExportsOptions): F
       for (const declaration of statement.declarationList.declarations) {
         if (!ts.isIdentifier(declaration.name)) continue
         const type = checker.getTypeAtLocation(declaration.name)
-        if (!isMarkedType(type, marker.symbol)) continue
-        const name = declaration.name.text
-        const key = declaredKey(declaration)
-        definitions.push({
-          name,
-          key,
-          effectiveKey: key ?? name,
-          inferredKey: inferredKey(checker, type, declaration, name),
-          file: sourceFile.fileName,
-          line: sourceFile.getLineAndCharacterOfPosition(declaration.getStart(sourceFile)).line + 1
-        })
+        if (isMarkedType(type, marker.symbol)) {
+          definitions.push(describe(checker, sourceFile, declaration, declaration.name.text, declaration))
+          continue
+        }
+        // Programs are declared as unexported consts and handed over in one ordered object literal,
+        // so the definitions are properties of an exported object rather than exports themselves.
+        for (const property of collectionMembers(declaration)) {
+          const memberType = checker.getTypeAtLocation(property.reference)
+          if (!isMarkedType(memberType, marker.symbol)) continue
+          definitions.push(describe(checker, sourceFile, property.declaration ?? declaration, property.name, property.reference))
+        }
       }
     }
   }
@@ -180,6 +180,66 @@ function isMarkedType (type: ts.Type, marker: ts.Symbol): boolean {
   if (type.isIntersection()) return type.types.some(t => isMarkedType(t, marker))
   if (type.isUnion()) return type.types.every(t => isMarkedType(t, marker))
   return false
+}
+
+/**
+ * Builds one record. `keySource` is the declaration whose object literal carries the `key` - for a
+ * plain export that is the export itself; for a member of an exported collection it is the const the
+ * member refers to.
+ */
+function describe (checker: ts.TypeChecker, sourceFile: ts.SourceFile, keySource: ts.VariableDeclaration, name: string, typeNode: ts.Node): DefinitionExport {
+  const key = declaredKey(keySource)
+  const type = checker.getTypeAtLocation(typeNode)
+  return {
+    name,
+    key,
+    effectiveKey: key ?? name,
+    inferredKey: inferredKey(checker, type, keySource, name),
+    file: sourceFile.fileName,
+    line: sourceFile.getLineAndCharacterOfPosition(keySource.getStart(sourceFile)).line + 1
+  }
+}
+
+/**
+ * The members of an exported object literal of definitions, as `{ name, reference, declaration }`.
+ *
+ * `name` is the property name, which is the key the member registers under. `declaration` is the
+ * const the property points at, when it is a shorthand or plain identifier reference - that is where
+ * an explicit `key` would be written. An array literal yields nothing: its entries have no property
+ * name to register under, so they must carry their own `key`.
+ */
+function collectionMembers (declaration: ts.VariableDeclaration) {
+  const initializer = declaration.initializer
+  if (initializer == null || !ts.isObjectLiteralExpression(initializer)) return []
+  const members: { name: string, reference: ts.Node, declaration?: ts.VariableDeclaration }[] = []
+  for (const property of initializer.properties) {
+    let name: string | undefined
+    let reference: ts.Node | undefined
+    if (ts.isShorthandPropertyAssignment(property)) {
+      name = property.name.text
+      reference = property.name
+    } else if (ts.isPropertyAssignment(property) && (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name))) {
+      name = property.name.text
+      reference = property.initializer
+    }
+    if (name == null || reference == null) continue
+    members.push({ name, reference, declaration: resolveConstDeclaration(reference) })
+  }
+  return members
+}
+
+/** Follows an identifier back to the `const` it names, so its object literal can be inspected. */
+function resolveConstDeclaration (reference: ts.Node): ts.VariableDeclaration | undefined {
+  if (ts.isObjectLiteralExpression(reference)) return undefined
+  if (!ts.isIdentifier(reference)) return undefined
+  const sourceFile = reference.getSourceFile()
+  for (const statement of sourceFile.statements) {
+    if (!ts.isVariableStatement(statement)) continue
+    for (const candidate of statement.declarationList.declarations) {
+      if (ts.isIdentifier(candidate.name) && candidate.name.text === reference.text) return candidate
+    }
+  }
+  return undefined
 }
 
 /**

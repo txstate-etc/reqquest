@@ -1,7 +1,6 @@
 import type { ProgramDefinition } from '@reqquest/api'
 
 const adopt_a_dog_program: ProgramDefinition = {
-  key: 'adopt_a_dog_program',
   title: 'Adopt a Dog',
   requirementKeys: [
     'state_residence_prequal_req',
@@ -28,7 +27,6 @@ const adopt_a_dog_program: ProgramDefinition = {
 }
 
 const adopt_a_cat_program: ProgramDefinition = {
-  key: 'adopt_a_cat_program',
   title: 'Adopt a Cat',
   requirementKeys: [
     'state_residence_prequal_req',
@@ -54,7 +52,6 @@ const adopt_a_cat_program: ProgramDefinition = {
 }
 
 const foster_a_pet_program: ProgramDefinition = {
-  key: 'foster_a_pet_program',
   title: 'Foster a Pet',
   requirementKeys: [
     'state_residence_prequal_req',
@@ -86,8 +83,12 @@ const foster_a_pet_program: ProgramDefinition = {
   }]
 }
 
-export const complexPrograms = [
+/**
+ * Declared order is preserved and is meaningful. Do not convert this to `import * as` - a module
+ * namespace iterates alphabetically rather than in declared order, and RQServer.start rejects one.
+ */
+export const complexPrograms = {
   adopt_a_dog_program,
   adopt_a_cat_program,
   foster_a_pet_program
-]
+}
