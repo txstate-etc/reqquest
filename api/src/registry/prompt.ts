@@ -166,7 +166,7 @@ export interface ConfigurationDefinition<ConfigurationInputType = any, Configura
   default?: ConfigurationDataType
 }
 
-export interface PromptDefinition<DataType = any, InputDataType = DataType, PrestageDataType = any, ConfigurationDataType = any, FetchType = any, KeyLiteral extends string = string> {
+export interface PromptDefinition<DataType = any, InputDataType = DataType, PrestageDataType = any, ConfigurationDataType = any, FetchType = any> {
   /**
    * A globally unique, human and machine readable key. This will be used to match up with
    * the UI definition and identify the prompt's answers stored in the database. Use lowercase
@@ -180,7 +180,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Pres
    * becomes its key, and you avoid writing the same identifier twice. Set `key`
    * explicitly whenever a key needs to outlive a rename.
    */
-  key?: KeyLiteral
+  key?: string
   /**
    * Display title for the prompt. Will be shown to any user that can see the prompt.
    */
@@ -367,19 +367,19 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Pres
    * version of the software. Takes the full request data object instead of the data
    * from this individual prompt so that we can perform merges and splits.
    */
-  migrations?: AppRequestMigration<Omit<AppRequestData, 'savedAtVersion'> & { [K in KeyLiteral]: DataType }>[]
+  migrations?: AppRequestMigration[]
 
   /**
    * Optionally provide index types that can be calculated based on the data from this prompt. The indexes
    * can be used to filter AppRequests, and optionally can be displayed in tables listing AppRequests.
    */
-  indexes?: PromptIndexDefinition<KeyLiteral, DataType>[]
+  indexes?: PromptIndexDefinition<string, DataType>[]
   /**
    * Optionally provide tag types that can be calculated based on the data from this prompt. These
    * tags will be made available for limiting the scope of roles that relate to AppRequests. Tags
    * are also indexes, you don't need to provide them in both places.
    */
-  tags?: PromptTagDefinition<KeyLiteral, DataType>[]
+  tags?: PromptTagDefinition<string, DataType>[]
   /**
    * Optionally provide a function that can preprocess the data from this prompt before it is
    * saved to the database. This is useful for prompts that need to do some processing on the
