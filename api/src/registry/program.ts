@@ -1,4 +1,4 @@
-import { AppRequest, AppRequestPhase, requirementRegistry } from '../internal.js'
+import { AppRequest, AppRequestPhase, assertNoKeyCollisions, requirementRegistry } from '../internal.js'
 import type { RequirementKey } from './keys.js'
 
 export interface ProgramDefinition {
@@ -161,6 +161,7 @@ export class ProgramRegistry {
   }
 
   public finalize () {
+    assertNoKeyCollisions()
     for (const program of this.programList) {
       program.navTitle ??= program.title
       for (const stage of program.workflowStages ?? []) {
