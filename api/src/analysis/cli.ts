@@ -46,25 +46,28 @@ function main (argv: string[]) {
     return args.splice(i, 2)[1]
   }
   const emitTo = flag('--emit-keys')
+  const moduleName = flag('--module')
+  const groupsFlag = flag('--groups')
   const checkTo = flag('--check-keys')
   const kind = flag('--kind') ?? 'prompt'
   const pathsFlag = flag('--paths')
   const project = args[0]
   if (project == null || !(kind in kinds)) {
-    console.error(`usage: node dist/analysis/cli.js <tsconfig-or-directory> [--kind ${Object.keys(kinds).join('|')}] [--emit-keys <file>] [--check-keys <file>] [--paths <specifier>=<file>]`)
+    console.error(`usage: node dist/analysis/cli.js <tsconfig-or-directory> [--kind ${Object.keys(kinds).join('|')}] [--emit-keys <file>] [--check-keys <file>] [--module <name>] [--groups Name=prefix,...] [--paths <specifier>=<file>]`)
     process.exit(2)
   }
 
   const compilerOptions = pathsFlag != null ? pathsFromFlag(pathsFlag) : undefined
+  const emitOptions = { project, compilerOptions, moduleName, groups: groupsFromFlag(groupsFlag) }
   if (emitTo != null) {
     // Skip the write when nothing changed. This runs on every hot reload, and rewriting a file
     // inside the watched tree is how you get a restart loop - nodemon's `ignore` is the real guard,
     // this just avoids pointless churn.
-    if (existsSync(emitTo) && keyDeclarationsAreCurrent(readFileSync(emitTo, 'utf8'), { project, compilerOptions })) {
+    if (existsSync(emitTo) && keyDeclarationsAreCurrent(readFileSync(emitTo, 'utf8'), emitOptions)) {
       console.log(`${emitTo} unchanged`)
       return
     }
-    writeFileSync(emitTo, emitKeyDeclarations({ project, compilerOptions }))
+    writeFileSync(emitTo, emitKeyDeclarations(emitOptions))
     console.log(`wrote ${emitTo}`)
     return
   }
@@ -73,7 +76,7 @@ function main (argv: string[]) {
       console.error(`${checkTo} does not exist. Run with --emit-keys to create it.`)
       process.exit(1)
     }
-    if (keyDeclarationsAreCurrent(readFileSync(checkTo, 'utf8'), { project, compilerOptions })) {
+    if (keyDeclarationsAreCurrent(readFileSync(checkTo, 'utf8'), emitOptions)) {
       console.log(`${checkTo} is up to date.`)
       return
     }
@@ -96,6 +99,16 @@ function main (argv: string[]) {
     const key = definition.key ?? '(not a literal)'
     console.log(`  ${definition.name}${key === definition.name ? '' : `  key=${key}`}`)
   }
+}
+
+/** named path prefixes for per-subset key aliases. */
+function groupsFromFlag (flag: string | undefined) {
+  if (flag == null) return undefined
+  return Object.fromEntries(flag.split(',').map(pair => {
+    const [name, prefix] = pair.split('=')
+    if (name == null || prefix == null) throw new Error(`--groups expects Name=prefix pairs, got '${pair}'`)
+    return [name, prefix]
+  }))
 }
 
 function pathsFromFlag (flag: string) {

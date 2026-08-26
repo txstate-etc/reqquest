@@ -7,8 +7,10 @@
     "start:nodemon": "nodemon",
     "build": "rm -rf dist && tsc",
     "start": "node --no-warnings --enable-source-maps ./dist/index.js",
-    "keys:generate": "node ../api/dist/analysis/cli.js . --emit-keys src/keys.generated.d.ts",
-    "keys:check": "node ../api/dist/analysis/cli.js . --check-keys src/keys.generated.d.ts"
+    "keys:generate": "npm run keys:generate:api && npm run keys:generate:ui",
+    "keys:check": "node ../api/dist/analysis/cli.js . --check-keys src/keys.generated.d.ts && node ../api/dist/analysis/cli.js . --check-keys ../ui/src/local/keys.generated.d.ts --module '@reqquest/ui'",
+    "keys:generate:api": "node ../api/dist/analysis/cli.js . --emit-keys src/keys.generated.d.ts",
+    "keys:generate:ui": "node ../api/dist/analysis/cli.js . --emit-keys ../ui/src/local/keys.generated.d.ts --module '@reqquest/ui'"
   },
   "dependencies": {
     "@reqquest/api": "file:../api",
@@ -24,7 +26,7 @@
     "typescript": "^5.1.6"
   },
   "nodemonConfig": {
-    "exec": "cd ../api && npm run build && cd ../demos && npm run keys:generate && npm run build && node --no-warnings --enable-source-maps ./dist/index.js",
+    "exec": "cd ../api && npm run build && cd ../demos && npm run keys:generate:api && npm run build && node --no-warnings --enable-source-maps ./dist/index.js",
     "ext": "js,ts",
     "watch": [
       "/usr/app/demos/src",

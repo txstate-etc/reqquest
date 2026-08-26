@@ -1,5 +1,6 @@
 export type * from './api.js'
 export * from './components/index.js'
+export * from './keys.js'
 export * from './registry.js'
 export * from './types.js'
 export * from './typed-client/index.js'
