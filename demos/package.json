@@ -10,6 +10,7 @@
     "keys:generate": "npm run keys:generate:api && npm run keys:generate:ui",
     "keys:check": "node ../api/dist/analysis/cli.js . --check-keys src/keys.generated.d.ts && node ../api/dist/analysis/cli.js . --check-keys ../ui/src/local/keys.generated.d.ts --module '@reqquest/ui'",
     "keys:generate:api": "node ../api/dist/analysis/cli.js . --emit-keys src/keys.generated.d.ts",
+    "keys:generate:dev": "npm run keys:generate:api && if [ -f ../ui/src/local/keys.generated.d.ts ]; then npm run keys:generate:ui; else echo 'skipping UI keys - ../ui/src/local/keys.generated.d.ts is not mounted'; fi",
     "keys:generate:ui": "node ../api/dist/analysis/cli.js . --emit-keys ../ui/src/local/keys.generated.d.ts --module '@reqquest/ui'"
   },
   "dependencies": {
@@ -26,14 +27,15 @@
     "typescript": "^5.1.6"
   },
   "nodemonConfig": {
-    "exec": "cd ../api && npm run build && cd ../demos && npm run keys:generate:api && npm run build && node --no-warnings --enable-source-maps ./dist/index.js",
+    "exec": "cd ../api && npm run build && cd ../demos && npm run keys:generate:dev && npm run build && node --no-warnings --enable-source-maps ./dist/index.js",
     "ext": "js,ts",
     "watch": [
       "/usr/app/demos/src",
       "/usr/app/api/src"
     ],
     "ignore": [
-      "/usr/app/demos/src/keys.generated.d.ts"
+      "/usr/app/demos/src/keys.generated.d.ts",
+      "/usr/app/ui/src/local/keys.generated.d.ts"
     ]
   }
 }
