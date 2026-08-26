@@ -25,11 +25,12 @@ type DefaultRequirementKey = KeysOfModule<typeof import('./default/definitions/r
 type RcRequirementKey = KeysOfModule<typeof import('./rc/definitions/requirements/index.js')>
 type SimpleRequirementKey = KeysOfModule<typeof import('./simple/definitions/requirements/index.js')>
 
-// programs are gathered into one exported ordered object, so the union comes off that object's keys
-type ComplexProgramKey = keyof typeof import('./complex/definitions/programs.js')['complexPrograms']
-type DefaultProgramKey = keyof typeof import('./default/definitions/programs.js')['defaultPrograms']
-type RcProgramKey = keyof typeof import('./rc/definitions/programs.js')['rcPrograms']
-type SimpleProgramKey = keyof typeof import('./simple/definitions/programs.js')['simplePrograms']
+// programs are gathered into one exported ordered object, so the union comes off that object rather
+// than a module. KeysOfModule works on either, and it honors an explicit `key`
+type ComplexProgramKey = KeysOfModule<typeof import('./complex/definitions/programs.js')['complexPrograms']>
+type DefaultProgramKey = KeysOfModule<typeof import('./default/definitions/programs.js')['defaultPrograms']>
+type RcProgramKey = KeysOfModule<typeof import('./rc/definitions/programs.js')['rcPrograms']>
+type SimpleProgramKey = KeysOfModule<typeof import('./simple/definitions/programs.js')['simplePrograms']>
 
 declare module '@reqquest/api' {
   interface ReqQuestKeys {

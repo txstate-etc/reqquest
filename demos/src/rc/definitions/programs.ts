@@ -1,7 +1,5 @@
 import { ProgramDefinition, AppRequestPhase, WorkflowStage } from '@reqquest/api'
 
-
-
 const overrideGpaWarningWorkflow: WorkflowStage = {
   key: 'override_gpa_warning',
   nonBlocking: true,
@@ -9,7 +7,6 @@ const overrideGpaWarningWorkflow: WorkflowStage = {
   title: 'Override GPA Warning',
   requirementKeys: ['reviewer_override_gpa_warning_req']
 }
-
 
 const operations_infrastructure: ProgramDefinition = {
   title: 'Operations & Infrastructure',
@@ -42,7 +39,7 @@ const software_development: ProgramDefinition = {
     'assess_reccomendation_lettern_req'
   ],
   workflowStages: [
-    overrideGpaWarningWorkflow,   
+    overrideGpaWarningWorkflow,
     {
       key: 'software_development_blocking_second_eyes',
       nonBlocking: false,
