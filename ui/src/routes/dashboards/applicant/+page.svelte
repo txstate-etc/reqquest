@@ -8,7 +8,7 @@
   } from '$internal'
   import { CardGrid, FieldMultiselect, FilterUI, Panel, PanelDialog, Toasts } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
-  import { Button, Dropdown, InlineNotification, Modal, Tooltip } from 'carbon-components-svelte'
+  import { Button, Dropdown, InlineNotification, Modal, NotificationActionButton, Tooltip } from 'carbon-components-svelte'
   import Close from 'carbon-icons-svelte/lib/Close.svelte'
   import Reset from 'carbon-icons-svelte/lib/Reset.svelte'
   import DocumentExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
@@ -23,7 +23,7 @@
   }
 
   export let data: PageData
-  $: ({ appRequests, availablePeriods, availableStatuses, access, openPeriods, recentCutoffIso, recentDays } = data)
+  $: ({ appRequests, availablePeriods, availableStatuses, access, openPeriods, recentCutoffIso, recentDays, announcement } = data)
 
   let sidePanelOpen = false
   let loading = false
@@ -309,6 +309,26 @@
     </svelte:fragment>
   </FilterUI>
 
+  <!-- Time sensitive banner -->
+  {#if announcement}
+    <div class='w-full'>
+      <InlineNotification
+        kind="warning"
+        title={announcement.subject}
+        subtitle={announcement.body}
+        lowContrast
+        hideCloseButton
+        class="time-sensitive-banner"
+      >
+        <svelte:fragment slot="actions">
+          {#if announcement.link}
+          <NotificationActionButton href={announcement.link}>{announcement.linkText}</NotificationActionButton>
+          {/if}
+        </svelte:fragment>
+      </InlineNotification>
+    </div>
+  {/if}
+
   {#if showIntroPanel}
     <IntroPanel
       title={uiRegistry.config.applicantDashboardIntroHeader}
@@ -485,5 +505,8 @@
   }
   .applicant-dashboard.past-tab :global(.quickfilters-form) {
     min-height: 2.5rem;
+  }
+  :global(.time-sensitive-banner) {
+    min-width: 100%;
   }
 </style>
