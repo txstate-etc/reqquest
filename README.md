@@ -326,8 +326,10 @@ To collect the necessary information, each Requirement depends on a list of Prom
 each prompt is answered, the requirement will analyze the information gathered and come up
 with a status (see ApplicationRequirement Statuses below) and a statusReason (a brief sentence
 or two describing why the requirement was marked the way that it was, especially when it
-is marked as disqualifying). The developer is responsible for writing javascript
-code that implements a Requirement's logic.
+is marked as disqualifying). It may also return `blame`, a list of the prompt keys whose
+answers are responsible for that status, which lets the reviewer interface mark those specific
+questions instead of every question the requirement looked at. The developer is responsible for
+writing javascript code that implements a Requirement's logic.
 
 As long as the requirement is still pending, ReqQuest will continue collecting the next prompt
 in its list, one by one, until all prompts have been answered or the requirement is not pending.

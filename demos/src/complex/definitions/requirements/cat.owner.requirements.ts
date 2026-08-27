@@ -98,12 +98,12 @@ export const review_applicant_cat_info_app_req: RequirementDefinition = {
   promptKeys: ['review_applicant_cat_info_prompt'],
   resolve: (data, config) => {
     const revCatInfoData = data.review_applicant_cat_info_prompt as ReviewApplicantCatInfoPromptData
-    if (revCatInfoData == null) return { status: RequirementStatus.PENDING }
-    if (revCatInfoData.previousCatAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
-    if (revCatInfoData.currentCatAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
-    if (revCatInfoData.livingSpaceAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
-    if (revCatInfoData.allergyAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
-    if (revCatInfoData.microchipAgree === false) return { status: RequirementStatus.DISQUALIFYING }
+    if (revCatInfoData == null) return { status: RequirementStatus.PENDING, blame: ['review_applicant_cat_info_prompt'] }
+    if (revCatInfoData.previousCatAcceptable === false) return { status: RequirementStatus.DISQUALIFYING, blame: ['previous_catowner_prompt'] }
+    if (revCatInfoData.currentCatAcceptable === false) return { status: RequirementStatus.DISQUALIFYING, blame: ['current_catowner_prompt'] }
+    if (revCatInfoData.livingSpaceAcceptable === false) return { status: RequirementStatus.DISQUALIFYING, blame: ['living_space_prompt'] }
+    if (revCatInfoData.allergyAcceptable === false) return { status: RequirementStatus.DISQUALIFYING, blame: ['owner_cat_allergy_prompt'] }
+    if (revCatInfoData.microchipAgree === false) return { status: RequirementStatus.DISQUALIFYING, blame: ['owner_cat_microchip_service_prompt'] }
     return { status: RequirementStatus.MET }
   }
 }
