@@ -29,7 +29,6 @@ function processFilters (filter?: AnnouncementFilters) {
 
 export async function getAnnouncements (filter?: AnnouncementFilters) {
   const { where, binds } = processFilters(filter)
-  console.log(where, filter)
   const rows = await db.getall<AnnouncementRow>(`
     SELECT a.*
     FROM announcements a
