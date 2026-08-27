@@ -44,7 +44,7 @@ export class AnnouncementService extends AuthService<Announcement> {
 
     if (isNotBlank(update.link)) {
       const canParse = URL.canParse(update.link)
-      if (!canParse) response.addMessage('Link must be an http, https, or mailto URL.', 'link')
+      if (!canParse) response.addMessage('Invalid URL', 'link')
       if (isBlank(update.linkText)) response.addMessage('Link text is required when a link is provided.', 'linkText')
     } else if (isNotBlank(update.linkText)) {
       response.addMessage('Link text needs url', 'linkText', MutationMessageType.error)

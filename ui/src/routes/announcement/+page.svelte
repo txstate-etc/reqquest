@@ -29,7 +29,7 @@
 
   async function validate (data: any) {
     const { id, addLink, ...rest } = data
-    const { messages } = await api.createAnnouncement(rest)
+    const { messages } = id ? await api.updateAnnouncement(id, rest) : await api.createAnnouncement(rest)
     return messages
   }
 
