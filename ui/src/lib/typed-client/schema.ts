@@ -200,6 +200,8 @@ export interface Announcement {
     start: (Scalars['DateTime'] | null)
     /** Short headline for the announcement. */
     subject: Scalars['String']
+    /** The type of announcement, toggleable or date range */
+    type: Scalars['String']
     __typename: 'Announcement'
 }
 
@@ -1170,12 +1172,14 @@ export interface AnnouncementGenqlSelection{
     start?: boolean | number
     /** Short headline for the announcement. */
     subject?: boolean | number
+    /** The type of announcement, toggleable or date range */
+    type?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
 
 export interface AnnouncementFilters {
-/** Return only the announcements that should be displayed at this moment: enabled and within their date range. */
+/** Return only the announcements that should be displayed at this moment: enabled OR within their date range. */
 active?: (Scalars['Boolean'] | null),
 /** Return only enabled (true) or only disabled (false) announcements. */
 enabled?: (Scalars['Boolean'] | null),
@@ -1184,7 +1188,7 @@ ids?: (Scalars['ID'][] | null)}
 
 export interface AnnouncementUpdate {
 /** The content of the announcement in HTML. Unsafe markup is stripped on save. */
-body: Scalars['String'],
+body?: (Scalars['String'] | null),
 /** Whether the announcement has been turned on. */
 enabled?: (Scalars['Boolean'] | null),
 /** The announcement will not display after this date. Null means it displays until it is disabled. */
@@ -1196,7 +1200,9 @@ linkText?: (Scalars['String'] | null),
 /** The announcement will not display before this date. Null means it displays as soon as it is enabled. */
 start?: (Scalars['DateTime'] | null),
 /** Short headline for the announcement. */
-subject: Scalars['String']}
+subject?: (Scalars['String'] | null),
+/** The type of announcement, toggleable or date range */
+type?: (Scalars['Boolean'] | null)}
 
 
 /** Represents a group of applications all being applied for at the same time. As part of the request, multiple applications will be created and either eliminated as ineligible or submitted for approval. */
@@ -1690,7 +1696,7 @@ export interface MutationGenqlSelection{
     /** Toggle an existing note's persistent status. */
     togglePersistence?: (ValidatedNoteResponseGenqlSelection & { __args: {noteId: Scalars['ID']} })
     /** Update an existing site-wide announcement. */
-    updateAnnouncement?: (ValidatedAnnouncementResponseGenqlSelection & { __args: {announcementId: Scalars['ID'], update: AnnouncementUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
+    updateAnnouncement?: (ValidatedAnnouncementResponseGenqlSelection & { __args: {announcement: AnnouncementUpdate, announcementId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     updateConfiguration?: (ValidatedConfigurationResponseGenqlSelection & { __args: {data: Scalars['JsonData'], key: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     /** Update the content of an existing note. */
     updateNote?: (ValidatedNoteResponseGenqlSelection & { __args: {content: Scalars['String'], noteId: Scalars['ID']} })

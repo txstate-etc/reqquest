@@ -7,7 +7,6 @@ import { AnnouncementRow } from './announcement.database.js'
 export class Announcement {
   constructor (row: AnnouncementRow) {
     this.id = String(row.id)
-    this.internalId = row.id
     this.link = row.link ?? undefined
     this.linkText = row.linkText ?? undefined
     this.subject = row.subject
@@ -15,6 +14,7 @@ export class Announcement {
     this.start = row.start ? DateTime.fromJSDate(row.start) : undefined
     this.end = row.end ? DateTime.fromJSDate(row.end) : undefined
     this.enabled = !!row.enabled
+    this.type = row.type
   }
 
   @Field(type => ID)
@@ -41,7 +41,8 @@ export class Announcement {
   @Field({ description: 'Whether the announcement has been turned on. A disabled announcement never displays, regardless of its date range.' })
   enabled: boolean
 
-  internalId: number
+  @Field({ description: 'The type of announcement, toggleable or date range' })
+  type: string
 
   /**
    * Whether the announcement should be displaying right now: enabled and inside its date range.
@@ -92,6 +93,9 @@ export class AnnouncementUpdate {
 
   @Field({ nullable: true, defaultValue: false, description: 'Whether the announcement has been turned on.' })
   enabled?: boolean
+
+  @Field({ nullable: true, description: 'The type of announcement, toggleable or date range' })
+  type?: string
 }
 
 @ObjectType()

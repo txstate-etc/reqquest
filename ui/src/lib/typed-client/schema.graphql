@@ -316,11 +316,14 @@ type Announcement {
 
   """Short headline for the announcement."""
   subject: String!
+
+  """The type of announcement, toggleable or date range"""
+  type: String!
 }
 
 input AnnouncementFilters {
   """
-  Return only the announcements that should be displayed at this moment: enabled and within their date range.
+  Return only the announcements that should be displayed at this moment: enabled OR within their date range.
   """
   active: Boolean
 
@@ -335,7 +338,7 @@ input AnnouncementUpdate {
   """
   The content of the announcement in HTML. Unsafe markup is stripped on save.
   """
-  body: String!
+  body: String
 
   """Whether the announcement has been turned on."""
   enabled: Boolean = false
@@ -357,7 +360,10 @@ input AnnouncementUpdate {
   start: DateTime
 
   """Short headline for the announcement."""
-  subject: String!
+  subject: String
+
+  """The type of announcement, toggleable or date range"""
+  type: Boolean
 }
 
 """
@@ -1460,7 +1466,7 @@ type Mutation {
   togglePersistence(noteId: ID!): ValidatedNoteResponse!
 
   """Update an existing site-wide announcement."""
-  updateAnnouncement(announcementId: ID!, update: AnnouncementUpdate!, validateOnly: Boolean): ValidatedAnnouncementResponse!
+  updateAnnouncement(announcement: AnnouncementUpdate!, announcementId: ID!, validateOnly: Boolean): ValidatedAnnouncementResponse!
   updateConfiguration(data: JsonData!, key: String!, periodId: ID!, validateOnly: Boolean): ValidatedConfigurationResponse!
 
   """Update the content of an existing note."""

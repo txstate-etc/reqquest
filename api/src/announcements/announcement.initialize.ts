@@ -7,6 +7,7 @@ export const announcementMigrations: DatabaseMigration[] = [
       await db.execute(`
         CREATE TABLE IF NOT EXISTS announcements (
           id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+          type VARCHAR(255),
           link VARCHAR(255),
           linkText VARCHAR(255),
           subject VARCHAR(255) NOT NULL,

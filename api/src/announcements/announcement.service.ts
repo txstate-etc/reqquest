@@ -50,30 +50,50 @@ export class AnnouncementService extends AuthService<Announcement> {
       response.addMessage('Link text needs url', 'linkText', MutationMessageType.error)
     }
 
-    if (update.start != null && update.end != null && update.end <= update.start) {
-      response.addMessage('End date must be after the start date.', 'end')
+    if (update.type === 'date') {
+      if (update.start == null) {
+        response.addMessage('Start date is required', 'start')
+      } else if (update.end == null) {
+        response.addMessage('End date is required', 'end')
+      } else if (update.end <= update.start) {
+        response.addMessage('End date must be after the start date.', 'end')
+      }
     }
     return response
   }
 
   async create (update: AnnouncementUpdate, validateOnly?: boolean) {
     if (!this.mayCreate()) throw new Error('You are not allowed to create an announcement.')
+    const exists = await this.find()
+    if (exists.length) throw new Error('An announcement already exists')
     const response = this.validate(update)
     if (validateOnly || response.hasErrors()) return response
-    const id = await createAnnouncement({ ...update, body: cleanHTML(update.body ?? '') })
+    const id = await createAnnouncement({ 
+      ...update,
+      body: cleanHTML(update.body ?? ''),
+      subject: cleanHTML(update.subject ?? ''),
+      enabled: update.type === 'date' ? false : update.enabled,
+      start: update.type === 'toggle' ? undefined : update.start,
+      end: update.type === 'toggle' ? undefined : update.end
+    })
     response.announcement = await this.findByID(String(id))
     return response
   }
 
   async update (id: string, update: AnnouncementUpdate, validateOnly?: boolean) {
     const announcement = await this.findByID(id)
-    console.log(announcement)
     if (!announcement) throw new Error('Announcement not found.')
     if (!this.mayUpdate()) throw new Error('You are not allowed to update this announcement.')
     const response = this.validate(update)
     if (validateOnly || response.hasErrors()) return response
-    const updated = await updateAnnouncement(id, { ...update, body: cleanHTML(update.body ?? '') })
-    console.log(updated)
+    await updateAnnouncement(id, { 
+      ...update,
+      body: cleanHTML(update.body ?? ''),
+      subject: cleanHTML(update.subject ?? ''),
+      enabled: update.type === 'date' ? false : update.enabled,
+      start: update.type === 'toggle' ? undefined : update.start,
+      end: update.type === 'toggle' ? undefined : update.end
+    })
     response.announcement = await this.findByID(id)
     return response
   }

@@ -1464,7 +1464,8 @@ class API extends APIBase {
         end: true,
         link: true,
         linkText: true,
-        enabled: true
+        enabled: true,
+        type: true
       }
     })
 
@@ -1491,13 +1492,13 @@ class API extends APIBase {
     return this.mutationForDialog(response.createAnnouncement)
   }
 
-  async updateAnnouncement (announcementId: string, update: any, validateOnly = true) {
+  async updateAnnouncement (announcementId: string, announcement: any, validateOnly = true) {
     const response = await this.client.mutation({
-      __name: 'CreateAnnouncement',
+      __name: 'UpdateAnnouncement',
       updateAnnouncement: {
         __args: {
           announcementId,
-          update,
+          announcement,
           validateOnly
         },
         success: true,

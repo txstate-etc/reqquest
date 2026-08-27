@@ -10,6 +10,7 @@ export interface AnnouncementRow {
   start: Date | null
   end: Date | null
   enabled: 0 | 1
+  type: string
 }
 
 function processFilters (filter?: AnnouncementFilters) {
@@ -38,20 +39,20 @@ export async function getAnnouncements (filter?: AnnouncementFilters) {
 }
 
 export async function createAnnouncement (update: AnnouncementUpdate) {
-  const { link, linkText, subject, body, start, end, enabled } = update
+  const { link, linkText, subject, body, start, end, enabled, type } = update
   return await db.insert(`
-    INSERT INTO announcements (link, linkText, subject, body, start, end, enabled)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `, [link, linkText, subject, body, start?.toJSDate(), end?.toJSDate(), enabled ? 1 : 0])
+    INSERT INTO announcements (link, linkText, subject, body, start, end, enabled, type)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `, [link, linkText, subject, body, start?.toJSDate(), end?.toJSDate(), enabled ? 1 : 0, type])
 }
 
 export async function updateAnnouncement (id: string, update: AnnouncementUpdate) {
-  const { link, linkText, subject, body, start, end, enabled } = update
+  const { link, linkText, subject, body, start, end, enabled, type } = update
   await db.update(`
     UPDATE announcements
-    SET link = ?, linkText = ?, subject = ?, body = ?, start = ?, end = ?, enabled = ?
+    SET link = ?, linkText = ?, subject = ?, body = ?, start = ?, end = ?, enabled = ?, type = ?
     WHERE id = ?
-  `, [link, linkText, subject, body, start?.toJSDate(), end?.toJSDate(), enabled ? 1 : 0, id])
+  `, [link, linkText, subject, body, start?.toJSDate(), end?.toJSDate(), enabled ? 1 : 0, type, id])
 }
 
 export async function setAnnouncementEnabled (id: string, enabled: boolean) {

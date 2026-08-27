@@ -443,6 +443,9 @@ export default {
             "subject": [
                 89
             ],
+            "type": [
+                89
+            ],
             "__typename": [
                 89
             ]
@@ -482,6 +485,9 @@ export default {
             ],
             "subject": [
                 89
+            ],
+            "type": [
+                45
             ],
             "__typename": [
                 89
@@ -1582,13 +1588,13 @@ export default {
             "updateAnnouncement": [
                 90,
                 {
+                    "announcement": [
+                        24,
+                        "AnnouncementUpdate!"
+                    ],
                     "announcementId": [
                         53,
                         "ID!"
-                    ],
-                    "update": [
-                        24,
-                        "AnnouncementUpdate!"
                     ],
                     "validateOnly": [
                         45
