@@ -19,6 +19,7 @@ export * from './program/program.model.js'
 export * from './prompt/prompt.model.js'
 export * from './requirement/requirement.model.js'
 export * from './metrics/metrics.model.js'
+export * from './announcements/announcement.models.js'
 
 /** Registry */
 export * from './registry/index.js'
@@ -34,6 +35,7 @@ export * from './program/program.resolver.js'
 export * from './prompt/prompt.resolver.js'
 export * from './requirement/requirement.resolver.js'
 export * from './metrics/metrics.resolver.js'
+export * from './announcements/announcement.resolver.js'
 
 /** db queries */
 export * from './access/access.database.js'
@@ -46,6 +48,7 @@ export * from './prompt/prompt.database.js'
 export * from './requirement/requirement.database.js'
 export * from './metrics/metrics.database.js'
 export * from './mail/mail.database.js'
+export * from './announcements/announcement.database.js'
 
 /** Services */
 export * from './access/access.user.service.js'
@@ -59,6 +62,7 @@ export * from './prompt/prompt.service.js'
 export * from './requirement/requirement.service.js'
 export * from './metrics/metrics.service.js'
 export * from './mail/mail.service.js'
+export * from './announcements/announcement.service.js'
 
 /** Routes */
 export * from './appRequest/appRequest.routes.js'
@@ -74,3 +78,4 @@ export * from './period/period.initialize.js'
 export * from './prompt/prompt.initialize.js'
 export * from './requirement/requirement.initialize.js'
 export * from './mail/mail.initialize.js'
+export * from './announcements/announcement.initialize.js'
