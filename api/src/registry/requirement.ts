@@ -163,8 +163,9 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    * prompts are indicated, which is the historical behavior and is usually right for a
    * requirement that only has one prompt. The keys need not belong to this requirement - a
    * reviewer requirement may blame the upstream applicant prompt whose answer it just judged.
-   * Nothing is validated or filtered; a key that matches no prompt the viewer can see simply has
-   * no effect.
+   * The keys are checked at compile time against the prompts your project registers, so a typo or a
+   * key you have since renamed will not compile. Nothing is filtered at runtime, though: a key
+   * naming a prompt the viewer cannot currently see simply has no effect.
    *
    * These values will be cached until the appRequest is updated in some way.
    *
@@ -183,7 +184,7 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    * explicitly allowed to show up late and change this requirement's determination. Anything
    * you receive that way may be `undefined` on one call and populated on the next.
    */
-  resolve: (appRequestData: AppRequestData, config: ConfigurationDataType, configLookup: Record<string, any>) => { status: RequirementStatus, reason?: string, blame?: string[] }
+  resolve: (appRequestData: AppRequestData, config: ConfigurationDataType, configLookup: Record<string, any>) => { status: RequirementStatus, reason?: string, blame?: PromptKey[] }
   /**
    * Often, you will want to allow application administrators to control various aspects of
    * how requirements will be evaluated. For example, you might want administrators to
