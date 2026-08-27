@@ -86,8 +86,8 @@
         <FieldDateTime required path='end' labelText='End time' />
       {/if}
 
-      <FieldTextInput required path='subject' labelText='Message title'/>
-      <FieldTextArea required path='body' labelText='Message text' />
+      <FieldTextInput required path='subject' labelText='Message title' maxlength={40}/>
+      <FieldTextArea required path='body' labelText='Message text' maxCount={140} />
 
       <FieldCheckbox path='addLink' labelText='Add link' on:change={(e: any) => {
         if (!e.target.checked) {
