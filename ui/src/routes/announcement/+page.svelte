@@ -67,7 +67,7 @@
   {validate}
   bind:store
   on:saved={saved}
-  
+  hideFallbackMessage
   preload={anouncement ? { ...anouncement, addLink: anouncement?.link || anouncement?.linkText } : undefined}
 >
   <FieldRadio
