@@ -311,22 +311,20 @@
 
   <!-- Time sensitive banner -->
   {#if announcement}
-    <div class='w-full'>
-      <InlineNotification
-        kind="warning"
-        title={announcement.subject}
-        subtitle={announcement.body}
-        lowContrast
-        hideCloseButton
-        class="time-sensitive-banner"
-      >
-        <svelte:fragment slot="actions">
-          {#if announcement.link}
-          <NotificationActionButton href={announcement.link}>{announcement.linkText}</NotificationActionButton>
-          {/if}
-        </svelte:fragment>
-      </InlineNotification>
-    </div>
+    <InlineNotification
+      kind="warning"
+      title={announcement.subject}
+      subtitle={announcement.body}
+      lowContrast
+      hideCloseButton
+      class="time-sensitive-banner"
+    >
+      <svelte:fragment slot="actions">
+        {#if announcement.link}
+        <NotificationActionButton href={announcement.link}>{announcement.linkText}</NotificationActionButton>
+        {/if}
+      </svelte:fragment>
+    </InlineNotification>
   {/if}
 
   {#if showIntroPanel}
@@ -506,7 +504,17 @@
   .applicant-dashboard.past-tab :global(.quickfilters-form) {
     min-height: 2.5rem;
   }
-  :global(.time-sensitive-banner) {
-    min-width: 100%;
+  :global(div.time-sensitive-banner.bx--inline-notification) {
+    min-width: unset;
+    max-width: fit-content;
+    flex-wrap: wrap;
+    width: auto;
+    align-items: center;
+  }
+  .time-sensitive-banner :global(.bx--inline-notification__details) {
+    flex-grow: unset;
+  }
+  .time-sensitive-banner :global(.bx--inline-notification__text-wrapper) {
+    display: block;
   }
 </style>

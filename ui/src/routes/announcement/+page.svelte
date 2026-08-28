@@ -61,76 +61,101 @@
   </div>
 </IntroPanel>
 
-<div class="md:w-1/2">
-  <Form
-    let:data
-    {submit}
-    {validate}
-    bind:store
-    on:saved={saved}
-    preload={anouncement ? { ...anouncement, addLink: anouncement?.link || anouncement?.linkText } : undefined}
-  >
-    <FieldRadio
-      path='type'
-      required
-      labelText="Status"
-      defaultValue='toggle'
-      items={[
-        { label: 'Toggle on and off', value: 'toggle' },
-        { label: 'Date range', value: 'date' }
-      ]} />
-      {#if data.type === 'toggle'}
-        <FieldToggle path='enabled' labelText='active' labelA='Message inactive' labelB='Message active' />
-      {:else}
+<Form
+  let:data
+  {submit}
+  {validate}
+  bind:store
+  on:saved={saved}
+  preload={anouncement ? { ...anouncement, addLink: anouncement?.link || anouncement?.linkText } : undefined}
+>
+  <FieldRadio
+    path='type'
+    required
+    labelText="Status"
+    defaultValue='toggle'
+    class="md:w-[645px]"
+    items={[
+      { label: 'Toggle on and off', value: 'toggle' },
+      { label: 'Date range', value: 'date' }
+    ]} />
+    {#if data.type === 'toggle'}
+      <FieldToggle path='enabled' labelText='active' labelA='Message inactive' labelB='Message active' />
+    {:else}
+      <div class="md:w-[645px] flow">
         <FieldDateTime required path='start' labelText='Start time' />
-        <FieldDateTime required path='end' labelText='End time' />
-      {/if}
-
-      <FieldTextInput required path='subject' labelText='Message title' maxlength={40}/>
-      <FieldTextArea required path='body' labelText='Message text' maxCount={140} />
-
-      <FieldCheckbox path='addLink' labelText='Add link' on:change={(e: any) => {
-        if (!e.target.checked) {
-          store?.setField('linkText', undefined)
-          store?.setField('link', undefined)
-        }
-      }} />
-
-      {#if data.addLink}
-        <div class="flex flex-row gap-4">
-          <FieldTextInput required path='linkText' labelText='Link text' />
-          <FieldTextInput required path='link' labelText='URL' />
+        
+        <FieldDateTime required path='end' labelText='End time' helperText='This is how long the message will display.' />
+        <div class="flex justify-end">
+          <Button size='small' kind='ghost' on:click={() => { store?.setField('start', undefined); store?.setField('end', undefined)}} icon={TextClearFormat}>Reset</Button>
         </div>
-      {/if}
-
-
-      {#if data.subject && data.body}
-        <div class='w-full'>
-          <InlineNotification
-            kind="warning"
-            title={data.subject}
-            subtitle={data.body}
-            lowContrast
-            hideCloseButton
-            class="time-sensitive-banner"
-          >
-            <svelte:fragment slot="actions">
-              {#if data.link}
-              <NotificationActionButton href={data.link}>{data.linkText}</NotificationActionButton>
-              {/if}
-            </svelte:fragment>
-          </InlineNotification>
-        </div>
-      {:else}
-        <div>
-          <p class="font-bold text-sm">No message to display</p>
-          <p class="text-sm">Nothing will be shown to applicants until a message is configured.</p>
-        </div>
-      {/if}
-    
-      <div slot='submit' class="flex gap-4">
-        <Button type='submit'>Save</Button>
-        <Button kind='ghost' on:click={reset} icon={TextClearFormat}>Reset</Button>
       </div>
-  </Form>
-</div>
+    {/if}
+
+    <div class="md:w-[645px] flow">
+      <FieldTextArea rows={1} required path='subject' labelText='Message title' maxCount={40} class="md:w-[645px]"/>
+    <!-- </div>
+    <div class="md:w-[645px]"> -->
+      <FieldTextArea required path='body' labelText='Message text' maxCount={140} class="md:w-[645px]"/>
+    </div>
+
+    <FieldCheckbox path='addLink' labelText='Add link' on:change={(e: any) => {
+      if (!e.target.checked) {
+        store?.setField('linkText', undefined)
+        store?.setField('link', undefined)
+      }
+    }} />
+
+    {#if data.addLink}
+      <div class="flex flex-row gap-4">
+        <FieldTextInput required path='linkText' labelText='Link text' />
+        <FieldTextInput required path='link' labelText='URL' />
+      </div>
+    {/if}
+
+
+    {#if data.subject && data.body}
+      <div class='w-full'>
+        <InlineNotification
+          kind="warning"
+          title={data.subject}
+          subtitle={data.body}
+          lowContrast
+          hideCloseButton
+          class="time-sensitive-banner"
+        >
+          <svelte:fragment slot="actions">
+            {#if data.link}
+            <NotificationActionButton href={data.link}>{data.linkText}</NotificationActionButton>
+            {/if}
+          </svelte:fragment>
+        </InlineNotification>
+      </div>
+    {:else}
+      <div class="bg-[var(--cds-ui-01)] p-4 gap-8 md:w-[645px]">
+        <p>No message to display</p>
+        <p class="text-sm text-[--cds-text-02]">Nothing will be shown to applicants until a message is configured.</p>
+      </div>
+    {/if}
+  
+    <div slot='submit' class="flex gap-4">
+      <Button type='submit'>Save</Button>
+      <Button kind='ghost' on:click={reset} icon={TextClearFormat}>Reset</Button>
+    </div>
+</Form>
+
+<style>
+  :global(div.time-sensitive-banner.bx--inline-notification) {
+    min-width: unset;
+    max-width: fit-content;
+    flex-wrap: wrap;
+    width: auto;
+    align-items: center;
+  }
+  .time-sensitive-banner :global(.bx--inline-notification__details) {
+    flex-grow: unset;
+  }
+  .time-sensitive-banner :global(.bx--inline-notification__text-wrapper) {
+    display: block;
+  }
+</style>
