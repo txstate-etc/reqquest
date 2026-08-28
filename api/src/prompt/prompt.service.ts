@@ -323,7 +323,8 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
       const processedData = prompt.definition.preProcessData ? await prompt.definition.preProcessData(data, this.ctx, appRequest, appRequestData, allConfigData, db, validateOnly) : data
       for (const message of prompt.definition.validate?.(processedData, allConfigData[prompt.key] ?? {}, appRequestData, allConfigData, db) ?? []) response.addMessage(message.message, message.arg, message.type)
       if (dataVersion != null && appRequest.dataVersion !== dataVersion) {
-        throw new Error('Someone else is working on the same request and made changes since you loaded. Copy any unsaved work into another document and reload the page to see what has changed.')
+        response.addMessage('Someone else is working on the same request and made changes since you loaded. Copy any unsaved work into another document and reload the page to see what has changed.')
+        return
       }
       if (validateOnly) return
       response.success = true // if we got this far, it's saving the data, so that's a success even if the data isn't quite valid yet
