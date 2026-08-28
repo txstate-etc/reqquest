@@ -17,6 +17,7 @@
   import { api } from '../api.js'
   import type { PageData } from '../../routes/requests/[id]/apply/[promptId]/$types.js'
   import ButtonLoadingIcon from './ButtonLoadingIcon.svelte'
+  import MissingDefinitionNotification from './MissingDefinitionNotification.svelte'
 
 
   export let data: Awaited<PageData['applicantPromptPromise']> & { dataVersion: number }
@@ -89,8 +90,16 @@
     <h2 id="prompt-title" tabindex="-1" autofocus class="font-bold text-2xl leading-normal text-center">{prompt.title}</h2>
     <p class="text-center"> {prompt.description}</p>
   </div>
-  <Form class={def!.applicantPromptPage?.formClass ?? uiRegistry.config.applicantPromptPage?.formClass} bind:store hideFallbackMessage unsavedWarning submit={onSubmit} validate={onValidate} preloadAsDraft={!prompt.hasSavedData} preload={prompt.preloadData} on:saved={onSaved} let:data>
-    <svelte:component this={def!.formComponent} {data} appRequestId={appRequestForExport.id} appRequestData={appRequestForExport.data} prestageData={{latest: prompt.prestageData, current: appRequestForExport.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} />
+  {#if def == null}
+    <div class="max-w-screen-md mx-auto px-6 pt-6">
+      <MissingDefinitionNotification kind="prompt" definitionKey={prompt.key} />
+      {#if hasPreviousPrompt}
+        <Button kind="ghost" on:click={handleBack}>Back</Button>
+      {/if}
+    </div>
+  {:else}
+  <Form class={def.applicantPromptPage?.formClass ?? uiRegistry.config.applicantPromptPage?.formClass} bind:store hideFallbackMessage unsavedWarning submit={onSubmit} validate={onValidate} preloadAsDraft={!prompt.hasSavedData} preload={prompt.preloadData} on:saved={onSaved} let:data>
+    <svelte:component this={def.formComponent} {data} appRequestId={appRequestForExport.id} appRequestData={appRequestForExport.data} prestageData={{latest: prompt.prestageData, current: appRequestForExport.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} />
     <svelte:fragment slot="submit" let:submitting>
       <div class='form-submit flex gap-12 justify-center mt-16'>
         {#if hasPreviousPrompt}
@@ -103,7 +112,7 @@
       <!-- Correction inline prompt notification -->
     {#if prompt.invalidated && !$store?.hasUnsavedChanges}
       <InlineNotification
-        class={def!.applicantPromptPage?.invalidatedInlineNotificationClass ?? uiRegistry.config.applicantPromptPage?.invalidatedInlineNotificationClass}
+        class={def.applicantPromptPage?.invalidatedInlineNotificationClass ?? uiRegistry.config.applicantPromptPage?.invalidatedInlineNotificationClass}
         kind="warning-alt"
         title='Corrections needed'
         hideCloseButton={true}
@@ -112,5 +121,6 @@
       />
     {/if}    
   </Form>  
+  {/if}
 {/key}
 

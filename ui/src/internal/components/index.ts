@@ -4,6 +4,7 @@ export { default as ApplicationDetailsView } from './ApplicationDetailsView.svel
 export { default as AppRequestCard } from './AppRequestCard.svelte'
 export { default as ButtonLoadingIcon } from './ButtonLoadingIcon.svelte'
 export { default as IntroPanel } from './IntroPanel.svelte'
+export { default as MissingDefinitionNotification } from './MissingDefinitionNotification.svelte'
 export { default as PeriodPanel } from './PeriodPanel.svelte'
 export { default as RenderDisplayComponent } from './RenderDisplayComponent.svelte'
 export { default as ReviewerQuestions } from './ReviewerQuestions.svelte'

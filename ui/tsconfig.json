@@ -4,6 +4,7 @@
 		"lib": ["es2015", "dom"],
 		"sourceMap": true,
 		"strictNullChecks": true,
+		"skipLibCheck": true,
 		// NOTE: a child `paths` REPLACES the parent's, so SvelteKit's generated aliases are restated
 		// below. If .svelte-kit/tsconfig.json ever gains a new alias, add it here too.
 		"paths": {

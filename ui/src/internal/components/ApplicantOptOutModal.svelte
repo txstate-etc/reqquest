@@ -5,6 +5,7 @@
   import { uiRegistry } from '../../local/index.js'
   import { api, type PromptForEditing } from '../api.js'
   import { Loading } from "carbon-components-svelte";
+  import MissingDefinitionNotification from './MissingDefinitionNotification.svelte'
   import type { AppRequestForDetails, OptOutApplication } from '$lib'
 
   export let open = false
@@ -69,5 +70,9 @@
   preload={prompt.preloadData}
   preloadAsDraft={!prompt.hasSavedData} 
   >
-    <svelte:component this={def!.formComponent} {data} appRequestId={appRequest.id} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} />
+    {#if def?.formComponent == null}
+      <MissingDefinitionNotification kind="prompt" definitionKey={prompt.key} />
+    {:else}
+    <svelte:component this={def.formComponent} {data} appRequestId={appRequest.id} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} />
+    {/if}
 </PanelFormDialog>

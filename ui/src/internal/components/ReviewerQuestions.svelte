@@ -14,6 +14,7 @@
   import Review from "carbon-icons-svelte/lib/Review.svelte";
   import DelayedSkeleton from '$lib/components/DelayedSkeleton.svelte';
   import WarningIconYellow from './WarningIconYellow.svelte';
+  import MissingDefinitionNotification from './MissingDefinitionNotification.svelte';
   import { toasts } from '@txstate-mws/svelte-components';
   import { randomid } from 'txstate-utils'
 
@@ -203,8 +204,8 @@
             {@const isReviewerQuestion = reviewerRequirementTypes.has(requirement.type) && !def?.automation}
             {@const isAutomation = !!def?.automation}
             {@const editMode = isInlineReviewerEditPrompt(def, requirement.type, prompt)}
-            {@const small = editMode && def?.formMode !== 'full' ? def?.formMode !== 'large' : def!.displayMode !== 'large'}
-            {@const large = editMode && def?.formMode !== 'full' ? def?.formMode === 'large' : def!.displayMode === 'large'}
+            {@const small = editMode && def?.formMode !== 'full' ? def?.formMode !== 'large' : def?.displayMode !== 'large'}
+            {@const large = editMode && def?.formMode !== 'full' ? def?.formMode === 'large' : def?.displayMode === 'large'}
             {@const dtid = `dt-title-${prompt.id}`}
             {@const currentWorkflow = application.workflowStage ? application.workflowStage?.key === section.requirements[0]?.workflowStage?.key : undefined}
             {@const disabled = ((!editMode && def?.formMode !== 'full') && (currentWorkflow || requirement.status !== enumRequirementStatus.MET))}
@@ -307,8 +308,11 @@
       <div class='font-medium text-center mt-2'>
         <p class="text-xl font-medium ">{editingPromptWithData.title}</p>
       </div>
+      {#if def?.formComponent == null}
+        <MissingDefinitionNotification kind="prompt" definitionKey={editingPromptWithData.key} />
+      {:else}
       <svelte:component
-        this={def!.formComponent}
+        this={def.formComponent}
         appRequestId={appRequest.id}
         {data}
         appRequestData={editingPromptWithData.data}
@@ -322,6 +326,7 @@
         invalidated={editingPromptWithData.invalidated}
         invalidatedReason={editingPromptWithData.invalidatedReason}
       />
+      {/if}
     {:else if fetchingEditPrompt}
       {@const loader = uiRegistry.getPrompt(promptBeingEdited.key)?.loader}
       <div class='font-medium text-center mt-2'>
