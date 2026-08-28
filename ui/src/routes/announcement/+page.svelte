@@ -67,6 +67,7 @@
   {validate}
   bind:store
   on:saved={saved}
+  
   preload={anouncement ? { ...anouncement, addLink: anouncement?.link || anouncement?.linkText } : undefined}
 >
   <FieldRadio
@@ -82,11 +83,11 @@
     {#if data.type === 'toggle'}
       <FieldToggle path='enabled' labelText='active' labelA='Message inactive' labelB='Message active' />
     {:else}
-      <div class="md:w-[645px] flow">
+      <div class="md:w-[645px] flow datetime-full">
         <FieldDateTime required path='start' labelText='Start time' />
-        
+
         <FieldDateTime required path='end' labelText='End time' helperText='This is how long the message will display.' />
-        <div class="flex justify-end">
+        <div class="flex justify-end mt-0">
           <Button size='small' kind='ghost' on:click={() => { store?.setField('start', undefined); store?.setField('end', undefined)}} icon={TextClearFormat}>Reset</Button>
         </div>
       </div>
@@ -94,8 +95,6 @@
 
     <div class="md:w-[645px] flow">
       <FieldTextArea rows={1} required path='subject' labelText='Message title' maxCount={40} class="md:w-[645px]"/>
-    <!-- </div>
-    <div class="md:w-[645px]"> -->
       <FieldTextArea required path='body' labelText='Message text' maxCount={140} class="md:w-[645px]"/>
     </div>
 
@@ -145,6 +144,29 @@
 </Form>
 
 <style>
+  /* Stretch FieldDateTime (date input + time input + am/pm select) across the full form width. */
+  .datetime-full :global(.picker-row) {
+    gap: .5rem;
+  }
+  .datetime-full :global(.picker-row > *) {
+    flex-grow: 1;
+    width: 100%;
+  }
+  .datetime-full :global(.bx--text-input__field-wrapper) {
+    width: 100% !important;
+  }
+  .datetime-full :global(.bx--date-picker-input__wrapper),
+  .datetime-full :global(.bx--date-picker--single),
+  .datetime-full :global(.bx--date-picker-container),
+  .datetime-full :global(.flatpickr-wrapper),
+  .datetime-full :global(input.bx--date-picker__input),
+  .datetime-full :global(.bx--time-picker .bx--select-input),
+  .datetime-full :global(.bx--time-picker),
+  .datetime-full :global(.bx--time-picker__input),
+  .datetime-full :global(.bx--time-picker__input-field) {
+    width: 100%;
+  }
+
   :global(div.time-sensitive-banner.bx--inline-notification) {
     min-width: unset;
     max-width: fit-content;
