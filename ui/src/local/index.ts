@@ -1,8 +1,7 @@
 import { PUBLIC_DEMO_INSTANCE } from '$env/static/public'
 import { UIRegistry, type AnyUIConfig, type UIConfig } from '$lib'
-// Per-demo key unions, emitted by the analyzer's --groups flag. Each demo below is checked against
-// its own union rather than the repo-wide one - the generated `prompts` union spans every demo, so
-// no single config could ever satisfy it. See demos/package.json keys:generate:ui.
+// Per-demo key unions
+// See demos/package.json keys:generate:ui.
 import type {
   ComplexProgramKey, ComplexPromptKey, ComplexRequirementKey,
   DefaultProgramKey, DefaultPromptKey, DefaultRequirementKey,

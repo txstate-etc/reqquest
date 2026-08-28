@@ -6,8 +6,6 @@
  * if something actually type-checks. The full `npm run check` cannot serve as that gate yet: it
  * reports dozens of pre-existing errors elsewhere in the app, so turning it on would fail every
  * build for unrelated reasons. This narrows the gate to the one file that matters.
- *
- * Widen this to plain `npm run check` once the rest of the app is clean.
  */
 import { spawnSync } from 'node:child_process'
 
