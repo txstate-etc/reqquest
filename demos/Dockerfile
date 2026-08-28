@@ -15,7 +15,7 @@ FROM deps AS keycheck
 COPY ui/src/local/keys.generated.d.ts /usr/app/ui/src/local/keys.generated.d.ts
 RUN npm run keys:check
 
-FROM deps AS build
+FROM keycheck AS build
 RUN npm run build
 
 FROM node:24-alpine

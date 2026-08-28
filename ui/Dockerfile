@@ -13,6 +13,10 @@ RUN npm ci
 COPY ui/src src
 COPY ui/static static
 COPY ui/.env ./
+COPY ui/check-registry.js ./
+# vite build strips types without checking them, so nothing here would notice that the API defines a
+# prompt this UI has no component for. This gate does.
+RUN npx svelte-kit sync && npm run check:registry
 RUN npm run build
 
 FROM alpine:3.22
