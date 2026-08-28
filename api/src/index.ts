@@ -18,7 +18,7 @@ import {
   AccessRoleGroupResolver, AccessRoleGrantResolver, AccessGrantTagResolver, IndexCategoryResolver,
   AccessRoleGrantActionsResolver, AccessTagCategoryResolver, logMutation, installDownloadRoutes,
   AppRequestActivityResolver, PaginationResolver, noteMigrations, NoteResolver, NoteActionsResolver, ApplicationMetricResolver,
-  ensurePromptSigningKey, mailMigrations
+  ensurePromptSigningKey, mailMigrations, announcementMigrations, AnnouncementResolver
 } from './internal.js'
 import { scheduler, schedulerMigration } from './util/scheduler.js'
 import { FastifyTxStateOptions } from 'fastify-txstate'
@@ -107,6 +107,7 @@ export class RQServer extends GQLServer {
 
     const resolvers = [
       AccessGrantTagResolver,
+      AnnouncementResolver,
       AccessResolver,
       AccessRoleResolver,
       AccessRoleGroupResolver,
@@ -170,7 +171,7 @@ export class RQServer extends GQLServer {
     for (const [program, registeredName] of definitionEntries(options.programs)) programRegistry.register(program, true, registeredName)
     for (const [program, registeredName] of definitionEntries(options.pastPrograms ?? [])) programRegistry.register(program, false, registeredName)
     programRegistry.finalize()
-    await initializeDb([...periodMigrations, ...promptMigrations, ...requirementMigrations, ...accessMigrations, ...appRequestMigrations, ...applicationMigrations, ...noteMigrations, ...schedulerMigration, ...mailMigrations, ...(options?.migrations ?? [])])
+    await initializeDb([...periodMigrations, ...promptMigrations, ...requirementMigrations, ...accessMigrations, ...appRequestMigrations, ...applicationMigrations, ...noteMigrations, ...schedulerMigration, ...mailMigrations, ...announcementMigrations, ...(options?.migrations ?? [])])
     await initAccess()
     await super.swagger()
     await installDownloadRoutes(this.app)

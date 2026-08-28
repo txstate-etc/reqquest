@@ -52,7 +52,10 @@ class API extends APIBase {
         viewApplicantDashboard: true,
         viewAppRequestList: true,
         createAppRequestSelf: true,
-        createAppRequestOther: true
+        createAppRequestOther: true,
+        createAnnouncement: true,
+        updateAnnouncement: true,
+        deleteAnnouncement: true
       }
     })
     return response.access
@@ -296,11 +299,12 @@ class API extends APIBase {
           }
           appRequest {
             data
+            dataVersion
           }
         }
       }
     `, { promptId, data, validateOnly, dataVersion, overrideInvalidated })
-    return { ...this.mutationForDialog(response.updatePrompt), data: response.updatePrompt.appRequest.data }
+    return { ...this.mutationForDialog(response.updatePrompt), data: response.updatePrompt.appRequest.data, dataVersion: response.updatePrompt.appRequest.dataVersion as number | undefined }
   }
 
   async updateConfiguration (periodId: string, definitionKey: string, data: any, validateOnly: boolean) {
@@ -899,6 +903,7 @@ class API extends APIBase {
       appRequests: {
         __args: { filter: { ids: [appRequestId] } },
         id: true,
+        dataVersion: true,
         status: true,
         phase: true,
         createdAt: true,
@@ -1035,6 +1040,7 @@ class API extends APIBase {
       __name: 'GetPromptData',
       appRequests: {
         __args: { filter: { ids: [appRequestId] } },
+        dataVersion: true,
         prompt: {
           __args: { promptId },
           data: true,
@@ -1047,7 +1053,7 @@ class API extends APIBase {
       }
     })
     const appRequest = response.appRequests[0]
-    return appRequest.prompt
+    return { ...appRequest.prompt, dataVersion: appRequest.dataVersion }
   }
 
   async getPromptDataLegion (appRequestId: string, promptIds: string[]) {
@@ -1444,6 +1450,89 @@ class API extends APIBase {
       }
     })
     return this.mutationForDialog(response.roleDeleteGrant)
+  }
+
+  async getAnnouncement (active: boolean) {
+    const response = await this.client.query({
+      __name: 'announcement',
+      announcements:{
+        __args: {
+          filter: {
+            active
+          }
+        },
+        id: true,
+        subject: true,
+        body: true,
+        start: true,
+        end: true,
+        link: true,
+        linkText: true,
+        enabled: true,
+        type: true
+      }
+    })
+
+    return response.announcements.length ? response.announcements[0] : undefined
+  }
+
+  async createAnnouncement (announcement: any, validateOnly = true) {
+    const response = await this.client.mutation({
+      __name: 'CreateAnnouncement',
+      createAnnouncement: {
+        __args: {
+          announcement,
+          validateOnly
+        },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+
+    return this.mutationForDialog(response.createAnnouncement)
+  }
+
+  async updateAnnouncement (announcementId: string, announcement: any, validateOnly = true) {
+    const response = await this.client.mutation({
+      __name: 'UpdateAnnouncement',
+      updateAnnouncement: {
+        __args: {
+          announcementId,
+          announcement,
+          validateOnly
+        },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+
+    return this.mutationForDialog(response.updateAnnouncement)
+  }
+
+  async deleteAnnouncement (id: string) {
+    const response = await this.client.mutation({
+      __name: 'CreateAnnouncement',
+      deleteAnnouncement: {
+        __args: {
+          announcementId: id
+        },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return response.deleteAnnouncement.success
   }
 }
 

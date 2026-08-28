@@ -14,6 +14,8 @@ export type Scalars = {
 }
 
 export interface Access {
+    /** Current user is permitted to create announcements. */
+    createAnnouncement: Scalars['Boolean']
     /** Current user may create a new app request on behalf of another user and should be shown the Create App Request button on the reviewer dashboard or main app request list. */
     createAppRequestOther: Scalars['Boolean']
     /** Current user may create a new app request for themselves and should be shown the Create App Request button. */
@@ -22,6 +24,10 @@ export interface Access {
     createPeriod: Scalars['Boolean']
     /** Current user is permitted to create new roles in the role management UI. */
     createRole: Scalars['Boolean']
+    /** Current user is permitted to delete announcements. */
+    deleteAnnouncement: Scalars['Boolean']
+    /** Current user is permitted to update announcements. */
+    updateAnnouncement: Scalars['Boolean']
     /** The current user, if any. */
     user: (AccessUser | null)
     /** Current user is permitted to view the app request list. */
@@ -174,6 +180,29 @@ export interface AccessUserIdentifier {
     /** The label for this identifier, e.g. "Student ID". */
     label: Scalars['String']
     __typename: 'AccessUserIdentifier'
+}
+
+
+/** A site-wide announcement shown to users, optionally limited to a date range. */
+export interface Announcement {
+    /** The content of the announcement in HTML. */
+    body: Scalars['String']
+    /** Whether the announcement has been turned on. A disabled announcement never displays, regardless of its date range. */
+    enabled: Scalars['Boolean']
+    /** The announcement will not display after this date. Null means it displays until it is disabled. */
+    end: (Scalars['DateTime'] | null)
+    id: Scalars['ID']
+    /** URL the announcement directs the user to for more information. */
+    link: (Scalars['String'] | null)
+    /** The text to display for the link. */
+    linkText: (Scalars['String'] | null)
+    /** The announcement will not display before this date. Null means it displays as soon as it is enabled. */
+    start: (Scalars['DateTime'] | null)
+    /** Short headline for the announcement. */
+    subject: Scalars['String']
+    /** The type of announcement, toggleable or date range */
+    type: Scalars['String']
+    __typename: 'Announcement'
 }
 
 
@@ -543,9 +572,13 @@ export interface Mutation {
     completeRequest: ValidatedAppRequestResponse
     /** Make an offer on the app request. If all applications are ineligible, or if there are no acceptance requirements, the applications will advance to the non-blocking workflow, or absent that, be marked complete. */
     completeReview: ValidatedAppRequestResponse
+    /** Create a new site-wide announcement. */
+    createAnnouncement: ValidatedAnnouncementResponse
     /** Create a new app request. */
     createAppRequest: ValidatedAppRequestResponse
     createPeriod: ValidatedPeriodResponse
+    /** Delete an existing site-wide announcement. */
+    deleteAnnouncement: ValidatedResponse
     /** Delete an existing note. */
     deleteNote: Scalars['Boolean']
     deletePeriod: ValidatedResponse
@@ -576,6 +609,8 @@ export interface Mutation {
     submitAppRequest: ValidatedAppRequestResponse
     /** Toggle an existing note's persistent status. */
     togglePersistence: ValidatedNoteResponse
+    /** Update an existing site-wide announcement. */
+    updateAnnouncement: ValidatedAnnouncementResponse
     updateConfiguration: ValidatedConfigurationResponse
     /** Update the content of an existing note. */
     updateNote: ValidatedNoteResponse
@@ -764,6 +799,8 @@ export interface Query {
      */
     access: Access
     accessUsers: AccessUser[]
+    /** Retrieve site-wide announcements. Applicants only ever see currently active announcements; users with the Announcement view control see them all. */
+    announcements: Announcement[]
     /** The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order. */
     appRequestActivity: AppRequestActivity[]
     appRequestIndexes: IndexCategory[]
@@ -841,6 +878,15 @@ export interface RoleActions {
     __typename: 'RoleActions'
 }
 
+export interface ValidatedAnnouncementResponse {
+    /** The created or updated announcement. Null when validateOnly was true or when validation errors prevented the operation. */
+    announcement: (Announcement | null)
+    messages: MutationMessage[]
+    /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
+    success: Scalars['Boolean']
+    __typename: 'ValidatedAnnouncementResponse'
+}
+
 export interface ValidatedAppRequestResponse {
     appRequest: (AppRequest | null)
     messages: MutationMessage[]
@@ -882,6 +928,8 @@ export interface ValidatedResponse {
 }
 
 export interface AccessGenqlSelection{
+    /** Current user is permitted to create announcements. */
+    createAnnouncement?: boolean | number
     /** Current user may create a new app request on behalf of another user and should be shown the Create App Request button on the reviewer dashboard or main app request list. */
     createAppRequestOther?: boolean | number
     /** Current user may create a new app request for themselves and should be shown the Create App Request button. */
@@ -890,6 +938,10 @@ export interface AccessGenqlSelection{
     createPeriod?: boolean | number
     /** Current user is permitted to create new roles in the role management UI. */
     createRole?: boolean | number
+    /** Current user is permitted to delete announcements. */
+    deleteAnnouncement?: boolean | number
+    /** Current user is permitted to update announcements. */
+    updateAnnouncement?: boolean | number
     /** The current user, if any. */
     user?: AccessUserGenqlSelection
     /** Current user is permitted to view the app request list. */
@@ -1103,6 +1155,56 @@ export interface AccessUserIdentifierGenqlSelection{
 
 /** A label and ID pair for an external user unique ID. For example, { label: "Student ID", id: "123456" } */
 export interface AccessUserIdentifierInput {id: Scalars['ID'],label: Scalars['String']}
+
+
+/** A site-wide announcement shown to users, optionally limited to a date range. */
+export interface AnnouncementGenqlSelection{
+    /** The content of the announcement in HTML. */
+    body?: boolean | number
+    /** Whether the announcement has been turned on. A disabled announcement never displays, regardless of its date range. */
+    enabled?: boolean | number
+    /** The announcement will not display after this date. Null means it displays until it is disabled. */
+    end?: boolean | number
+    id?: boolean | number
+    /** URL the announcement directs the user to for more information. */
+    link?: boolean | number
+    /** The text to display for the link. */
+    linkText?: boolean | number
+    /** The announcement will not display before this date. Null means it displays as soon as it is enabled. */
+    start?: boolean | number
+    /** Short headline for the announcement. */
+    subject?: boolean | number
+    /** The type of announcement, toggleable or date range */
+    type?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface AnnouncementFilters {
+/** Return only the announcements that should be displayed at this moment: enabled OR within their date range. */
+active?: (Scalars['Boolean'] | null),
+/** Return only enabled (true) or only disabled (false) announcements. */
+enabled?: (Scalars['Boolean'] | null),
+/** Return the announcements with these IDs. */
+ids?: (Scalars['ID'][] | null)}
+
+export interface AnnouncementUpdate {
+/** The content of the announcement in HTML. Unsafe markup is stripped on save. */
+body?: (Scalars['String'] | null),
+/** Whether the announcement has been turned on. */
+enabled?: (Scalars['Boolean'] | null),
+/** The announcement will not display after this date. Null means it displays until it is disabled. */
+end?: (Scalars['DateTime'] | null),
+/** URL the announcement directs the user to for more information. */
+link?: (Scalars['String'] | null),
+/** The text to display for the link. Required when a link is given. */
+linkText?: (Scalars['String'] | null),
+/** The announcement will not display before this date. Null means it displays as soon as it is enabled. */
+start?: (Scalars['DateTime'] | null),
+/** Short headline for the announcement. */
+subject?: (Scalars['String'] | null),
+/** The type of announcement, toggleable or date range */
+type?: (Scalars['Boolean'] | null)}
 
 
 /** Represents a group of applications all being applied for at the same time. As part of the request, multiple applications will be created and either eliminated as ineligible or submitted for approval. */
@@ -1560,9 +1662,13 @@ export interface MutationGenqlSelection{
     completeRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Make an offer on the app request. If all applications are ineligible, or if there are no acceptance requirements, the applications will advance to the non-blocking workflow, or absent that, be marked complete. */
     completeReview?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
+    /** Create a new site-wide announcement. */
+    createAnnouncement?: (ValidatedAnnouncementResponseGenqlSelection & { __args: {announcement: AnnouncementUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
     /** Create a new app request. */
     createAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {login: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     createPeriod?: (ValidatedPeriodResponseGenqlSelection & { __args: {copyPeriodId?: (Scalars['String'] | null), period: PeriodUpdate, validateOnly?: (Scalars['Boolean'] | null)} })
+    /** Delete an existing site-wide announcement. */
+    deleteAnnouncement?: (ValidatedResponseGenqlSelection & { __args: {announcementId: Scalars['ID']} })
     /** Delete an existing note. */
     deleteNote?: { __args: {noteId: Scalars['ID']} }
     deletePeriod?: (ValidatedResponseGenqlSelection & { __args: {periodId: Scalars['ID']} })
@@ -1593,6 +1699,8 @@ export interface MutationGenqlSelection{
     submitAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Toggle an existing note's persistent status. */
     togglePersistence?: (ValidatedNoteResponseGenqlSelection & { __args: {noteId: Scalars['ID']} })
+    /** Update an existing site-wide announcement. */
+    updateAnnouncement?: (ValidatedAnnouncementResponseGenqlSelection & { __args: {announcement: AnnouncementUpdate, announcementId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     updateConfiguration?: (ValidatedConfigurationResponseGenqlSelection & { __args: {data: Scalars['JsonData'], key: Scalars['String'], periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     /** Update the content of an existing note. */
     updateNote?: (ValidatedNoteResponseGenqlSelection & { __args: {content: Scalars['String'], noteId: Scalars['ID']} })
@@ -1821,6 +1929,8 @@ export interface QueryGenqlSelection{
      */
     access?: AccessGenqlSelection
     accessUsers?: (AccessUserGenqlSelection & { __args?: {filter?: (AccessUserFilter | null), paged?: (Pagination | null)} })
+    /** Retrieve site-wide announcements. Applicants only ever see currently active announcements; users with the Announcement view control see them all. */
+    announcements?: (AnnouncementGenqlSelection & { __args?: {filter?: (AnnouncementFilters | null)} })
     /** The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order. */
     appRequestActivity?: (AppRequestActivityGenqlSelection & { __args: {
     /** Filters to apply to the activity log. This can be used to filter by action type, date range, etc. */
@@ -1914,6 +2024,16 @@ reachable?: (Scalars['Boolean'] | null),requirementIds?: (Scalars['ID'][] | null
 export interface RoleActionsGenqlSelection{
     delete?: boolean | number
     update?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+export interface ValidatedAnnouncementResponseGenqlSelection{
+    /** The created or updated announcement. Null when validateOnly was true or when validation errors prevented the operation. */
+    announcement?: AnnouncementGenqlSelection
+    messages?: MutationMessageGenqlSelection
+    /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
+    success?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -2072,6 +2192,14 @@ export interface ValidatedResponseGenqlSelection{
     export const isAccessUserIdentifier = (obj?: { __typename?: any } | null): obj is AccessUserIdentifier => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isAccessUserIdentifier"')
       return AccessUserIdentifier_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const Announcement_possibleTypes: string[] = ['Announcement']
+    export const isAnnouncement = (obj?: { __typename?: any } | null): obj is Announcement => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAnnouncement"')
+      return Announcement_possibleTypes.includes(obj.__typename)
     }
     
 
@@ -2344,6 +2472,14 @@ export interface ValidatedResponseGenqlSelection{
     export const isRoleActions = (obj?: { __typename?: any } | null): obj is RoleActions => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isRoleActions"')
       return RoleActions_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const ValidatedAnnouncementResponse_possibleTypes: string[] = ['ValidatedAnnouncementResponse']
+    export const isValidatedAnnouncementResponse = (obj?: { __typename?: any } | null): obj is ValidatedAnnouncementResponse => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isValidatedAnnouncementResponse"')
+      return ValidatedAnnouncementResponse_possibleTypes.includes(obj.__typename)
     }
     
 

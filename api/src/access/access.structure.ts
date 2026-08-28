@@ -270,6 +270,15 @@ export async function initAccess () {
       view: { description: 'View metrics data.' }
     }
   }
+  controlGroups.Announcement = {
+    title: 'Admin - Manage Announcements',
+    description: 'These controls govern site-wide announcements. Any user may see an announcement that is currently active; these controls are about managing them.',
+    controls: {
+      create: { description: 'Create new announcements.' },
+      update: { description: 'Update existing announcements, including turning them on and off.' },
+      delete: { description: 'Delete existing announcements.' }
+    }
+  }
   for (const controlGroup of Object.keys(controlGroups)) {
     const def = controlGroups[controlGroup] as ControlGroupDefinitionProcessed
     def.tagCategoryLookup = keyby(def.tags ?? [], 'category')

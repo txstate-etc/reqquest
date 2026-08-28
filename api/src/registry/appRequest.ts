@@ -182,6 +182,7 @@ export interface AppDefinition {
   emailConfig: {
     appName: string
     signature: string
+    from: string
   } & Record<string, string>
 }
 
