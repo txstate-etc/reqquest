@@ -118,14 +118,21 @@
     nonBlockingWorkflow = {}
     promptIndicator = {}
     for (const req of application.requirements) {
+      // automation indicator is about the prompt itself not requirement's status, so only applies to the requirements own prompts
       for (const prompt of req.prompts) {
         if (prompt.visibility === enumPromptVisibility.UNREACHABLE) continue
-        if (req.status === enumRequirementStatus.DISQUALIFYING && (promptIndicator[prompt.key]?.indicator ?? 0) < PromptIndicators.DISQUALIFYING) {
-          promptIndicator[prompt.key] = { indicator: PromptIndicators.DISQUALIFYING, reason: req.statusReason ?? undefined }
-        } else if (req.status === enumRequirementStatus.WARNING && (promptIndicator[prompt.key]?.indicator ?? 0) < PromptIndicators.WARNING) {
-          promptIndicator[prompt.key] = { indicator: PromptIndicators.WARNING, reason: req.statusReason ?? undefined }
-        } else if (uiRegistry.getPrompt(prompt.key)?.automation && (promptIndicator[prompt.key]?.indicator ?? 0) < PromptIndicators.AUTOMATION) {
+        if (uiRegistry.getPrompt(prompt.key)?.automation && (promptIndicator[prompt.key]?.indicator ?? 0) < PromptIndicators.AUTOMATION) {
           promptIndicator[prompt.key] = { indicator: PromptIndicators.AUTOMATION, reason: 'This answer will be filled in by an automation.' }
+        }
+      }
+      const faulted = req.blame?.length
+        ? req.blame
+        : req.prompts.filter(p => p.visibility !== enumPromptVisibility.UNREACHABLE).map(p => p.key)
+      for (const key of faulted) {
+        if (req.status === enumRequirementStatus.DISQUALIFYING && (promptIndicator[key]?.indicator ?? 0) < PromptIndicators.DISQUALIFYING) {
+          promptIndicator[key] = { indicator: PromptIndicators.DISQUALIFYING, reason: req.statusReason ?? undefined }
+        } else if (req.status === enumRequirementStatus.WARNING && (promptIndicator[key]?.indicator ?? 0) < PromptIndicators.WARNING) {
+          promptIndicator[key] = { indicator: PromptIndicators.WARNING, reason: req.statusReason ?? undefined }
         }
       }
       if (req.type === enumRequirementType.ACCEPTANCE) acceptanceReqs.push(req)

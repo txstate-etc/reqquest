@@ -149,13 +149,13 @@ export const review_applicant_dog_info_app_req: RequirementDefinition = {
   promptKeys: ['review_applicant_dog_info_prompt'],
   resolve: (data, config) => {
     const revDogInfoData = data.review_applicant_dog_info_prompt as ReviewApplicantDogInfoPromptData
-    if (revDogInfoData == null) return { status: RequirementStatus.PENDING }
-    if (revDogInfoData.previousDogAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
-    if (revDogInfoData.currentDogAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
-    if (revDogInfoData.yardAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
-    if (revDogInfoData.allergyAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
-    if (revDogInfoData.surrenderedAcceptable === false) return { status: RequirementStatus.DISQUALIFYING }
-    if (revDogInfoData.exerciseMinMet === false && revDogInfoData.exerciseException === false) return { status: RequirementStatus.DISQUALIFYING }
+    if (revDogInfoData == null) return { status: RequirementStatus.PENDING, blame: ['review_applicant_dog_info_prompt'] }
+    if (revDogInfoData.previousDogAcceptable === false) return { status: RequirementStatus.DISQUALIFYING, blame: ['previous_dogowner_prompt'] }
+    if (revDogInfoData.currentDogAcceptable === false) return { status: RequirementStatus.DISQUALIFYING, blame: ['current_dogowner_prompt'] }
+    if (revDogInfoData.yardAcceptable === false) return { status: RequirementStatus.DISQUALIFYING, blame: ['yard_prompt'] }
+    if (revDogInfoData.allergyAcceptable === false) return { status: RequirementStatus.DISQUALIFYING, blame: ['owner_dog_allergy_prompt'] }
+    if (revDogInfoData.surrenderedAcceptable === false) return { status: RequirementStatus.DISQUALIFYING, blame: ['previous_dog_surrender_prompt'] }
+    if (revDogInfoData.exerciseMinMet === false && revDogInfoData.exerciseException === false) return { status: RequirementStatus.DISQUALIFYING, blame: ['dog_exercise_prompt'] }
     return { status: RequirementStatus.MET }
   }
 }
@@ -171,10 +171,10 @@ export const approve_reviewer_exercise_exemption_workflow_req: RequirementDefini
   resolve: (data, config) => {
     const appExerciseExemptionData = data.approve_reviewer_exercise_exemption_prompt as ApproveReviewerExerciseExemptionPromptData
     const revDogInfoData = data.review_applicant_dog_info_prompt as ReviewApplicantDogInfoPromptData
-    if (revDogInfoData == null) return { status: RequirementStatus.PENDING }
+    if (revDogInfoData == null) return { status: RequirementStatus.PENDING, blame: ['review_applicant_dog_info_prompt'] }
     if (revDogInfoData.exerciseException === true) {
-      if (appExerciseExemptionData == null) return { status: RequirementStatus.PENDING }
-      if (appExerciseExemptionData.approve === false) return { status: RequirementStatus.DISQUALIFYING }
+      if (appExerciseExemptionData == null) return { status: RequirementStatus.PENDING, blame: ['approve_reviewer_exercise_exemption_prompt'] }
+      if (appExerciseExemptionData.approve === false) return { status: RequirementStatus.DISQUALIFYING, blame: ['approve_reviewer_exercise_exemption_prompt'] }
     }
     return { status: RequirementStatus.MET }
   }

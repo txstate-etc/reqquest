@@ -940,6 +940,7 @@ class API extends APIBase {
             title: true,
             status: true,
             statusReason: true,
+            blame: true,
             workflowStage: {
               key: true,
               title: true,
