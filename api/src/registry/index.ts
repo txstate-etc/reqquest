@@ -1,3 +1,5 @@
+export * from './keys.js'
+export * from './keyCollisions.js'
 export * from './appRequest.js'
 export * from './helpers.js'
 export * from './program.js'

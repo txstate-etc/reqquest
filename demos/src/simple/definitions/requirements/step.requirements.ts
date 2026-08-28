@@ -12,20 +12,12 @@ export const step1_post_residence_req: RequirementDefinition = {
   resolve: (data, config) => {
     const promptData1 = data.step1_post_residence_prompt as Step1PostResidencePromptData
     const promptData2 = data.step2_post_residence_prompt as Step2PostResidencePromptData
-    if (promptData1?.allow == null || promptData2?.allow == null) {
-      // blame only the prompts still missing an answer
-      const unanswered = [
-        ...(promptData1?.allow == null ? ['step1_post_residence_prompt'] : []),
-        ...(promptData2?.allow == null ? ['step2_post_residence_prompt'] : [])
-      ]
-      return { status: RequirementStatus.PENDING, blame: unanswered }
-    }
-    if (promptData1?.allow === true && promptData2?.allow === true) return { status: RequirementStatus.MET }
-    const disallowed = [
-      ...(promptData1.allow !== true ? ['step1_post_residence_prompt'] : []),
-      ...(promptData2.allow !== true ? ['step2_post_residence_prompt'] : [])
-    ]
-    return { status: RequirementStatus.DISQUALIFYING, reason: 'Not allowed.', blame: disallowed }
+    // one return per prompt so the key sits in a literal the compiler can autocomplete
+    if (promptData1?.allow == null) return { status: RequirementStatus.PENDING, blame: ['step1_post_residence_prompt'] }
+    if (promptData2?.allow == null) return { status: RequirementStatus.PENDING, blame: ['step2_post_residence_prompt'] }
+    if (promptData1.allow === true && promptData2.allow === true) return { status: RequirementStatus.MET }
+    if (promptData1.allow !== true) return { status: RequirementStatus.DISQUALIFYING, reason: 'Not allowed.', blame: ['step1_post_residence_prompt'] }
+    return { status: RequirementStatus.DISQUALIFYING, reason: 'Not allowed.', blame: ['step2_post_residence_prompt'] }
   }
 }
 

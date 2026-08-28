@@ -3,12 +3,12 @@
   import { Button } from 'carbon-components-svelte'
   import { Close, InProgress, CheckmarkFilled, Information, SubtractAlt } from 'carbon-icons-svelte'
   import { isNotBlank, ucfirst } from 'txstate-utils'
-  import { type ApplicationForDetails, type AppRequestForDetails, enumApplicationStatus, enumIneligiblePhases, enumRequirementStatus, enumRequirementType, type OptOutApplication, type PromptDefinition } from '$lib'
+  import { type ApplicationForDetails, type AppRequestForDetails, enumApplicationStatus, enumIneligiblePhases, enumRequirementStatus, enumRequirementType, type OptOutApplication } from '$lib'
   import { getApplicationStatusInfo } from '../status-utils.js'
   import { isIneligiblePreSubmission } from '../appreq-utils.js'
   import ApplicantProgramListTooltip from './ApplicantProgramListTooltip.svelte'
   import WarningIconYellow from './WarningIconYellow.svelte'
-  import { api } from '$internal/api.js'
+  import { api, type PromptForEditing } from '$internal/api.js'
   import ApplicantOptOutModal from './ApplicantOptOutModal.svelte'
 
   export let appRequest: AppRequestForDetails
@@ -19,7 +19,7 @@
 
   let open = false
   let optIn = false
-  let optOutPrompt: Omit<PromptDefinition, 'displayComponent'> | undefined
+  let optOutPrompt: PromptForEditing | undefined
   let optOutSelected: OptOutApplication | undefined
 
   async function openOptOutModal (programId: string, openOptIn = false) {

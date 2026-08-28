@@ -1,5 +1,6 @@
 import type { LayoutStructureNode, LayoutStructureNodeRoot, UserProfile } from '@txstate-mws/carbon-svelte'
 import type { Component } from 'svelte'
+import type { ProgramKey, PromptKey, RequirementKey } from './keys.js'
 import { plural } from 'txstate-utils'
 
 export interface PromptLoader {
@@ -15,10 +16,10 @@ export type Loader = PromptLoader | boolean
 
 export interface ProgramDefinition {
   /**
-   * The key for the program. Allows us to match up API programs with
-   * the appropriate definition.
+   * The key of the program this decorates. Autocompletes and rejects unknown keys once the project
+   * generates a key declaration; plain `string` until then.
    */
-  key: string
+  key: ProgramKey
   /**
    * An icon to represent this program in the navigation.
    */
@@ -27,10 +28,10 @@ export interface ProgramDefinition {
 
 export interface RequirementDefinition {
   /**
-   * The key for the requirement. Allows us to match up API requirements with
-   * the appropriate definition.
+   * The key of the requirement this decorates. Autocompletes and rejects unknown keys once the
+   * project generates a key declaration; plain `string` until then.
    */
-  key: string
+  key: RequirementKey
   /**
    * An icon to represent this requirement in the navigation. Requirements do not appear
    * in the navigation in the applicant's view.
@@ -47,7 +48,11 @@ export interface RequirementDefinition {
 }
 
 export interface PromptDefinition {
-  key: string
+  /**
+   * The key of the prompt this renders. Autocompletes and rejects unknown keys once the project
+   * generates a key declaration; plain `string` until then.
+   */
+  key: PromptKey
   /**
    * The component that will be used to render the form for this prompt.
    *
@@ -319,14 +324,27 @@ export class UIRegistry {
   }
 
   getPrompt (key: string): PromptDefinition | undefined {
-    return this.promptMap[key]
+    return this.warnIfMissing('prompt', key, this.promptMap[key])
   }
 
   getRequirement (key: string): RequirementDefinition | undefined {
-    return this.requirementMap[key]
+    return this.warnIfMissing('requirement', key, this.requirementMap[key])
   }
 
   getProgram (key: string): ProgramDefinition | undefined {
-    return this.programMap[key]
+    return this.warnIfMissing('program', key, this.programMap[key])
+  }
+
+  /**
+   * `UIConfig` keeps this UI in step with the API it was built against.
+   *  Keys arrive here from the API at runtime, so these stay `string` rather than the key unions.
+   */
+  protected warnedMissing = new Set<string>()
+  protected warnIfMissing<T> (kind: string, key: string, definition: T | undefined) {
+    if (definition == null && import.meta.env?.DEV && !this.warnedMissing.has(kind + ':' + key)) {
+      this.warnedMissing.add(kind + ':' + key)
+      console.warn(`[reqquest] The API returned a ${kind} \`${key}\` that this UI has no definition for. Add it to your UIConfig, or regenerate your key declaration if the API has changed.`)
+    }
+    return definition
   }
 }
