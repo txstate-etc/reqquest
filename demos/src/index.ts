@@ -107,7 +107,8 @@ async function main () {
       },
       emailConfig: {
         appName: 'Reqquest',
-        signature: 'Mobile Web Systems'
+        signature: 'Mobile Web Systems',
+        from: 'Reqquest <reqquest@txstate.edu>'
       }
     },
     programs,
