@@ -11,7 +11,8 @@ import {
   AccessRoleGroup,
   AccessRoleGroupManager,
   Pagination,
-  PaginationInfoWithTotalItems
+  PaginationInfoWithTotalItems,
+  AnnouncementService
 } from '../internal.js'
 import { DateTime } from 'luxon'
 
@@ -78,6 +79,21 @@ export class AccessResolver {
   @FieldResolver(returns => Boolean, { description: 'Current user is permitted to view the app request list.' })
   async viewAppRequestList (@Ctx() ctx: Context) {
     return ctx.svc(AppRequestService).mayViewReviewerInterface()
+  }
+
+  @FieldResolver(returns => Boolean, { description: 'Current user is permitted to create announcements.' })
+  async createAnnouncement (@Ctx() ctx: Context) {
+    return ctx.svc(AnnouncementService).mayCreate()
+  }
+
+  @FieldResolver(returns => Boolean, { description: 'Current user is permitted to update announcements.' })
+  async updateAnnouncement (@Ctx() ctx: Context) {
+    return ctx.svc(AnnouncementService).mayUpdate()
+  }
+
+  @FieldResolver(returns => Boolean, { description: 'Current user is permitted to delete announcements.' })
+  async deleteAnnouncement (@Ctx() ctx: Context) {
+    return ctx.svc(AnnouncementService).mayDelete()
   }
 }
 

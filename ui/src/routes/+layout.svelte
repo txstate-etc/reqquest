@@ -103,6 +103,13 @@
         }
       ]
     },
+    {
+      title: 'Manage announcement',
+      group: 'Administration',
+      hideFromSideNav: !access?.createAnnouncement,
+      icon: Time,
+      routeId: '/announcement'
+    },
     ...(uiRegistry.config.extraNavItems ?? [])
   ]
 }}

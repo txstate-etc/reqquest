@@ -37,9 +37,10 @@ export const load: PageLoad = async ({ url, depends, parent }) => {
 
 
   // fetch for all own apps, then split
-  const [allRequests, openPeriods] = await Promise.all([
+  const [allRequests, openPeriods, announcement] = await Promise.all([
     api.getApplicantRequests({ own: true }),
-    api.getOpenPeriods()
+    api.getOpenPeriods(),
+    api.getAnnouncement(true)
   ])
 
   const allRequestsSansIneligibleApps = excludePreSubmissionIneligibleApps(allRequests)
@@ -74,14 +75,16 @@ export const load: PageLoad = async ({ url, depends, parent }) => {
 
     return {
       appRequests: hasActiveFilters ? displayRequests : allPastRequests,
-      availablePeriods, availableStatuses, openPeriods, access, recentCutoffIso, recentDays
+      availablePeriods, availableStatuses, openPeriods, access, recentCutoffIso, recentDays,
+      announcement
     }
   } else {
     return {
       appRequests: allRequestsSansIneligibleApps.filter(r => !isPastApp(r)),
       openPeriods, access, recentCutoffIso, recentDays,
       availablePeriods: [] as { id: string, name: string }[],
-      availableStatuses: [] as string[]
+      availableStatuses: [] as string[],
+      announcement
     }
   }
 }
