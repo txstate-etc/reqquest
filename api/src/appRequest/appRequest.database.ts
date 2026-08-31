@@ -638,12 +638,15 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
 
         const anyOrderAllAnswered = anyOrderPrompts.every(p => p.answered)
         for (const prompt of anyOrderPrompts) {
+          prompt.moot = promptsAreMoot
           prompt.visibility = PromptVisibility.UNREACHABLE
           if (!hasUnanswered && resolveInfo.status === RequirementStatus.PENDING) {
             if (anyOrderAllAnswered) requiredData[prompt.key] = data[prompt.key]
             prompt.visibility = PromptVisibility.AVAILABLE
-            promptsSeenInApplication.add(prompt.key)
-            promptsSeenInRequest.add(prompt.key)
+            if (!promptsAreMoot) {
+              promptsSeenInApplication.add(prompt.key)
+              promptsSeenInRequest.add(prompt.key)
+            }
           }
         }
         if (!hasUnanswered && anyOrderAllAnswered && anyOrderPrompts.length) resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
@@ -655,8 +658,10 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
             if (promptsSeenInApplication.has(prompt.key)) prompt.visibility = PromptVisibility.APPLICATION_DUPE
             else if (promptsSeenInRequest.has(prompt.key)) prompt.visibility = PromptVisibility.REQUEST_DUPE
             else prompt.visibility = PromptVisibility.AVAILABLE
-            promptsSeenInApplication.add(prompt.key)
-            promptsSeenInRequest.add(prompt.key)
+            if (!promptsAreMoot) {
+              promptsSeenInApplication.add(prompt.key)
+              promptsSeenInRequest.add(prompt.key)
+            }
             if (prompt.answered) {
               requiredData[prompt.key] = data[prompt.key]
               resolveInfo = requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)

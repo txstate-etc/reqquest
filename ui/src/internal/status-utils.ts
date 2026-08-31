@@ -1,5 +1,5 @@
 import type { TagItem } from '@txstate-mws/carbon-svelte'
-import { enumApplicationRescindedStatus, enumAppRequestPhase, enumAppRequestStatus, enumRequirementType, type AppRequestPhase, type AppRequestStatus, type RequirementType } from '$lib'
+import { enumApplicationRescindedStatus, enumAppRequestPhase, enumAppRequestStatus, enumPromptVisibility, enumRequirementType, type AppRequestPhase, type AppRequestStatus, type PromptVisibility, type RequirementType } from '$lib'
 import { longNumericTime } from './util.js'
 import { uiRegistry } from '../local/index.js'
 
@@ -356,6 +356,16 @@ export function getApplicationStatusInfo (status: string, appRequestPhase: strin
 export const applicantStatuses = new Set<AppRequestStatus>([
   enumAppRequestStatus.STARTED,
   enumAppRequestStatus.READY_TO_SUBMIT
+])
+
+/**
+ * The prompt visibilities an applicant may be shown and navigated to. AVAILABLE is the row that owns
+ * the key and REQUEST_DUPE is the first appearance within its own application, so is a legitimate
+ * destination when the owning row belongs to another program.
+ */
+export const applicantVisiblePromptVisibilities = new Set<PromptVisibility>([
+  enumPromptVisibility.AVAILABLE,
+  enumPromptVisibility.REQUEST_DUPE
 ])
 
 export const submissionRequirementTypes = new Set<RequirementType>([

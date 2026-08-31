@@ -4,8 +4,8 @@
   import { writable } from 'svelte/store'
   import { resolve } from '$app/paths'
   import { page } from '$app/stores'
-  import { submissionRequirementTypes } from '$internal'
-  import { enumPromptVisibility, enumRequirementType } from '$lib'
+  import { applicantVisiblePromptVisibilities, submissionRequirementTypes } from '$internal'
+  import { enumRequirementType } from '$lib'
   import type { LayoutData } from './$types'
 
   export let data: LayoutData
@@ -41,7 +41,7 @@
       })
     }
     const outstandingPrequal = prequalPrompts.find(p =>
-      (!p.answered || p.invalidated) && p.visibility === enumPromptVisibility.AVAILABLE && !p.moot)
+      (!p.answered || p.invalidated) && applicantVisiblePromptVisibilities.has(p.visibility) && !p.moot)
     if (outstandingPrequal) {
       nextHref = resolve(`/requests/${appRequestForExport.id}/apply/${outstandingPrequal.id}`)
     } else {

@@ -24,7 +24,7 @@
   $: firstInvalidatedPrompt = request.applications
     .flatMap(app => app.requirements)
     .flatMap(req => req.prompts)
-    .find(p => p.visibility === enumPromptVisibility.AVAILABLE && p.invalidated && p.invalidatedReason)
+    .find(p => p.visibility === enumPromptVisibility.AVAILABLE && !p.moot && p.invalidated && p.invalidatedReason)
   $: navButton = firstInvalidatedPrompt
     ? { label: 'Make corrections', href: `/requests/${request.id}/apply/${firstInvalidatedPrompt.id}` }
     : getNavigationButton(request.status, request.id)
@@ -61,7 +61,7 @@
       {#each request.applications as application (application.id)}
         {@const invalidatedPrompts = application.requirements
           .flatMap(req => req.prompts)
-          .filter(p => p.visibility === enumPromptVisibility.AVAILABLE && p.invalidated && p.invalidatedReason)
+          .filter(p => p.visibility === enumPromptVisibility.AVAILABLE && !p.moot && p.invalidated && p.invalidatedReason)
         }
         {@const warningReqs = application.requirements.filter(r => r.status === 'WARNING' && r.statusReason)}
         {@const appStatusTags = invalidatedPrompts.length > 0
