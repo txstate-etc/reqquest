@@ -7,25 +7,30 @@
   import { Information } from 'carbon-icons-svelte'
   import StatusMessageList from '$internal/components/StatusMessageList.svelte'
   import { titleCase } from 'txstate-utils'
+    import { getContext } from 'svelte';
+    import { UISHELL_STICKY_CONTEXT, type UIShellStickyStore } from '@txstate-mws/carbon-svelte';
+    import { writable } from 'svelte/store';
 
   export let basicRequestData: LayoutData['basicRequestData']
   export let appRequest: ReviewData
   let open = false
 
-   $: optedOutPrograms = appRequest?.applications
-    .filter(curr => curr.requirements.flatMap(r => r.prompts).find(r => r.optOut))
-    .reduce((acc, c) => {
-      const optOutRequirement = c.requirements.find(r => r.prompts.some(p => p.optOut))
-      return {
-        ...acc,
-        [c.id]: optOutRequirement?.status === enumRequirementStatus.DISQUALIFYING
-      }
-    }, {} as Record<string, boolean>) ?? {}
+  const stickyShellHeader = getContext<UIShellStickyStore | undefined>(UISHELL_STICKY_CONTEXT) ?? writable({ height: 0 })
+
+  $: optedOutPrograms = appRequest?.applications
+  .filter(curr => curr.requirements.flatMap(r => r.prompts).find(r => r.optOut))
+  .reduce((acc, c) => {
+    const optOutRequirement = c.requirements.find(r => r.prompts.some(p => p.optOut))
+    return {
+      ...acc,
+      [c.id]: optOutRequirement?.status === enumRequirementStatus.DISQUALIFYING
+    }
+  }, {} as Record<string, boolean>) ?? {}
 
 </script>
 
 <div class="review-container">
-  <div class="review-sidebar flow">
+  <div class="review-sidebar flow" class:sticky={true} style:top="{$stickyShellHeader.height}px">
     <InfoCard
       noPrimaryAction
       title={basicRequestData.applicant.fullname}
@@ -92,6 +97,10 @@
   .review-sidebar {
     container-type: inline-size;
     width: min(20rem, 33%);
+  }
+
+  .review-sidebar.sticky {
+    align-self: flex-start;
   }
 
   .review-content {
