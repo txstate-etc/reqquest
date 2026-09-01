@@ -645,72 +645,7 @@ is rendered by a Svelte component you register with `UIRegistry` on the UI side.
 two halves automatically — the API can define `proof_of_residence_prompt` while your UI has no
 component for it, and by default you find out when an applicant reaches that screen.
 
-Three steps close that gap. The first two you already do; only the third is extra, and it is one line.
-
-## 1. Generate the key declaration
-
-The analyzer reads your API definitions and emits a `.d.ts` that teaches the UI which keys exist:
-
-```
-node node_modules/@reqquest/api/dist/analysis/cli.js <api-project> \
-  --emit-keys src/local/keys.generated.d.ts --module '@reqquest/ui'
-```
-
-Commit the result. Regenerate whenever a definition is added, removed, renamed, or re-keyed, and gate
-it in CI with `--check-keys` (same arguments) which exits non-zero on a stale file.
-
-Two constraints are easy to trip over:
-
-- **`<api-project>` must be the directory holding your definitions' TypeScript *sources*.** The
-  analyzer builds a real `ts.createProgram`; a published `@reqquest/api` alone is not enough. If your
-  API and UI are separate repos, generate this on the API side and deliver the file to the UI repo.
-- **The emitted file must fall inside your tsconfig `include`.** If it does not, it augments nothing
-  and every key silently degrades to `string` — no error, just no checking.
-
-## 2. Register prompts with the keyed form
-
-```ts
-const config: UIConfig = {
-  appName: 'My Program',
-  programs: { my_program: { icon: SomeIcon } },
-  requirements: { proof_of_residence_req: { configureComponent: ResidenceConfig } },
-  prompts: {
-    proof_of_residence_prompt: { formComponent: ResidencePrompt, displayComponent: ResidenceDisplay }
-  }
-}
-export const uiRegistry = new UIRegistry(config)
-```
-
-The older array form (`prompts: [{ key: 'proof_of_residence_prompt', ... }]`) still works and is still
-type-checked for typos, so existing projects need no migration. It cannot check **coverage**, though:
-an array can reject a key the API does not have, but it can never require the keys the API *does*
-have. Only the keyed form makes a forgotten prompt a compile error.
-
-Coverage is required for `prompts` only. `requirements` and `programs` carry optional decoration — an
-icon, a configuration component — and every consumer tolerates their absence, so those are partial.
-
-## 3. Run the type check in your build
-
-Nothing to install or import. SvelteKit already scaffolds this script for you:
-
-```json
-"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
-```
-
-Add it to your Dockerfile or CI ahead of the build, so a forgotten registration fails there rather
-than in front of an applicant:
-
-```dockerfile
-RUN npm run check
-RUN npm run build
-```
-
-This is the step that has to be deliberate. `vite build` strips types without checking them, so
-without a type check nothing in your pipeline notices the gap.
-
-## What happens if you skip step 3
-
-Missing prompts degrade rather than crash. `UIRegistry` logs `console.error` naming the key — in
-production as well as development — and the prompt renders an inline "this prompt is unavailable"
-notice in place of the component, leaving the rest of the page usable. That is a safety net, not a
-substitute for the build check: you learn about it when a user hits the screen.
+An analyzer ships with `@reqquest/api` to close that gap: it reads your definitions and emits key
+declarations that make both halves compile-time checked. See
+[docs/downstream-setup.md](docs/downstream-setup.md) for the full procedure — generating the two
+declarations, registering your prompts, and gating both in your build.

@@ -849,6 +849,8 @@ export interface RequirementPrompt {
     moot: Scalars['Boolean']
     /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
     navTitle: Scalars['String']
+    /** True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay` - a dependency it reads but does not own. Such a row must not be rendered beneath that requirement; the prompt is displayed under the requirement that does own it. This is not derivable from `visibility`: a no-display row is UNREACHABLE, but so is a prompt whose own requirement resolved before reaching it, and that one is still the requirement's to show. */
+    noDisplay: Scalars['Boolean']
     optOut: Scalars['Boolean']
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
     preloadData: (Scalars['JsonData'] | null)
@@ -1204,7 +1206,7 @@ start?: (Scalars['DateTime'] | null),
 /** Short headline for the announcement. */
 subject?: (Scalars['String'] | null),
 /** The type of announcement, toggleable or date range */
-type?: (Scalars['Boolean'] | null)}
+type?: (Scalars['String'] | null)}
 
 
 /** Represents a group of applications all being applied for at the same time. As part of the request, multiple applications will be created and either eliminated as ineligible or submitted for approval. */
@@ -1990,6 +1992,8 @@ export interface RequirementPromptGenqlSelection{
     moot?: boolean | number
     /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
     navTitle?: boolean | number
+    /** True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay` - a dependency it reads but does not own. Such a row must not be rendered beneath that requirement; the prompt is displayed under the requirement that does own it. This is not derivable from `visibility`: a no-display row is UNREACHABLE, but so is a prompt whose own requirement resolved before reaching it, and that one is still the requirement's to show. */
+    noDisplay?: boolean | number
     optOut?: boolean | number
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
     preloadData?: { __args: {
