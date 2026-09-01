@@ -3,8 +3,6 @@
   import { toasts } from '@txstate-mws/svelte-components'
 
   export let data: { override?: boolean } | undefined = undefined
-
-  let priorOverride = data?.override
   $: priorOverride = data?.override
 
   function onUpdate (e: CustomEvent<boolean>) {
