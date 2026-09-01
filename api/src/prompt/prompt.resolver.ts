@@ -67,7 +67,7 @@ export class RequirementPromptResolver {
     return !!promptRegistry.get(requirementPrompt.key).optOut
   }
 
-  @FieldResolver(type => Boolean, { description: 'True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay` - a dependency it reads but does not own. Such a row must not be rendered beneath that requirement; the prompt is displayed under the requirement that does own it. This is not derivable from `visibility`: a no-display row is UNREACHABLE, but so is a prompt whose own requirement resolved before reaching it, and that one is still the requirement\'s to show.' })
+  @FieldResolver(type => Boolean, { description: 'True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay`' })
   noDisplay (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt) {
     return ctx.svc(RequirementPromptService).isNoDisplay(requirementPrompt)
   }
