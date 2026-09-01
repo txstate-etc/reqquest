@@ -898,7 +898,7 @@ class API extends APIBase {
     return response.appRequests[0]
   }
 
-  async getReviewData (appRequestId: string, visibilities: PromptVisibility[] = [enumPromptVisibility.AVAILABLE, enumPromptVisibility.REQUEST_DUPE]) {
+  async getReviewData (appRequestId: string) {
     const response = await this.client.query({
       __name: 'GetReviewData',
       appRequests: {
@@ -963,6 +963,7 @@ class API extends APIBase {
               invalidated: true,
               invalidatedReason: true,
               optOut: true,
+              noDisplay: true,
               actions: {
                 update: true
               }
