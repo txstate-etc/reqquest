@@ -66,6 +66,11 @@ export class RequirementPromptResolver {
   async optOut (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt) {
     return !!promptRegistry.get(requirementPrompt.key).optOut
   }
+
+  @FieldResolver(type => Boolean, { description: 'True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay`' })
+  noDisplay (@Ctx() ctx: RQContext, @Root() requirementPrompt: RequirementPrompt) {
+    return ctx.svc(RequirementPromptService).isNoDisplay(requirementPrompt)
+  }
 }
 
 @Resolver(of => RequirementPromptActions)

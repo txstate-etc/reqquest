@@ -11,6 +11,7 @@ import {
   type RequirementStatus, type RequirementType, type PhaseChangeMutations, type CompletionStatus,
   type PeriodFilters
 } from '$lib'
+import { applicantVisiblePromptVisibilities } from './status-utils.js'
 
 export const showDupePrompts = PUBLIC_SHOW_DUPLICATE_PROMPTS.trim() === 'true'
 export type DashboardAppRequest = Awaited<ReturnType<typeof api.getApplicantRequests>>[number]
@@ -156,6 +157,7 @@ class API extends APIBase {
             prompts: {
               id: true,
               visibility: true,
+              moot: true,
               invalidated: true,
               invalidatedReason: true
             }
@@ -365,7 +367,6 @@ class API extends APIBase {
     const seenForNav = new Set<string>()
     const seenForAccept = new Set<string>()
 
-    const visibilitiesToShow = new Set<PromptVisibility>([enumPromptVisibility.AVAILABLE, enumPromptVisibility.REQUEST_DUPE])
     const requirementTypesForNavigation = new Set<RequirementType>([enumRequirementType.PREQUAL, enumRequirementType.POSTQUAL, enumRequirementType.QUALIFICATION])
     const requirementTypesForReview = new Set<RequirementType>([enumRequirementType.QUALIFICATION, enumRequirementType.PREAPPROVAL, enumRequirementType.APPROVAL, enumRequirementType.WORKFLOW])
     for (const application of applications) {
@@ -389,7 +390,7 @@ class API extends APIBase {
           if (prompt.moot || prompt.visibility === enumPromptVisibility.UNREACHABLE) continue
           promptsByKey[prompt.key] ??= []
           promptsByKey[prompt.key].push(retPrompt)
-          if (!visibilitiesToShow.has(prompt.visibility)) continue
+          if (!applicantVisiblePromptVisibilities.has(prompt.visibility)) continue
           promptsReviewWithDupes.push(withDupesPrompt)
           if (requirementTypesForNavigation.has(requirement.type)) promptsForNavWithDupes.push(withDupesPrompt)
           if (requirement.type === enumRequirementType.ACCEPTANCE) promptsAcceptWithDupes.push(withDupesPrompt)
@@ -897,7 +898,7 @@ class API extends APIBase {
     return response.appRequests[0]
   }
 
-  async getReviewData (appRequestId: string, visibilities: PromptVisibility[] = [enumPromptVisibility.AVAILABLE, enumPromptVisibility.REQUEST_DUPE]) {
+  async getReviewData (appRequestId: string) {
     const response = await this.client.query({
       __name: 'GetReviewData',
       appRequests: {
@@ -962,6 +963,7 @@ class API extends APIBase {
               invalidated: true,
               invalidatedReason: true,
               optOut: true,
+              noDisplay: true,
               actions: {
                 update: true
               }
