@@ -12,9 +12,12 @@ export const step1_post_residence_req: RequirementDefinition = {
   resolve: (data, config) => {
     const promptData1 = data.step1_post_residence_prompt as Step1PostResidencePromptData
     const promptData2 = data.step2_post_residence_prompt as Step2PostResidencePromptData
-    if (promptData1?.allow == null || promptData2?.allow == null) return { status: RequirementStatus.PENDING }
-    if (promptData1?.allow === true && promptData2?.allow === true) return { status: RequirementStatus.MET }
-    return { status: RequirementStatus.DISQUALIFYING, reason: 'Not allowed.' }
+    // one return per prompt so the key sits in a literal the compiler can autocomplete
+    if (promptData1?.allow == null) return { status: RequirementStatus.PENDING, blame: ['step1_post_residence_prompt'] }
+    if (promptData2?.allow == null) return { status: RequirementStatus.PENDING, blame: ['step2_post_residence_prompt'] }
+    if (promptData1.allow === true && promptData2.allow === true) return { status: RequirementStatus.MET }
+    if (promptData1.allow !== true) return { status: RequirementStatus.DISQUALIFYING, reason: 'Not allowed.', blame: ['step1_post_residence_prompt'] }
+    return { status: RequirementStatus.DISQUALIFYING, reason: 'Not allowed.', blame: ['step2_post_residence_prompt'] }
   }
 }
 
@@ -59,15 +62,16 @@ export const id_type_req: RequirementDefinition = {
     const promptData1 = data.id_values_prompt as IDValuesPromptData
     const promptData2 = data.id_values_extra_data_prompt as IDValuesExtraDataPromptData
     const promptData3 = data.ssn_value_prompt as SSNValuePromptData
-    if (promptData1?.type == null) return { status: RequirementStatus.PENDING }
-    if (promptData1?.dodidValue == null && promptData1?.ssnValue == null) return { status: RequirementStatus.PENDING }
+    if (promptData1?.type == null) return { status: RequirementStatus.PENDING, blame: ['id_values_prompt'] }
+    if (promptData1?.dodidValue == null && promptData1?.ssnValue == null) return { status: RequirementStatus.PENDING, blame: ['id_values_prompt'] }
 
-    if (promptData1?.dodidValue != null && (promptData1?.ssnValue == null && promptData3?.value == null)) return { status: RequirementStatus.PENDING }
-    if (promptData1?.ssnValue == null && promptData2?.allow == null) return { status: RequirementStatus.PENDING }
+    if (promptData1?.dodidValue != null && (promptData1?.ssnValue == null && promptData3?.value == null)) return { status: RequirementStatus.PENDING, blame: ['ssn_value_prompt'] }
+    if (promptData1?.ssnValue == null && promptData2?.allow == null) return { status: RequirementStatus.PENDING, blame: ['id_values_extra_data_prompt'] }
     if (promptData1?.ssnValue != null || promptData3?.value != null) {
-      if (promptData2?.allow == null) return { status: RequirementStatus.PENDING }
+      if (promptData2?.allow == null) return { status: RequirementStatus.PENDING, blame: ['id_values_extra_data_prompt'] }
       if (promptData2?.allow === true) return { status: RequirementStatus.MET }
     }
-    return { status: RequirementStatus.DISQUALIFYING, reason: 'Not allowed.' }
+    // every path that reaches here got an explicit `allow: false` on the extra data prompt
+    return { status: RequirementStatus.DISQUALIFYING, reason: 'Not allowed.', blame: ['id_values_extra_data_prompt'] }
   }
 }

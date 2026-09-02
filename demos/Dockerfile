@@ -1,4 +1,4 @@
-FROM node:24-alpine AS build
+FROM node:24-alpine AS deps
 WORKDIR /usr/app/api
 COPY api/package.json api/package-lock.json ./
 RUN npm ci
@@ -10,6 +10,12 @@ COPY demos/package.json demos/package-lock.json ./
 RUN npm ci
 COPY demos/tsconfig.json ./
 COPY demos/src src
+
+FROM deps AS keycheck
+COPY ui/src/local/keys.generated.d.ts /usr/app/ui/src/local/keys.generated.d.ts
+RUN npm run keys:check
+
+FROM keycheck AS build
 RUN npm run build
 
 FROM node:24-alpine

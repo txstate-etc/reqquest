@@ -4,7 +4,7 @@
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import { enumRequirementStatus, enumRequirementType, PromptIndicators, translateMutations, type PhaseChangeMutations } from '$lib'
-  import { isInlineReviewerEditPrompt, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api, type BasicRequestData } from '$internal'
+  import { isInlineReviewerEditPrompt, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api, PromptSaveQueue, type BasicRequestData } from '$internal'
   import { FormInlineNotification, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { Tooltip } from 'carbon-components-svelte'
   import { uiRegistry } from '../../local';
@@ -14,6 +14,7 @@
   import Review from "carbon-icons-svelte/lib/Review.svelte";
   import DelayedSkeleton from '$lib/components/DelayedSkeleton.svelte';
   import WarningIconYellow from './WarningIconYellow.svelte';
+  import MissingDefinitionNotification from './MissingDefinitionNotification.svelte';
   import { toasts } from '@txstate-mws/svelte-components';
   import { randomid } from 'txstate-utils'
 
@@ -34,6 +35,18 @@
   let showPromptDialog = false
   let fetchingEditPrompt = false
 
+  // every save on this screen writes the same appRequest row, so they all run in sequence through one
+  // queue that threads the row's dataVersion from each save into the next
+  let saveQueue = new PromptSaveQueue()
+  let saveQueueAppRequestId: string | undefined
+  $: {
+    if (saveQueueAppRequestId !== appRequest.id) {
+      saveQueueAppRequestId = appRequest.id
+      saveQueue = new PromptSaveQueue()
+    }
+    saveQueue.adopt(appRequest.dataVersion)
+  }
+
   function editPrompt (prompt: Prompt, allowSaveWithoutChanges: boolean = false) {
     return async () => {
       if (fetchingEditPrompt) return
@@ -41,6 +54,8 @@
       fetchingEditPrompt = true
       showPromptDialog = true
       try {
+        // empty the save queue before fetching, so the version we pin to the modal includes everything
+        // this session has typed inline.        await saveQueue.drain()
         const extra = await api.getPromptData(appRequest.id, prompt.id)
         editingPromptWithData = { ...prompt, ...extra, allowSaveWithoutChanges }
       } finally {
@@ -73,9 +88,14 @@
     return async (data: any) => {
       if (modal) { loading = true; hideEditModalPrompt() }
       try {
-        const response = (!prompt.allowSaveWithoutChanges)
-          ? await api.updatePrompt(prompt.id, data, false)
-          : await api.updatePrompt(prompt.id, data, false, undefined, true) // triggers from review corrections edit selection, allow saving without changes to handle invalidate prompts that require no changes
+        // the modal is editing the data it fetched when it opened, so it saves against that version;
+        // inline forms carry whatever version the queue is holding when their turn comes up
+        const pinnedVersion = modal ? prompt.dataVersion : undefined
+        const response = await saveQueue.save(async dataVersion => {
+          return (!prompt.allowSaveWithoutChanges)
+            ? await api.updatePrompt(prompt.id, data, false, dataVersion)
+            : await api.updatePrompt(prompt.id, data, false, dataVersion, true) // triggers from review corrections edit selection, allow saving without changes to handle invalidate prompts that require no changes
+        }, pinnedVersion)
         if (modal && !response.success) { loading = false; showEditModalPrompt() }
         // prev resp.data was replacing the store's data with a wrongly-shaped object and
         // re-baselines beforeUserChanges to it. Reduce to this prompt's slice like ApplicantPromptPage.onSubmit
@@ -89,7 +109,7 @@
 
   function onPromptValidate (prompt: any) {
     return async (data: any) => {
-      const response = await api.updatePrompt(prompt.id, data, true)
+      const response = await api.updatePrompt(prompt.id, data, true, prompt.dataVersion)
       return response.messages
     }
   }
@@ -120,11 +140,11 @@
 
   async function advanceWorkflow () {
     loading = true
-    const response = await api.advanceWorkflow(application.id)     
+    const response = await api.advanceWorkflow(application.id)
     await invalidateAll()
     if (basicRequestData?.actions.completeReview) return await appRequestPhaseChange('completeReview')
     if (basicRequestData?.actions.completeRequest) return await appRequestPhaseChange('completeRequest')
-    loading = false   
+    loading = false
     if (!response.success) {
       toasts.add({
         type: 'error',
@@ -136,14 +156,14 @@
         type: 'success',
         message: 'Application advanced.'
       })
-    }    
+    }
   }
 
   async function reverseWorkflow () {
     loading = true
-    const response = await api.reverseWorkflow(application.id)     
-    await invalidateAll()    
-    loading = false   
+    const response = await api.reverseWorkflow(application.id)
+    await invalidateAll()
+    loading = false
     if (!response.success) {
       toasts.add({
         type: 'error',
@@ -160,7 +180,7 @@
 
   $: readyForWorkflow = !application.nextWorkflowStage && application.phase === 'READY_FOR_WORKFLOW' ? sections.filter(s => s.requirements.filter(r => r.type === 'WORKFLOW').length).pop()?.title : undefined
   $: latestWorkflow = readyForWorkflow ?? sections.filter(section => section.requirements.every(r => !r.workflowStage?.key)).pop()?.title
-  
+
   /** inline autoSave forms: refresh statuses/indicators only, never touch the live form */
   async function onPromptAutoSaved () {
     await refreshReviewData()
@@ -184,8 +204,8 @@
             {@const isReviewerQuestion = reviewerRequirementTypes.has(requirement.type) && !def?.automation}
             {@const isAutomation = !!def?.automation}
             {@const editMode = isInlineReviewerEditPrompt(def, requirement.type, prompt)}
-            {@const small = editMode && def?.formMode !== 'full' ? def?.formMode !== 'large' : def!.displayMode !== 'large'}
-            {@const large = editMode && def?.formMode !== 'full' ? def?.formMode === 'large' : def!.displayMode === 'large'}
+            {@const small = editMode && def?.formMode !== 'full' ? def?.formMode !== 'large' : def?.displayMode !== 'large'}
+            {@const large = editMode && def?.formMode !== 'full' ? def?.formMode === 'large' : def?.displayMode === 'large'}
             {@const dtid = `dt-title-${prompt.id}`}
             {@const currentWorkflow = application.workflowStage ? application.workflowStage?.key === section.requirements[0]?.workflowStage?.key : undefined}
             {@const disabled = ((!editMode && def?.formMode !== 'full') && (currentWorkflow || requirement.status !== enumRequirementStatus.MET))}
@@ -224,7 +244,7 @@
             </dt>
             <dd class="flow" class:small class:large class:isReviewerQuestion class:disabled={disabled} class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
               {#if editMode}
-                <Form preload={prompt.preloadData} submit={onPromptSubmit(prompt)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptAutoSaved} let:data let:messages>
+                <Form bind:store={saveQueue.stores[prompt.id]} preload={prompt.preloadData} submit={onPromptSubmit(prompt)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptAutoSaved} let:data let:messages>
                     <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason}  />
                     {#each messages as message (message.message, message.type)}
                       <FormInlineNotification {message} />
@@ -288,8 +308,11 @@
       <div class='font-medium text-center mt-2'>
         <p class="text-xl font-medium ">{editingPromptWithData.title}</p>
       </div>
+      {#if def?.formComponent == null}
+        <MissingDefinitionNotification kind="prompt" definitionKey={editingPromptWithData.key} />
+      {:else}
       <svelte:component
-        this={def!.formComponent}
+        this={def.formComponent}
         appRequestId={appRequest.id}
         {data}
         appRequestData={editingPromptWithData.data}
@@ -303,6 +326,7 @@
         invalidated={editingPromptWithData.invalidated}
         invalidatedReason={editingPromptWithData.invalidatedReason}
       />
+      {/if}
     {:else if fetchingEditPrompt}
       {@const loader = uiRegistry.getPrompt(promptBeingEdited.key)?.loader}
       <div class='font-medium text-center mt-2'>

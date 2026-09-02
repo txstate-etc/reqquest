@@ -1,5 +1,13 @@
 import { PUBLIC_DEMO_INSTANCE } from '$env/static/public'
-import { UIRegistry, type UIConfig } from '$lib'
+import { UIRegistry, type AnyUIConfig, type UIConfig } from '$lib'
+// Per-demo key unions
+// See demos/package.json keys:generate:ui.
+import type {
+  ComplexProgramKey, ComplexPromptKey, ComplexRequirementKey,
+  DefaultProgramKey, DefaultPromptKey, DefaultRequirementKey,
+  RcProgramKey, RcPromptKey, RcRequirementKey,
+  SimpleProgramKey, SimplePromptKey, SimpleRequirementKey
+} from './keys.generated.js'
 /** default */
 import DogWalker from 'carbon-icons-svelte/lib/DogWalker.svelte'
 import Gamification from 'carbon-icons-svelte/lib/Gamification.svelte'
@@ -196,7 +204,7 @@ export const uiRegistry = new UIRegistry({
   slots
 })
 
-function configureDemoInstanceParams (): UIConfig {
+function configureDemoInstanceParams (): AnyUIConfig {
   /**
    * So here's a fun hack. PUBLIC_DEMO_INSTANCE is one of our environment variables, but we
    * have a bit of a custom system for injecting environment at startup time rather than build time.
@@ -217,69 +225,35 @@ function configureDemoInstanceParams (): UIConfig {
       applicantDashboardIntroHeader: 'Start your Pet Journey Here!',
       applicantDashboardIntroDetail: 'Submitting an adoption application is the first step in adopting a pet. Based on your responses you will receive a list of "eligible benefits."',
       applicantDashboardRecentDays: 30,
-      programs: [{ key: 'adopt_a_pet_program', icon: DogWalker },
-        { key: 'thanks_or_no_thanks_program', icon: Gamification }
-      ],
+      programs: {
+        adopt_a_pet_program: { icon: DogWalker },
+        thanks_or_no_thanks_program: { icon: Gamification },
+      },
       userLookup: async (login) => {
         const accessUser = await api.getAccessUser(login)
         if (!accessUser) return
         const userProfileName = [accessUser?.fullname.slice(0, accessUser?.fullname.indexOf(' ')), accessUser?.fullname.slice(accessUser?.fullname.indexOf(' ') + 1)]
         return { firstName: userProfileName[0], lastName: userProfileName[1], username: login }
       },
-      requirements: [
-        { key: 'state_residence_req', configureComponent: ResidenceConfig },
-        { key: 'state_residence_confirmation_req' },
-        { key: 'step1_post_residence_req' },
-        { key: 'step3_post_residence_req' },
-        { key: 'id_type_req' }
-      ],
-      prompts: [{
-        key: 'state_residence_prompt',
-        formComponent: ResidencePrompt,
-        displayComponent: ResidencePromptDisplay
+      requirements: {
+        state_residence_req: { configureComponent: ResidenceConfig },
+        state_residence_confirmation_req: {},
+        step1_post_residence_req: {},
+        step3_post_residence_req: {},
+        id_type_req: {},
       },
-      {
-        key: 'state_residence_confirmation_prompt',
-        formComponent: ResidenceConfirmationReviewPrompt,
-        displayComponent: ResidenceConfirmationReviewPromptDisplay
-      },
-      {
-        key: 'step1_post_residence_prompt',
-        formComponent: Step1PostResidencePrompt,
-        displayComponent: Step1PostResidencePromptDisplay
-      },
-      {
-        key: 'step2_post_residence_prompt',
-        formComponent: Step2PostResidencePrompt,
-        displayComponent: Step2PostResidencePromptDisplay
-      },
-      {
-        key: 'step3_post_residence_prompt',
-        formComponent: Step3PostResidencePrompt,
-        displayComponent: Step3PostResidencePromptDisplay
-      },
-      {
-        key: 'thanks_or_no_thanks_prompt',
-        formComponent: ThanksOrNoThanksPrompt,
-        displayComponent: ThanksOrNoThanksPromptDisplay
-      },
-      {
-        key: 'id_values_prompt',
-        formComponent: IDValuesPrompt,
-        displayComponent: IDValuesPromptDisplay
-      },
-      {
-        key: 'id_values_extra_data_prompt',
-        formComponent: IDValuesExtraDataPrompt,
-        displayComponent: IDValuesExtraDataPromptDisplay
-      },
-      {
-        key: 'ssn_value_prompt',
-        formComponent: SSNValuePrompt,
-        displayComponent: SSNValuePromptDisplay
+      prompts: {
+        state_residence_prompt: { formComponent: ResidencePrompt, displayComponent: ResidencePromptDisplay },
+        state_residence_confirmation_prompt: { formComponent: ResidenceConfirmationReviewPrompt, displayComponent: ResidenceConfirmationReviewPromptDisplay },
+        step1_post_residence_prompt: { formComponent: Step1PostResidencePrompt, displayComponent: Step1PostResidencePromptDisplay },
+        step2_post_residence_prompt: { formComponent: Step2PostResidencePrompt, displayComponent: Step2PostResidencePromptDisplay },
+        step3_post_residence_prompt: { formComponent: Step3PostResidencePrompt, displayComponent: Step3PostResidencePromptDisplay },
+        thanks_or_no_thanks_prompt: { formComponent: ThanksOrNoThanksPrompt, displayComponent: ThanksOrNoThanksPromptDisplay },
+        id_values_prompt: { formComponent: IDValuesPrompt, displayComponent: IDValuesPromptDisplay },
+        id_values_extra_data_prompt: { formComponent: IDValuesExtraDataPrompt, displayComponent: IDValuesExtraDataPromptDisplay },
+        ssn_value_prompt: { formComponent: SSNValuePrompt, displayComponent: SSNValuePromptDisplay },
       }
-      ]
-    }
+    } satisfies UIConfig<SimplePromptKey, SimpleRequirementKey, SimpleProgramKey>
   } else if (tmpDemoInstance === 'multi') { // TODO - Update one spec for multi complete, currently mirror demo
     return {
       appName: 'Adopt a Critter',
@@ -292,59 +266,32 @@ function configureDemoInstanceParams (): UIConfig {
         const userProfileName = [accessUser?.fullname.slice(0, accessUser?.fullname.indexOf(' ')), accessUser?.fullname.slice(accessUser?.fullname.indexOf(' ') + 1)]
         return { firstName: userProfileName[0], lastName: userProfileName[1], username: login }
       },
-      programs: [{
-        key: 'adopt_a_dog_program',
-        icon: DogWalker
-      }],
-      requirements: [
-        { key: 'have_big_yard_req' },
-        { key: 'have_adequate_personal_space_req' },
-        { key: 'have_a_cat_tower_req' },
-        { key: 'not_allergic_to_tuna_req' },
-        { key: 'applicant_seems_nice_req' },
-        { key: 'must_exercise_your_dog_req', configureComponent: ExerciseConfigure },
-        { key: 'which_state_req' },
-        { key: 'other_cats_applicant_req' },
-        { key: 'other_cats_reviewer_req' }
-      ],
-      prompts: [{
-        key: 'have_yard_prompt',
-        formComponent: YardPrompt,
-        displayComponent: YardPromptDisplay
-      }, {
-        key: 'have_a_cat_tower_prompt',
-        formComponent: CatTowerPrompt,
-        displayComponent: CatTowerPromptDisplay
-      }, {
-        key: 'not_allergic_to_tuna_prompt',
-        formComponent: TunaAllergyPrompt,
-        displayComponent: TunaAllergyPromptDisplay
-      }, {
-        key: 'applicant_seems_nice_prompt',
-        formComponent: SeemsNicePrompt,
-        displayComponent: SeemsNicePromptDisplay
-      }, {
-        key: 'must_exercise_your_dog_prompt',
-        formComponent: ExercisePrompt,
-        displayComponent: ExercisePromptDisplay
-      }, {
-        key: 'which_state_prompt',
-        formComponent: StatePrompt,
-        displayComponent: StatePromptDisplay
-      }, {
-        key: 'other_cats_prompt',
-        formComponent: OtherCatsPrompt,
-        displayComponent: OtherCatsPromptDisplay
-      }, {
-        key: 'other_cats_vaccines_prompt',
-        formComponent: OtherCatsVaccinesPrompt,
-        displayComponent: OtherCatsVaccinesPromptDisplay
-      }, {
-        key: 'vaccine_review_prompt',
-        formComponent: VaccineReviewPrompt,
-        displayComponent: VaccineReviewPromptDisplay
-      }]
-    }
+      programs: {
+        adopt_a_dog_program: { icon: DogWalker },
+      },
+      requirements: {
+        have_big_yard_req: {},
+        have_adequate_personal_space_req: {},
+        have_a_cat_tower_req: {},
+        not_allergic_to_tuna_req: {},
+        applicant_seems_nice_req: {},
+        must_exercise_your_dog_req: { configureComponent: ExerciseConfigure },
+        which_state_req: {},
+        other_cats_applicant_req: {},
+        other_cats_reviewer_req: {},
+      },
+      prompts: {
+        have_yard_prompt: { formComponent: YardPrompt, displayComponent: YardPromptDisplay },
+        have_a_cat_tower_prompt: { formComponent: CatTowerPrompt, displayComponent: CatTowerPromptDisplay },
+        not_allergic_to_tuna_prompt: { formComponent: TunaAllergyPrompt, displayComponent: TunaAllergyPromptDisplay },
+        applicant_seems_nice_prompt: { formComponent: SeemsNicePrompt, displayComponent: SeemsNicePromptDisplay },
+        must_exercise_your_dog_prompt: { formComponent: ExercisePrompt, displayComponent: ExercisePromptDisplay },
+        which_state_prompt: { formComponent: StatePrompt, displayComponent: StatePromptDisplay },
+        other_cats_prompt: { formComponent: OtherCatsPrompt, displayComponent: OtherCatsPromptDisplay },
+        other_cats_vaccines_prompt: { formComponent: OtherCatsVaccinesPrompt, displayComponent: OtherCatsVaccinesPromptDisplay },
+        vaccine_review_prompt: { formComponent: VaccineReviewPrompt, displayComponent: VaccineReviewPromptDisplay },
+      }
+    } satisfies UIConfig<DefaultPromptKey, DefaultRequirementKey, DefaultProgramKey>
   } else if (tmpDemoInstance === 'complex') {
     return {
       appName: 'Pet lover',
@@ -357,69 +304,70 @@ function configureDemoInstanceParams (): UIConfig {
         const userProfileName = [accessUser?.fullname.slice(0, accessUser?.fullname.indexOf(' ')), accessUser?.fullname.slice(accessUser?.fullname.indexOf(' ') + 1)]
         return { firstName: userProfileName[0], lastName: userProfileName[1], username: login }
       },
-      programs: [{ key: 'adopt_a_dog_program', icon: DogWalker },
-        { key: 'adopt_a_cat_program', icon: PedestrianFamily },
-        { key: 'foster_a_pet_program', icon: Gamification }
-      ],
-      requirements: [
-        { key: 'state_residence_prequal_req', configureComponent: ComplexResidenceConfig },
-        { key: 'petowner_prequal_req' },
-        { key: 'previous_dogwowner_qual_req' },
-        { key: 'current_dogowner_qual_req', configureComponent: ComplexCurrentDogConfig },
-        { key: 'yard_qual_req', configureComponent: ComplexYardConfig },
-        { key: 'owner_dog_allergy_qual_req' },
-        { key: 'dog_exercise_qual_req', configureComponent: ComplexDogExerciseConfig },
-        { key: 'previous_catowner_qual_req' },
-        { key: 'current_catowner_qual_req', configureComponent: ComplexCurrentCatConfig },
-        { key: 'living_space_qual_req', configureComponent: ComplexLivingSpaceConfig },
-        { key: 'owner_cat_allergy_qual_req' },
-        { key: 'owner_cat_microchip_servive_qual_req' },
-        { key: 'children_qual_req', configureComponent: ComplexChildrenConfig },
-        { key: 'movie_lover_qual_req' },
-        { key: 'terms_and_conditions_post_qual_req' },
-        { key: 'review_applicant_state_residence_app_req' },
-        { key: 'review_applicant_cat_info_app_req' },
-        { key: 'review_applicant_dog_info_app_req' },
-        { key: 'review_application_foster_a_pet_app_req' },
-        { key: 'review_movie_lover_app_req' },
-        { key: 'previous_dog_surrender_qual_req' },
-        { key: 'previous_dog_surrender_foster_qual_req' },
-        { key: 'approve_reviewer_exercise_exemption_workflow_req', configureComponent: ComplexApproveReviewerExerciseExemptionConfig },
-        { key: 'accept_adopt_cat_req' },
-        { key: 'accept_adopt_dog_req' },
-        { key: 'accept_fost_pet_req' },
-        { key: 'confirm_cat_microchip_service_workflow_req' }
-      ],
-      prompts: [
-        { key: 'state_residence_prompt', formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
-        { key: 'petowner_prompt', formComponent: ComplexPetOwnerPrompt, displayComponent: ComplexPetOwnerDisplayPrompt },
-        { key: 'previous_dogowner_prompt', formComponent: ComplexPreviousDogOwnerPrompt, displayComponent: ComplexPreviousDogOwnerDisplayPrompt },
-        { key: 'current_dogowner_prompt', formComponent: ComplexCurrentDogOwnerPrompt, displayComponent: ComplexCurrentDogOwnerDisplayPrompt },
-        { key: 'yard_prompt', formComponent: ComplexYardPrompt, displayComponent: ComplexYardDisplayPrompt },
-        { key: 'owner_dog_allergy_prompt', formComponent: ComplexOwnerDogAllergyPrompt, displayComponent: ComplexOwnerDogAllergyDisplayPrompt },
-        { key: 'dog_exercise_prompt', formComponent: ComplexDogExercisePrompt, displayComponent: ComplexDogExerciseDisplayPrompt },
-        { key: 'previous_catowner_prompt', formComponent: ComplexPreviousCatOwnerPrompt, displayComponent: ComplexPreviousCatOwnerDisplayPrompt },
-        { key: 'current_catowner_prompt', formComponent: ComplexCurrentCatOwnerPrompt, displayComponent: ComplexCurrentCatOwnerDisplayPrompt },
-        { key: 'living_space_prompt', formComponent: ComplexLivingSpacePrompt, displayComponent: ComplexLivingSpaceDisplayPrompt },
-        { key: 'owner_cat_allergy_prompt', formComponent: ComplexOwnerCatAllergyPrompt, displayComponent: ComplexOwnerCatAllergyDisplayPrompt },
-        { key: 'owner_cat_microchip_service_prompt', formComponent: ComplexOwnerCatMicrochipServicePrompt, displayComponent: ComplexOwnerCatMicrochipServiceDisplayPrompt },
-        { key: 'children_prompt', formComponent: ComplexChildrenPrompt, displayComponent: ComplexChildrenDisplayPrompt },
-        { key: 'bridge_of_death_prompt', formComponent: ComplexBridgeOfDeathPrompt, displayComponent: ComplexBridgeOfDeathDisplayPrompt },
-        { key: 'review_applicant_state_residence_info_prompt', formComponent: ComplexReviewApplicantResidenceInfoPrompt, displayComponent: ComplexReviewApplicantResidenceInfoPromptDisplay },
-        { key: 'review_applicant_cat_info_prompt', formComponent: ComplexReviewApplicantCatInfoPrompt, displayComponent: ComplexReviewApplicantCatInfoPromptDisplay },
-        { key: 'review_applicant_dog_info_prompt', formComponent: ComplexReviewApplicantDogInfoPrompt, displayComponent: ComplexReviewApplicantDogInfoPromptDisplay },
-        { key: 'review_applicant_foster_a_pet_info_prompt', formComponent: ComplexReviewApplicantFosterAPetPrompt, displayComponent: ComplexReviewApplicantFosterAPetPromptDisplay },
-        { key: 'review_movie_lover_answers_prompt', formComponent: ComplexReviewMovieLoverPrompt, displayComponent: ComplexReviewMovieLoverDisplayPrompt },
-        { key: 'terms_and_conditions_prompt', configureComponent: ComplexTermsAndConditionsConfig, formComponent: ComplexTermsAndConditionsPrompt, displayComponent: ComplexTermsAndConditionsPromptDisplay },
-        { key: 'previous_dog_surrender_prompt', formComponent: ComplexPreviousDogSurrenderPrompt, displayComponent: ComplexPreviousDogSurrenderDisplayPrompt },
-        { key: 'previous_dog_surrender_foster_prompt', formComponent: ComplexPreviousDogSurrenderPrompt, displayComponent: ComplexPreviousDogSurrenderDisplayPrompt },
-        { key: 'approve_reviewer_exercise_exemption_prompt', formComponent: ComplexApproveReviewerExerciseExemptionPrompt, displayComponent: ComplexApproveReviewerExerciseExemptionPromptDisplay },
-        { key: 'accept_cat_prompt', formComponent: ComplexAcceptCatPrompt, displayComponent: ComplexAcceptCatDisplayPrompt },
-        { key: 'accept_dog_prompt', formComponent: ComplexAcceptDogPrompt, displayComponent: ComplexAcceptDogDisplayPrompt },
-        { key: 'accept_foster_pet_prompt', formComponent: ComplexAcceptFosterPetPrompt, displayComponent: ComplexAcceptFosterPetDisplayPrompt },
-        { key: 'confirm_cat_microchip_service_prompt', formComponent: ComplexConfirmCatMircochipServicePrompt, displayComponent: ComplexConfirmCatMircochipServiceDisplayPrompt }
-      ]
-    }
+      programs: {
+        adopt_a_dog_program: { icon: DogWalker },
+        adopt_a_cat_program: { icon: PedestrianFamily },
+        foster_a_pet_program: { icon: Gamification },
+      },
+      requirements: {
+        state_residence_prequal_req: { configureComponent: ComplexResidenceConfig },
+        petowner_prequal_req: {},
+        previous_dogowner_qual_req: {},
+        current_dogowner_qual_req: { configureComponent: ComplexCurrentDogConfig },
+        yard_qual_req: { configureComponent: ComplexYardConfig },
+        owner_dog_allergy_qual_req: {},
+        dog_exercise_qual_req: { configureComponent: ComplexDogExerciseConfig },
+        previous_catowner_qual_req: {},
+        current_catowner_qual_req: { configureComponent: ComplexCurrentCatConfig },
+        living_space_qual_req: { configureComponent: ComplexLivingSpaceConfig },
+        owner_cat_allergy_qual_req: {},
+        owner_cat_microchip_service_qual_req: {},
+        children_qual_req: { configureComponent: ComplexChildrenConfig },
+        movie_lover_qual_req: {},
+        terms_and_conditions_post_qual_req: {},
+        review_applicant_state_residence_app_req: {},
+        review_applicant_cat_info_app_req: {},
+        review_applicant_dog_info_app_req: {},
+        review_applicant_foster_a_pet_info_app_req: {},
+        review_movie_lover_app_req: {},
+        previous_dog_surrender_qual_req: {},
+        previous_dog_surrender_foster_qual_req: {},
+        approve_reviewer_exercise_exemption_workflow_req: { configureComponent: ComplexApproveReviewerExerciseExemptionConfig },
+        accept_adopt_cat_req: {},
+        accept_adopt_dog_req: {},
+        accept_fost_pet_req: {},
+        confirm_cat_microchip_service_workflow_req: {},
+      },
+      prompts: {
+        state_residence_prompt: { formComponent: ComplexResidencePrompt, displayComponent: ComplexResidenceDisplayPrompt },
+        petowner_prompt: { formComponent: ComplexPetOwnerPrompt, displayComponent: ComplexPetOwnerDisplayPrompt },
+        previous_dogowner_prompt: { formComponent: ComplexPreviousDogOwnerPrompt, displayComponent: ComplexPreviousDogOwnerDisplayPrompt },
+        current_dogowner_prompt: { formComponent: ComplexCurrentDogOwnerPrompt, displayComponent: ComplexCurrentDogOwnerDisplayPrompt },
+        yard_prompt: { formComponent: ComplexYardPrompt, displayComponent: ComplexYardDisplayPrompt },
+        owner_dog_allergy_prompt: { formComponent: ComplexOwnerDogAllergyPrompt, displayComponent: ComplexOwnerDogAllergyDisplayPrompt },
+        dog_exercise_prompt: { formComponent: ComplexDogExercisePrompt, displayComponent: ComplexDogExerciseDisplayPrompt },
+        previous_catowner_prompt: { formComponent: ComplexPreviousCatOwnerPrompt, displayComponent: ComplexPreviousCatOwnerDisplayPrompt },
+        current_catowner_prompt: { formComponent: ComplexCurrentCatOwnerPrompt, displayComponent: ComplexCurrentCatOwnerDisplayPrompt },
+        living_space_prompt: { formComponent: ComplexLivingSpacePrompt, displayComponent: ComplexLivingSpaceDisplayPrompt },
+        owner_cat_allergy_prompt: { formComponent: ComplexOwnerCatAllergyPrompt, displayComponent: ComplexOwnerCatAllergyDisplayPrompt },
+        owner_cat_microchip_service_prompt: { formComponent: ComplexOwnerCatMicrochipServicePrompt, displayComponent: ComplexOwnerCatMicrochipServiceDisplayPrompt },
+        children_prompt: { formComponent: ComplexChildrenPrompt, displayComponent: ComplexChildrenDisplayPrompt },
+        bridge_of_death_prompt: { formComponent: ComplexBridgeOfDeathPrompt, displayComponent: ComplexBridgeOfDeathDisplayPrompt },
+        review_applicant_state_residence_info_prompt: { formComponent: ComplexReviewApplicantResidenceInfoPrompt, displayComponent: ComplexReviewApplicantResidenceInfoPromptDisplay },
+        review_applicant_cat_info_prompt: { formComponent: ComplexReviewApplicantCatInfoPrompt, displayComponent: ComplexReviewApplicantCatInfoPromptDisplay },
+        review_applicant_dog_info_prompt: { formComponent: ComplexReviewApplicantDogInfoPrompt, displayComponent: ComplexReviewApplicantDogInfoPromptDisplay },
+        review_applicant_foster_a_pet_info_prompt: { formComponent: ComplexReviewApplicantFosterAPetPrompt, displayComponent: ComplexReviewApplicantFosterAPetPromptDisplay },
+        review_movie_lover_answers_prompt: { formComponent: ComplexReviewMovieLoverPrompt, displayComponent: ComplexReviewMovieLoverDisplayPrompt },
+        terms_and_conditions_prompt: { configureComponent: ComplexTermsAndConditionsConfig, formComponent: ComplexTermsAndConditionsPrompt, displayComponent: ComplexTermsAndConditionsPromptDisplay },
+        previous_dog_surrender_prompt: { formComponent: ComplexPreviousDogSurrenderPrompt, displayComponent: ComplexPreviousDogSurrenderDisplayPrompt },
+        previous_dog_surrender_foster_prompt: { formComponent: ComplexPreviousDogSurrenderPrompt, displayComponent: ComplexPreviousDogSurrenderDisplayPrompt },
+        approve_reviewer_exercise_exemption_prompt: { formComponent: ComplexApproveReviewerExerciseExemptionPrompt, displayComponent: ComplexApproveReviewerExerciseExemptionPromptDisplay },
+        accept_cat_prompt: { formComponent: ComplexAcceptCatPrompt, displayComponent: ComplexAcceptCatDisplayPrompt },
+        accept_dog_prompt: { formComponent: ComplexAcceptDogPrompt, displayComponent: ComplexAcceptDogDisplayPrompt },
+        accept_foster_pet_prompt: { formComponent: ComplexAcceptFosterPetPrompt, displayComponent: ComplexAcceptFosterPetDisplayPrompt },
+        confirm_cat_microchip_service_prompt: { formComponent: ComplexConfirmCatMircochipServicePrompt, displayComponent: ComplexConfirmCatMircochipServiceDisplayPrompt },
+      }
+    } satisfies UIConfig<ComplexPromptKey, ComplexRequirementKey, ComplexProgramKey>
   } else if (tmpDemoInstance === 'rc') {
     return {
       appName: 'MWS Technical Mentorship Experience',
@@ -443,231 +391,76 @@ function configureDemoInstanceParams (): UIConfig {
         const userProfileName = [accessUser?.fullname.slice(0, accessUser?.fullname.indexOf(' ')), accessUser?.fullname.slice(accessUser?.fullname.indexOf(' ') + 1)]
         return { firstName: userProfileName[0], lastName: userProfileName[1], username: login }
       },
-      programs: [
-        { key: 'operations_infrastructure', icon: DogWalker },
-        { key: 'software_development', icon: DogWalker },
-        { key: 'project_management', icon: DogWalker },
-        { key: 'application_management_support', icon: DogWalker }
-      ],
-      requirements: [
-        { key: 'step1_prequal_req' },
-        { key: 'written_automation_req' },
-        { key: 'evidence_automation_req' },
-        { key: 'investigated_future_career_req' },
-        { key: 'rate_future_career_req' },
-        { key: 'data_related_puzzle_req' },
-        { key: 'assess_data_related_puzzle_req' },
-        { key: 'outside_class_example_req' },
-        { key: 'assess_outside_class_example_req' },
-        { key: 'critical_thinking_req' },
-        { key: 'assess_critical_thinking_req' },
-        { key: 'communication_req' },
-        { key: 'assess_communicationn_req' },
-        { key: 'assess_attention_detail_req' },
-        { key: 'organization_req' },
-        { key: 'assess_organization_req' },
-        { key: 'reccomendation_letter_req' },
-        { key: 'assess_reccomendation_letter_req' },
-        { key: 'audit_software_development_non_blocking_show_submitted_req'},
-        { key: 'audit_software_development_non_blocking_show_submitted_req2'},
-        { key: 'audit_software_development_non_blocking_show_regular_req'},
-        { key: 'audit_software_development_non_blocking_show_regular_req2'},
-        { key: 'reviewer_software_development_second_eyes_req'},
-        { key: 'reviewer_override_gpa_warning_req'}
-      ],
-      prompts: [{
-        key: 'pre_qual_prompt',
-        formComponent: PreQualPrompt,
-        displayComponent: PreQualDisplay,
-        displayMode: 'large'
+      programs: {
+        operations_infrastructure: { icon: DogWalker },
+        software_development: { icon: DogWalker },
+        project_management: { icon: DogWalker },
+        application_management_support: { icon: DogWalker },
       },
-      {
-        key: 'pre_qual_user_info_prompt',
-        formComponent: RCPreQualUserInfoPrompt,
-        displayComponent: RCPreQualUserInfoPromptDisplay
+      requirements: {
+        step1_prequal_req: {},
+        written_automation_req: {},
+        evidence_automation_req: {},
+        investigated_future_career_req: {},
+        rate_future_career_req: {},
+        data_related_puzzle_req: {},
+        assess_data_related_puzzle_req: {},
+        outside_class_example_req: {},
+        assess_outside_class_example_req: {},
+        critical_thinking_req: {},
+        assess_critical_thinking_req: {},
+        communication_req: {},
+        assess_communicationn_req: {},
+        assess_attention_detail_req: {},
+        organization_req: {},
+        assess_organization_req: {},
+        reccomendation_letter_req: {},
+        assess_reccomendation_lettern_req: {},
+        audit_software_development_non_blocking_show_submitted_req: {},
+        audit_software_development_non_blocking_show_submitted_req2: {},
+        audit_software_development_non_blocking_show_regular_req: {},
+        audit_software_development_non_blocking_show_regular_req2: {},
+        reviewer_software_development_second_eyes_req: {},
+        reviewer_override_gpa_warning_req: {},
       },
-      {
-        key: 'written_automation_prompt',
-        formComponent: WrittenAutomatinoPrompt,
-        displayComponent: WrittenAutomationDisplay
-      },
-      {
-        key: 'evidence_automation_prompt',
-        formComponent: EvidenceWrittenAutomationPrompt,
-        displayComponent: EvidenceWrittenAutomationDisplay
-      },
-      {
-        key: 'investigated_future_career_prompt',
-        formComponent: InvestigatedFutureCareerPrompt,
-        displayComponent: InvestigatedFutureCareerDisplay
-      },
-      {
-        key: 'rate_future_career_prompt',
-        formComponent: RateFutureCareerPrompt,
-        displayComponent: RateFutureCareerDisplay
-      },
-      {
-        key: 'data_related_puzzle_prompt',
-        formComponent: DataRelatedPuzzle,
-        displayComponent: DataRelatedPuzzleDisplay,
-        loader: true
-      },
-      {
-        key: 'assess_data_related_puzzle_prompt',
-        formComponent: AssessDataRelatedPuzzle,
-        displayComponent: AssessDataRelatedPuzzleDisplay
-      },
-      {
-        key: 'outside_class_example_prompt',
-        formComponent: OutsideClassExample,
-        displayComponent: OutsideClassExampleDisplay,
-        applicantPromptPage: {
-          formClass: 'max-w-[500px] mx-auto'
-        }
-      },
-      {
-        key: 'assess_outside_class_example_prompt',
-        formComponent: AssessOutsideClassExample,
-        displayComponent: AssessOutsideClassExampleDisplay
-      },
-      {
-        key: 'critical_thinking_prompt',
-        formComponent: CriticalThinking,
-        displayComponent: CriticalThinkingDisplay,
-        applicantPromptPage: {
-          invalidatedInlineNotificationClass: 'max-w-[400px] mx-auto'
-        }
-      },
-      {
-        key: 'assess_critical_thinking_prompt',
-        formComponent: AssessCriticalThinking,
-        displayComponent: AssessCriticalThinkingDisplay
-      },
-      {
-        key: 'communication_prompt',
-        formComponent: Communication,
-        displayComponent: CommunicationDisplay,
-        loader: {
-          skeletonComponent: ApplicantPromptSkeleton
-        }
-      },
-      {
-        key: 'assess_communication_prompt',
-        formComponent: AssessCommunication,
-        displayComponent: AssessCommunicationDisplay
-      },
-      {
-        key: 'assess_attention_detail_prompt',
-        formComponent: AssessAttentionDetail,
-        displayComponent: AssessAttentionDetailDisplay
-      },
-      {
-        key: 'organization_prompt',
-        formComponent: Organization,
-        displayComponent: OrganizationDisplay
-      },
-      {
-        key: 'assess_organization_prompt',
-        formComponent: AssessOrganization,
-        displayComponent: AssessOrganizationDisplay
-      },
-      {
-        key: 'technical_troubleshooting_prompt',
-        formComponent: TechnicalTroubleshooting,
-        displayComponent: TechnicalTroubleshootingDisplay
-        
-      },
-      {
-        key: 'assess_technical_troubleshooting_prompt',
-        formComponent: AssessTechnicalTroubleshooting,
-        displayComponent: AssessTechnicalTroubleshootingDisplay,
-        formMode: 'full',
-        loader: {
-          skeletonComponent: GeneralTextSkeleton
-        }
-      },
-      {
-        key: 'support_communication_prompt',
-        formComponent: SupportCommunication,
-        displayComponent: SupportCommunicationDisplay
-      },
-      {
-        key: 'assess_support_communication_prompt',
-        formComponent: AssessSupportCommunication,
-        displayComponent: AssessSupportCommunicationDisplay
-      },
-      {
-        key: 'maintain_sys_documentation_prompt',
-        formComponent: MaintainSysDocumentation,
-        displayComponent: MaintainSysDocumentationDisplay
-      },
-      {
-        key: 'assess_maintain_sys_documentation_prompt',
-        formComponent: AssessMaintainSysDocumentation,
-        displayComponent: AssessMaintainSysDocumentationDisplay
-      },
-      {
-        key: 'reccomendation_letter_prompt',
-        formComponent: ReccomendationLetter,
-        displayComponent: ReccomendationLetterDisplay
-      },
-      {
-        key: 'assess_reccomendation_letter_prompt',
-        formComponent: AssessReccomendationLetter,
-        displayComponent: AssessReccomendationLetterDisplay
-      },
-      {
-        key: 'software_dev_opt_out_prompt',
-        formComponent: OptOut,
-        displayComponent: OptOutDisplay
-      },
-      {
-        key: 'application_management_opt_out_prompt',
-        formComponent: OptOut,
-        displayComponent: OptOutDisplay
-      },
-      {
-        key: 'operations_infrastructure_opt_out_prompt',
-        formComponent: OptOut,
-        displayComponent: OptOutDisplay
-      },
-      {
-        key: 'project_management_opt_out_prompt',
-        formComponent: OptOut,
-        displayComponent: OptOutDisplay
-      },
-      {
-        key: 'audit_software_development_non_blocking_show_submitted_prompt',
-        formComponent: RCAuditSoftwareDevelopmentSubmitted,
-        displayComponent: RCAuditSoftwareDevelopmentSubmittedDisplay
-      },
-      {
-        key: 'audit_software_development_non_blocking_show_submitted_prompt2',
-        formComponent: RCAuditSoftwareDevelopmentSubmitted2,
-        displayComponent: RCAuditSoftwareDevelopmentSubmittedDisplay2
-      },
-      {
-        key: 'audit_software_development_non_blocking_show_regular_prompt',
-        formComponent: RCAuditSoftwareDevelopmentRegular,
-        displayComponent: RCAuditSoftwareDevelopmentRegularDisplay
-      },
-      {
-        key: 'audit_software_development_non_blocking_show_regular_prompt2',
-        formComponent: RCAuditSoftwareDevelopmentRegular2,
-        displayComponent: RCAuditSoftwareDevelopmentRegularDisplay2
-      },
-      {
-        key: 'reviewer_software_development_second_eyes_prompt',
-        formComponent: RCReviewerSoftwareDevelopmentSecondEyes,
-        displayComponent: RCReviewerSoftwareDevelopmentSecondEyesDisplay
-      },
-      {
-        key: 'reviewer_override_gpa_warning_prompt',
-        formComponent: RCOverrideGPAWarning,
-        displayComponent: RCOverrideGPAWarningDisplay
+      prompts: {
+        pre_qual_prompt: { formComponent: PreQualPrompt, displayComponent: PreQualDisplay, displayMode: 'large' },
+        pre_qual_user_info_prompt: { formComponent: RCPreQualUserInfoPrompt, displayComponent: RCPreQualUserInfoPromptDisplay },
+        written_automation_prompt: { formComponent: WrittenAutomatinoPrompt, displayComponent: WrittenAutomationDisplay },
+        evidence_automation_prompt: { formComponent: EvidenceWrittenAutomationPrompt, displayComponent: EvidenceWrittenAutomationDisplay },
+        investigated_future_career_prompt: { formComponent: InvestigatedFutureCareerPrompt, displayComponent: InvestigatedFutureCareerDisplay },
+        rate_future_career_prompt: { formComponent: RateFutureCareerPrompt, displayComponent: RateFutureCareerDisplay },
+        data_related_puzzle_prompt: { formComponent: DataRelatedPuzzle, displayComponent: DataRelatedPuzzleDisplay, loader: true },
+        assess_data_related_puzzle_prompt: { formComponent: AssessDataRelatedPuzzle, displayComponent: AssessDataRelatedPuzzleDisplay },
+        outside_class_example_prompt: { formComponent: OutsideClassExample, displayComponent: OutsideClassExampleDisplay, applicantPromptPage: { formClass: 'max-w-[500px] mx-auto' } },
+        assess_outside_class_example_prompt: { formComponent: AssessOutsideClassExample, displayComponent: AssessOutsideClassExampleDisplay },
+        critical_thinking_prompt: { formComponent: CriticalThinking, displayComponent: CriticalThinkingDisplay, applicantPromptPage: { invalidatedInlineNotificationClass: 'max-w-[400px] mx-auto' } },
+        assess_critical_thinking_prompt: { formComponent: AssessCriticalThinking, displayComponent: AssessCriticalThinkingDisplay },
+        communication_prompt: { formComponent: Communication, displayComponent: CommunicationDisplay, loader: { skeletonComponent: ApplicantPromptSkeleton } },
+        assess_communication_prompt: { formComponent: AssessCommunication, displayComponent: AssessCommunicationDisplay },
+        assess_attention_detail_prompt: { formComponent: AssessAttentionDetail, displayComponent: AssessAttentionDetailDisplay },
+        organization_prompt: { formComponent: Organization, displayComponent: OrganizationDisplay },
+        assess_organization_prompt: { formComponent: AssessOrganization, displayComponent: AssessOrganizationDisplay },
+        technical_troubleshooting_prompt: { formComponent: TechnicalTroubleshooting, displayComponent: TechnicalTroubleshootingDisplay },
+        assess_technical_troubleshooting_prompt: { formComponent: AssessTechnicalTroubleshooting, displayComponent: AssessTechnicalTroubleshootingDisplay, formMode: 'full', loader: { skeletonComponent: GeneralTextSkeleton } },
+        support_communication_prompt: { formComponent: SupportCommunication, displayComponent: SupportCommunicationDisplay },
+        assess_support_communication_prompt: { formComponent: AssessSupportCommunication, displayComponent: AssessSupportCommunicationDisplay },
+        maintain_sys_documentation_prompt: { formComponent: MaintainSysDocumentation, displayComponent: MaintainSysDocumentationDisplay },
+        assess_maintain_sys_documentation_prompt: { formComponent: AssessMaintainSysDocumentation, displayComponent: AssessMaintainSysDocumentationDisplay },
+        reccomendation_letter_prompt: { formComponent: ReccomendationLetter, displayComponent: ReccomendationLetterDisplay },
+        assess_reccomendation_letter_prompt: { formComponent: AssessReccomendationLetter, displayComponent: AssessReccomendationLetterDisplay },
+        software_dev_opt_out_prompt: { formComponent: OptOut, displayComponent: OptOutDisplay },
+        application_management_opt_out_prompt: { formComponent: OptOut, displayComponent: OptOutDisplay },
+        operations_infrastructure_opt_out_prompt: { formComponent: OptOut, displayComponent: OptOutDisplay },
+        project_management_opt_out_prompt: { formComponent: OptOut, displayComponent: OptOutDisplay },
+        audit_software_development_non_blocking_show_submitted_prompt: { formComponent: RCAuditSoftwareDevelopmentSubmitted, displayComponent: RCAuditSoftwareDevelopmentSubmittedDisplay },
+        audit_software_development_non_blocking_show_submitted_prompt2: { formComponent: RCAuditSoftwareDevelopmentSubmitted2, displayComponent: RCAuditSoftwareDevelopmentSubmittedDisplay2 },
+        audit_software_development_non_blocking_show_regular_prompt: { formComponent: RCAuditSoftwareDevelopmentRegular, displayComponent: RCAuditSoftwareDevelopmentRegularDisplay },
+        audit_software_development_non_blocking_show_regular_prompt2: { formComponent: RCAuditSoftwareDevelopmentRegular2, displayComponent: RCAuditSoftwareDevelopmentRegularDisplay2 },
+        reviewer_software_development_second_eyes_prompt: { formComponent: RCReviewerSoftwareDevelopmentSecondEyes, displayComponent: RCReviewerSoftwareDevelopmentSecondEyesDisplay },
+        reviewer_override_gpa_warning_prompt: { formComponent: RCOverrideGPAWarning, displayComponent: RCOverrideGPAWarningDisplay },
       }
-      ]
-    }
+    } satisfies UIConfig<RcPromptKey, RcRequirementKey, RcProgramKey>
   }
   return {
     appName: 'Adopt a Critter',
@@ -687,57 +480,30 @@ function configureDemoInstanceParams (): UIConfig {
       const userProfileName = [accessUser?.fullname.slice(0, accessUser?.fullname.indexOf(' ')), accessUser?.fullname.slice(accessUser?.fullname.indexOf(' ') + 1)]
       return { firstName: userProfileName[0], lastName: userProfileName[1], username: login }
     },
-    programs: [{
-      key: 'adopt_a_dog_program',
-      icon: DogWalker
-    }],
-    requirements: [
-      { key: 'have_big_yard_req' },
-      { key: 'have_adequate_personal_space_req' },
-      { key: 'have_a_cat_tower_req' },
-      { key: 'not_allergic_to_tuna_req' },
-      { key: 'applicant_seems_nice_req' },
-      { key: 'must_exercise_your_dog_req', configureComponent: ExerciseConfigure },
-      { key: 'which_state_req' },
-      { key: 'other_cats_applicant_req' },
-      { key: 'other_cats_reviewer_req' }
-    ],
-    prompts: [{
-      key: 'have_yard_prompt',
-      formComponent: YardPrompt,
-      displayComponent: YardPromptDisplay
-    }, {
-      key: 'have_a_cat_tower_prompt',
-      formComponent: CatTowerPrompt,
-      displayComponent: CatTowerPromptDisplay
-    }, {
-      key: 'not_allergic_to_tuna_prompt',
-      formComponent: TunaAllergyPrompt,
-      displayComponent: TunaAllergyPromptDisplay
-    }, {
-      key: 'applicant_seems_nice_prompt',
-      formComponent: SeemsNicePrompt,
-      displayComponent: SeemsNicePromptDisplay
-    }, {
-      key: 'must_exercise_your_dog_prompt',
-      formComponent: ExercisePrompt,
-      displayComponent: ExercisePromptDisplay
-    }, {
-      key: 'which_state_prompt',
-      formComponent: StatePrompt,
-      displayComponent: StatePromptDisplay
-    }, {
-      key: 'other_cats_prompt',
-      formComponent: OtherCatsPrompt,
-      displayComponent: OtherCatsPromptDisplay
-    }, {
-      key: 'other_cats_vaccines_prompt',
-      formComponent: OtherCatsVaccinesPrompt,
-      displayComponent: OtherCatsVaccinesPromptDisplay
-    }, {
-      key: 'vaccine_review_prompt',
-      formComponent: VaccineReviewPrompt,
-      displayComponent: VaccineReviewPromptDisplay
-    }]
-  }
+    programs: {
+      adopt_a_dog_program: { icon: DogWalker },
+    },
+    requirements: {
+      have_big_yard_req: {},
+      have_adequate_personal_space_req: {},
+      have_a_cat_tower_req: {},
+      not_allergic_to_tuna_req: {},
+      applicant_seems_nice_req: {},
+      must_exercise_your_dog_req: { configureComponent: ExerciseConfigure },
+      which_state_req: {},
+      other_cats_applicant_req: {},
+      other_cats_reviewer_req: {},
+    },
+    prompts: {
+      have_yard_prompt: { formComponent: YardPrompt, displayComponent: YardPromptDisplay },
+      have_a_cat_tower_prompt: { formComponent: CatTowerPrompt, displayComponent: CatTowerPromptDisplay },
+      not_allergic_to_tuna_prompt: { formComponent: TunaAllergyPrompt, displayComponent: TunaAllergyPromptDisplay },
+      applicant_seems_nice_prompt: { formComponent: SeemsNicePrompt, displayComponent: SeemsNicePromptDisplay },
+      must_exercise_your_dog_prompt: { formComponent: ExercisePrompt, displayComponent: ExercisePromptDisplay },
+      which_state_prompt: { formComponent: StatePrompt, displayComponent: StatePromptDisplay },
+      other_cats_prompt: { formComponent: OtherCatsPrompt, displayComponent: OtherCatsPromptDisplay },
+      other_cats_vaccines_prompt: { formComponent: OtherCatsVaccinesPrompt, displayComponent: OtherCatsVaccinesPromptDisplay },
+      vaccine_review_prompt: { formComponent: VaccineReviewPrompt, displayComponent: VaccineReviewPromptDisplay },
+    }
+  } satisfies UIConfig<DefaultPromptKey, DefaultRequirementKey, DefaultProgramKey>
 }

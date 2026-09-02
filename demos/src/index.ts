@@ -107,7 +107,8 @@ async function main () {
       },
       emailConfig: {
         appName: 'Reqquest',
-        signature: 'Mobile Web Systems'
+        signature: 'Mobile Web Systems',
+        from: 'Reqquest <reqquest@txstate.edu>'
       }
     },
     programs,
@@ -122,36 +123,36 @@ main().catch(e => { console.error(e) })
 function configureDemoInstanceParams () {
   if (process.env.DEMO_INSTANCE === 'simple') return {
     programs: simplePrograms,
-    requirements: Object.values(simpleRequirements),
-    prompts: Object.values(simplePrompts),
+    requirements: simpleRequirements,
+    prompts: simplePrompts,
     migrations: simpleTestMigrations,
     multipleRequestsPerPeriod: false
   }
   else if (process.env.DEMO_INSTANCE === 'multi') return {
     programs: multiPrograms,
-    requirements: Object.values(multiRequirements),
-    prompts: Object.values(multiPrompts),
+    requirements: multiRequirements,
+    prompts: multiPrompts,
     migrations: multiTestMigrations,
     multipleRequestsPerPeriod: true
   }
   else if (process.env.DEMO_INSTANCE === 'complex') return {
     programs: complexPrograms,
-    requirements: Object.values(complexRequirements),
-    prompts: Object.values(complexPrompts),
+    requirements: complexRequirements,
+    prompts: complexPrompts,
     migrations: complexTestMigrations,
     multipleRequestsPerPeriod: false
   }
   else if (process.env.DEMO_INSTANCE === 'rc') return {
     programs: rcPrograms,
-    requirements: Object.values(rcRequirements),
-    prompts: Object.values(rcPrompts),
+    requirements: rcRequirements,
+    prompts: rcPrompts,
     migrations: rcTestMigrations,
     multipleRequestsPerPeriod: false
   }
   return {
     programs: defaultPrograms,
-    requirements: Object.values(defaultRequirements),
-    prompts: Object.values(defaultPrompts),
+    requirements: defaultRequirements,
+    prompts: defaultPrompts,
     migrations: defaultTestMigrations,
     multipleRequestsPerPeriod: false
   }

@@ -1,13 +1,14 @@
 import { type ValidateFunction } from 'ajv'
 import { applicantRequirementTypes, AppRequestData, ConfigurationDefinition, programRegistry, promptRegistry, RequirementStatus, RequirementType, registryAjv, Prompt } from '../internal.js'
 import { isNotEmpty } from 'txstate-utils'
+import type { PromptKey } from './keys.js'
 
 export interface NoDisplayPromptKey {
   /**
    * The key of a prompt this requirement depends on but that should not be displayed
    * beneath it.
    */
-  key: string
+  key: PromptKey
 
   /**
    * Whether an unanswered prompt should hold this requirement back. Defaults to true.
@@ -40,8 +41,13 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    *
    * Do not use the same key for a prompt and a requirement, as the keys will be used as
    * tag names in our authorization scheme and need to not clash.
+   *
+   * You may omit this when you hand your requirements to `RQServer.start` as a keyed object - for
+   * instance a module of definitions - in which case the name the requirement is registered under
+   * becomes its key, and you avoid writing the same identifier twice:.
+   * Set `key` explicitly whenever a key needs to outlive a rename.
    */
-  key: string
+  key?: string
 
   type: RequirementType
 
@@ -88,7 +94,7 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    * information, and we don't know until we run `resolve` whether the next prompt will be necessary, so
    * we cannot add it to the navigation structure until we know we need it.
    */
-  promptKeys?: string[]
+  promptKeys?: PromptKey[]
 
   /**
    * Prompts listed as `promptKeys` will be revealed to the user in the order provided. The user
@@ -113,7 +119,7 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    *   the same prompt appearing twice in the navigation is confusing.
    * - The user cannot proceed unless they happen to go back and answer prompt B under Requirement 1.
    */
-  promptKeysAnyOrder?: string[]
+  promptKeysAnyOrder?: PromptKey[]
 
   /**
    * An array of prompt keys for prompts that this requirement depends on, but that should not be
@@ -136,7 +142,7 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    * that case, list the prompt as `{ key: 'some_prompt', gate: false }` and `resolve` will be
    * called with `undefined` for it until (and unless) it is answered. See `NoDisplayPromptKey`.
    */
-  promptKeysNoDisplay?: (string | NoDisplayPromptKey)[]
+  promptKeysNoDisplay?: (PromptKey | NoDisplayPromptKey)[]
 
   /**
    * Provide a function that can evaluate the requirement based on answers to prompts.
@@ -149,6 +155,17 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    * it is returning. This will be shown to the applicant. It's unlikely a reason is needed
    * for the MET status, but it will be shown if provided. Note that the application will
    * only ever show a single reason, the last one provided by a failing or pending requirement.
+   *
+   * Optionally provide `blame`, an array of prompt keys naming the answer or answers responsible
+   * for the status you are returning. The reviewer UI attaches the status indicator to those
+   * prompts instead of every prompt this requirement consults, so a requirement that reads three
+   * answers can point at the one that actually failed. Omit it and all of this requirement's
+   * prompts are indicated, which is the historical behavior and is usually right for a
+   * requirement that only has one prompt. The keys need not belong to this requirement - a
+   * reviewer requirement may blame the upstream applicant prompt whose answer it just judged.
+   * The keys are checked at compile time against the prompts your project registers, so a typo or a
+   * key you have since renamed will not compile. Nothing is filtered at runtime, though: a key
+   * naming a prompt the viewer cannot currently see simply has no effect.
    *
    * These values will be cached until the appRequest is updated in some way.
    *
@@ -167,7 +184,7 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
    * explicitly allowed to show up late and change this requirement's determination. Anything
    * you receive that way may be `undefined` on one call and populated on the next.
    */
-  resolve: (appRequestData: AppRequestData, config: ConfigurationDataType, configLookup: Record<string, any>) => { status: RequirementStatus, reason?: string }
+  resolve: (appRequestData: AppRequestData, config: ConfigurationDataType, configLookup: Record<string, any>) => { status: RequirementStatus, reason?: string, blame?: PromptKey[] }
   /**
    * Often, you will want to allow application administrators to control various aspects of
    * how requirements will be evaluated. For example, you might want administrators to
@@ -183,6 +200,7 @@ export interface RequirementDefinition<ConfigurationDataType = any> {
 }
 
 export interface RequirementDefinitionProcessed extends RequirementDefinition {
+  key: string
   allPromptKeys: string[]
   visiblePromptKeys: string[]
   visiblePrompts: Prompt[]
@@ -203,13 +221,20 @@ class RequirementRegistry {
   // registered so that historical data can be interpreted/rendered
   public reachable: RequirementDefinitionProcessed[] = []
 
-  register (definition: RequirementDefinition) {
+  /**
+   * `registeredName` is the name the definition was handed over under.
+   * It becomes the requirement's key unless the definition carries an explicit one.
+   */
+  register (definition: RequirementDefinition, registeredName?: string) {
+    const key = definition.key ?? registeredName
+    if (key == null) throw new Error('Registered a requirement with no key. Either set `key` on the definition, or pass your requirements to RQServer.start as a keyed object (e.g. `requirements: myRequirements`) so the name each is exported under can be used.')
     const noDisplayEntries = (definition.promptKeysNoDisplay ?? []).map(entry => typeof entry === 'string' ? { key: entry, gate: true } : { gate: true, ...entry })
     const noDisplayPromptKeys = noDisplayEntries.map(entry => entry.key)
     const allPromptKeys = [...(definition.promptKeys ?? []), ...(definition.promptKeysAnyOrder ?? []), ...noDisplayPromptKeys]
     const visiblePromptKeys = [...(definition.promptKeys ?? []), ...(definition.promptKeysAnyOrder ?? [])]
     const definitionProcessed: RequirementDefinitionProcessed = {
       ...definition,
+      key,
       allPromptKeys,
       visiblePromptKeys,
       visiblePrompts: [],
@@ -218,14 +243,14 @@ class RequirementRegistry {
       noDisplayPromptKeySet: new Set(noDisplayPromptKeys),
       ungatedPromptKeySet: new Set(noDisplayEntries.filter(entry => !entry.gate).map(entry => entry.key))
     }
-    this.requirements[definition.key] = definitionProcessed
+    this.requirements[key] = definitionProcessed
     this.requirementsList.push(definitionProcessed)
     if (applicantRequirementTypes.has(definition.type)) {
       // deliberately not allPromptKeys: a no-display prompt is never shown to the applicant, so it
       // must not become one of their prompts just because an applicant requirement reads it
-      for (const key of visiblePromptKeys) promptRegistry.setUserPrompt(key)
+      for (const promptKey of visiblePromptKeys) promptRegistry.setUserPrompt(promptKey)
     }
-    if (isNotEmpty(definition.configuration?.schema)) this.configValidators[definition.key] = registryAjv.compile(definition.configuration.schema)
+    if (isNotEmpty(definition.configuration?.schema)) this.configValidators[key] = registryAjv.compile(definition.configuration.schema)
   }
 
   keys () {

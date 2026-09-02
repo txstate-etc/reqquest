@@ -7,6 +7,7 @@ import db from 'mysql2-async/db'
 import { Cache, isNotBlank, isNotEmpty, sortby } from 'txstate-utils'
 import { AppRequest, getIndexesInUse, Period, programRegistry, PROMPT_PRESTAGE_NS, requirementRegistry, RQContext, TagDefinition, type AppRequestData, type PromptPreStagingRecurrence } from '../internal.js'
 import type { Queryable } from 'mysql2-async'
+import type { PromptKey } from './keys.js'
 
 export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVersion'>> {
   /**
@@ -19,7 +20,7 @@ export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVer
   up: (data: DataType) => DataType | Promise<DataType>
 }
 
-export interface PromptIndexDefinition<PromptKey extends string = string, DataType = any> {
+export interface PromptIndexDefinition<KeyLiteral extends string = string, DataType = any> {
   /**
    * A unique, case-insensitive, stable key for the index. This will be used to namespace
    * individual index values.
@@ -62,7 +63,7 @@ export interface PromptIndexDefinition<PromptKey extends string = string, DataTy
    * Provide a function that will take the data from the AppRequest and return any index
    * values that are associated.
    */
-  extract: (data: AppRequestData & Record<PromptKey, DataType>) => string[]
+  extract: (data: AppRequestData & Record<KeyLiteral, DataType>) => string[]
   /**
    * This function should return a tag label for the given value in this category. This is used to
    * display the tags on a saved grant or generated from the AppRequest.
@@ -75,7 +76,7 @@ export interface PromptIndexDefinition<PromptKey extends string = string, DataTy
   getLabel?: (tag: string) => Promise<string | undefined> | string | undefined
 }
 
-export interface PromptTagDefinition<PromptKey extends string = string, DataType = any> extends PromptIndexDefinition<PromptKey, DataType> {
+export interface PromptTagDefinition<KeyLiteral extends string = string, DataType = any> extends PromptIndexDefinition<KeyLiteral, DataType> {
   /**
    * A brief sentence or two describing the tag category. This will be shown to administrators to help
    * explain the full meaning of the tag category as they are assigning permissions.
@@ -165,7 +166,7 @@ export interface ConfigurationDefinition<ConfigurationInputType = any, Configura
   default?: ConfigurationDataType
 }
 
-export interface PromptDefinition<DataType = any, InputDataType = DataType, PrestageDataType = any, ConfigurationDataType = any, FetchType = any, KeyLiteral extends string = string> {
+export interface PromptDefinition<DataType = any, InputDataType = DataType, PrestageDataType = any, ConfigurationDataType = any, FetchType = any> {
   /**
    * A globally unique, human and machine readable key. This will be used to match up with
    * the UI definition and identify the prompt's answers stored in the database. Use lowercase
@@ -173,8 +174,13 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Pres
    *
    * Do not use the same key for a prompt and a requirement, as the keys will be used as
    * tag names in our authorization scheme and need to not clash.
+   *
+   * You may omit this when you hand your prompts to `RQServer.start` as a keyed object - for
+   * instance a module of definitions - in which case the name the prompt is registered under
+   * becomes its key, and you avoid writing the same identifier twice. Set `key`
+   * explicitly whenever a key needs to outlive a rename.
    */
-  key: KeyLiteral
+  key?: string
   /**
    * Display title for the prompt. Will be shown to any user that can see the prompt.
    */
@@ -361,19 +367,19 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Pres
    * version of the software. Takes the full request data object instead of the data
    * from this individual prompt so that we can perform merges and splits.
    */
-  migrations?: AppRequestMigration<Omit<AppRequestData, 'savedAtVersion'> & { [K in KeyLiteral]: DataType }>[]
+  migrations?: AppRequestMigration[]
 
   /**
    * Optionally provide index types that can be calculated based on the data from this prompt. The indexes
    * can be used to filter AppRequests, and optionally can be displayed in tables listing AppRequests.
    */
-  indexes?: PromptIndexDefinition<KeyLiteral, DataType>[]
+  indexes?: PromptIndexDefinition<string, DataType>[]
   /**
    * Optionally provide tag types that can be calculated based on the data from this prompt. These
    * tags will be made available for limiting the scope of roles that relate to AppRequests. Tags
    * are also indexes, you don't need to provide them in both places.
    */
-  tags?: PromptTagDefinition<KeyLiteral, DataType>[]
+  tags?: PromptTagDefinition<string, DataType>[]
   /**
    * Optionally provide a function that can preprocess the data from this prompt before it is
    * saved to the database. This is useful for prompts that need to do some processing on the
@@ -419,13 +425,21 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Pres
   optOut?: boolean
 }
 
+/**
+ * A prompt definition after registration, when its key, either the one it declared or the name it
+ * was registered under, has been resolved and stamped onto it.
+ */
+export interface PromptDefinitionProcessed extends PromptDefinition {
+  key: string
+}
+
 export interface InvalidatedResponse {
-  promptKey: string
+  promptKey: PromptKey
   reason?: string
 }
 
 export type InvalidatorFunction = (data: any, config: any, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) => InvalidatedResponse[]
-export type RevalidatorFunction = (data: any, config: any, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) => string[]
+export type RevalidatorFunction = (data: any, config: any, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>) => PromptKey[]
 
 const labelLookupCache = new Cache(async (tag: { category: string, value: string }) => {
   return await (promptRegistry as any).indexLookups[tag.category]?.(tag.value) ?? tag.value
@@ -454,8 +468,8 @@ addFormats(registryAjv)
 addErrors(registryAjv)
 
 class PromptRegistry {
-  protected prompts: Record<string, PromptDefinition> = {}
-  protected promptsList: PromptDefinition[] = []
+  protected prompts: Record<string, PromptDefinitionProcessed> = {}
+  protected promptsList: PromptDefinitionProcessed[] = []
   protected userPrompts: Set<string> = new Set()
   protected unsortedMigrations: AppRequestMigration[] = []
   protected sortedMigrations: AppRequestMigration[] = []
@@ -466,18 +480,26 @@ class PromptRegistry {
   public indexCategories: PromptIndexDefinition[] = []
   public indexCategoryMap: Record<string, PromptIndexDefinition> = {}
   public tagCategories: PromptTagDefinition[] = []
-  public reachable: PromptDefinition[] = []
+  public reachable: PromptDefinitionProcessed[] = []
   public authorizationKeys: Record<string, string[]> = {}
 
-  register (prompt: PromptDefinition) {
-    this.prompts[prompt.key] = prompt
-    this.promptsList.push(prompt)
+  /**
+   * `registeredName` is the name the definition was handed over under.
+   * It becomes the prompt's key unless the definition carries an explicit one.
+   */
+  register (prompt: PromptDefinition, registeredName?: string) {
+    const key = prompt.key ?? registeredName
+    if (key == null) throw new Error('Registered a prompt with no key. Either set `key` on the definition, or pass your prompts to RQServer.start as a keyed object (e.g. `prompts: myPrompts`) so the name each is exported under can be used.')
+    const processed = prompt as PromptDefinitionProcessed
+    processed.key = key
+    this.prompts[key] = processed
+    this.promptsList.push(processed)
     this.unsortedMigrations.push(...(prompt.migrations ?? []))
-    if (isNotEmpty(prompt.schema)) this.validators[prompt.key] = registryAjv.compile(prompt.schema)
-    if (isNotEmpty(prompt.configuration?.schema)) this.configValidators[prompt.key] = registryAjv.compile(prompt.configuration.schema)
-    if (prompt.invalidUponChange == null) this.promptInvalidators[prompt.key] = () => []
-    else if (Array.isArray(prompt.invalidUponChange)) this.promptInvalidators[prompt.key] = () => prompt.invalidUponChange as InvalidatedResponse[]
-    else this.promptInvalidators[prompt.key] = prompt.invalidUponChange
+    if (isNotEmpty(prompt.schema)) this.validators[key] = registryAjv.compile(prompt.schema)
+    if (isNotEmpty(prompt.configuration?.schema)) this.configValidators[key] = registryAjv.compile(prompt.configuration.schema)
+    if (prompt.invalidUponChange == null) this.promptInvalidators[key] = () => []
+    else if (Array.isArray(prompt.invalidUponChange)) this.promptInvalidators[key] = () => prompt.invalidUponChange as InvalidatedResponse[]
+    else this.promptInvalidators[key] = prompt.invalidUponChange
   }
 
   get (key: string) {

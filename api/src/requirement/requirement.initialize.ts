@@ -16,12 +16,20 @@ export const requirementMigrations: DatabaseMigration[] = [
           evaluationOrder SMALLINT UNSIGNED NOT NULL DEFAULT 0,
           status VARCHAR(255) NOT NULL DEFAULT 'PENDING',
           statusReason TEXT,
+          blame TEXT,
           FOREIGN KEY (appRequestId) REFERENCES app_requests (id),
           FOREIGN KEY (applicationId) REFERENCES applications (id),
           INDEX (requirementKey),
           INDEX (status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `)
+    }
+  },
+  {
+    id: '20260824000000',
+    async execute (db: Queryable) {
+      const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_NAME = 'application_requirements' AND COLUMN_NAME = 'blame'")
+      if (!exists) await db.execute('ALTER TABLE application_requirements ADD COLUMN blame TEXT NULL AFTER statusReason')
     }
   }
 ]

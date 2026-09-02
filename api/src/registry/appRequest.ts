@@ -1,6 +1,7 @@
 import { FastifyRequest } from 'fastify'
 import { AccessUser, AccessUserCategoryInput, AccessUserIdentifierInput, ApplicationPhase, AppRequest, AppRequestStatus, CategoryTag, RQContext, RQContextClass } from '../internal.js'
 import { DateTime } from 'luxon'
+import type { ProgramKey } from './keys.js'
 
 export interface AppRequestData {
   [keys: string]: any
@@ -167,7 +168,7 @@ export interface AppDefinition {
      *
      * This hook will not fire on app request creation, use `appRequestStatus` instead.
      */
-    applicationPhase?: (ctx: RQContext, appRequest: AppRequest, programKey: string, oldPhase: ApplicationPhase) => void | Promise<void>
+    applicationPhase?: (ctx: RQContext, appRequest: AppRequest, programKey: ProgramKey, oldPhase: ApplicationPhase) => void | Promise<void>
     /**
      * Code that should run any time a prompt for an app request is updated. Useful for
      * triggering automations or email notifications. Will only be called if the old data
@@ -181,6 +182,7 @@ export interface AppDefinition {
   emailConfig: {
     appName: string
     signature: string
+    from: string
   } & Record<string, string>
 }
 

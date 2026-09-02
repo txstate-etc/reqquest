@@ -1,5 +1,6 @@
 import type { LayoutStructureNode, LayoutStructureNodeRoot, UserProfile } from '@txstate-mws/carbon-svelte'
 import type { Component } from 'svelte'
+import type { ProgramKey, PromptKey, RequirementKey } from './keys.js'
 import { plural } from 'txstate-utils'
 
 export interface PromptLoader {
@@ -15,10 +16,10 @@ export type Loader = PromptLoader | boolean
 
 export interface ProgramDefinition {
   /**
-   * The key for the program. Allows us to match up API programs with
-   * the appropriate definition.
+   * The key of the program this decorates. Autocompletes and rejects unknown keys once the project
+   * generates a key declaration; plain `string` until then.
    */
-  key: string
+  key: ProgramKey
   /**
    * An icon to represent this program in the navigation.
    */
@@ -27,10 +28,10 @@ export interface ProgramDefinition {
 
 export interface RequirementDefinition {
   /**
-   * The key for the requirement. Allows us to match up API requirements with
-   * the appropriate definition.
+   * The key of the requirement this decorates. Autocompletes and rejects unknown keys once the
+   * project generates a key declaration; plain `string` until then.
    */
-  key: string
+  key: RequirementKey
   /**
    * An icon to represent this requirement in the navigation. Requirements do not appear
    * in the navigation in the applicant's view.
@@ -47,7 +48,11 @@ export interface RequirementDefinition {
 }
 
 export interface PromptDefinition {
-  key: string
+  /**
+   * The key of the prompt this renders. Autocompletes and rejects unknown keys once the project
+   * generates a key declaration; plain `string` until then.
+   */
+  key: PromptKey
   /**
    * The component that will be used to render the form for this prompt.
    *
@@ -170,11 +175,31 @@ export interface Terminologies {
 /**
  * A type for the config object that should be exported from a CMS instance's admin/local/index.js
  * to configure how that instance should work.
+ *
+ * Each of the three definition lists accepts either an array or a keyed object. **Prefer the keyed
+ * object.** An array can only reject a key the API does not have; it can never require the keys the
+ * API *does* have, so a prompt added on the API side and forgotten here compiles cleanly and fails
+ * in front of an applicant. The keyed form turns that into a build error, and also rejects
+ * duplicate keys, which an array silently resolves last-wins.
+ *
+ * `prompts` is the only list whose coverage is *required*, because it is the only one that is load
+ * bearing: a `PromptDefinition` supplies the component that renders the screen. `requirements` and
+ * `programs` carry optional decoration - an icon, a configuration component - and leaving one out
+ * is a supported choice, so their keyed form is partial. Both still reject unknown keys.
+ *
+ * This degrades on its own: `PromptKey` is `string` until a project generates a key declaration
+ * (see keys.ts), and `{ [K in string]: ... }` requires nothing - so an unaugmented project keeps
+ * working exactly as before.
+ *
+ * The type parameters exist for repos holding several applications, where the generated union spans
+ * all of them and no single config could satisfy it. Generate per-application aliases with the
+ * analyzer's `--groups` flag and instantiate against one, e.g.
+ * `UIConfig<SimplePromptKey, SimpleRequirementKey, SimpleProgramKey>`.
  */
-export interface UIConfig {
-  programs: ProgramDefinition[]
-  requirements: RequirementDefinition[]
-  prompts: PromptDefinition[]
+export interface UIConfig<PK extends string = PromptKey, RK extends string = RequirementKey, GK extends string = ProgramKey> {
+  programs: ProgramDefinition[] | { [K in GK]?: Omit<ProgramDefinition, 'key'> }
+  requirements: RequirementDefinition[] | { [K in RK]?: Omit<RequirementDefinition, 'key'> }
+  prompts: PromptDefinition[] | { [K in PK]: Omit<PromptDefinition, 'key'> }
   /**
    * 
    * @param login 
@@ -287,6 +312,39 @@ export interface UIConfigWithDefaults extends UIConfig {
   plural: Required<Terminologies>
 }
 
+/**
+ * Any `UIConfig`, whichever key unions it was written against. `UIRegistry` accepts this rather
+ * than `UIConfig` itself: a `UIConfig<SimplePromptKey>` is not assignable to `UIConfig<PromptKey>`
+ * when the unions differ, and TypeScript does not allow a generic constructor to bridge them.
+ *
+ * Nothing is lost by widening here. Exhaustiveness is enforced where the config literal is written
+ * (`const config: UIConfig<SimplePromptKey, ...> = { ... }`), which is the only place that knows
+ * which application it belongs to.
+ */
+export type AnyUIConfig = Omit<UIConfig, 'programs' | 'requirements' | 'prompts'> & {
+  programs: ProgramDefinition[] | Record<string, Omit<ProgramDefinition, 'key'> | undefined>
+  requirements: RequirementDefinition[] | Record<string, Omit<RequirementDefinition, 'key'> | undefined>
+  prompts: PromptDefinition[] | Record<string, Omit<PromptDefinition, 'key'>>
+}
+
+/**
+ * Accepts either shape of a definition list and returns a key -> definition map. The keyed form
+ * carries its key in the object key, so it is grafted back on to keep every consumer's
+ * `definition.key` working.
+ */
+function toDefinitionMap<T extends { key: string }> (definitions: T[] | Record<string, Omit<T, 'key'> | undefined>): Record<string, T> {
+  const map: Record<string, T> = {}
+  if (Array.isArray(definitions)) {
+    for (const definition of definitions) map[definition.key] = definition
+  } else {
+    // an explicit `undefined` value is a hole in a partial record, not a registration
+    for (const [key, definition] of Object.entries(definitions)) {
+      if (definition != null) map[key] = { ...definition, key } as T
+    }
+  }
+  return map
+}
+
 export class UIRegistry {
   protected promptMap: Record<string, PromptDefinition> = {}
   protected requirementMap: Record<string, RequirementDefinition> = {}
@@ -294,13 +352,21 @@ export class UIRegistry {
   protected userLookup?: (login: string) => Promise<UserProfile | undefined>
   protected lang: Required<Terminologies>
   protected plural: Required<Terminologies>
-  constructor (public config: UIConfig) {
-    for (const prompt of config.prompts) this.promptMap[prompt.key] = prompt
-    for (const requirement of config.requirements) this.requirementMap[requirement.key] = requirement
-    for (const program of config.programs) this.programMap[program.key] = program
+  /**
+   * Widened to `AnyUIConfig` rather than `UIConfig`: a narrow `UIConfig<SimplePromptKey>` is not
+   * assignable to `UIConfig<PromptKey>` when the unions differ. Keeping the three definition lists
+   * on the type (instead of `Omit`ing them away) matters for consumers that read
+   * `uiRegistry.config.prompts` - dropping them would be a breaking change.
+   */
+  public config: AnyUIConfig
+  constructor (config: AnyUIConfig) {
+    this.config = config
+    this.promptMap = toDefinitionMap<PromptDefinition>(config.prompts)
+    this.requirementMap = toDefinitionMap<RequirementDefinition>(config.requirements)
+    this.programMap = toDefinitionMap<ProgramDefinition>(config.programs)
     this.userLookup = config.userLookup 
     this.lang = {
-      appRequest: config.terminology?.appRequest ?? (config.programs.length > 1 ? 'App Request' : 'Application'),
+      appRequest: config.terminology?.appRequest ?? (Object.keys(this.programMap).length > 1 ? 'App Request' : 'Application'),
       login: config.terminology?.login ?? 'Login',
       period: config.terminology?.period ?? 'Period'
     }
@@ -319,14 +385,42 @@ export class UIRegistry {
   }
 
   getPrompt (key: string): PromptDefinition | undefined {
-    return this.promptMap[key]
+    return this.warnIfMissing('prompt', key, this.promptMap[key])
   }
 
   getRequirement (key: string): RequirementDefinition | undefined {
-    return this.requirementMap[key]
+    return this.warnIfMissing('requirement', key, this.requirementMap[key])
   }
 
   getProgram (key: string): ProgramDefinition | undefined {
-    return this.programMap[key]
+    return this.warnIfMissing('program', key, this.programMap[key])
+  }
+
+  /**
+   * `UIConfig` keeps this UI in step with the API it was built against.
+   *  Keys arrive here from the API at runtime, so these stay `string` rather than the key unions.
+   */
+  protected warnedMissing = new Set<string>()
+  /**
+   * This is the ONLY runtime signal that the UI is missing a definition, so it is deliberately NOT
+   * gated on a dev-only build flag. Coverage is enforced at build time (see UIConfig's keyed form),
+   * but that gate lives in this repo's tooling and does not ship to downstream projects - a project
+   * that never wires its own type check has nothing but this line. Staying silent in production is
+   * how a missing prompt turns into an unexplained blank spot on an applicant's form.
+   * The `warnedMissing` set keeps it to one line per key, so a list of 200 prompts cannot spam.
+   *
+   * Severity splits by kind because the kinds are not equally load-bearing. A `PromptDefinition`
+   * supplies the component that actually renders the screen, so a missing one breaks a page.
+   * `RequirementDefinition` and `ProgramDefinition` carry only optional decoration - an icon, a
+   * configuration component - and every consumer optional-chains them. Leaving one unregistered is
+   * a supported choice, so it warns rather than errors.
+   */
+  protected warnIfMissing<T> (kind: string, key: string, definition: T | undefined) {
+    if (definition == null && !this.warnedMissing.has(kind + ':' + key)) {
+      this.warnedMissing.add(kind + ':' + key)
+      const log = kind === 'prompt' ? console.error : console.warn
+      log(`[reqquest] The API returned a ${kind} \`${key}\` that this UI has no definition for. Add it to your UIConfig, or regenerate your key declaration if the API has changed.`)
+    }
+    return definition
   }
 }

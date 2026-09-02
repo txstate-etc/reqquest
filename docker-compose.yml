@@ -29,6 +29,7 @@ services:
       - ./api/src:/usr/app/api/src
       - ./api/dist:/usr/app/api/dist
       - ./demos/src:/usr/app/demos/src
+      - ./ui/src/local/keys.generated.d.ts:/usr/app/ui/src/local/keys.generated.d.ts
   ui:
     build:
       context: .

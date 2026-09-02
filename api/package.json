@@ -1,16 +1,29 @@
 {
   "name": "@reqquest/api",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "type": "module",
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./analysis": {
+      "types": "./dist/analysis/index.d.ts",
+      "default": "./dist/analysis/index.js"
+    }
   },
   "types": "./dist/index.d.ts",
   "scripts": {
     "prepublishOnly": "npm run build",
-    "build": "rm -rf dist/* && tsc"
+    "build": "rm -rf dist/* && tsc",
+    "analyze:prompts": "node dist/analysis/cli.js"
   },
   "license": "MIT",
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^4.0.0",
     "@types/luxon": "^3.3.1",

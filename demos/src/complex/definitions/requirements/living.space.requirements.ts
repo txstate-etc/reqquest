@@ -13,9 +13,11 @@ export const living_space_qual_req: RequirementDefinition<LivingSpaceConfigRequi
   resolve: (data, config) => {
     const LivingSpacePromptData = data.living_space_prompt as LivingSpacePromptData
     const CurrentCatOwnerPromptData = data.current_catowner_prompt as CurrentCatOwnerPromptData
-    if (LivingSpacePromptData == null || CurrentCatOwnerPromptData == null) return { status: RequirementStatus.PENDING }
+    // one return per prompt so the key sits in a literal the compiler can autocomplete
+    if (CurrentCatOwnerPromptData == null) return { status: RequirementStatus.PENDING, blame: ['current_catowner_prompt'] }
+    if (LivingSpacePromptData == null) return { status: RequirementStatus.PENDING, blame: ['living_space_prompt'] }
     const minFutureCatCount = (CurrentCatOwnerPromptData.count == null) ? 1 : CurrentCatOwnerPromptData.count + 1
-    if ((config!.minSqftPerCat! * minFutureCatCount) > LivingSpacePromptData.sqftLivingSpace!) return { status: RequirementStatus.WARNING, reason: 'Living space is not sufficient for adopting an additional cat. Waivers available case-by-case.' }
+    if ((config!.minSqftPerCat! * minFutureCatCount) > LivingSpacePromptData.sqftLivingSpace!) return { status: RequirementStatus.WARNING, reason: 'Living space is not sufficient for adopting an additional cat. Waivers available case-by-case.', blame: ['living_space_prompt'] }
     return { status: RequirementStatus.MET }
   },
   configuration: {

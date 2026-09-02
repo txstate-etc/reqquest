@@ -96,6 +96,7 @@ export class ApplicationRequirementService extends AuthService<ApplicationRequir
     if (redactStatus) {
       ret.status = RequirementStatus.PENDING
       ret.statusReason = undefined
+      ret.blame = undefined
     }
     return ret
   }

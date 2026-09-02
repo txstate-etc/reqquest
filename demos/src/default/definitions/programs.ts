@@ -1,8 +1,6 @@
 import type { ProgramDefinition } from '@reqquest/api'
-import { other_cats_reviewer_req } from './requirements/cat.requirements.js'
 
 const adopt_a_dog_program: ProgramDefinition = {
-  key: 'adopt_a_dog_program',
   title: 'Adopt a Dog',
   applicantDescription: 'Matches you with a shelter dog looking for a forever home.',
   eligibilityDescription: 'Adopting a dog requires living in an eligible state and having a yard and living space large enough for the dog, plus a commitment to regular exercise.',
@@ -14,7 +12,7 @@ const adopt_a_dog_program: ProgramDefinition = {
   ]
 }
 
-const adopt_a_cat_program: ProgramDefinition = {
+const cat_program_with_legacy_key: ProgramDefinition = {
   key: 'adopt_a_cat_program',
   title: 'Adopt a Cat',
   applicantDescription: 'Matches you with a shelter cat looking for a forever home.',
@@ -23,13 +21,17 @@ const adopt_a_cat_program: ProgramDefinition = {
     'which_state_req',
     'have_a_cat_tower_req',
     'other_cats_applicant_req',
-    other_cats_reviewer_req.key,
+    'other_cats_reviewer_req',
     'not_allergic_to_tuna_req',
     'applicant_seems_nice_req'
   ]
 }
 
-export const defaultPrograms = [
+/**
+ * Declared order is preserved and is meaningful. Do not convert this to `import * as` - a module
+ * namespace iterates alphabetically rather than in declared order, and RQServer.start rejects one.
+ */
+export const defaultPrograms = {
   adopt_a_dog_program,
-  adopt_a_cat_program
-]
+  cat_program_with_legacy_key
+}

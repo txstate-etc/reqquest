@@ -1,8 +1,19 @@
 {
 	"extends": "./.svelte-kit/tsconfig.json",
 	"compilerOptions": {
-    "lib": ["es2015", "dom"],
+		"lib": ["es2015", "dom"],
 		"sourceMap": true,
-		"strictNullChecks": true
+		"strictNullChecks": true,
+		"skipLibCheck": true,
+		// NOTE: a child `paths` REPLACES the parent's, so SvelteKit's generated aliases are restated
+		// below. If .svelte-kit/tsconfig.json ever gains a new alias, add it here too.
+		"paths": {
+			"@reqquest/ui": ["./src/lib"],
+			"$lib": ["./src/lib"],
+			"$lib/*": ["./src/lib/*"],
+			"$internal": ["./src/internal"],
+			"$internal/*": ["./src/internal/*"],
+			"$app/types": ["./.svelte-kit/types/index.d.ts"]
+		}
 	}
 }

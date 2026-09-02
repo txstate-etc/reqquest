@@ -299,11 +299,12 @@ class API extends APIBase {
           }
           appRequest {
             data
+            dataVersion
           }
         }
       }
     `, { promptId, data, validateOnly, dataVersion, overrideInvalidated })
-    return { ...this.mutationForDialog(response.updatePrompt), data: response.updatePrompt.appRequest.data }
+    return { ...this.mutationForDialog(response.updatePrompt), data: response.updatePrompt.appRequest.data, dataVersion: response.updatePrompt.appRequest.dataVersion as number | undefined }
   }
 
   async updateConfiguration (periodId: string, definitionKey: string, data: any, validateOnly: boolean) {
@@ -902,6 +903,7 @@ class API extends APIBase {
       appRequests: {
         __args: { filter: { ids: [appRequestId] } },
         id: true,
+        dataVersion: true,
         status: true,
         phase: true,
         createdAt: true,
@@ -941,6 +943,7 @@ class API extends APIBase {
             title: true,
             status: true,
             statusReason: true,
+            blame: true,
             workflowStage: {
               key: true,
               title: true,
@@ -1037,6 +1040,7 @@ class API extends APIBase {
       __name: 'GetPromptData',
       appRequests: {
         __args: { filter: { ids: [appRequestId] } },
+        dataVersion: true,
         prompt: {
           __args: { promptId },
           data: true,
@@ -1049,7 +1053,7 @@ class API extends APIBase {
       }
     })
     const appRequest = response.appRequests[0]
-    return appRequest.prompt
+    return { ...appRequest.prompt, dataVersion: appRequest.dataVersion }
   }
 
   async getPromptDataLegion (appRequestId: string, promptIds: string[]) {

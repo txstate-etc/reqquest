@@ -1,7 +1,5 @@
 import { ProgramDefinition, AppRequestPhase, WorkflowStage } from '@reqquest/api'
 
-
-
 const overrideGpaWarningWorkflow: WorkflowStage = {
   key: 'override_gpa_warning',
   nonBlocking: true,
@@ -10,9 +8,7 @@ const overrideGpaWarningWorkflow: WorkflowStage = {
   requirementKeys: ['reviewer_override_gpa_warning_req']
 }
 
-
-const operationsInfrastructure: ProgramDefinition = {
-  key: 'operations_infrastructure',
+const operations_infrastructure: ProgramDefinition = {
   title: 'Operations & Infrastructure',
   requirementKeys: [
     'operations_infrastructure_opt_out_req',
@@ -28,8 +24,7 @@ const operationsInfrastructure: ProgramDefinition = {
     overrideGpaWarningWorkflow
   ]
 }
-const softwareDevelopment: ProgramDefinition = {
-  key: 'software_development',
+const software_development: ProgramDefinition = {
   title: 'Software Development',
   requirementKeys: [
     'software_dev_opt_out_req',
@@ -44,7 +39,7 @@ const softwareDevelopment: ProgramDefinition = {
     'assess_reccomendation_lettern_req'
   ],
   workflowStages: [
-    overrideGpaWarningWorkflow,   
+    overrideGpaWarningWorkflow,
     {
       key: 'software_development_blocking_second_eyes',
       nonBlocking: false,
@@ -79,8 +74,7 @@ const softwareDevelopment: ProgramDefinition = {
     }
   ]
 }
-const projectManagement: ProgramDefinition = {
-  key: 'project_management',
+const project_management: ProgramDefinition = {
   title: 'Project Management',
   requirementKeys: [
     'project_management_opt_out_req',
@@ -98,8 +92,7 @@ const projectManagement: ProgramDefinition = {
     overrideGpaWarningWorkflow
   ]
 }
-const applicationManagement: ProgramDefinition = {
-  key: 'application_management_support',
+const application_management_support: ProgramDefinition = {
   title: 'Application Management & Support',
   requirementKeys: [
     'application_management_opt_out_req',
@@ -118,9 +111,13 @@ const applicationManagement: ProgramDefinition = {
   ]
 }
 
-export const rcPrograms = [
-  operationsInfrastructure,
-  softwareDevelopment,
-  projectManagement,
-  applicationManagement
-]
+/**
+ * Declared order is preserved and is meaningful. Do not convert this to `import * as` - a module
+ * namespace iterates alphabetically rather than in declared order, and RQServer.start rejects one.
+ */
+export const rcPrograms = {
+  operations_infrastructure,
+  software_development,
+  project_management,
+  application_management_support
+}

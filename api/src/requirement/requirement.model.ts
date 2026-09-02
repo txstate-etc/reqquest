@@ -107,6 +107,7 @@ export class ApplicationRequirement extends Requirement {
     this.userInternalId = row.userId
     this.status = row.status
     this.statusReason = row.statusReason
+    this.blame = row.blame ? JSON.parse(row.blame) : undefined
     this.workflowStageKey = row.workflowStage
     this.workflowStageDefinition = row.workflowStage ? programRegistry.workflowStagesByKey[row.workflowStage] : undefined
   }
@@ -126,6 +127,7 @@ export class ApplicationRequirement extends Requirement {
       evaluationOrder: req.evaluationOrder,
       status: req.status,
       statusReason: req.statusReason,
+      blame: req.blame?.length ? JSON.stringify(req.blame) : undefined,
       workflowStage: req.workflowStageKey
     })
   }
@@ -138,6 +140,9 @@ export class ApplicationRequirement extends Requirement {
 
   @Field({ nullable: true, description: 'The reason why the requirement is in the status it is in. This will be shown to the applicant.' })
   statusReason?: string
+
+  @Field(type => [String], { nullable: true, description: 'The prompt keys the requirement named as responsible for its current status. Used to attach status indicators to the specific answers at fault instead of every prompt the requirement consults. Null when the requirement did not name any, in which case all of its prompts are implicated.' })
+  blame?: string[]
 }
 
 @InputType()

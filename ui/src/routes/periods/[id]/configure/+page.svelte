@@ -4,7 +4,7 @@
   import { keyby } from 'txstate-utils'
   import { invalidate } from '$app/navigation'
   import { page } from '$app/stores'
-  import { api, PeriodPanel } from '$internal'
+  import { api, MissingDefinitionNotification, PeriodPanel } from '$internal'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../local'
 
@@ -111,13 +111,20 @@
   {#if editingConfigurationType === 'prompt'}
     {@const def = uiRegistry.getPrompt(editingConfigurationDef.key)}
     <PanelFormDialog open submit={onSubmit} validate={onValidate} title="Edit Configuration" on:cancel={closeConfigurationDialog} on:saved={onSaved} preload={editingConfigurationDef.configuration.data} fetched={editingConfigurationFetched} let:data>
-      <svelte:component this={def!.configureComponent} {data} fetched={editingConfigurationFetched} />
+      {#if def?.configureComponent == null}
+        <MissingDefinitionNotification kind="prompt" definitionKey={editingConfigurationDef.key} />
+      {:else}
+        <svelte:component this={def.configureComponent} {data} fetched={editingConfigurationFetched} />
+      {/if}
     </PanelFormDialog>
   {:else}
     {@const def = uiRegistry.getRequirement(editingConfigurationDef.key)}
-    <p>{JSON.stringify(def!.configureComponent)}</p>
     <PanelFormDialog open submit={onSubmit} validate={onValidate} title="Edit Configuration" on:cancel={closeConfigurationDialog} on:saved={onSaved} preload={editingConfigurationDef.configuration.data} fetched={editingConfigurationFetched} let:data>
-      <svelte:component this={def!.configureComponent} {data} fetched={editingConfigurationFetched}/>
+      {#if def?.configureComponent == null}
+        <MissingDefinitionNotification kind="requirement" definitionKey={editingConfigurationDef.key} />
+      {:else}
+        <svelte:component this={def.configureComponent} {data} fetched={editingConfigurationFetched}/>
+      {/if}
     </PanelFormDialog>
   {/if}
 {/if}

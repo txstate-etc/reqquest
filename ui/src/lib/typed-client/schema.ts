@@ -445,6 +445,8 @@ export type ApplicationPhase = 'ACCEPTANCE' | 'APPROVAL' | 'COMPLETE' | 'PREAPPR
 /** The specific instance of a requirement on a particular application. Stores the status of the requirement, e.g. being satisfied or not. */
 export interface ApplicationRequirement {
     application: Application
+    /** The prompt keys the requirement named as responsible for its current status. Used to attach status indicators to the specific answers at fault instead of every prompt the requirement consults. Null when the requirement did not name any, in which case all of its prompts are implicated. */
+    blame: (Scalars['String'][] | null)
     /** The configuration data for this requirement in the app request's period. */
     configurationData: (Scalars['JsonData'] | null)
     /** An internal description of the requirement. Probably not shown to users. */
@@ -1495,6 +1497,8 @@ export interface ApplicationMetricTimingGenqlSelection{
 /** The specific instance of a requirement on a particular application. Stores the status of the requirement, e.g. being satisfied or not. */
 export interface ApplicationRequirementGenqlSelection{
     application?: ApplicationGenqlSelection
+    /** The prompt keys the requirement named as responsible for its current status. Used to attach status indicators to the specific answers at fault instead of every prompt the requirement consults. Null when the requirement did not name any, in which case all of its prompts are implicated. */
+    blame?: boolean | number
     /** The configuration data for this requirement in the app request's period. */
     configurationData?: boolean | number
     /** An internal description of the requirement. Probably not shown to users. */
