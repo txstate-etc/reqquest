@@ -23,6 +23,8 @@
     "prepublishOnly": "npm run package",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "check:registry": "node check-registry.js",
+    "docs:components": "node scripts/build-components-md.js",
+    "docs:components:check": "node scripts/build-components-md.js --check",
     "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch"
   },
   "peerDependencies": {

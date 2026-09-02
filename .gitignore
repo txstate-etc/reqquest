@@ -16,3 +16,4 @@ docker-compose.override.yml
 docker-compose.*.override.yml
 /test/test-results
 test_complex.sh
+/ui/.docs-cache
