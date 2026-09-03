@@ -9,7 +9,7 @@ export const appRequestNotifications: AppRequestNotificationCB[] = [
   async (ctx, ar, oldAppRequest) => {
     const { from } = appConfig.emailConfig
     // Review complete
-    if (ar.phase === AppRequestPhase.COMPLETE) {
+    if (oldAppRequest.phase === AppRequestPhase.SUBMITTED && ar.phase !== AppRequestPhase.STARTED) {
       await ctx.svc(MailService).sendmulti({ from, userIds: [ar.userInternalId], templateKey: 'review_complete', extra: appConfig.emailConfig })
     }
   },
