@@ -284,3 +284,24 @@ as a committed artifact.
 
 There is no automated transport across that boundary and no check that the two stayed in step, which
 is exactly why the runtime degradation above exists. Treat the delivery as a release step you own.
+
+## Writing the components themselves
+
+Everything above is about wiring. For the components on the other end of that wiring — what props
+the framework hands a `formComponent` and a `displayComponent`, which of them the reviewer's inline
+edit form omits, the `formMode`/`displayMode`/`loader` choices, and the full prop catalog for
+`@reqquest/ui` and `@txstate-mws/carbon-svelte` — read:
+
+```
+ui/node_modules/@reqquest/ui/dist/components.md
+```
+
+It ships inside the package, so it is already on disk in your project and needs no network. If you
+use Claude Code or a similar agent, point it there once in your own `CLAUDE.md`:
+
+```md
+UI authoring reference: @ui/node_modules/@reqquest/ui/dist/components.md
+```
+
+The file is regenerated per `@reqquest/ui` release and describes the versions that release resolves,
+so the props in it are the props you actually have.

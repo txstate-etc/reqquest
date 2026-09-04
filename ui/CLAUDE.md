@@ -2,6 +2,7 @@
 - built as SPA, all client-side routing, no SSR even though sveltekit prefers SSR
 - Very specific technique for env due to SPA build. `ui/.env` looks weird but correct given what apply-env.sh will do.
 - Component library @txstate-mws/carbon-svelte based on carbon-components-svelte, based on the IBM Carbon design system
+- [src/lib/components.md](src/lib/components.md) is the generated component + prompt-authoring catalog (props, types, recipes) that ships to downstream projects. Read it before writing UI; regenerate with `npm run docs:components` after a carbon-svelte bump, and edit `docs-src/components/` rather than the generated file.
 - Prefer using components from @txstate-mws/carbon-svelte, then carbon-components-svelte, then raw HTML/CSS ideally reuse carbon CSS classes/variables.
 - Prefer ColumnList over DataTable in almost all situations.
 - Prefer icons from carbon-icons-svelte, then custom SVGs

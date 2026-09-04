@@ -7,10 +7,14 @@
   import { Information } from 'carbon-icons-svelte'
   import StatusMessageList from '$internal/components/StatusMessageList.svelte'
   import { titleCase } from 'txstate-utils'
+  import { getContext } from 'svelte'
+  import { UISHELL_STICKY_CONTEXT, type UIShellStickyStore } from '@txstate-mws/carbon-svelte'
 
   export let basicRequestData: LayoutData['basicRequestData']
   export let appRequest: ReviewData
   let open = false
+
+  const stickyShellHeader = getContext<UIShellStickyStore>(UISHELL_STICKY_CONTEXT)
 
    $: optedOutPrograms = appRequest?.applications
     .filter(curr => curr.requirements.flatMap(r => r.prompts).find(r => r.optOut))
@@ -25,7 +29,7 @@
 </script>
 
 <div class="review-container">
-  <div class="review-sidebar flow">
+  <div class="review-sidebar flow" style="--sticky-top: {$stickyShellHeader.height}px">
     <InfoCard
       noPrimaryAction
       title={basicRequestData.applicant.fullname}
@@ -87,11 +91,17 @@
     flex-direction: row-reverse;
     gap: 15px;
     padding: 15px;
+    align-items: flex-start;
   }
 
   .review-sidebar {
     container-type: inline-size;
     width: min(20rem, 33%);
+    position: sticky;
+    top: calc(var(--sticky-top, 0px) + 15px);
+    /* Cards taller than the viewport scroll within rather than being cut off. */
+    max-height: calc(100dvh - var(--sticky-top, 0px) - 30px);
+    overflow-y: auto;
   }
 
   .review-content {
@@ -102,10 +112,14 @@
   @media (max-width: 800px) {
     .review-container {
       flex-direction: column-reverse;
+      align-items: stretch;
     }
 
     .review-sidebar {
       width: 100%;
+      position: static;
+      max-height: none;
+      overflow-y: visible;
     }
   }
 

@@ -3,5 +3,9 @@
 
   export let data: AssessReccomendationLetter
 </script>
-<p>{data?.score}</p>
+{#if data?.score}
+  <p>{data?.score}</p>
+{:else}
+  <p>N/A</p>
+{/if}
 

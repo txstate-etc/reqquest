@@ -9,7 +9,7 @@
 <p class="text-xs">Has maintained system documentation</p>
 <p>{booleanToWord(data?.maintainSysDocumentation)}</p>
 
-{#if data.maintainSysDocumentation}
+{#if data?.maintainSysDocumentation}
   <p>Doc: {data?.documentation?.name}</p>
   <FileDisplay 
     {appRequestId}

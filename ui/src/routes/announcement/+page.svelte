@@ -73,7 +73,7 @@
   <FieldRadio
     path='type'
     required
-    labelText="Status"
+    labelText="Display duration"
     defaultValue='toggle'
     class="md:w-[645px]"
     items={[
@@ -81,21 +81,20 @@
       { label: 'Date range', value: 'date' }
     ]} />
     {#if data.type === 'toggle'}
-      <FieldToggle path='enabled' labelText='active' labelA='Message inactive' labelB='Message active' />
+      <FieldToggle path='enabled' hideLabel labelText='Enable/Disable' labelA='Message inactive' labelB='Message active' />
     {:else}
       <div class="md:w-[645px] flow datetime-full">
-        <FieldDateTime required path='start' labelText='Start time' />
-
-        <FieldDateTime required path='end' labelText='End time' helperText='This is how long the message will display.' />
+        <FieldDateTime required path='start' labelText='Start date' defaultTime='24:00'/>
+        <FieldDateTime required path='end' labelText='End date' helperText='This is how long the message will display.' defaultTime='24:00' />
         <div class="flex justify-end mt-0">
-          <Button size='small' kind='ghost' on:click={() => { store?.setField('start', undefined); store?.setField('end', undefined)}} icon={TextClearFormat}>Reset</Button>
+          <Button size='small' kind='ghost' on:click={() => { store?.setField('start', undefined); store?.setField('end', undefined)}} icon={TextClearFormat}>Clear dates</Button>
         </div>
       </div>
     {/if}
 
     <div class="md:w-[645px] flow">
-      <FieldTextArea rows={1} required path='subject' labelText='Message title' maxCount={40} class="md:w-[645px]"/>
-      <FieldTextArea required path='body' labelText='Message text' maxCount={140} class="md:w-[645px]"/>
+      <FieldTextArea rows={1} required path='subject' labelText='Message title' maxCount={40} class="md:w-[645px] textarea"/>
+      <FieldTextArea required path='body' labelText='Message text' maxCount={125} class="md:w-[645px]"/>
     </div>
 
     <FieldCheckbox path='addLink' labelText='Add link' on:change={(e: any) => {
@@ -106,9 +105,9 @@
     }} />
 
     {#if data.addLink}
-      <div class="flex flex-row gap-4">
-        <FieldTextInput required path='linkText' labelText='Link text' />
-        <FieldTextInput required path='link' labelText='URL' />
+      <div class="flex flex-col sm:flex-row gap-4 md:w-[645px] addLink">
+        <FieldTextArea required class='textarea w-full' maxCount={30} rows={1} path='linkText' labelText='Link text' />
+        <FieldTextInput required class='w-full' path='link' labelText='URL' />
       </div>
     {/if}
 
@@ -179,5 +178,11 @@
   }
   .time-sensitive-banner :global(.bx--inline-notification__text-wrapper) {
     display: block;
+  }
+  :global(.bx--text-area.textarea) {
+    resize: none;
+  }
+  .addLink :global(.cs-field) {
+    width: 100%;
   }
 </style>

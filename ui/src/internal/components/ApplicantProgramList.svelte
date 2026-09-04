@@ -2,8 +2,8 @@
   import { TagSet } from '@txstate-mws/carbon-svelte'
   import { Button } from 'carbon-components-svelte'
   import { Close, InProgress, CheckmarkFilled, Information, SubtractAlt } from 'carbon-icons-svelte'
-  import { isNotBlank, ucfirst } from 'txstate-utils'
-  import { type ApplicationForDetails, type AppRequestForDetails, enumApplicationStatus, enumIneligiblePhases, enumRequirementStatus, enumRequirementType, type OptOutApplication } from '$lib'
+  import { isNotBlank } from 'txstate-utils'
+  import { type ApplicationForDetails, type AppRequestForDetails, enumApplicationStatus, enumIneligiblePhases, enumPromptVisibility, enumRequirementStatus, enumRequirementType, type OptOutApplication } from '$lib'
   import { getApplicationStatusInfo } from '../status-utils.js'
   import { isIneligiblePreSubmission } from '../appreq-utils.js'
   import ApplicantProgramListTooltip from './ApplicantProgramListTooltip.svelte'
@@ -36,20 +36,31 @@
       .flatMap(r => r.prompts)      
   }), {})
 
-  $: programButtonStatus = applications.reduce((acc, curr) => ({
-    ...acc,
-    [curr.id]: (curr.completionStatus === enumApplicationStatus.PENDING)
-      ? curr.requirements.some(r => r.prompts.some(p => p.answered && !p.invalidated && !p.optOut))
-        ? curr.requirements.filter(r => r.type === enumRequirementType.QUALIFICATION).every(r => r.prompts.every(p => p.answered && !p.invalidated  && !p.optOut))
-          ? 'complete'
-          : 'continue'
-        : 'start'
-      : curr.completionStatus === enumApplicationStatus.INELIGIBLE
-        ? curr.ineligiblePhase === enumIneligiblePhases.PREQUAL
-          ? 'ineligible'
-          : 'revisit'
-        : 'complete'
-  }), {} as Record<string, string>)
+  $: programButtonStatus = applications.reduce((acc, curr) => {
+    let status: string
+    if (curr.completionStatus === enumApplicationStatus.PENDING) {
+      const unanswered = curr.requirements
+        .filter(r => r.type === enumRequirementType.QUALIFICATION)
+        .flatMap(r => r.prompts)
+        .filter(p => (!p.answered || p.invalidated) && !p.optOut)
+      if (!curr.requirements.some(r => r.prompts.some(p => p.answered && !p.invalidated && !p.optOut))) status = 'start'
+      else if (unanswered.length === 0) status = 'complete'
+      else if (unanswered.some(p => p.visibility === enumPromptVisibility.AVAILABLE)) status = 'continue'
+      // every remaining unanswered prompt is owned by an earlier program, so continuing here shows nothing new
+      else status = 'revisitPending'
+    } else if (curr.completionStatus === enumApplicationStatus.INELIGIBLE) {
+      status = curr.ineligiblePhase === enumIneligiblePhases.PREQUAL ? 'ineligible' : 'revisit'
+    } else status = 'complete'
+    return { ...acc, [curr.id]: status }
+  }, {} as Record<string, string>)
+
+  const programButtonLabels: Record<string, string> = {
+    start: 'Start',
+    continue: 'Continue',
+    complete: 'Revisit',
+    revisit: 'Revisit',
+    revisitPending: 'Revisit'
+  }
 
   $: programFirstPromptId = applications.reduce((acc, curr) => ({
     ...acc,
@@ -115,7 +126,7 @@
             <SubtractAlt size={24} fill='#dd3b46'/>
           {:else if application.completionStatus === enumApplicationStatus.INELIGIBLE}
             <Close size={32} class="status-icon-ineligible" />
-          {:else if ['start', 'continue'].includes(programStatus)}
+          {:else if ['start', 'continue', 'revisitPending'].includes(programStatus)}
             <InProgress size={24} class="status-icon-pending" />
           {:else if application.hasWarning}
             <WarningIconYellow size={24} class="status-icon-warning" />
@@ -127,10 +138,10 @@
         {#if optedOutPrograms[application.id]}
           <p>Opted out</p>
         {:else if programFirstPrompt && programStatus !== 'ineligible'}
-          <Button size="small" kind={programStatus === 'complete' ? 'ghost' : programStatus === 'revisit' ? 'secondary' : 'primary'} href={programFirstPrompt}>{ucfirst((programStatus !== 'complete') ? programStatus : 'revisit')}</Button>
+          <Button size="small" kind={programStatus === 'complete' ? 'ghost' : ['revisit', 'revisitPending'].includes(programStatus) ? 'secondary' : 'primary'} href={programFirstPrompt}>{programButtonLabels[programStatus]}</Button>
         {/if}
       {:else}
-        {#if ['start', 'continue', 'complete'].includes(programStatus) && !optedOutPrograms[application.id]}
+        {#if ['start', 'continue', 'complete', 'revisitPending'].includes(programStatus) && !optedOutPrograms[application.id]}
           {@const statusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt, application.rescindedStatus)}
           <TagSet tags={statusInfo.map(info => ({ type: info.color, label: info.label }))} />
         {:else if optedOutPrograms[application.id]}

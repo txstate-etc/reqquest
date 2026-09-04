@@ -1,24 +1,21 @@
-import { appConfig, Application, ApplicationPhase, ApplicationRescindedStatus, AppRequest, AppRequestPhase, AppRequestStatus, MailService } from '../internal.js'
+import { appConfig, Application, ApplicationPhase, ApplicationRescindedStatus, AppRequest, AppRequestPhase, MailService } from '../internal.js'
 import type { RQContext } from './auth.js'
 
-type AppRequestNotificationCB = (ctx: RQContext, appRequest: AppRequest, oldAppRequestStatus: AppRequestStatus) => void | Promise<void>
+type AppRequestNotificationCB = (ctx: RQContext, appRequest: AppRequest, oldAppRequest: AppRequest) => void | Promise<void>
 type ApplicationPhaseNotificationCB = (ctx: RQContext, appRequest: AppRequest, application: Application, oldPhase: ApplicationPhase) => void | Promise<void>
 type ApplicationRescindNotificationCB = (ctx: RQContext, appRequest: AppRequest, application: Application, reason: string) => void | Promise<void>
 
 export const appRequestNotifications: AppRequestNotificationCB[] = [
-  async (ctx, ar, oldAppRequestStatus) => {
+  async (ctx, ar, oldAppRequest) => {
     const { from } = appConfig.emailConfig
     // Review complete
-    if (ar.phase === AppRequestPhase.COMPLETE) {
+    if (oldAppRequest.phase === AppRequestPhase.SUBMITTED && ar.phase !== AppRequestPhase.STARTED) {
       await ctx.svc(MailService).sendmulti({ from, userIds: [ar.userInternalId], templateKey: 'review_complete', extra: appConfig.emailConfig })
     }
   },
-  async (ctx, ar, oldAppRequestStatus) => {
+  async (ctx, ar, oldAppRequest) => {
     const { from } = appConfig.emailConfig
-    // Returned back to applicant - the reviewer handed control back, so the request is in
-    // STARTED again. Without the phase check this would also fire on forward progress out
-    // of APPROVAL/PREAPPROVAL (e.g. completeReview).
-    if (ar.phase === AppRequestPhase.STARTED && [AppRequestStatus.APPROVAL, AppRequestStatus.PREAPPROVAL].includes(oldAppRequestStatus)) {
+    if (oldAppRequest.phase === AppRequestPhase.SUBMITTED && ar.phase === AppRequestPhase.STARTED) {
       await ctx.svc(MailService).sendmulti({ from, userIds: [ar.userInternalId], templateKey: 'app_request_return', extra: appConfig.emailConfig })
     }
   }
