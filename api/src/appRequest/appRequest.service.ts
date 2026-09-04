@@ -446,7 +446,7 @@ export class AppRequestService extends AuthService<AppRequest> {
     response.appRequest = (await this.findById(appRequest.id))!
     try {
       await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, appRequest.status)
-      await Promise.all(appRequestNotifications.map(n => n(this.ctx, response.appRequest!, appRequest.status)))
+      await Promise.all(appRequestNotifications.map(n => n(this.ctx, response.appRequest!, appRequest)))
       const applications = await this.svc(ApplicationService).findByAppRequest(response.appRequest!)
       for (const app of applications) {
         const oldPhase = beforeAppsByProgramKey[app.programKey]?.phase
