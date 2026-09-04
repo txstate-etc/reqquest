@@ -1,6 +1,9 @@
 # ReqQuest UI Library
 
-This library provides a set of Svelte components and utilities for building ReqQuest projects. You'll especially find the `api` useful for creating graphQL queries. In the future we will provide a small component library to help you build your prompts.
+This library provides a set of Svelte components and utilities for building ReqQuest projects. You'll especially find the `api` useful for creating graphQL queries. Everything you need to build a prompt - the component the framework hands your props to, the
+registration contract, the recipes, and the full catalog of `@reqquest/ui` and
+`@txstate-mws/carbon-svelte` components with their props - is in **`dist/components.md`**
+inside this package, i.e. `node_modules/@reqquest/ui/dist/components.md`. Start there.
 
 ## Registering your prompts
 
