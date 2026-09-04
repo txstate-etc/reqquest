@@ -16,7 +16,8 @@
   <TabLinks tabs={[...others, { label: 'Ineligible programs', panel: ineligibleList }]} />
   ```
 
-  The panel is positioned absolutely over the page content, left-aligned to the tab that opened it.
+  The panel is positioned absolutely over the page content, left-aligned to the tab that opened it,
+  flipping to right-aligned when left-alignment would run past the right edge of the tab strip.
   It closes on outside click, Escape, navigation, and horizontal scrolling of the tab strip.
 -->
 <script context="module" lang="ts">
@@ -79,7 +80,9 @@
   let scrollOverflow: ScrollOverflow
   let wrapperEl: HTMLElement
   let panelEl: HTMLElement | undefined
-  let panelLeft = 0
+  let panelAlign: 'start' | 'end' = 'start'
+  let panelOffset = 0
+  let panelPositioned = false
   let mounted = false
 
   $: activeIdx = tabs.findIndex(tab => tab.href != null && tab.href === $page.url.pathname)
@@ -106,12 +109,24 @@
 
   function positionPanel () {
     const tabEl = tabElements[openIndex]
-    if (!wrapperEl || !tabEl) return
-    panelLeft = Math.max(0, tabEl.getBoundingClientRect().left - wrapperEl.getBoundingClientRect().left)
+    if (!wrapperEl || !tabEl || !panelEl) return
+    const wrapper = wrapperEl.getBoundingClientRect()
+    const tab = tabEl.getBoundingClientRect()
+    const panelWidth = panelEl.getBoundingClientRect().width
+    const start = tab.left - wrapper.left
+    if (start + panelWidth > wrapper.width) {
+      panelAlign = 'end'
+      panelOffset = Math.max(0, Math.min(wrapper.right - tab.right, wrapper.width - panelWidth))
+    } else {
+      panelAlign = 'start'
+      panelOffset = Math.max(0, start)
+    }
+    panelPositioned = true
   }
 
   async function toggle (idx: number) {
     openIndex = openIndex === idx ? -1 : idx
+    panelPositioned = false
     await tick()
     positionPanel()
   }
@@ -120,6 +135,7 @@
     if (openIndex < 0) return
     const tabEl = tabElements[openIndex]
     openIndex = -1
+    panelPositioned = false
     if (returnFocus) tabEl?.querySelector('button')?.focus()
   }
 
@@ -197,7 +213,9 @@
         bind:this={panelEl}
         id={`${uid}-panel`}
         class="tab-panel"
-        style:left="{panelLeft}px"
+        style:left={panelAlign === 'start' ? `${panelOffset}px` : null}
+        style:right={panelAlign === 'end' ? `${panelOffset}px` : null}
+        style:visibility={panelPositioned ? null : 'hidden'}
         role="group"
         aria-labelledby={`${uid}-tab-${openIndex}`}
       >
@@ -250,8 +268,8 @@
     position: absolute;
     top: 100%;
     z-index: 100;
-    min-width: -moz-max-content;
-    min-width: max-content;
+    width: -moz-max-content;
+    width: max-content;
     max-width: 100%;
     background-color: var(--cds-ui-01, #f4f4f4);
     border: 1px solid var(--cds-ui-03, #e0e0e0);

@@ -15,4 +15,5 @@ vite.config.ts.timestamp-*
 docker-compose.override.yml
 docker-compose.*.override.yml
 /test/test-results
+/ui/.docs-cache
 test_complex.sh
