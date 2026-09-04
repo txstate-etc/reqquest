@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { booleanToWord } from "$internal"
+  import { booleanToWord } from "$internal"
   import type { EvidenceWrittenAutomation } from "./types"
 
   export let data: EvidenceWrittenAutomation

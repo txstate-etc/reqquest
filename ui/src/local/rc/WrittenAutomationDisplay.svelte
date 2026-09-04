@@ -7,7 +7,7 @@
 <p class="text-xs">Has written automation: </p>
 <p>{booleanToWord(data?.hasWrittenAutomation)}</p>
 
-{#if data.hasWrittenAutomation}
+{#if data?.hasWrittenAutomation}
   <p class="text-xs">Written automation</p>
   <p>{data?.writtenAutomation}</p>
 {/if}
