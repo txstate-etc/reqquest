@@ -1,5 +1,5 @@
 import type { TagItem } from '@txstate-mws/carbon-svelte'
-import { enumApplicationRescindedStatus, enumAppRequestPhase, enumAppRequestStatus, enumPromptVisibility, enumRequirementType, type AppRequestPhase, type AppRequestStatus, type PromptVisibility, type RequirementType } from '$lib'
+import { enumApplicationRescindedStatus, enumApplicationStatus, enumAppRequestPhase, enumAppRequestStatus, enumPromptVisibility, enumRequirementType, type AppRequestPhase, type AppRequestStatus, type PromptVisibility, type RequirementType } from '$lib'
 import { longNumericTime } from './util.js'
 import { uiRegistry } from '../local/index.js'
 
@@ -341,6 +341,10 @@ export function getApplicationStatusInfo (status: string, appRequestPhase: strin
         color: 'red'
       }]
     }
+  }
+  // before submission - never submitted, or returned to the applicant
+  if (appRequestPhase === enumAppRequestPhase.STARTED && status === enumApplicationStatus.ELIGIBLE) {
+    return [{ label: 'Pending', description: 'Awaiting submission.', color: 'purple' }]
   }
   const tags = [statusMap[status] ?? { label: status, description: 'Unknown status.', color: 'gray' as const }]
   if (rescindedStatus === enumApplicationRescindedStatus.RESTORED) {
