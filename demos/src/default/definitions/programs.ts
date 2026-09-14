@@ -24,6 +24,14 @@ const cat_program_with_legacy_key: ProgramDefinition = {
     'other_cats_reviewer_req',
     'not_allergic_to_tuna_req',
     'applicant_seems_nice_req'
+  ],
+  // The reviewer's vaccine check belongs right under the applicant's answer about their other cats,
+  // so the two share a panel, placed after the default applicant panels. `applicant_seems_nice_req`
+  // is not placed, so it falls into the default "Reviewer Questions" panel that trails the list.
+  reviewSections: [
+    { section: 'GENERAL' },
+    { section: 'PROGRAM' },
+    { title: 'Other cats in the home', requirementKeys: ['other_cats_applicant_req', 'other_cats_reviewer_req'] }
   ]
 }
 

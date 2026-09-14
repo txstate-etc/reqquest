@@ -365,6 +365,8 @@ export interface Application {
     rescindedStatus: (ApplicationRescindedStatus | null)
     /** The reason the application was restored after previously being rescinded */
     restoredReason: (Scalars['String'] | null)
+    /** The program's reviewer-screen layout, in display order. Empty when the program did not define one, in which case the UI renders its default type-based panels. See ProgramReviewSection. */
+    reviewSections: ProgramReviewSection[]
     status: ApplicationStatus
     /** When one of the application's requirements is failing or throwing a warning, its reason will be copied here for convenience. If there is a warning and then later a failure, the failure reason will win. */
     statusReason: (Scalars['String'] | null)
@@ -787,6 +789,20 @@ export interface Program {
 }
 
 
+/** One panel of the reviewer screen, from the program definition's reviewSections. Exactly one shape is populated: a custom panel (title + requirementKeys), a workflow-stage panel (workflowStageKey), or a default panel (section). Panels not listed trail in the default order. */
+export interface ProgramReviewSection {
+    /** Custom panel: the requirements it shows, in display order. Requirements disabled in the period are simply absent from the application and should be skipped. */
+    requirementKeys: (Scalars['String'][] | null)
+    /** Default panel: which one. */
+    section: (ReviewDefaultSection | null)
+    /** Custom panel: its title. */
+    title: (Scalars['String'] | null)
+    /** Workflow-stage panel: the stage key. */
+    workflowStageKey: (Scalars['String'] | null)
+    __typename: 'ProgramReviewSection'
+}
+
+
 /** The visibility of a prompt on a request. This is used to determine whether the prompt should be shown to the user in the UI. */
 export type PromptVisibility = 'APPLICATION_DUPE' | 'AVAILABLE' | 'REQUEST_DUPE' | 'UNREACHABLE'
 
@@ -849,7 +865,7 @@ export interface RequirementPrompt {
     moot: Scalars['Boolean']
     /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
     navTitle: Scalars['String']
-    /** True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay` - a dependency it reads but does not own. Such a row must not be rendered beneath that requirement; the prompt is displayed under the requirement that does own it. This is not derivable from `visibility`: a no-display row is UNREACHABLE, but so is a prompt whose own requirement resolved before reaching it, and that one is still the requirement's to show. */
+    /** True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay` */
     noDisplay: Scalars['Boolean']
     optOut: Scalars['Boolean']
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
@@ -873,6 +889,10 @@ export interface RequirementPromptActions {
 export type RequirementStatus = 'DISQUALIFYING' | 'MET' | 'NOT_APPLICABLE' | 'PENDING' | 'WARNING'
 
 export type RequirementType = 'ACCEPTANCE' | 'APPROVAL' | 'POSTQUAL' | 'PREAPPROVAL' | 'PREQUAL' | 'QUALIFICATION' | 'WORKFLOW'
+
+
+/** The panels the reviewer screen renders by default, grouped by requirement type. A program's reviewSections may place any of them by name. */
+export type ReviewDefaultSection = 'ACCEPTANCE' | 'GENERAL' | 'PROGRAM' | 'REVIEWER'
 
 export interface RoleActions {
     delete: Scalars['Boolean']
@@ -1423,6 +1443,8 @@ export interface ApplicationGenqlSelection{
     rescindedStatus?: boolean | number
     /** The reason the application was restored after previously being rescinded */
     restoredReason?: boolean | number
+    /** The program's reviewer-screen layout, in display order. Empty when the program did not define one, in which case the UI renders its default type-based panels. See ProgramReviewSection. */
+    reviewSections?: ProgramReviewSectionGenqlSelection
     status?: boolean | number
     /** When one of the application's requirements is failing or throwing a warning, its reason will be copied here for convenience. If there is a warning and then later a failure, the failure reason will win. */
     statusReason?: boolean | number
@@ -1922,6 +1944,21 @@ export interface ProgramGenqlSelection{
 
 export interface ProgramFilters {keys?: (Scalars['String'][] | null)}
 
+
+/** One panel of the reviewer screen, from the program definition's reviewSections. Exactly one shape is populated: a custom panel (title + requirementKeys), a workflow-stage panel (workflowStageKey), or a default panel (section). Panels not listed trail in the default order. */
+export interface ProgramReviewSectionGenqlSelection{
+    /** Custom panel: the requirements it shows, in display order. Requirements disabled in the period are simply absent from the application and should be skipped. */
+    requirementKeys?: boolean | number
+    /** Default panel: which one. */
+    section?: boolean | number
+    /** Custom panel: its title. */
+    title?: boolean | number
+    /** Workflow-stage panel: the stage key. */
+    workflowStageKey?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
 export interface QueryGenqlSelection{
     /**
      * 
@@ -1992,7 +2029,7 @@ export interface RequirementPromptGenqlSelection{
     moot?: boolean | number
     /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
     navTitle?: boolean | number
-    /** True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay` - a dependency it reads but does not own. Such a row must not be rendered beneath that requirement; the prompt is displayed under the requirement that does own it. This is not derivable from `visibility`: a no-display row is UNREACHABLE, but so is a prompt whose own requirement resolved before reaching it, and that one is still the requirement's to show. */
+    /** True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay` */
     noDisplay?: boolean | number
     optOut?: boolean | number
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
@@ -2448,6 +2485,14 @@ export interface ValidatedResponseGenqlSelection{
     
 
 
+    const ProgramReviewSection_possibleTypes: string[] = ['ProgramReviewSection']
+    export const isProgramReviewSection = (obj?: { __typename?: any } | null): obj is ProgramReviewSection => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isProgramReviewSection"')
+      return ProgramReviewSection_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const Query_possibleTypes: string[] = ['Query']
     export const isQuery = (obj?: { __typename?: any } | null): obj is Query => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isQuery"')
@@ -2629,4 +2674,11 @@ export const enumRequirementType = {
    PREQUAL: 'PREQUAL' as const,
    QUALIFICATION: 'QUALIFICATION' as const,
    WORKFLOW: 'WORKFLOW' as const
+}
+
+export const enumReviewDefaultSection = {
+   ACCEPTANCE: 'ACCEPTANCE' as const,
+   GENERAL: 'GENERAL' as const,
+   PROGRAM: 'PROGRAM' as const,
+   REVIEWER: 'REVIEWER' as const
 }

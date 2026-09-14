@@ -8,7 +8,7 @@
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
   import View from 'carbon-icons-svelte/lib/View.svelte'
   import { invalidateAll } from '$app/navigation'
-  import { api, getApplicationStatusInfo } from '$internal'
+  import { api, getApplicationStatusInfo, hasDisplayablePrompts } from '$internal'
   import { CommentCard, enumPromptVisibility, enumRequirementStatus, enumRequirementType, InfoCard, PromptIndicators } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../../local'
@@ -92,31 +92,36 @@
   }
 
   type ApplicationRequirement = (typeof appRequest)['applications'][number]['requirements'][number]
+  type Section = { key: string, title: string, requirements: ApplicationRequirement[] }
 
-  // here we split the screen into sections based on the requirement type, but we
-  // keep everything in order, so if a reviewer requirement appears between two
-  // applicant requirements, it will be shown in the applicant section. We are assuming
-  // that the developer put it in that order intentionally but we still want to try to break up
-  // page as best we can.
-  let generalReqs: ApplicationRequirement[]
-  let applicantReqs: ApplicationRequirement[]
-  let reviewerReqs: ApplicationRequirement[]
-  let acceptanceReqs: ApplicationRequirement[]
-  let blockingWorkflow: Record<string, { title: string, requirements: ApplicationRequirement[] }>
-  let nonBlockingWorkflow: Record<string, { title: string, requirements: ApplicationRequirement[] }>
+  // the screen is split into panels by requirement type, in lifecycle order, unless the program's
+  // reviewSections says otherwise. A custom panel takes the requirements it names, in the order it names
+  // them; the default panels keep whatever is left, in requirementKeys order. Panels the layout does not
+  // mention trail it in the default order, so a layout may be partial.
+  let sections: Section[]
+  // the stage panel the "Send to" button lands on once the application is ready for workflow - the last
+  // stage in lifecycle order, whatever order the layout displays the panels in
+  let lastStageKey: string | undefined
   // it's not enough to show an indicator for the prompt's requirement status; since we only show the prompt
   // once, we need to show the highest indicator for any requirement that uses this prompt. So if two requirements
   // share a prompt and one requirement is disqualifying while the other is just a warning, we need to show the
   // disqualifying indicator.
   let promptIndicator: Record<string, { indicator: typeof PromptIndicators[keyof typeof PromptIndicators], reason: string | undefined } | undefined>
   $: {
-    generalReqs = []
-    applicantReqs = []
-    reviewerReqs = []
-    acceptanceReqs = []
-    blockingWorkflow = {}
-    nonBlockingWorkflow = {}
     promptIndicator = {}
+    const general: Section = { key: 'general', title: 'General Questions', requirements: [] }
+    const program: Section = { key: 'program', title: application.title, requirements: [] }
+    const reviewer: Section = { key: 'reviewer', title: 'Reviewer Questions', requirements: [] }
+    const acceptance: Section = { key: 'acceptance', title: 'Acceptance', requirements: [] }
+    const defaults: Record<string, Section> = { GENERAL: general, PROGRAM: program, REVIEWER: reviewer, ACCEPTANCE: acceptance }
+    const blockingStages: Section[] = []
+    const nonBlockingStages: Section[] = []
+    const stages: Record<string, Section> = {}
+    const custom = application.reviewSections.map((entry, i) => entry.requirementKeys
+      ? { key: `custom:${i}`, title: entry.title ?? '', requirementKeys: entry.requirementKeys, requirements: [] as ApplicationRequirement[] }
+      : undefined)
+    const claimedKeys = new Set(custom.flatMap(c => c?.requirementKeys ?? []))
+    const claimed = new Map<string, ApplicationRequirement>()
     for (const req of application.requirements) {
       // automation indicator is about the prompt itself not requirement's status, so only applies to the requirements own prompts
       for (const prompt of req.prompts) {
@@ -135,37 +140,41 @@
           promptIndicator[key] = { indicator: PromptIndicators.WARNING, reason: req.statusReason ?? undefined }
         }
       }
-      if (req.type === enumRequirementType.ACCEPTANCE) acceptanceReqs.push(req)
-      else if (req.workflowStage) {
-        const target = req.workflowStage.blocking ? blockingWorkflow : nonBlockingWorkflow
-        target[req.workflowStage.key] ??= { title: req.workflowStage.title, requirements: [] }
-        target[req.workflowStage.key].requirements.push(req)
-      } else if (req.type === enumRequirementType.APPROVAL || req.type === enumRequirementType.PREAPPROVAL) reviewerReqs.push(req)
-      else if (req.type === enumRequirementType.QUALIFICATION || req.type === enumRequirementType.POSTQUAL) {
-        if (applicantReqs.length === 0) {
-          applicantReqs.push(req)
-          generalReqs.push(...reviewerReqs)
-          reviewerReqs = []
-        } else {
-          applicantReqs.push(...reviewerReqs, req)
-          reviewerReqs = []
+      if (req.workflowStage) {
+        if (!stages[req.workflowStage.key]) {
+          stages[req.workflowStage.key] = { key: `stage:${req.workflowStage.key}`, title: req.workflowStage.title, requirements: [] }
+          ;(req.workflowStage.blocking ? blockingStages : nonBlockingStages).push(stages[req.workflowStage.key])
         }
-      } else { // PREQUAL
-        generalReqs.push(...reviewerReqs, req)
-        reviewerReqs = []
-      }
+        stages[req.workflowStage.key].requirements.push(req)
+      } else if (claimedKeys.has(req.key)) claimed.set(req.key, req)
+      else if (req.type === enumRequirementType.ACCEPTANCE) acceptance.requirements.push(req)
+      else if (req.type === enumRequirementType.APPROVAL || req.type === enumRequirementType.PREAPPROVAL) reviewer.requirements.push(req)
+      else if (req.type === enumRequirementType.QUALIFICATION || req.type === enumRequirementType.POSTQUAL) program.requirements.push(req)
+      else general.requirements.push(req) // PREQUAL
     }
+    // a requirement the layout names but the period disabled has no record here, so it is simply skipped
+    for (const c of custom) {
+      if (c) c.requirements = c.requirementKeys.map(k => claimed.get(k)).filter((r): r is ApplicationRequirement => r != null)
+    }
+    const ordered: Section[] = []
+    for (const [i, entry] of application.reviewSections.entries()) {
+      const section = entry.requirementKeys
+        ? custom[i]
+        : entry.workflowStageKey
+          ? stages[entry.workflowStageKey]
+          : entry.section
+            ? defaults[entry.section]
+            : undefined
+      if (section) ordered.push(section)
+    }
+    for (const section of [general, program, reviewer, acceptance, ...blockingStages, ...nonBlockingStages]) {
+      if (!ordered.includes(section)) ordered.push(section)
+    }
+    // a panel with nothing to show is dropped rather than rendered as an empty header. Stage panels are the
+    // exception: they carry the advance/return controls and a deliberate "nothing to answer, you may advance" state
+    sections = ordered.filter(s => (!!s.requirements[0]?.workflowStage) || s.requirements.some(hasDisplayablePrompts))
+    lastStageKey = [...blockingStages, ...nonBlockingStages].pop()?.key
   }
-  $: blockingWorkflowStages = Object.entries(blockingWorkflow).map(([key, val]) => ({ key, ...val }))
-  $: nonBlockingWorkflowStages = Object.entries(nonBlockingWorkflow).map(([key, val]) => ({ key, ...val }))
-  $: sections = [
-    { title: 'General Questions', requirements: generalReqs },
-    { title: application.title, requirements: applicantReqs },
-    { title: 'Reviewer Questions', requirements: reviewerReqs },
-    { title: 'Acceptance', requirements: acceptanceReqs },
-    ...blockingWorkflowStages,
-    ...nonBlockingWorkflowStages
-  ].filter(s => (!!s.requirements[0]?.workflowStage) || (s.requirements.length > 0 && s.requirements.some(r => r.prompts.length > 0)))
   $: applicationStatusTags = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt, application.rescindedStatus).map(info => ({ label: info.label, type: info.color }))
   $: loading = false
   let showLoading = false
@@ -263,7 +272,7 @@
       </InfoCard>
     {/if}
   </svelte:fragment>
-  <ReviewerQuestions {sections} {appRequest} {application} {promptIndicator} {basicRequestData} bind:loading/>
+  <ReviewerQuestions {sections} {lastStageKey} {appRequest} {application} {promptIndicator} {basicRequestData} bind:loading/>
 </ApproveLayout>
 
 
