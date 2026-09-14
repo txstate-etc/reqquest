@@ -8,7 +8,7 @@
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
   import View from 'carbon-icons-svelte/lib/View.svelte'
   import { invalidateAll } from '$app/navigation'
-  import { api, getApplicationStatusInfo } from '$internal'
+  import { api, getApplicationStatusInfo, hasDisplayablePrompts } from '$internal'
   import { CommentCard, enumPromptVisibility, enumRequirementStatus, enumRequirementType, InfoCard, PromptIndicators } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../../local'
@@ -170,7 +170,9 @@
     for (const section of [general, program, reviewer, acceptance, ...blockingStages, ...nonBlockingStages]) {
       if (!ordered.includes(section)) ordered.push(section)
     }
-    sections = ordered.filter(s => (!!s.requirements[0]?.workflowStage) || (s.requirements.length > 0 && s.requirements.some(r => r.prompts.length > 0)))
+    // a panel with nothing to show is dropped rather than rendered as an empty header. Stage panels are the
+    // exception: they carry the advance/return controls and a deliberate "nothing to answer, you may advance" state
+    sections = ordered.filter(s => (!!s.requirements[0]?.workflowStage) || s.requirements.some(hasDisplayablePrompts))
     lastStageKey = [...blockingStages, ...nonBlockingStages].pop()?.key
   }
   $: applicationStatusTags = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt, application.rescindedStatus).map(info => ({ label: info.label, type: info.color }))

@@ -18,7 +18,11 @@ export const isInlineReviewerEditPrompt = (def?: PromptDefinition, type?: Requir
   return !!(def != null && isReviewerQuestion && prompt?.actions.update && def.formMode !== 'full' && !(prompt.invalidated && prompt.answered))
 }
 
-export const coalesceAppRequestPrompts = (appRequest: NonNullable<ReviewData>, prompts?: PromptDataLegion) => {
+type ReviewPrompt = CoalescedAppRequest['applications'][0]['requirements'][0]['prompts'][0]
+
+export const isDisplayablePrompt = (prompt: Pick<ReviewPrompt, 'optOut' | 'noDisplay'>) => !prompt.optOut && !prompt.noDisplay
+export const hasDisplayablePrompts = (requirement: { prompts: Pick<ReviewPrompt, 'optOut' | 'noDisplay'>[] }) => requirement.prompts.some(isDisplayablePrompt)
+export const coalesceAppRequestPrompts =(appRequest: NonNullable<ReviewData>, prompts?: PromptDataLegion) => {
   const coalescedApplications = appRequest.applications.map(application => ({
     ...application,
     requirements: application.requirements.map(requirement => ({

@@ -4,7 +4,7 @@
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import { enumRequirementStatus, enumRequirementType, PromptIndicators, translateMutations, type PhaseChangeMutations } from '$lib'
-  import { isInlineReviewerEditPrompt, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api, PromptSaveQueue, type BasicRequestData } from '$internal'
+  import { isInlineReviewerEditPrompt, isDisplayablePrompt, hasDisplayablePrompts, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api, PromptSaveQueue, type BasicRequestData } from '$internal'
   import { FormInlineNotification, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { Tooltip } from 'carbon-components-svelte'
   import { uiRegistry } from '../../local';
@@ -199,10 +199,10 @@
 </script>
 {#each sections as section (section.key)}
   <Panel title={section.title} expandable expanded>
-    {#if section.requirements.some(r => r.prompts.length > 0)}
+    {#if section.requirements.some(hasDisplayablePrompts)}
       <dl class="prompts">
         {#each section.requirements as requirement (requirement.id)}
-          {#each requirement.prompts.filter(p => !p.optOut && !p.noDisplay) as prompt (prompt.id)}
+          {#each requirement.prompts.filter(isDisplayablePrompt) as prompt (prompt.id)}
             {@const def = uiRegistry.getPrompt(prompt.key)}
             {@const isReviewerQuestion = reviewerRequirementTypes.has(requirement.type) && !def?.automation}
             {@const isAutomation = !!def?.automation}

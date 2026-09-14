@@ -137,5 +137,7 @@ test.describe.serial('Reviewer screen panels follow the program\'s reviewSection
     await expect(panels.first()).toBeVisible()
     const titles = (await panels.locator('.panel-header').allInnerTexts()).map(t => t.trim())
     expect(titles).toEqual(['General Questions', 'Adopt a Dog'])
+    // a panel with nothing to display is not rendered at all, not shown as an empty header
+    await expect(panels.filter({ hasNot: reviewerPage.locator('dt') })).toHaveCount(0)
   })
 })
