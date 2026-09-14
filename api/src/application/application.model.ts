@@ -19,7 +19,7 @@ registerEnumType(ApplicationStatus, {
   `,
   valuesConfig: {
     PENDING: { description: 'The application status has not yet been determined. Further prompts must be answered.' },
-    ELIGIBLE: { description: 'All application requirements up to and including WORKFLOW_BLOCKING requirements are resolving as MET (or NOT_APPLICABLE or WARNING). If there is an acceptance phase, the acceptance is still pending.' },
+    ELIGIBLE: { description: 'Every requirement the current phase evaluates is resolving as MET (or NOT_APPLICABLE or WARNING). Before submission that is only the applicant requirements (PREQUAL, QUALIFICATION, POSTQUAL), so ELIGIBLE means nothing so far disqualifies - not that the program has been approved. After submission it covers all requirements up to and including WORKFLOW_BLOCKING. If there is an acceptance phase, the acceptance is still pending.' },
     INELIGIBLE: { description: 'At least one application requirement up to and including WORKFLOW_BLOCKING requirements is not met. The review cannot proceed, but the first or current stage of the workflow should still continue.' },
     ACCEPTED: { description: 'An offer was made to the applicant and all ACCEPTANCE requirements are met (the applicant accepted the offer).' },
     REJECTED: { description: 'An offer was made to the applicant and at least one ACCEPTANCE requirement is not met (the applicant rejected the offer).' },
