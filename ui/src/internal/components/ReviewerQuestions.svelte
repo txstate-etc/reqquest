@@ -20,7 +20,9 @@
 
   type ApplicationRequirement = (typeof appRequest)['applications'][number]['requirements'][number]
 
-  export let sections: { title: string, requirements: ApplicationRequirement[] }[]
+  export let sections: { key: string, title: string, requirements: ApplicationRequirement[] }[]
+  /** the stage panel that gets the "Send to" button once the application is ready for workflow */
+  export let lastStageKey: string | undefined = undefined
   export let promptIndicator: Record<string, any>
   export let loading = false
   export let appRequest: PageData['appRequest']
@@ -178,8 +180,9 @@
     }
   }
 
-  $: readyForWorkflow = !application.nextWorkflowStage && application.phase === 'READY_FOR_WORKFLOW' ? sections.filter(s => s.requirements.filter(r => r.type === 'WORKFLOW').length).pop()?.title : undefined
-  $: latestWorkflow = readyForWorkflow ?? sections.filter(section => section.requirements.every(r => !r.workflowStage?.key)).pop()?.title
+  $: readyForWorkflow = !application.nextWorkflowStage && application.phase === 'READY_FOR_WORKFLOW' ? lastStageKey : undefined
+  // otherwise the button sits on the last non-stage panel on the page, wherever the layout put it
+  $: latestWorkflow = readyForWorkflow ?? sections.filter(section => section.requirements.every(r => !r.workflowStage?.key)).pop()?.key
 
   /** inline autoSave forms: refresh statuses/indicators only, never touch the live form */
   async function onPromptAutoSaved () {
@@ -194,7 +197,7 @@
   }
 
 </script>
-{#each sections as section (section.title)}
+{#each sections as section (section.key)}
   <Panel title={section.title} expandable expanded>
     {#if section.requirements.some(r => r.prompts.length > 0)}
       <dl class="prompts">
@@ -277,7 +280,7 @@
     {/if}
     {#if !section.requirements.every(r => r.type === enumRequirementType.PREQUAL) && (application.actions?.advanceWorkflow || application.actions?.reverseWorkflow)}
       <div class="flex justify-end mt-8">
-        {#if application.actions?.advanceWorkflow && (application.workflowStage?.key ? application.workflowStage?.key === section.requirements[0]?.workflowStage?.key : section.title === latestWorkflow)}
+        {#if application.actions?.advanceWorkflow && (application.workflowStage?.key ? application.workflowStage?.key === section.requirements[0]?.workflowStage?.key : section.key === latestWorkflow)}
           <Button size="small" on:click={advanceWorkflow}>{'Send to ' + (application.nextWorkflowStage?.title ?? (!application.workflowStage?.blocking ? 'Complete' : 'Review Complete'))}</Button>
         {:else if application.actions?.reverseWorkflow && section.requirements.every(r => r.status === enumRequirementStatus.MET || r.status === enumRequirementStatus.NOT_APPLICABLE) && application.previousWorkflowStage?.key === section.requirements[0]?.workflowStage?.key}
           <Button kind='secondary' size="small" on:click={reverseWorkflow}>Edit answers</Button>
