@@ -55,7 +55,7 @@ const software_development: ProgramDefinition = {
   // panel. The other stages are not listed, so they trail in the default order.
   reviewSections: [
     { section: 'GENERAL' },
-    { section: 'PROGRAM' },
+    { workflowStage: overrideGpaWarningWorkflow.key },
     {
       title: 'Assessments',
       requirementKeys: [
@@ -65,7 +65,6 @@ const software_development: ProgramDefinition = {
         'reccomendation_letter_req', 'assess_reccomendation_lettern_req'
       ]
     },
-    { workflowStage: overrideGpaWarningWorkflow.key },
     { section: 'REVIEWER' }
   ],
   workflowStages: [
@@ -117,19 +116,6 @@ const project_management: ProgramDefinition = {
     'assess_organization_req',
     'reccomendation_letter_req',
     'assess_reccomendation_lettern_req'
-  ],
-  reviewSections: [
-    { section: 'GENERAL' },
-    { section: 'PROGRAM' },
-    {
-      title: 'Assessments',
-      requirementKeys: [
-        'communication_req', 'assess_communicationn_req',
-        'assess_attention_detail_req',
-        'organization_req', 'assess_organization_req',
-        'reccomendation_letter_req', 'assess_reccomendation_lettern_req'
-      ]
-    }
   ],
   workflowStages: [
     overrideGpaWarningWorkflow
