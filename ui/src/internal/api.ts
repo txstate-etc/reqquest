@@ -1454,16 +1454,15 @@ class API extends APIBase {
     return this.mutationForDialog(response.roleDeleteGrant)
   }
 
-  async getAnnouncement (active: boolean) {
+  async getAnnouncement (active?: boolean) {
     const response = await this.client.query({
       __name: 'announcement',
       announcements:{
         __args: {
-          filter: {
-            active
-          }
+          filter: active == null ? {} : { active }
         },
         id: true,
+        isActive: true,
         subject: true,
         body: true,
         start: true,

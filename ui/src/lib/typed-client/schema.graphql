@@ -303,6 +303,11 @@ type Announcement {
   end: DateTime
   id: ID!
 
+  """
+  Whether the announcement should be displaying right now: enabled and inside whatever date bounds it has.
+  """
+  isActive: Boolean!
+
   """URL the announcement directs the user to for more information."""
   link: String
 
@@ -323,7 +328,7 @@ type Announcement {
 
 input AnnouncementFilters {
   """
-  Return only the announcements that should be displayed at this moment: enabled OR within their date range.
+  Return only the announcements that should be displaying right now (true) or only those that should not (false). Omit to return all announcements regardless of state.
   """
   active: Boolean
 
@@ -1831,7 +1836,7 @@ type Query {
   accessUsers(filter: AccessUserFilter, paged: Pagination): [AccessUser!]!
 
   """
-  Retrieve site-wide announcements. Applicants only ever see currently active announcements; users with the Announcement view control see them all.
+  Retrieve site-wide announcements. Any authenticated user may retrieve any announcement, including ones that are disabled or outside their date range; pass filter.active to limit the result to the announcements that should be displaying right now.
   """
   announcements(filter: AnnouncementFilters): [Announcement!]!
 
@@ -1956,7 +1961,7 @@ type RequirementPrompt {
   navTitle: String!
 
   """
-  True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay` - a dependency it reads but does not own. Such a row must not be rendered beneath that requirement; the prompt is displayed under the requirement that does own it. This is not derivable from `visibility`: a no-display row is UNREACHABLE, but so is a prompt whose own requirement resolved before reaching it, and that one is still the requirement's to show.
+  True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay`
   """
   noDisplay: Boolean!
   optOut: Boolean!

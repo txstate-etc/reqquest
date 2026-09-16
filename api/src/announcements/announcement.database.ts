@@ -13,16 +13,15 @@ export interface AnnouncementRow {
   type: string
 }
 
+const activeSql = '(a.enabled = 1 AND (a.start IS NULL OR a.start <= NOW()) AND (a.end IS NULL OR a.end > NOW()))'
+
 function processFilters (filter?: AnnouncementFilters) {
   const where: string[] = []
   const binds: any[] = []
 
   if (filter?.ids?.length) where.push(`a.id IN (${db.in(binds, filter.ids)})`)
   if (filter?.enabled != null) where.push(`a.enabled = ${filter.enabled ? 1 : 0}`)
-  if (filter?.active) {
-    // an announcement is active when it is enabled and the current moment falls inside its date range
-    where.push('((a.start <= NOW()) AND (a.end > NOW()) OR a.enabled = 1)')
-  }
+  if (filter?.active != null) where.push(filter.active ? activeSql : `NOT ${activeSql}`)
 
   return { where, binds }
 }

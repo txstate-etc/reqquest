@@ -192,6 +192,8 @@ export interface Announcement {
     /** The announcement will not display after this date. Null means it displays until it is disabled. */
     end: (Scalars['DateTime'] | null)
     id: Scalars['ID']
+    /** Whether the announcement should be displaying right now: enabled and inside whatever date bounds it has. */
+    isActive: Scalars['Boolean']
     /** URL the announcement directs the user to for more information. */
     link: (Scalars['String'] | null)
     /** The text to display for the link. */
@@ -799,7 +801,7 @@ export interface Query {
      */
     access: Access
     accessUsers: AccessUser[]
-    /** Retrieve site-wide announcements. Applicants only ever see currently active announcements; users with the Announcement view control see them all. */
+    /** Retrieve site-wide announcements. Any authenticated user may retrieve any announcement, including ones that are disabled or outside their date range; pass filter.active to limit the result to the announcements that should be displaying right now. */
     announcements: Announcement[]
     /** The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order. */
     appRequestActivity: AppRequestActivity[]
@@ -849,7 +851,7 @@ export interface RequirementPrompt {
     moot: Scalars['Boolean']
     /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
     navTitle: Scalars['String']
-    /** True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay` - a dependency it reads but does not own. Such a row must not be rendered beneath that requirement; the prompt is displayed under the requirement that does own it. This is not derivable from `visibility`: a no-display row is UNREACHABLE, but so is a prompt whose own requirement resolved before reaching it, and that one is still the requirement's to show. */
+    /** True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay` */
     noDisplay: Scalars['Boolean']
     optOut: Scalars['Boolean']
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
@@ -1168,6 +1170,8 @@ export interface AnnouncementGenqlSelection{
     /** The announcement will not display after this date. Null means it displays until it is disabled. */
     end?: boolean | number
     id?: boolean | number
+    /** Whether the announcement should be displaying right now: enabled and inside whatever date bounds it has. */
+    isActive?: boolean | number
     /** URL the announcement directs the user to for more information. */
     link?: boolean | number
     /** The text to display for the link. */
@@ -1183,7 +1187,7 @@ export interface AnnouncementGenqlSelection{
 }
 
 export interface AnnouncementFilters {
-/** Return only the announcements that should be displayed at this moment: enabled OR within their date range. */
+/** Return only the announcements that should be displaying right now (true) or only those that should not (false). Omit to return all announcements regardless of state. */
 active?: (Scalars['Boolean'] | null),
 /** Return only enabled (true) or only disabled (false) announcements. */
 enabled?: (Scalars['Boolean'] | null),
@@ -1931,7 +1935,7 @@ export interface QueryGenqlSelection{
      */
     access?: AccessGenqlSelection
     accessUsers?: (AccessUserGenqlSelection & { __args?: {filter?: (AccessUserFilter | null), paged?: (Pagination | null)} })
-    /** Retrieve site-wide announcements. Applicants only ever see currently active announcements; users with the Announcement view control see them all. */
+    /** Retrieve site-wide announcements. Any authenticated user may retrieve any announcement, including ones that are disabled or outside their date range; pass filter.active to limit the result to the announcements that should be displaying right now. */
     announcements?: (AnnouncementGenqlSelection & { __args?: {filter?: (AnnouncementFilters | null)} })
     /** The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order. */
     appRequestActivity?: (AppRequestActivityGenqlSelection & { __args: {
@@ -1992,7 +1996,7 @@ export interface RequirementPromptGenqlSelection{
     moot?: boolean | number
     /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
     navTitle?: boolean | number
-    /** True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay` - a dependency it reads but does not own. Such a row must not be rendered beneath that requirement; the prompt is displayed under the requirement that does own it. This is not derivable from `visibility`: a no-display row is UNREACHABLE, but so is a prompt whose own requirement resolved before reaching it, and that one is still the requirement's to show. */
+    /** True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay` */
     noDisplay?: boolean | number
     optOut?: boolean | number
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */

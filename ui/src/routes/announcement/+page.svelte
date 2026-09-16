@@ -5,7 +5,6 @@
   import { FieldCheckbox, FieldDateTime, FieldRadio, FieldTextArea, FieldTextInput, FieldToggle, Form, TagSet } from "@txstate-mws/carbon-svelte"
   import type { PageData } from "../announcement/$types"
   import { Button, InlineNotification, NotificationActionButton } from 'carbon-components-svelte'
-  import { DateTime } from "luxon"
   import { invalidateAll } from "$app/navigation"
   import { toasts } from "@txstate-mws/svelte-components"
   import TextClearFormat from "carbon-icons-svelte/lib/TextClearFormat.svelte";
@@ -17,7 +16,7 @@
   let store: FormStore | undefined
 
   async function submit (data: any) {
-    const { id, addLink, ...rest } = data
+    const { id, addLink, isActive, ...rest } = data
     const { success, messages, data: newData } = id ? await api.updateAnnouncement(id, rest, false) : await api.createAnnouncement(rest, false)
     if (success) toasts.add({ message: 'This message has been saved.', title: 'Success', type: 'success' })
     return {
@@ -28,7 +27,7 @@
   }
 
   async function validate (data: any) {
-    const { id, addLink, ...rest } = data
+    const { id, addLink, isActive, ...rest } = data
     const { messages } = id ? await api.updateAnnouncement(id, rest) : await api.createAnnouncement(rest)
     return messages
   }
@@ -44,7 +43,7 @@
     store?.setField('type', 'toggle')
   }
 
-  $: enabled = anouncement?.enabled || ((anouncement?.end != null && DateTime.fromISO(anouncement.end) >= DateTime.now()) && anouncement?.start != null && DateTime.fromISO(anouncement.start) <= DateTime.now())
+  $: isActive = anouncement?.isActive ?? false
 
 </script>
 <IntroPanel
@@ -53,11 +52,11 @@
 >
   <div class="flex items-center gap-2">
     <TagSet
-      tags={enabled ? [{ label: 'Active', type: 'green' }] : [{ label: 'Inactive', type: 'purple' }]}
+      tags={isActive ? [{ label: 'Active', type: 'green' }] : [{ label: 'Inactive', type: 'purple' }]}
       tagType="status"
       tagSize="sm"
     />
-    <span class="text-sm">{enabled ? 'This message is currently displaying to applicants.' : 'This message is not currently displaying to applicants.'}</span>
+    <span class="text-sm">{isActive ? 'This message is currently displaying to applicants.' : 'This message is not currently displaying to applicants.'}</span>
   </div>
 </IntroPanel>
 
@@ -84,8 +83,8 @@
       <FieldToggle path='enabled' hideLabel labelText='Enable/Disable' labelA='Message inactive' labelB='Message active' />
     {:else}
       <div class="md:w-[645px] flow datetime-full">
-        <FieldDateTime required path='start' labelText='Start date' defaultTime='24:00'/>
-        <FieldDateTime required path='end' labelText='End date' helperText='This is how long the message will display.' defaultTime='24:00' />
+        <FieldDateTime path='start' labelText='Start date' helperText='Leave blank to start displaying as soon as it is saved.' defaultTime='24:00'/>
+        <FieldDateTime path='end' labelText='End date' helperText='How long the message displays. Leave blank to display indefinitely.' defaultTime='24:00' />
         <div class="flex justify-end mt-0">
           <Button size='small' kind='ghost' on:click={() => { store?.setField('start', undefined); store?.setField('end', undefined)}} icon={TextClearFormat}>Clear dates</Button>
         </div>

@@ -18,5 +18,15 @@ export const announcementMigrations: DatabaseMigration[] = [
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `)
     }
+  },
+  {
+    id: '20260916000000',
+    async execute (db) {
+      // Date-range announcements used to be stored disabled and displayed anyway, because the
+      // active filter OR'd the date range against `enabled`. Now that being enabled is required,
+      // they must actually be enabled or they would all go dark. The editor never offered a way
+      // to turn a date-range announcement off, so every existing one was effectively on.
+      await db.update("UPDATE announcements SET enabled = 1 WHERE type = 'date'")
+    }
   }
 ]
