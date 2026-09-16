@@ -897,11 +897,6 @@ type Application {
   The reason the application was restored after previously being rescinded
   """
   restoredReason: String
-
-  """
-  The program's reviewer-screen layout, in display order. Empty when the program did not define one, in which case the UI renders its default type-based panels. See ProgramReviewSection.
-  """
-  reviewSections: [ProgramReviewSection!]!
   status: ApplicationStatus!
 
   """
@@ -1806,25 +1801,6 @@ input ProgramFilters {
 }
 
 """
-One panel of the reviewer screen, from the program definition's reviewSections. Exactly one shape is populated: a custom panel (title + requirementKeys), a workflow-stage panel (workflowStageKey), or a default panel (section). Panels not listed trail in the default order.
-"""
-type ProgramReviewSection {
-  """
-  Custom panel: the requirements it shows, in display order. Requirements disabled in the period are simply absent from the application and should be skipped.
-  """
-  requirementKeys: [String!]
-
-  """Default panel: which one."""
-  section: ReviewDefaultSection
-
-  """Custom panel: its title."""
-  title: String
-
-  """Workflow-stage panel: the stage key."""
-  workflowStageKey: String
-}
-
-"""
 The visibility of a prompt on a request. This is used to determine whether the prompt should be shown to the user in the UI.
 """
 enum PromptVisibility {
@@ -2096,29 +2072,6 @@ enum RequirementType {
   This requirement belongs to a workflow stage. It should only be included in a workflow stage and should not appear in the standard requirementKeys array of a program.
   """
   WORKFLOW
-}
-
-"""
-The panels the reviewer screen renders by default, grouped by requirement type. A program's reviewSections may place any of them by name.
-"""
-enum ReviewDefaultSection {
-  """"Acceptance" - ACCEPTANCE requirements not placed in a custom panel."""
-  ACCEPTANCE
-
-  """
-  "General Questions" - PREQUAL requirements not placed in a custom panel.
-  """
-  GENERAL
-
-  """
-  The panel titled with the program name - QUALIFICATION and POSTQUAL requirements not placed in a custom panel.
-  """
-  PROGRAM
-
-  """
-  "Reviewer Questions" - PREAPPROVAL and APPROVAL requirements not placed in a custom panel.
-  """
-  REVIEWER
 }
 
 type RoleActions {

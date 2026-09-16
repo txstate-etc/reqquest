@@ -268,6 +268,16 @@ function configureDemoInstanceParams (): AnyUIConfig {
       },
       programs: {
         adopt_a_dog_program: { icon: DogWalker },
+        // The reviewer's vaccine check belongs right under the applicant's answer about their other cats,
+        // so the two share a panel, placed after the default applicant panels. `applicant_seems_nice_req`
+        // is not placed, so it falls into the default "Reviewer Questions" panel that trails the list.
+        adopt_a_cat_program: {
+          reviewSections: [
+            { section: 'GENERAL' },
+            { section: 'PROGRAM' },
+            { title: 'Other cats in the home', requirementKeys: ['other_cats_applicant_req', 'other_cats_reviewer_req'] }
+          ]
+        },
       },
       requirements: {
         have_big_yard_req: {},
@@ -392,10 +402,59 @@ function configureDemoInstanceParams (): AnyUIConfig {
         return { firstName: userProfileName[0], lastName: userProfileName[1], username: login }
       },
       programs: {
-        operations_infrastructure: { icon: DogWalker },
-        software_development: { icon: DogWalker },
+        operations_infrastructure: {
+          icon: DogWalker,
+          reviewSections: [
+            { section: 'GENERAL' },
+            { section: 'PROGRAM' },
+            {
+              title: 'Assessments',
+              requirementKeys: [
+                'written_automation_req', 'evidence_automation_req',
+                'investigated_future_career_req', 'rate_future_career_req',
+                'reccomendation_letter_req', 'assess_reccomendation_lettern_req'
+              ]
+            }
+          ]
+        },
+        software_development: {
+          icon: DogWalker,
+          // Each assessment sits directly under the answer it assesses, and the GPA override stage (which a
+          // reviewer may need while the applicant is still working) is pulled above the general reviewer
+          // panel. The other stages are not listed, so they trail in the default order.
+          reviewSections: [
+            { section: 'GENERAL' },
+            { workflowStage: 'override_gpa_warning' },
+            {
+              title: 'Assessments',
+              requirementKeys: [
+                'data_related_puzzle_req', 'assess_data_related_puzzle_req',
+                'outside_class_example_req', 'assess_outside_class_example_req',
+                'critical_thinking_req', 'assess_critical_thinking_req',
+                'reccomendation_letter_req', 'assess_reccomendation_lettern_req'
+              ]
+            },
+            { section: 'REVIEWER' }
+          ]
+        },
+        // no layout, so it shows the default type-based panels
         project_management: { icon: DogWalker },
-        application_management_support: { icon: DogWalker },
+        application_management_support: {
+          icon: DogWalker,
+          reviewSections: [
+            { section: 'GENERAL' },
+            { section: 'PROGRAM' },
+            {
+              title: 'Assessments',
+              requirementKeys: [
+                'technical_troubleshooting_req', 'assess_technical_troubleshootingn_req',
+                'support_communication_req', 'assess_support_communicationn_req',
+                'maintain_sys_documentation_req', 'assess_maintain_sys_documentation_req',
+                'reccomendation_letter_req', 'assess_reccomendation_lettern_req'
+              ]
+            }
+          ]
+        },
       },
       requirements: {
         step1_prequal_req: {},
@@ -482,6 +541,16 @@ function configureDemoInstanceParams (): AnyUIConfig {
     },
     programs: {
       adopt_a_dog_program: { icon: DogWalker },
+      // The reviewer's vaccine check belongs right under the applicant's answer about their other cats,
+      // so the two share a panel, placed after the default applicant panels. `applicant_seems_nice_req`
+      // is not placed, so it falls into the default "Reviewer Questions" panel that trails the list.
+      adopt_a_cat_program: {
+        reviewSections: [
+          { section: 'GENERAL' },
+          { section: 'PROGRAM' },
+          { title: 'Other cats in the home', requirementKeys: ['other_cats_applicant_req', 'other_cats_reviewer_req'] }
+        ]
+      },
     },
     requirements: {
       have_big_yard_req: {},

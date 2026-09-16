@@ -20,18 +20,6 @@ const operations_infrastructure: ProgramDefinition = {
     'reccomendation_letter_req',
     'assess_reccomendation_lettern_req'
   ],
-  reviewSections: [
-    { section: 'GENERAL' },
-    { section: 'PROGRAM' },
-    {
-      title: 'Assessments',
-      requirementKeys: [
-        'written_automation_req', 'evidence_automation_req',
-        'investigated_future_career_req', 'rate_future_career_req',
-        'reccomendation_letter_req', 'assess_reccomendation_lettern_req'
-      ]
-    }
-  ],
   workflowStages: [
     overrideGpaWarningWorkflow
   ]
@@ -49,23 +37,6 @@ const software_development: ProgramDefinition = {
     'assess_critical_thinking_req',
     'reccomendation_letter_req',
     'assess_reccomendation_lettern_req'
-  ],
-  // Each assessment sits directly under the answer it assesses, and the GPA override stage (which a
-  // reviewer may need while the applicant is still working) is pulled above the general reviewer
-  // panel. The other stages are not listed, so they trail in the default order.
-  reviewSections: [
-    { section: 'GENERAL' },
-    { workflowStage: overrideGpaWarningWorkflow.key },
-    {
-      title: 'Assessments',
-      requirementKeys: [
-        'data_related_puzzle_req', 'assess_data_related_puzzle_req',
-        'outside_class_example_req', 'assess_outside_class_example_req',
-        'critical_thinking_req', 'assess_critical_thinking_req',
-        'reccomendation_letter_req', 'assess_reccomendation_lettern_req'
-      ]
-    },
-    { section: 'REVIEWER' }
   ],
   workflowStages: [
     overrideGpaWarningWorkflow,
@@ -134,19 +105,6 @@ const application_management_support: ProgramDefinition = {
     'assess_maintain_sys_documentation_req',
     'reccomendation_letter_req',
     'assess_reccomendation_lettern_req'
-  ],
-  reviewSections: [
-    { section: 'GENERAL' },
-    { section: 'PROGRAM' },
-    {
-      title: 'Assessments',
-      requirementKeys: [
-        'technical_troubleshooting_req', 'assess_technical_troubleshootingn_req',
-        'support_communication_req', 'assess_support_communicationn_req',
-        'maintain_sys_documentation_req', 'assess_maintain_sys_documentation_req',
-        'reccomendation_letter_req', 'assess_reccomendation_lettern_req'
-      ]
-    }
   ],
   workflowStages: [
     overrideGpaWarningWorkflow

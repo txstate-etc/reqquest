@@ -437,15 +437,21 @@ panels are not shown.
 Nothing about that layout is inferred from where a reviewer requirement sits in `requirementKeys` - a
 reviewer requirement listed right after the applicant requirement it assesses still lands in "Reviewer
 Questions". When an assessment should render directly beneath the answer it assesses, or the panels should
-come in a different order, say so with `reviewSections` on the program:
+come in a different order, say so with `reviewSections` on the program's entry in the UI's `UIConfig.programs`
+(`ProgramDefinition` from `@reqquest/ui`). The layout is pure presentation, so it is configured next to the
+program's icon and never leaves the browser - the API's program definition knows nothing about it.
 
 ```ts
-reviewSections: [
-  { section: 'GENERAL' },
-  { title: 'Assessments', requirementKeys: ['essay_req', 'assess_essay_req'] },
-  { workflowStage: 'gpa_override' },
-  { section: 'REVIEWER' }
-]
+programs: {
+  essay_program: {
+    reviewSections: [
+      { section: 'GENERAL' },
+      { title: 'Assessments', requirementKeys: ['essay_req', 'assess_essay_req'] },
+      { workflowStage: 'gpa_override' },
+      { section: 'REVIEWER' }
+    ]
+  }
+}
 ```
 
 The list is the display order. A custom panel (`title` + `requirementKeys`) shows exactly the requirements
@@ -454,8 +460,11 @@ its panel carries the stage's advance/return controls. A default panel is placed
 requirements no custom panel claimed. Panels you do not mention trail the list in the default order. Listed
 panels come first, so a layout that names only a custom panel shows it above "General Questions"; list
 `{ section: 'GENERAL' }` and `{ section: 'PROGRAM' }` ahead of it to keep the applicant's panels on top, as the
-demos do. Mistakes - a key the program does not have, a requirement placed twice, a WORKFLOW requirement in a
-custom panel - are rejected at startup.
+demos do. A misspelled requirement key or section name is a build error once the project generates its key
+declaration (see `keys.ts` in `@reqquest/ui`); a requirement, stage or default section placed twice is logged
+with `console.error` when the UI registry is built. A key the program does not have is skipped at render time,
+the same as a requirement the period disabled, and a workflow-stage requirement named in a custom panel stays
+in its stage panel.
 
 ## Prompts and PromptAnswers
 Prompts represent the collection of data from our users (both applicants and reviewers). Each

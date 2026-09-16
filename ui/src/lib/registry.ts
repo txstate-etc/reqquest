@@ -14,7 +14,29 @@ export interface PromptLoader {
 
 export type Loader = PromptLoader | boolean
 
-export interface ProgramDefinition {
+/**
+ * The panels the reviewer screen renders by default, grouped by requirement type. A program's
+ * `reviewSections` may place any of them by name.
+ *
+ * - `GENERAL` - "General Questions": PREQUAL requirements no custom panel claimed
+ * - `PROGRAM` - the panel titled with the program name: QUALIFICATION and POSTQUAL requirements no custom panel claimed
+ * - `REVIEWER` - "Reviewer Questions": PREAPPROVAL and APPROVAL requirements no custom panel claimed
+ * - `ACCEPTANCE` - "Acceptance": ACCEPTANCE requirements no custom panel claimed
+ */
+export type ReviewDefaultSection = 'GENERAL' | 'PROGRAM' | 'REVIEWER' | 'ACCEPTANCE'
+const reviewDefaultSections: readonly ReviewDefaultSection[] = ['GENERAL', 'PROGRAM', 'REVIEWER', 'ACCEPTANCE']
+
+//One panel of the reviewer screen. See `ProgramDefinition.reviewSections`.
+export type ReviewSection<RK extends string = RequirementKey> =
+  /** A custom panel showing exactly these requirements, in this order. */
+  | { title: string, requirementKeys: RK[] }
+  /** The panel for one of the program's workflow stages, titled by the stage. */
+  | { workflowStage: string }
+  /** One of the default type-based panels, holding the requirements no custom panel claimed. */
+  | { section: ReviewDefaultSection }
+
+// `RK` is the requirement-key union `reviewSections` is checked against.
+export interface ProgramDefinition<RK extends string = RequirementKey> {
   /**
    * The key of the program this decorates. Autocompletes and rejects unknown keys once the project
    * generates a key declaration; plain `string` until then.
@@ -24,6 +46,11 @@ export interface ProgramDefinition {
    * An icon to represent this program in the navigation.
    */
   icon?: Component
+  /**
+   * Lay out the reviewer screen. Without this, the reviewer sees one panel per requirement type,
+   * in this order, each omitted when it has nothing to show
+   */
+  reviewSections?: ReviewSection<RK>[]
 }
 
 export interface RequirementDefinition {
@@ -197,7 +224,7 @@ export interface Terminologies {
  * `UIConfig<SimplePromptKey, SimpleRequirementKey, SimpleProgramKey>`.
  */
 export interface UIConfig<PK extends string = PromptKey, RK extends string = RequirementKey, GK extends string = ProgramKey> {
-  programs: ProgramDefinition[] | { [K in GK]?: Omit<ProgramDefinition, 'key'> }
+  programs: ProgramDefinition<RK>[] | { [K in GK]?: Omit<ProgramDefinition<RK>, 'key'> }
   requirements: RequirementDefinition[] | { [K in RK]?: Omit<RequirementDefinition, 'key'> }
   prompts: PromptDefinition[] | { [K in PK]: Omit<PromptDefinition, 'key'> }
   /**
@@ -364,6 +391,7 @@ export class UIRegistry {
     this.promptMap = toDefinitionMap<PromptDefinition>(config.prompts)
     this.requirementMap = toDefinitionMap<RequirementDefinition>(config.requirements)
     this.programMap = toDefinitionMap<ProgramDefinition>(config.programs)
+    for (const program of Object.values(this.programMap)) this.validateReviewSections(program)
     this.userLookup = config.userLookup 
     this.lang = {
       appRequest: config.terminology?.appRequest ?? (Object.keys(this.programMap).length > 1 ? 'App Request' : 'Application'),
@@ -373,6 +401,32 @@ export class UIRegistry {
     this.plural = {} as any
     for (const key of Object.keys(this.lang) as (keyof Terminologies)[]) {
       this.plural[key] = config.terminology?.plural?.[key] ?? plural(this.lang[key])
+    }
+  }
+
+  /**
+   * `reviewSections` is pure layout, so a mistake in it surfaces as a silently missing or doubled
+   * panel on the reviewer screen.
+  */
+  protected validateReviewSections (program: ProgramDefinition) {
+    const where = `[reqquest] reviewSections of program \`${program.key}\``
+    const placed = new Set<string>()
+    const usedStages = new Set<string>()
+    const usedSections = new Set<string>()
+    for (const entry of program.reviewSections ?? []) {
+      if ('requirementKeys' in entry) {
+        for (const requirementKey of entry.requirementKeys) {
+          if (placed.has(requirementKey)) console.error(`${where}: \`${requirementKey}\` is placed in more than one panel.`)
+          placed.add(requirementKey)
+        }
+      } else if ('workflowStage' in entry) {
+        if (usedStages.has(entry.workflowStage)) console.error(`${where}: workflow stage \`${entry.workflowStage}\` is placed more than once.`)
+        usedStages.add(entry.workflowStage)
+      } else {
+        if (!reviewDefaultSections.includes(entry.section)) console.error(`${where}: \`${String(entry.section)}\` is not a default section. Use one of ${reviewDefaultSections.join(', ')}.`)
+        if (usedSections.has(entry.section)) console.error(`${where}: default section \`${entry.section}\` is placed more than once.`)
+        usedSections.add(entry.section)
+      }
     }
   }
 

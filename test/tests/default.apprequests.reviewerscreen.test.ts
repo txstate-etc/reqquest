@@ -91,25 +91,6 @@ test.describe.serial('Reviewer screen panels follow the program\'s reviewSection
     expect(submitAppRequest.success).toEqual(true)
   })
 
-  test('Reviewer - API returns the cat program\'s layout', async ({ reviewerRequest }) => {
-    const query = `
-      query GetReviewSections($appRequestIds: [ID!]) {
-        appRequests(filter: { ids: $appRequestIds }) {
-          applications { programKey reviewSections { title requirementKeys workflowStageKey section } }
-        }
-      }
-    `
-    const { appRequests } = await reviewerRequest.graphql<{ appRequests: { applications: { programKey: string, reviewSections: { title: string | null, requirementKeys: string[] | null, workflowStageKey: string | null, section: string | null }[] }[] }[] }>(query, { appRequestIds: [appRequestId] })
-    const cat = appRequests[0].applications.find(a => a.programKey === programKey)!
-    expect(cat.reviewSections).toEqual([
-      { title: null, requirementKeys: null, workflowStageKey: null, section: 'GENERAL' },
-      { title: null, requirementKeys: null, workflowStageKey: null, section: 'PROGRAM' },
-      { title: 'Other cats in the home', requirementKeys: ['other_cats_applicant_req', 'other_cats_reviewer_req'], workflowStageKey: null, section: null }
-    ])
-    const dog = appRequests[0].applications.find(a => a.programKey === 'adopt_a_dog_program')!
-    expect(dog.reviewSections).toEqual([])
-  })
-
   test('Reviewer - custom panel sits between the program panel and Reviewer Questions', async ({ reviewerPage }) => {
     await reviewerPage.goto(`/requests/${appRequestId}/approve/${programKey}`)
     const panels = reviewerPage.locator('.panel')

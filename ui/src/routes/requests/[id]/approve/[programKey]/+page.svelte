@@ -95,7 +95,7 @@
   type Section = { key: string, title: string, requirements: ApplicationRequirement[] }
 
   // the screen is split into panels by requirement type, in lifecycle order, unless the program's
-  // reviewSections says otherwise. A custom panel takes the requirements it names, in the order it names
+  // reviewSections (on its UIConfig entry) says otherwise. A custom panel takes the requirements it names, in the order it names
   // them; the default panels keep whatever is left, in requirementKeys order. Panels the layout does not
   // mention trail it in the default order, so a layout may be partial.
   let sections: Section[]
@@ -117,10 +117,11 @@
     const blockingStages: Section[] = []
     const nonBlockingStages: Section[] = []
     const stages: Record<string, Section> = {}
-    const custom = application.reviewSections.map((entry, i) => entry.requirementKeys
-      ? { key: `custom:${i}`, title: entry.title ?? '', requirementKeys: entry.requirementKeys, requirements: [] as ApplicationRequirement[] }
+    const layout = uiRegistry.getProgram(programKey)?.reviewSections ?? []
+    const custom = layout.map((entry, i) => 'requirementKeys' in entry
+      ? { key: `custom:${i}`, title: entry.title, requirementKeys: entry.requirementKeys, requirements: [] as ApplicationRequirement[] }
       : undefined)
-    const claimedKeys = new Set(custom.flatMap(c => c?.requirementKeys ?? []))
+    const claimedKeys = new Set<string>(custom.flatMap(c => c?.requirementKeys ?? []))
     const claimed = new Map<string, ApplicationRequirement>()
     for (const req of application.requirements) {
       // automation indicator is about the prompt itself not requirement's status, so only applies to the requirements own prompts
@@ -157,14 +158,12 @@
       if (c) c.requirements = c.requirementKeys.map(k => claimed.get(k)).filter((r): r is ApplicationRequirement => r != null)
     }
     const ordered: Section[] = []
-    for (const [i, entry] of application.reviewSections.entries()) {
-      const section = entry.requirementKeys
+    for (const [i, entry] of layout.entries()) {
+      const section = 'requirementKeys' in entry
         ? custom[i]
-        : entry.workflowStageKey
-          ? stages[entry.workflowStageKey]
-          : entry.section
-            ? defaults[entry.section]
-            : undefined
+        : 'workflowStage' in entry
+          ? stages[entry.workflowStage]
+          : defaults[entry.section]
       if (section) ordered.push(section)
     }
     for (const section of [general, program, reviewer, acceptance, ...blockingStages, ...nonBlockingStages]) {

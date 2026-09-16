@@ -1,5 +1,5 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
-import { ApplicationRow, AppRequestPhase, AppRequestStatus, AppRequestStatusDB, ProgramDefinitionProcessed, programRegistry, ProgramReviewSection } from '../internal.js'
+import { ApplicationRow, AppRequestPhase, AppRequestStatus, AppRequestStatusDB, ProgramDefinitionProcessed, programRegistry } from '../internal.js'
 
 export enum ApplicationStatus {
   PENDING = 'PENDING',
@@ -138,7 +138,6 @@ export class Application {
     this.navTitle = this.program.title ?? this.program.title
     this.applicantDescription = this.program.applicantDescription
     this.eligibilityDescription = this.program.eligibilityDescription
-    this.reviewSections = (this.program.reviewSections ?? []).map(entry => new ProgramReviewSection(entry))
     this.authorizationKeys = { program: [this.program.key] }
     this.closed = row.appRequestStatus !== AppRequestStatusDB.OPEN
     this.appRequestPhase = row.appRequestPhase
@@ -180,9 +179,6 @@ export class Application {
 
   @Field({ description: 'The program key this application corresponds to.' })
   programKey: string
-
-  @Field(type => [ProgramReviewSection], { description: 'The program\'s reviewer-screen layout, in display order. Empty when the program did not define one, in which case the UI renders its default type-based panels. See ProgramReviewSection.' })
-  reviewSections: ProgramReviewSection[]
 
   @Field(type => ApplicationRescindedStatus, { nullable: true, description: 'The application rescinded status' })
   rescindedStatus?: ApplicationRescindedStatus

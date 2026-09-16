@@ -920,12 +920,6 @@ class API extends APIBase {
           navTitle: true,
           programKey: true,
           rescindedStatus: true,
-          reviewSections: {
-            title: true,
-            requirementKeys: true,
-            workflowStageKey: true,
-            section: true
-          },
           workflowStage: {
             key: true,
             blocking: true
