@@ -18,7 +18,7 @@
   async function submit (data: any) {
     const { id, addLink, isActive, ...rest } = data
     const { success, messages, data: newData } = id ? await api.updateAnnouncement(id, rest, false) : await api.createAnnouncement(rest, false)
-    if (success) toasts.add({ message: 'This message has been saved.', title: 'Success', type: 'success' })
+    if (success) toasts.add({ message: 'This announcement has been saved.', title: 'Success', type: 'success' })
     return {
       success,
       messages,

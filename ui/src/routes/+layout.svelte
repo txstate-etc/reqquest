@@ -104,7 +104,7 @@
       ]
     },
     {
-      title: 'Manage announcement',
+      title: 'Manage Announcement',
       group: 'Administration',
       hideFromSideNav: !access?.viewAnnouncementManagement,
       icon: Time,
