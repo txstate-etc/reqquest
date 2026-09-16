@@ -21,9 +21,6 @@ export default {
     ],
     "types": {
         "Access": {
-            "createAnnouncement": [
-                45
-            ],
             "createAppRequestOther": [
                 45
             ],
@@ -36,10 +33,7 @@ export default {
             "createRole": [
                 45
             ],
-            "deleteAnnouncement": [
-                45
-            ],
-            "updateAnnouncement": [
+            "manageAnnouncements": [
                 45
             ],
             "user": [

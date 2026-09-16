@@ -1,7 +1,4 @@
 type Access {
-  """Current user is permitted to create announcements."""
-  createAnnouncement: Boolean!
-
   """
   Current user may create a new app request on behalf of another user and should be shown the Create App Request button on the reviewer dashboard or main app request list.
   """
@@ -22,11 +19,10 @@ type Access {
   """
   createRole: Boolean!
 
-  """Current user is permitted to delete announcements."""
-  deleteAnnouncement: Boolean!
-
-  """Current user is permitted to update announcements."""
-  updateAnnouncement: Boolean!
+  """
+  Current user is permitted to manage site-wide announcements: create, update, and delete them.
+  """
+  manageAnnouncements: Boolean!
 
   """The current user, if any."""
   user: AccessUser

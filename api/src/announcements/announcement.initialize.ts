@@ -28,5 +28,26 @@ export const announcementMigrations: DatabaseMigration[] = [
       // to turn a date-range announcement off, so every existing one was effectively on.
       await db.update("UPDATE announcements SET enabled = 1 WHERE type = 'date'")
     }
+  },
+  {
+    id: '20260916010000',
+    async execute (db) {
+      // The Announcement control group's create/update/delete controls collapsed into a single
+      // `manage` control. Insert-then-delete rather than UPDATE: accessRoleGrantControls has a
+      // UNIQUE KEY (grantId, control), so a grant holding all three would collide on the way over.
+      // Deny grants (allow = 0) carry across too, which denies the whole group - the safe direction.
+      await db.insert(`
+        INSERT IGNORE INTO accessRoleGrantControls (grantId, control)
+        SELECT DISTINCT c.grantId, 'manage'
+          FROM accessRoleGrantControls c
+          JOIN accessRoleGrants g ON g.id = c.grantId
+         WHERE g.controlGroup = 'Announcement' AND c.control IN ('create', 'update', 'delete')
+      `)
+      await db.delete(`
+        DELETE c FROM accessRoleGrantControls c
+          JOIN accessRoleGrants g ON g.id = c.grantId
+         WHERE g.controlGroup = 'Announcement' AND c.control IN ('create', 'update', 'delete')
+      `)
+    }
   }
 ]

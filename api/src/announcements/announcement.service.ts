@@ -12,16 +12,8 @@ export class AnnouncementService extends AuthService<Announcement> {
     return announcements[0]
   }
 
-  mayCreate () {
-    return this.hasControl('Announcement', 'create')
-  }
-
-  mayUpdate () {
-    return this.hasControl('Announcement', 'update')
-  }
-
-  mayDelete () {
-    return this.hasControl('Announcement', 'delete')
+  mayManage () {
+    return this.hasControl('Announcement', 'manage')
   }
 
   validate (update: AnnouncementUpdate) {
@@ -50,7 +42,7 @@ export class AnnouncementService extends AuthService<Announcement> {
   }
 
   async create (update: AnnouncementUpdate, validateOnly?: boolean) {
-    if (!this.mayCreate()) throw new Error('You are not allowed to create an announcement.')
+    if (!this.mayManage()) throw new Error('You are not allowed to create an announcement.')
     const exists = await this.find()
     if (exists.length) throw new Error('An announcement already exists')
     const response = this.validate(update)
@@ -68,9 +60,9 @@ export class AnnouncementService extends AuthService<Announcement> {
   }
 
   async update (id: string, update: AnnouncementUpdate, validateOnly?: boolean) {
+    if (!this.mayManage()) throw new Error('You are not allowed to update this announcement.')
     const announcement = await this.findByID(id)
     if (!announcement) throw new Error('Announcement not found.')
-    if (!this.mayUpdate()) throw new Error('You are not allowed to update this announcement.')
     const response = this.validate(update)
     if (validateOnly || response.hasErrors()) return response
     await updateAnnouncement(id, {
@@ -86,9 +78,9 @@ export class AnnouncementService extends AuthService<Announcement> {
   }
 
   async delete (id: string) {
+    if (!this.mayManage()) throw new Error('You are not allowed to delete this announcement.')
     const announcement = await this.findByID(id)
     if (!announcement) throw new Error('Announcement not found.')
-    if (!this.mayDelete()) throw new Error('You are not allowed to delete this announcement.')
     await deleteAnnouncement(id)
     return new ValidatedResponse({ success: true })
   }
