@@ -54,6 +54,7 @@ class API extends APIBase {
         viewAppRequestList: true,
         createAppRequestSelf: true,
         createAppRequestOther: true,
+        viewAnnouncementManagement: true,
         manageAnnouncements: true
       }
     })

@@ -26,6 +26,8 @@ export interface Access {
     manageAnnouncements: Scalars['Boolean']
     /** The current user, if any. */
     user: (AccessUser | null)
+    /** Current user is permitted to view the announcement management page, whether or not they may change anything. */
+    viewAnnouncementManagement: Scalars['Boolean']
     /** Current user is permitted to view the app request list. */
     viewAppRequestList: Scalars['Boolean']
     /** Current user is permitted to view the applicant dashboard. */
@@ -940,6 +942,8 @@ export interface AccessGenqlSelection{
     manageAnnouncements?: boolean | number
     /** The current user, if any. */
     user?: AccessUserGenqlSelection
+    /** Current user is permitted to view the announcement management page, whether or not they may change anything. */
+    viewAnnouncementManagement?: boolean | number
     /** Current user is permitted to view the app request list. */
     viewAppRequestList?: boolean | number
     /** Current user is permitted to view the applicant dashboard. */

@@ -16,6 +16,14 @@ export class AnnouncementService extends AuthService<Announcement> {
     return this.hasControl('Announcement', 'manage')
   }
 
+  /**
+   * Deliberately not named `mayView`: AuthorizedServiceSync declares a protected `mayView(obj)`
+   * that removeUnauthorized() uses as a per-row filter, and this is a page-level right.
+   */
+  mayViewAnnouncementManagement () {
+    return this.hasControl('Announcement', 'view') || this.mayManage()
+  }
+
   validate (update: AnnouncementUpdate) {
     const response = new ValidatedAnnouncementResponse({ success: true })
     if (isBlank(update.subject)) response.addMessage('Subject is required.', 'subject')

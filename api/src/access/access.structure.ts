@@ -274,6 +274,7 @@ export async function initAccess () {
     title: 'Admin - Manage Announcements',
     description: 'These controls govern site-wide announcements. Any user may see an announcement that is currently active; these controls are about managing them.',
     controls: {
+      view: { description: 'View the announcement management page without being able to change anything.' },
       manage: { description: 'Manage site-wide announcements, including turning them on and off.' }
     }
   }

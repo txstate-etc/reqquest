@@ -27,6 +27,11 @@ type Access {
   """The current user, if any."""
   user: AccessUser
 
+  """
+  Current user is permitted to view the announcement management page, whether or not they may change anything.
+  """
+  viewAnnouncementManagement: Boolean!
+
   """Current user is permitted to view the app request list."""
   viewAppRequestList: Boolean!
 

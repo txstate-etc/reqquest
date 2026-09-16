@@ -11,7 +11,7 @@
 
 
   export let data: PageData
-  $: ({ anouncement } = data)
+  $: ({ anouncement, canManage } = data)
 
   let store: FormStore | undefined
 
@@ -62,8 +62,8 @@
 
 <Form
   let:data
-  {submit}
-  {validate}
+  submit={canManage ? submit : undefined}
+  validate={canManage ? validate : undefined}
   bind:store
   on:saved={saved}
   hideFallbackMessage
@@ -72,6 +72,7 @@
   <FieldRadio
     path='type'
     required
+    disabled={!canManage}
     labelText="Display duration"
     defaultValue='toggle'
     class="md:w-[645px]"
@@ -80,23 +81,23 @@
       { label: 'Date range', value: 'date' }
     ]} />
     {#if data.type === 'toggle'}
-      <FieldToggle path='enabled' hideLabel labelText='Enable/Disable' labelA='Message inactive' labelB='Message active' />
+      <FieldToggle path='enabled' disabled={!canManage} hideLabel labelText='Enable/Disable' labelA='Message inactive' labelB='Message active' />
     {:else}
       <div class="md:w-[645px] flow datetime-full">
-        <FieldDateTime path='start' labelText='Start date' helperText='Leave blank to start displaying as soon as it is saved.' defaultTime='24:00'/>
-        <FieldDateTime path='end' labelText='End date' helperText='How long the message displays. Leave blank to display indefinitely.' defaultTime='24:00' />
+        <FieldDateTime path='start' disabled={!canManage} labelText='Start date' helperText='Leave blank to start displaying as soon as it is saved.' defaultTime='24:00'/>
+        <FieldDateTime path='end' disabled={!canManage} labelText='End date' helperText='How long the message displays. Leave blank to display indefinitely.' defaultTime='24:00' />
         <div class="flex justify-end mt-0">
-          <Button size='small' kind='ghost' on:click={() => { store?.setField('start', undefined); store?.setField('end', undefined)}} icon={TextClearFormat}>Clear dates</Button>
+          <Button size='small' kind='ghost' disabled={!canManage} on:click={() => { store?.setField('start', undefined); store?.setField('end', undefined)}} icon={TextClearFormat}>Clear dates</Button>
         </div>
       </div>
     {/if}
 
     <div class="md:w-[645px] flow">
-      <FieldTextArea rows={1} required path='subject' labelText='Message title' maxCount={40} class="md:w-[645px] textarea"/>
-      <FieldTextArea required path='body' labelText='Message text' maxCount={125} class="md:w-[645px]"/>
+      <FieldTextArea rows={1} required disabled={!canManage} path='subject' labelText='Message title' maxCount={40} class="md:w-[645px] textarea"/>
+      <FieldTextArea required disabled={!canManage} path='body' labelText='Message text' maxCount={125} class="md:w-[645px]"/>
     </div>
 
-    <FieldCheckbox path='addLink' labelText='Add link' on:change={(e: any) => {
+    <FieldCheckbox path='addLink' disabled={!canManage} labelText='Add link' on:change={(e: any) => {
       if (!e.target.checked) {
         store?.setField('linkText', undefined)
         store?.setField('link', undefined)
@@ -105,8 +106,8 @@
 
     {#if data.addLink}
       <div class="flex flex-col sm:flex-row gap-4 md:w-[645px] addLink">
-        <FieldTextArea required class='textarea w-full' maxCount={30} rows={1} path='linkText' labelText='Link text' />
-        <FieldTextInput required class='w-full' path='link' labelText='URL' />
+        <FieldTextArea required disabled={!canManage} class='textarea w-full' maxCount={30} rows={1} path='linkText' labelText='Link text' />
+        <FieldTextInput required disabled={!canManage} class='w-full' path='link' labelText='URL' />
       </div>
     {/if}
 
@@ -136,8 +137,10 @@
     {/if}
   
     <div slot='submit' class="flex gap-4">
-      <Button type='submit'>Save</Button>
-      <Button kind='ghost' on:click={reset} icon={TextClearFormat}>Reset</Button>
+      {#if canManage}
+        <Button type='submit'>Save</Button>
+        <Button kind='ghost' on:click={reset} icon={TextClearFormat}>Reset</Button>
+      {/if}
     </div>
 </Form>
 

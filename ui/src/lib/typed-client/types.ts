@@ -39,6 +39,9 @@ export default {
             "user": [
                 17
             ],
+            "viewAnnouncementManagement": [
+                45
+            ],
             "viewAppRequestList": [
                 45
             ],

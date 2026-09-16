@@ -81,6 +81,11 @@ export class AccessResolver {
     return ctx.svc(AppRequestService).mayViewReviewerInterface()
   }
 
+  @FieldResolver(returns => Boolean, { description: 'Current user is permitted to view the announcement management page, whether or not they may change anything.' })
+  async viewAnnouncementManagement (@Ctx() ctx: Context) {
+    return ctx.svc(AnnouncementService).mayViewAnnouncementManagement()
+  }
+
   @FieldResolver(returns => Boolean, { description: 'Current user is permitted to manage site-wide announcements: create, update, and delete them.' })
   async manageAnnouncements (@Ctx() ctx: Context) {
     return ctx.svc(AnnouncementService).mayManage()
