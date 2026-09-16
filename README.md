@@ -177,6 +177,14 @@ handled. This stage works just like the review process - it has its own requirem
 is that a failed requirement does not block the applicant from receiving the benefit. The only potential consequence
 of failure would be showing up on some kind of custom report.
 
+Non-blocking does not mean optional. The request cannot reach COMPLETE until every non-blocking requirement on every
+application has resolved to something other than PENDING, and that includes applications that were denied during
+review, blocking workflow, or acceptance - a training review of the reviewer's work is needed whether or not the
+applicant was approved. The one exception is an application screened out before submission (a PREQUAL or QUALIFICATION
+requirement failed): no reviewer ever touched it, so it skips non-blocking workflow entirely. If a stage genuinely does
+not apply to a denied application, have its requirement return NOT_APPLICABLE rather than leaving it PENDING, or the
+request will never complete.
+
 ## Closure
 
 All App Requests are automatically closed after their period's Archive date. They can also be manually closed by

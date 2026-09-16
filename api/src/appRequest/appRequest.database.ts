@@ -734,8 +734,12 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
       application.phase = phase === 'complete'
         ? ApplicationPhase.COMPLETE
         : phase === 'nonblocking'
-          // Ineligible applications are disqualified and have no post-acceptance work
-          ? application.ineligiblePhase != null
+          // applications screened out before submission never reached a reviewer, so there is no post-decision
+          // work to audit or report on. every other ineligible application (denied in review, blocking workflow or
+          // acceptance) still goes through non-blocking workflow: a compliance report or a training review of the
+          // reviewer's work is required whether or not the applicant was approved. a stage that genuinely does not
+          // apply to a denied application should return NOT_APPLICABLE from its requirement rather than be skipped here.
+          ? application.ineligiblePhase === IneligiblePhases.PREQUAL || application.ineligiblePhase === IneligiblePhases.QUALIFICATION
             ? ApplicationPhase.READY_TO_COMPLETE
           // non-blocking workflow is non sequential, a non-blocking fail never blocks completion, so only a pending holds it back.
             : requirementsResolution !== 'pending' && !application.awaitingCorrection
