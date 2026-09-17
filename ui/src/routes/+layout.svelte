@@ -113,7 +113,7 @@
     ...(uiRegistry.config.extraNavItems ?? [])
   ]
 }}
-profilelinks={[{ label: 'Logout', onClick: () => unifiedAuth.logout(api) }]}
+profilelinks={[...(uiRegistry.config.profileLinks ?? []), { label: 'Logout', onClick: () => unifiedAuth.logout(api) }]}
 userProfile={{firstName: userProfileName?.[0] ?? access?.user?.login ?? '', lastName: userProfileName?.[1] ?? ''}}
 impersonate={{
   canImpersonate: !!canImpersonate && !!uiRegistry.config.userLookup, // only show impersonation option if user has permission and userLookup function is provided

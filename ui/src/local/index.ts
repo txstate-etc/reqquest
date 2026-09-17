@@ -188,7 +188,7 @@ import { api } from '$internal/api'
 import ApplicantPromptSkeleton from '$internal/components/ApplicantPromptSkeleton.svelte'
 import { GeneralTextSkeleton } from '@txstate-mws/carbon-svelte'
 
-const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, applicantPromptPage, applicantReview, programs, requirements, prompts, userLookup, slots } = configureDemoInstanceParams()
+const { appName, applicantDashboardIntroHeader, applicantDashboardIntroDetail, applicantDashboardRecentDays, applicantPromptPage, applicantReview, programs, requirements, prompts, userLookup, slots, profileLinks } = configureDemoInstanceParams()
 
 export const uiRegistry = new UIRegistry({
   appName,
@@ -201,7 +201,8 @@ export const uiRegistry = new UIRegistry({
   requirements,
   prompts,
   userLookup,
-  slots
+  slots,
+  profileLinks
 })
 
 function configureDemoInstanceParams (): AnyUIConfig {
@@ -385,6 +386,9 @@ function configureDemoInstanceParams (): AnyUIConfig {
       slots: {
         applicantDashboardIntroSlot: RCIntroPanelDefaultSlot
       },
+      profileLinks: [
+        { label: 'Help', href: 'https://itac.txst.edu/contact.html', external: true }
+      ],
       userLookup: async (login) => {
         const accessUser = await api.getAccessUser(login)
         if (!accessUser) return

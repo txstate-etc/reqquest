@@ -1,4 +1,4 @@
-import type { LayoutStructureNode, LayoutStructureNodeRoot, UserProfile } from '@txstate-mws/carbon-svelte'
+import type { LayoutStructureNode, LayoutStructureNodeRoot, ShellItem, UserProfile } from '@txstate-mws/carbon-svelte'
 import type { Component } from 'svelte'
 import type { ProgramKey, PromptKey, RequirementKey } from './keys.js'
 import { plural } from 'txstate-utils'
@@ -248,6 +248,11 @@ export interface UIConfig<PK extends string = PromptKey, RK extends string = Req
    */
   supportUrl?: string
   extraNavItems?: LayoutStructureNodeRoot<LayoutStructureNode>[]
+  /**
+   * Extra entries for the user-profile menu in the header. Same shape as carbon-svelte's
+   * UIShell `profilelinks`. These appear before the built-in Logout entry, which is always present.
+   */
+  profileLinks?: ShellItem[]
   /**
    * This is where you should describe what kind of attributes app users will be able to search users by.
    * Displayed on user management page /roles/users.
