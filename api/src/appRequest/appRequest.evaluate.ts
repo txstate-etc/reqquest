@@ -293,7 +293,7 @@ function evaluateApplication (ctx: EvaluationContext, application: Application, 
   // status intentionally ignores invalidation: it is the best assessment of the data currently
   // on file, so disqualified applications remain INELIGIBLE while a correction is outstanding.
   // awaitingCorrection carries the "must be re-answered" fact and holds back the phase below.
-  application.computedStatus = computeApplicationStatus(phase, summary.resolution, application.computedStatus)
+  application.computedStatus = computeApplicationStatus(phase, summary, application.computedStatus)
 
   // computedStatus is what gets persisted; status carries the rescind override and is what the
   // request-level rollup reads, so it has to be refreshed after every recomputation
@@ -493,14 +493,15 @@ function summarizeResolution (sortedRequirements: ApplicationRequirement[]): Res
   }
 }
 
-function computeApplicationStatus (phase: EvaluationPhase, resolution: RequirementsResolution, current: ApplicationStatus): ApplicationStatus {
+function computeApplicationStatus (phase: EvaluationPhase, summary: ResolutionSummary, current: ApplicationStatus): ApplicationStatus {
+  const { resolution } = summary
   // eligibility is settled by the time these phases are reached; the status carries over
   if (phase === 'nonblocking' || phase === 'complete') return current
 
   if (phase === 'acceptance') {
     switch (resolution) {
     case 'pass': return ApplicationStatus.ACCEPTED
-    case 'fail': return ApplicationStatus.REJECTED
+    case 'fail': return summary.firstFailing!.type === RequirementType.ACCEPTANCE ? ApplicationStatus.REJECTED : ApplicationStatus.INELIGIBLE
     case 'pending': return ApplicationStatus.ELIGIBLE
     }
   }
@@ -554,7 +555,20 @@ function computeApplicationPhase (
   }
 }
 
-/** Where the application was disqualified. Only the phases that re-evaluate eligibility may set or clear it. */
+/** The phase a disqualification is attributed to, that of the requirement that failed, wherever the failure is noticed. */
+function ineligiblePhaseForType (type: RequirementType): IneligiblePhases {
+  switch (type) {
+  case RequirementType.PREQUAL: return IneligiblePhases.PREQUAL
+  case RequirementType.QUALIFICATION:
+  case RequirementType.POSTQUAL: return IneligiblePhases.QUALIFICATION
+  case RequirementType.PREAPPROVAL: return IneligiblePhases.PREAPPROVAL
+  case RequirementType.APPROVAL: return IneligiblePhases.APPROVAL
+  case RequirementType.WORKFLOW: return IneligiblePhases.WORKFLOW
+  case RequirementType.ACCEPTANCE: return IneligiblePhases.ACCEPTANCE
+  }
+}
+
+ // Where the application was disqualified. Only the phases that re-evaluate eligibility may set or clear it, and the answer comes from the first failing requirement, not from the phase doing the evaluating
 function computeIneligiblePhase (phase: EvaluationPhase, summary: ResolutionSummary, current: IneligiblePhases | undefined): IneligiblePhases | undefined {
   // these phases no longer re-evaluate eligibility, so whatever was decided earlier stands
   if (phase === 'nonblocking' || phase === 'complete') return current
@@ -564,21 +578,15 @@ function computeIneligiblePhase (phase: EvaluationPhase, summary: ResolutionSumm
     return phase === 'blocking' ? current : undefined
   }
 
-  const failingType = summary.firstFailing?.type
   switch (phase) {
-  case 'acceptance':
-    return IneligiblePhases.ACCEPTANCE
   case 'blocking':
-    // an earlier disqualification wins over a failing workflow stage
+    // a blocking stage only evaluates itself, so an earlier disqualification wins over a failing workflow stage
     return current ?? IneligiblePhases.WORKFLOW
   case 'applicant':
-    if (failingType === RequirementType.PREQUAL) return IneligiblePhases.PREQUAL
-    return IneligiblePhases.QUALIFICATION
   case 'review':
-    if (failingType === RequirementType.PREQUAL) return IneligiblePhases.PREQUAL
-    if (failingType === RequirementType.QUALIFICATION) return IneligiblePhases.QUALIFICATION
-    if (failingType === RequirementType.PREAPPROVAL) return IneligiblePhases.PREAPPROVAL
-    return IneligiblePhases.APPROVAL
+  case 'acceptance':
+    // requirements are summarized in lifecycle order, so the first failure is the earliest phase that denied it
+    return ineligiblePhaseForType(summary.firstFailing!.type)
   }
 }
 

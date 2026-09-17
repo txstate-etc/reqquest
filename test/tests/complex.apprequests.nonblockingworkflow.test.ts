@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures.js'
-import { promptMapApplicantQualified, promptMapReviewerCatDenied, promptMapApproveReviewerQualified, promptMapApplicantAcceptance, promptMapReviewerNonBlocking } from './complex.promptdata.js'
+import { promptMapApplicantQualified, promptMapReviewerCatDenied, promptMapReviewerAllDenied, promptMapApproveReviewerQualified, promptMapApplicantAcceptance, promptMapReviewerNonBlocking } from './complex.promptdata.js'
 
 /**
  * Non-blocking does not mean optional. A request cannot reach COMPLETE until every non-blocking requirement on every
@@ -81,37 +81,62 @@ async function expectRefused (graphql: Graphql, name: string, mutation: string, 
   expect(response.errors ?? [], `${name} should have been refused`).not.toHaveLength(0)
 }
 
+/**
+ * The API caches which periods carry acceptance and non-blocking workflow (util/auth.ts) and only refreshes on the
+ * cache's own clock, so a period created by a spec would still read as having neither and completeReview would skip
+ * straight to COMPLETE. The demo's seeded period has been in that cache since startup, and no other spec uses it.
+ */
+async function seededPeriodId (graphql: Graphql) {
+  const { periods } = await graphql<{ periods: { id: number, code: string }[] }>('{ periods { id code } }')
+  const seeded = periods.find(period => period.code === '2025 Sem 1')
+  expect(seeded, 'the complex demo seeds period "2025 Sem 1" in testdata.ts').toBeDefined()
+  return seeded!.id
+}
+
+/** Create a request for `login`, qualify for every program and submit it. Returns the request id. */
+async function submitQualifiedRequest (graphql: Graphql, login: string, periodId: number) {
+  const create = `
+    mutation CreateAppRequest($login: String!, $periodId: ID!) {
+      createAppRequest(login: $login, periodId: $periodId, validateOnly: false) { appRequest { id } messages { message } }
+    }
+  `
+  const { createAppRequest } = await graphql<{ createAppRequest: { appRequest: { id: number } | null, messages: { message: string }[] } }>(create, { login, periodId })
+  expect(createAppRequest.appRequest, createAppRequest.messages.map(m => m.message).join('; ')).not.toBeNull()
+  const appRequestId = createAppRequest.appRequest!.id
+  await answerAvailable(graphql, appRequestId, promptMapApplicantQualified)
+  await expectAction(graphql, 'submitAppRequest', requestAction('submitAppRequest'), { appRequestId })
+  const state = await getState(graphql, appRequestId)
+  expect(state.phase).toEqual('SUBMITTED')
+  for (const app of state.applications) expect(app.status, app.programKey).toEqual('PENDING')
+  return appRequestId
+}
+
+/**
+ * Walk every READY_FOR_WORKFLOW application through its blocking stages: dog and foster each have one (a denied
+ * application is not exempt from it), cat has none and goes straight to REVIEW_COMPLETE.
+ */
+async function finishBlockingWorkflow (graphql: Graphql, appRequestId: number) {
+  for (let i = 0; i < 4; i++) {
+    const state = await getState(graphql, appRequestId)
+    const advancing = state.applications.filter(a => a.phase === 'READY_FOR_WORKFLOW')
+    if (!advancing.length) break
+    for (const app of advancing) await expectAction(graphql, 'advanceWorkflow', applicationAction('advanceWorkflow'), { applicationId: app.id })
+    await answerAvailable(graphql, appRequestId, promptMapApproveReviewerQualified)
+  }
+  const state = await getState(graphql, appRequestId)
+  for (const app of state.applications) expect(app.phase, app.programKey).toEqual('REVIEW_COMPLETE')
+  expect(state.status).toEqual('REVIEW_COMPLETE')
+}
+
+const cat = 'adopt_a_cat_program'
+const dog = 'adopt_a_dog_program'
+const foster = 'foster_a_pet_program'
+
 test.describe.serial('Non-blocking workflow is owed by an application denied in review', { tag: '@complex' }, () => {
-  let periodId = 0
   let appRequestId = 0
-  const cat = 'adopt_a_cat_program'
-  const dog = 'adopt_a_dog_program'
-  const foster = 'foster_a_pet_program'
 
-  test('Admin - use the seeded period', async ({ adminRequest }) => {
-    // The API caches which periods carry acceptance and non-blocking workflow (util/auth.ts) and only refreshes on the
-    // cache's own clock, so a period created here would still read as having neither and completeReview would skip
-    // straight to COMPLETE. The demo's seeded period has been in that cache since startup, and no other spec uses it.
-    const { periods } = await adminRequest.graphql<{ periods: { id: number, code: string }[] }>('{ periods { id code } }')
-    const seeded = periods.find(period => period.code === '2025 Sem 1')
-    expect(seeded, 'the complex demo seeds period "2025 Sem 1" in testdata.ts').toBeDefined()
-    periodId = seeded!.id
-  })
-
-  test('Applicant - qualify for all three programs and submit', async ({ applicantRequest }) => {
-    const create = `
-      mutation CreateAppRequest($login: String!, $periodId: ID!) {
-        createAppRequest(login: $login, periodId: $periodId, validateOnly: false) { appRequest { id } messages { message } }
-      }
-    `
-    const { createAppRequest } = await applicantRequest.graphql<{ createAppRequest: { appRequest: { id: number } | null, messages: { message: string }[] } }>(create, { login: 'applicant', periodId })
-    expect(createAppRequest.appRequest, createAppRequest.messages.map(m => m.message).join('; ')).not.toBeNull()
-    appRequestId = createAppRequest.appRequest!.id
-    await answerAvailable(applicantRequest.graphql, appRequestId, promptMapApplicantQualified)
-    await expectAction(applicantRequest.graphql, 'submitAppRequest', requestAction('submitAppRequest'), { appRequestId })
-    const state = await getState(applicantRequest.graphql, appRequestId)
-    expect(state.phase).toEqual('SUBMITTED')
-    for (const app of state.applications) expect(app.status, app.programKey).toEqual('PENDING')
+  test('Applicant - qualify for all three programs and submit', async ({ adminRequest, applicantRequest }) => {
+    appRequestId = await submitQualifiedRequest(applicantRequest.graphql, 'applicant', await seededPeriodId(adminRequest.graphql))
   })
 
   test('Reviewer - deny the cat application (and with it foster), approve the dog', async ({ reviewerRequest }) => {
@@ -126,18 +151,7 @@ test.describe.serial('Non-blocking workflow is owed by an application denied in 
   })
 
   test('Reviewer - walk every application through blocking workflow and complete the review', async ({ reviewerRequest }) => {
-    // dog and foster each have one blocking stage (a denied application is not exempt from it); cat has none and
-    // goes straight to REVIEW_COMPLETE
-    for (let i = 0; i < 4; i++) {
-      const state = await getState(reviewerRequest.graphql, appRequestId)
-      const advancing = state.applications.filter(a => a.phase === 'READY_FOR_WORKFLOW')
-      if (!advancing.length) break
-      for (const app of advancing) await expectAction(reviewerRequest.graphql, 'advanceWorkflow', applicationAction('advanceWorkflow'), { applicationId: app.id })
-      await answerAvailable(reviewerRequest.graphql, appRequestId, promptMapApproveReviewerQualified)
-    }
-    const state = await getState(reviewerRequest.graphql, appRequestId)
-    for (const app of state.applications) expect(app.phase, app.programKey).toEqual('REVIEW_COMPLETE')
-    expect(state.status).toEqual('REVIEW_COMPLETE')
+    await finishBlockingWorkflow(reviewerRequest.graphql, appRequestId)
     await expectAction(reviewerRequest.graphql, 'completeReview', requestAction('completeReview'), { appRequestId })
     expect((await getState(reviewerRequest.graphql, appRequestId)).phase).toEqual('ACCEPTANCE')
   })
@@ -149,7 +163,11 @@ test.describe.serial('Non-blocking workflow is owed by an application denied in 
     const state = await getState(applicantRequest.graphql, appRequestId)
     expect(state.phase).toEqual('WORKFLOW_NONBLOCKING')
     expect(application(state, dog).status).toEqual('ACCEPTED')
-    for (const denied of [cat, foster]) expect(['INELIGIBLE', 'REJECTED'], denied).toContain(application(state, denied).status)
+    // a denial that predates the offer is not a declined offer: the acceptance phase must not relabel it
+    for (const denied of [cat, foster]) {
+      expect(application(state, denied).status, denied).toEqual('INELIGIBLE')
+      expect(application(state, denied).ineligiblePhase, denied).toEqual('APPROVAL')
+    }
   })
 
   test('Reviewer - the denied application still owes its non-blocking stage, so the request cannot complete', async ({ reviewerRequest }) => {
@@ -181,6 +199,44 @@ test.describe.serial('Non-blocking workflow is owed by an application denied in 
     expect(application(state, cat).phase).toEqual('COMPLETE')
     expect(state.actions.completeRequest).toEqual(true)
     await expectAction(reviewerRequest.graphql, 'completeRequest', requestAction('completeRequest'), { appRequestId })
-    expect((await getState(reviewerRequest.graphql, appRequestId)).phase).toEqual('COMPLETE')
+    state = await getState(reviewerRequest.graphql, appRequestId)
+    expect(state.phase).toEqual('COMPLETE')
+    // one accepted application makes the request ACCEPTED; the denied ones must not drag it to NOT_ACCEPTED
+    expect(state.status).toEqual('ACCEPTED')
+  })
+})
+
+test.describe.serial('A request denied entirely in review reads Ineligible, not Offer declined', { tag: '@complex' }, () => {
+  let appRequestId = 0
+
+  test('Applicant2 - qualify for all three programs and submit', async ({ adminRequest, applicant2Request }) => {
+    appRequestId = await submitQualifiedRequest(applicant2Request.graphql, 'applicant2', await seededPeriodId(adminRequest.graphql))
+  })
+
+  test('Reviewer - deny every application in review', async ({ reviewerRequest }) => {
+    await answerAvailable(reviewerRequest.graphql, appRequestId, promptMapReviewerAllDenied)
+    const state = await getState(reviewerRequest.graphql, appRequestId)
+    for (const app of state.applications) {
+      expect(app.status, app.programKey).toEqual('INELIGIBLE')
+      expect(app.ineligiblePhase, app.programKey).toEqual('APPROVAL')
+      expect(app.phase, app.programKey).toEqual('READY_FOR_WORKFLOW')
+    }
+  })
+
+  test('Reviewer - finish blocking workflow and complete the review', async ({ reviewerRequest }) => {
+    await finishBlockingWorkflow(reviewerRequest.graphql, appRequestId)
+    await expectAction(reviewerRequest.graphql, 'completeReview', requestAction('completeReview'), { appRequestId })
+  })
+
+  test('The request is Ineligible (NOT_APPROVED) and every application stays denied at APPROVAL', async ({ reviewerRequest }) => {
+    const state = await getState(reviewerRequest.graphql, appRequestId)
+    // the period has an acceptance phase, so the request enters it even though there is nothing to offer
+    expect(state.phase).toEqual('ACCEPTANCE')
+    for (const app of state.applications) {
+      expect(app.status, app.programKey).toEqual('INELIGIBLE')
+      expect(app.ineligiblePhase, app.programKey).toEqual('APPROVAL')
+    }
+    // NOT_ACCEPTED means the applicant declined an offer; nobody here was offered anything
+    expect(state.status).toEqual('NOT_APPROVED')
   })
 })

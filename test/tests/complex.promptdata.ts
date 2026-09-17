@@ -47,3 +47,8 @@ export const promptMapApplicantAcceptance: Map<string, Map<string, any>> = new M
 export const promptMapReviewerNonBlocking: Map<string, Map<string, any>> = new Map([
   ['confirm_cat_microchip_service_prompt', new Map<string, ConfirmCatMicrochipServicePromptData>([['pass_0', { serviceDate: '2026-01-15T10:00:00.000Z', details: 'Chipped at the shelter clinic' }]])]
 ])
+
+export const promptMapReviewerAllDenied: Map<string, Map<string, any>> = new Map<string, Map<string, any>>([
+  ...promptMapReviewerCatDenied.entries(),
+  ['review_applicant_dog_info_prompt', new Map<string, ReviewApplicantDogInfoPromptData>([['fail_0', { previousDogAcceptable: true, currentDogAcceptable: true, yardAcceptable: false, allergyAcceptable: true, surrenderedAcceptable: true, exerciseMinMet: false, exerciseException: true }]])]
+])
