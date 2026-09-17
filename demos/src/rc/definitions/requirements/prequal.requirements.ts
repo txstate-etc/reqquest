@@ -25,4 +25,3 @@ export const step1_prequal_req: RequirementDefinition<PreQualPromptData> = {
     return { status: RequirementStatus.MET }
   }
 }
-
