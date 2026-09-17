@@ -1,5 +1,5 @@
 import { RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
-import { AssessReccomendationLettersData, OverrideGPAWarningData, ReccomendationLettersData } from '../models'
+import { AssessReccomendationLettersData, minimumGpa, OverrideGPAWarningData, PreQualPromptData, ReccomendationLettersData } from '../models/index.js'
 
 export const reccomendation_letter_req: RequirementDefinition = {
   type: RequirementType.QUALIFICATION,
@@ -36,7 +36,11 @@ export const reviewer_override_gpa_warning_req: RequirementDefinition = {
   navTitle: 'Override GPA Warning',
   description: 'Override GPA minimum requirement to not show warning',
   promptKeys: ['reviewer_override_gpa_warning_prompt'],
+  promptKeysNoDisplay: ['pre_qual_prompt'],
   resolve: (data, config) => {
+    const preQualPromptData = data['pre_qual_prompt'] as PreQualPromptData | undefined
+    if (preQualPromptData?.gpa == null) return { status: RequirementStatus.PENDING }
+    if (preQualPromptData.gpa >= minimumGpa) return { status: RequirementStatus.NOT_APPLICABLE }
     const overrideGpaWarningData = data['reviewer_override_gpa_warning_prompt'] as OverrideGPAWarningData
     if (overrideGpaWarningData?.override == null) return { status: RequirementStatus.PENDING }
     return { status: RequirementStatus.MET }
