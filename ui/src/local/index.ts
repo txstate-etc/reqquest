@@ -419,9 +419,6 @@ function configureDemoInstanceParams (): AnyUIConfig {
         },
         software_development: {
           icon: DogWalker,
-          // Each assessment sits directly under the answer it assesses, and the GPA override stage (which a
-          // reviewer may need while the applicant is still working) is pulled above the general reviewer
-          // panel. The other stages are not listed, so they trail in the default order.
           reviewSections: [
             { section: 'GENERAL' },
             { workflowStage: 'override_gpa_warning' },
