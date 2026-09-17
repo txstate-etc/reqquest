@@ -214,8 +214,7 @@ async function loadEvaluationContext (appRequestInternalId: number, db: Queryabl
   // persistEvaluation saves them back to the database at the end
   const { applications, requirements, prompts } = await ensureAppRequestRecords(appRequest, db)
 
-  const workflowStageKeys = applications.map(app => app.workflowStageKey).filter(isNotBlank) as string[]
-  const workflowStages = await getPeriodWorkflowStages({ periodIds: [appRequest.periodId], workflowKeys: workflowStageKeys }, db)
+  const workflowStages = await getPeriodWorkflowStages({ periodIds: [appRequest.periodId] }, db)
 
   const configurations = await db.getall<{ definitionKey: string, data: string }>('SELECT definitionKey, data FROM period_configurations WHERE periodId = ?', [appRequest.periodId])
   const configLookup: Record<string, any> = configurations.map(c => ({ ...c, data: JSON.parse(c.data ?? '{}') })).reduce((acc, c) => ({ ...acc, [c.definitionKey]: c.data }), {})
@@ -518,6 +517,8 @@ function detectReviewInProgress (ctx: EvaluationContext, approvalRequirements: A
     .some(p => !ctx.applicantPromptKeys.has(p.key) && p.answered && ctx.data[p.key] != null))
 }
 
+const presubmissionIneligiblePhases: IneligiblePhases[] = [IneligiblePhases.PREQUAL, IneligiblePhases.QUALIFICATION]
+
 function computeApplicationPhase (
   phase: EvaluationPhase,
   application: Application,
@@ -534,10 +535,9 @@ function computeApplicationPhase (
   case 'complete':
     return ApplicationPhase.COMPLETE
   case 'nonblocking':
-      // Ineligible applications are disqualified and have no post-acceptance work
-    if (application.ineligiblePhase != null) return ApplicationPhase.READY_TO_COMPLETE
-      // non-blocking workflow is non sequential, a non-blocking fail never blocks completion, so only a pending holds it back.
-    if (!settled) return ApplicationPhase.WORKFLOW_NONBLOCKING
+    if (application.ineligiblePhase && presubmissionIneligiblePhases.includes(application.ineligiblePhase)) return ApplicationPhase.READY_TO_COMPLETE
+    // not `settled`: that reads the aggregate resolution, where a fail outranks a pending, and here a failed requirement must never hide a pending one
+    if (summary.firstPending != null || application.awaitingCorrection) return ApplicationPhase.WORKFLOW_NONBLOCKING
     return hasNonblockingWorkflowRequirements ? ApplicationPhase.READY_FOR_WORKFLOW : ApplicationPhase.READY_TO_COMPLETE
   case 'acceptance':
     return settled ? ApplicationPhase.READY_TO_ACCEPT : ApplicationPhase.ACCEPTANCE
@@ -626,7 +626,7 @@ function deadApplicationsStatus (ctx: EvaluationContext, acc: RequestAccumulator
   if (appRequest.phase === AppRequestPhase.SUBMITTED) {
     if (appRequest.awaitingCorrection) return AppRequestStatus.APPROVAL
     if (singleProgramReviewFinished(ctx)) return AppRequestStatus.REVIEW_COMPLETE
-    if (applications.every(a => a.phase === ApplicationPhase.REVIEW_COMPLETE || (a.ineligiblePhase && [IneligiblePhases.PREQUAL, IneligiblePhases.QUALIFICATION].includes(a.ineligiblePhase)))) return AppRequestStatus.REVIEW_COMPLETE
+    if (applications.every(a => a.phase === ApplicationPhase.REVIEW_COMPLETE || (a.ineligiblePhase && presubmissionIneligiblePhases.includes(a.ineligiblePhase)))) return AppRequestStatus.REVIEW_COMPLETE
     return acc.reviewStartedApplicationIds.size ? AppRequestStatus.REVIEW_IN_PROGRESS : AppRequestStatus.APPROVAL
   }
   if (applications.some(a => a.ineligiblePhase === IneligiblePhases.ACCEPTANCE)) return AppRequestStatus.NOT_ACCEPTED

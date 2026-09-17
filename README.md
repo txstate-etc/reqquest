@@ -250,7 +250,13 @@ the application is being reviewed and goes back to PENDING until the reviewers f
 Application phase is where the application is in the process, regardless of whether it is
 currently eligible or ineligible for the benefit. Even rejected applications proceed through all
 the phases, since we need to perform blocking and non-blocking workflow on all applications, not
-just the ones that are awarded a benefit.
+just the ones that are awarded a benefit. Non-blocking does not mean optional: the request cannot
+reach COMPLETE until every non-blocking requirement on every application - including those denied
+during review, blocking workflow, or acceptance - has resolved to something other than PENDING. The
+one exception is an application screened out before submission (a PREQUAL or QUALIFICATION
+requirement failed); no reviewer ever touched it, so it skips non-blocking workflow entirely. If a
+stage genuinely does not apply to a denied application, have its requirement return NOT_APPLICABLE
+rather than leaving it PENDING, or the request will never complete.
 
 * PREQUAL
 

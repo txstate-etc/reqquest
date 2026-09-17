@@ -1,4 +1,4 @@
-import { YardPromptData, PreviousCatOwnerPromptData, CurrentCatOwnerPromptData, PreviousDogOwnerPromptData, OwnerCatAllergyPromptData, OwnerCatMicrochipServiceData, ReviewApplicantCatInfoPromptData, ChildrenPromptData, CurrentDogOwnerPromptData, OwnerDogAllergyPromptData, DogExercisePromptData, ReviewApplicantDogInfoPromptData, ApproveReviewerExerciseExemptionPromptData, PreviousDogSurrenderedPromptData, LivingSpacePromptData, PetOwnerPromptData, ReviewApplicantFosterAPetPromptData, StateResidencePromptData, TermsAndConditionsPromptData, BridgeOfDeathPromptData, ReviewMovieLoverAnswersPromptData } from '../../demos/src/complex/definitions/models/index.js'
+import { YardPromptData, PreviousCatOwnerPromptData, CurrentCatOwnerPromptData, PreviousDogOwnerPromptData, OwnerCatAllergyPromptData, OwnerCatMicrochipServiceData, ReviewApplicantCatInfoPromptData, ChildrenPromptData, CurrentDogOwnerPromptData, OwnerDogAllergyPromptData, DogExercisePromptData, ReviewApplicantDogInfoPromptData, ApproveReviewerExerciseExemptionPromptData, PreviousDogSurrenderedPromptData, LivingSpacePromptData, PetOwnerPromptData, ReviewApplicantFosterAPetPromptData, StateResidencePromptData, TermsAndConditionsPromptData, BridgeOfDeathPromptData, ReviewMovieLoverAnswersPromptData, AcceptDogPromptData, AcceptCatPromptData, AcceptFosterPetPromptData, ConfirmCatMicrochipServicePromptData, ReviewStateResidenceInfoPromptData } from '../../demos/src/complex/definitions/models/index.js'
 
 export const promptMapApplicantQualified: Map<string, Map<string, any>> = new Map([
   ['state_residence_prompt', new Map<string, any>([['pass_0', { firstName: 'Jay', lastName: 'Jones', streetAddress: '1234 Dream Rd', emailAddress: 'jay@jones.com', phoneNumber: '8306268846', city: 'San Angelo', state: 'Texas', zipCode: '45324', residentIdDocRequired: false }]])],
@@ -24,9 +24,26 @@ export const promptMapReviewerQualified: Map<string, Map<string, any>> = new Map
   ['review_applicant_cat_info_prompt', new Map<string, any>([['pass_0', { previousCatAcceptable: true, currentCatAcceptable: true, livingSpaceAcceptable: true, allergyAcceptable: true, microchipAgree: true }]])],
   ['review_applicant_dog_info_prompt', new Map<string, ReviewApplicantDogInfoPromptData>([['pass_0', { previousDogAcceptable: true, currentDogAcceptable: true, yardAcceptable: true, allergyAcceptable: true, surrenderedAcceptable: true, exerciseMinMet: false, exerciseException: true }]])],
   ['review_applicant_foster_a_pet_info_prompt', new Map<string, ReviewApplicantFosterAPetPromptData>([['pass_0', { underAgeChildrenAcceptable: true }]])],
-  ['review_movie_lover_answers_prompt', new Map<string, ReviewMovieLoverAnswersPromptData>([['pass_0', { impressed: true }]])]
+  ['review_movie_lover_answers_prompt', new Map<string, ReviewMovieLoverAnswersPromptData>([['pass_0', { impressed: true }]])],
+  ['review_applicant_state_residence_info_prompt', new Map<string, ReviewStateResidenceInfoPromptData>([['pass_0', { residencyInfoAcceptable: true }]])]
 ])
 
 export const promptMapApproveReviewerQualified: Map<string, Map<string, any>> = new Map([
   ['approve_reviewer_exercise_exemption_prompt', new Map<string, ApproveReviewerExerciseExemptionPromptData>([['pass_0', { approve: true }]])]
+])
+
+/** The qualified reviewer answers, except the cat review denies the applicant - `microchipAgree: false` disqualifies. */
+export const promptMapReviewerCatDenied: Map<string, Map<string, any>> = new Map<string, Map<string, any>>([
+  ...promptMapReviewerQualified.entries(),
+  ['review_applicant_cat_info_prompt', new Map<string, ReviewApplicantCatInfoPromptData>([['fail_0', { previousCatAcceptable: true, currentCatAcceptable: true, livingSpaceAcceptable: true, allergyAcceptable: true, microchipAgree: false }]])]
+])
+
+export const promptMapApplicantAcceptance: Map<string, Map<string, any>> = new Map([
+  ['accept_dog_prompt', new Map<string, AcceptDogPromptData>([['pass_0', { accept: true, id: 101 }]])],
+  ['accept_cat_prompt', new Map<string, AcceptCatPromptData>([['pass_0', { accept: true, id: 1 }]])],
+  ['accept_foster_pet_prompt', new Map<string, AcceptFosterPetPromptData>([['pass_0', { accept: true, id: 101 }]])]
+])
+
+export const promptMapReviewerNonBlocking: Map<string, Map<string, any>> = new Map([
+  ['confirm_cat_microchip_service_prompt', new Map<string, ConfirmCatMicrochipServicePromptData>([['pass_0', { serviceDate: '2026-01-15T10:00:00.000Z', details: 'Chipped at the shelter clinic' }]])]
 ])
