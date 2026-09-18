@@ -1,5 +1,5 @@
 import { MutationMessage, PromptDefinition, PromptPreStagingRecurrence } from '@reqquest/api'
-import { orgs, PrequalLsatPrestageData, PrequalLsatPrestageSchema, PreQualPromptData, PrequalPromptSchema, PreQualUserInfoPrestagePromptData, PrequalUserInfoPrestagePropmtSchema, PreQualUserInfoPromptData, PrequalUserInfoPromptSchema } from '../models/prequal.models.js'
+import { minimumGpa, orgs, PrequalLsatPrestageData, PrequalLsatPrestageSchema, PreQualPromptData, PrequalPromptSchema, PreQualUserInfoPrestagePromptData, PrequalUserInfoPrestagePropmtSchema, PreQualUserInfoPromptData, PrequalUserInfoPromptSchema } from '../models/prequal.models.js'
 import { MutationMessageType } from '@txstate-mws/graphql-server'
 
 export const pre_qual_user_info_prompt: PromptDefinition<PreQualUserInfoPromptData> = {
@@ -15,8 +15,8 @@ export const pre_qual_user_info_prompt: PromptDefinition<PreQualUserInfoPromptDa
         name: ctx.authInfo?.user?.fullname ?? ctx.login,
         email: ctx.authInfo?.user?.email ?? `${ctx.login}@request-next.local`
       }
-    }    
-  }, 
+    }
+  },
   schema: PrequalUserInfoPromptSchema,
   validate: (data, config) => {
     const messages: MutationMessage[] = []
@@ -36,8 +36,8 @@ export const pre_qual_prompt: PromptDefinition<PreQualPromptData> = {
       return {
         lsat: Math.floor(Math.random() * (180 - 120 + 1)) + 120
       }
-    }    
-  }, 
+    }
+  },
   schema: PrequalPromptSchema,
   fetch: () => {
     return orgs
@@ -46,11 +46,10 @@ export const pre_qual_prompt: PromptDefinition<PreQualPromptData> = {
     const messages: MutationMessage[] = []
     if (data.acknowledgeExpectations == null) messages.push({ type: MutationMessageType.error, message: 'Please acknowledge participation expectations.', arg: 'acknowledgeExpectations' })
 
-    const minimumGPA = 2.5
     if (data.gpa == null) {
       messages.push({ type: MutationMessageType.error, message: 'Please enter your GPA.', arg: 'gpa' })
-    } else if (data.gpa < minimumGPA) {
-      messages.push({ type: MutationMessageType.warning, message: `Your GPA must be a minimum of ${minimumGPA}`, arg: 'gpa' })
+    } else if (data.gpa < minimumGpa) {
+      messages.push({ type: MutationMessageType.warning, message: `Your GPA must be a minimum of ${minimumGpa}`, arg: 'gpa' })
     }
 
     if (data.availability == null) messages.push({ type: MutationMessageType.error, message: 'Please acknowledge availability expectations.', arg: 'availability' })

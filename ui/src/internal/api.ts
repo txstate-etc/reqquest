@@ -940,6 +940,7 @@ class API extends APIBase {
           },
           requirements: {
             id: true,
+            key: true,
             type: true,
             title: true,
             status: true,

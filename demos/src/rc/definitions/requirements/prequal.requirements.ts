@@ -1,5 +1,5 @@
 import { RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
-import { OverrideGPAWarningData, PreQualPromptData, PreQualUserInfoPromptData } from '../models'
+import { minimumGpa, OverrideGPAWarningData, PreQualPromptData, PreQualUserInfoPromptData } from '../models/index.js'
 
 export const step1_prequal_req: RequirementDefinition<PreQualPromptData> = {
   type: RequirementType.PREQUAL,
@@ -18,11 +18,10 @@ export const step1_prequal_req: RequirementDefinition<PreQualPromptData> = {
     if (preQualPromptData?.acknowledgeExpectations == null) return { status: RequirementStatus.PENDING, blame: ['pre_qual_prompt'] }
     if (preQualUserInfoPromptData?.correct == null) return { status: RequirementStatus.PENDING, blame: ['pre_qual_user_info_prompt'] }
 
-    if (preQualPromptData.gpa < 2.5 && !gpaOverride?.override) return { status: RequirementStatus.DISQUALIFYING, reason: 'Minimum GPA of 2.5 required', blame: ['pre_qual_prompt'] }
-    if (preQualPromptData.gpa < 2.5) return { status: RequirementStatus.WARNING, reason: 'Minimum GPA of 2.5 commonly required', blame: ['pre_qual_prompt'] }
+    if (preQualPromptData.gpa < minimumGpa && !gpaOverride?.override) return { status: RequirementStatus.DISQUALIFYING, reason: `Minimum GPA of ${minimumGpa} required`, blame: ['pre_qual_prompt'] }
+    if (preQualPromptData.gpa < minimumGpa) return { status: RequirementStatus.WARNING, reason: `Minimum GPA of ${minimumGpa} commonly required`, blame: ['pre_qual_prompt'] }
     if (!preQualPromptData?.availability) return { status: RequirementStatus.WARNING, reason: 'Not being available 5-10 hours may be a reason for disqualification', blame: ['pre_qual_prompt'] }
 
     return { status: RequirementStatus.MET }
   }
 }
-

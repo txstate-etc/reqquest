@@ -56,6 +56,13 @@ export interface ProgramDefinition {
   /**
    * The list of requirements for this program, carefully ordered so that
    * the users are presented them in a logical order.
+   *
+   * This order is the applicant's order: it is persisted as `application_requirements.evaluationOrder`,
+   * it decides which requirement's first prompt the applicant sees next, and which failing
+   * requirement's reason they are shown. On the reviewer screen it only decides the order *within*
+   * each panel - requirements are grouped into panels by type there, so a reviewer requirement listed
+   * between two applicant requirements is NOT shown between them. Use `reviewSections` on the UI's
+   * `ProgramDefinition` (`@reqquest/ui`) for that - the layout is pure presentation and lives there.
    */
   requirementKeys: RequirementKey[]
   /**

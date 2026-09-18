@@ -849,7 +849,7 @@ export interface RequirementPrompt {
     moot: Scalars['Boolean']
     /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
     navTitle: Scalars['String']
-    /** True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay` - a dependency it reads but does not own. Such a row must not be rendered beneath that requirement; the prompt is displayed under the requirement that does own it. This is not derivable from `visibility`: a no-display row is UNREACHABLE, but so is a prompt whose own requirement resolved before reaching it, and that one is still the requirement's to show. */
+    /** True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay` */
     noDisplay: Scalars['Boolean']
     optOut: Scalars['Boolean']
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
@@ -1992,7 +1992,7 @@ export interface RequirementPromptGenqlSelection{
     moot?: boolean | number
     /** A human readable title for the prompt in the navigation. You probably want it to be shorter than the full title. If not provided, the title will be used. */
     navTitle?: boolean | number
-    /** True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay` - a dependency it reads but does not own. Such a row must not be rendered beneath that requirement; the prompt is displayed under the requirement that does own it. This is not derivable from `visibility`: a no-display row is UNREACHABLE, but so is a prompt whose own requirement resolved before reaching it, and that one is still the requirement's to show. */
+    /** True when this row exists only because its requirement listed the prompt in `promptKeysNoDisplay` */
     noDisplay?: boolean | number
     optOut?: boolean | number
     /** Preload data that has been generated according to the prompt definition. For example, a prompt might query the database for answers given in previous requests or query an external API to learn facts about the user. */
