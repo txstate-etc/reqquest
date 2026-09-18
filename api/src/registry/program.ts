@@ -91,6 +91,15 @@ export interface WorkflowStage {
    * request can be approved and offered to the applicant without this stage being completed. This
    * is useful for stages that are purely for out-of-band auditing, such as to identify process
    * improvements or training opportunities.
+   *
+   * Non-blocking does not mean optional. The request cannot reach COMPLETE until every non-blocking
+   * requirement on every application has resolved to something other than PENDING, and that includes
+   * applications denied during review, blocking workflow, or acceptance - the audit of the reviewer's
+   * work is needed whether or not the applicant was approved. The one exception is an application
+   * screened out before submission (a PREQUAL or QUALIFICATION requirement failed): no reviewer ever
+   * touched it, so it skips non-blocking workflow entirely. If a stage genuinely does not apply to a
+   * denied application, have its requirement return NOT_APPLICABLE rather than leaving it PENDING, or
+   * the request will never complete.
    */
   nonBlocking?: boolean
   /**

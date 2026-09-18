@@ -82,7 +82,7 @@ export async function syncRequirementRecords (application: Application, enabledK
   }
   for (let i = 0; i < activeRequirementKeys.length; i++) {
     const requirementKey = activeRequirementKeys[i]
-    await db.update('UPDATE application_requirements SET type = ?, workflowStage = ?, evaluationOrder = ? WHERE applicationId = ? AND requirementKey = ?', [requirementRegistry.get(requirementKey)?.type ?? RequirementType.QUALIFICATION, workflowRequirementKeyStage.get(requirementKey) ?? 0, i, application.internalId, requirementKey])
+    await db.update('UPDATE application_requirements SET type = ?, workflowStage = ?, evaluationOrder = ? WHERE applicationId = ? AND requirementKey = ?', [requirementRegistry.get(requirementKey)?.type ?? RequirementType.QUALIFICATION, workflowRequirementKeyStage.get(requirementKey) ?? null, i, application.internalId, requirementKey])
   }
   return await getApplicationRequirements({ applicationIds: [application.id] }, db)
 }

@@ -1,12 +1,11 @@
 <script lang="ts">
-  import { api, type ReviewData } from '$internal'
+  import { api, getApplicationStatusInfo, type ReviewData } from '$internal'
   import type { LayoutData } from '../$types.js'
   import { uiRegistry } from '../../../../local/index.js'
   import { enumApplicationStatus, enumRequirementStatus, InfoCard } from '$lib'
   import { Modal } from 'carbon-components-svelte'
   import { Information } from 'carbon-icons-svelte'
   import StatusMessageList from '$internal/components/StatusMessageList.svelte'
-  import { titleCase } from 'txstate-utils'
   import { getContext } from 'svelte'
   import { UISHELL_STICKY_CONTEXT, type UIShellStickyStore } from '@txstate-mws/carbon-svelte'
 
@@ -65,7 +64,7 @@
     {#if ineligiblePrograms?.length}
       {#each ineligiblePrograms as application}
         {@const warningReqs = application.requirements.filter(r => r.status === 'WARNING' && r.statusReason)}
-        {@const message = `${titleCase(application.status)}${application.statusReason ?? optedOutPrograms[application.id] ? ':' : ''} ${optedOutPrograms[application.id] ? 'Opted out' : application.statusReason}`}
+        {@const message = `${getApplicationStatusInfo(application.status, appRequest!.phase, appRequest!.closedAt, application.rescindedStatus)[0].label}${application.statusReason ?? optedOutPrograms[application.id] ? ':' : ''} ${optedOutPrograms[application.id] ? 'Opted out' : application.statusReason}`}
         <span class='py-2'>{application.title}</span>
         <StatusMessageList
           icon
