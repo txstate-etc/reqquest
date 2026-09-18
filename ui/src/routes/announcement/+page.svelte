@@ -5,21 +5,20 @@
   import { FieldCheckbox, FieldDateTime, FieldRadio, FieldTextArea, FieldTextInput, FieldToggle, Form, TagSet } from "@txstate-mws/carbon-svelte"
   import type { PageData } from "../announcement/$types"
   import { Button, InlineNotification, NotificationActionButton } from 'carbon-components-svelte'
-  import { DateTime } from "luxon"
   import { invalidateAll } from "$app/navigation"
   import { toasts } from "@txstate-mws/svelte-components"
   import TextClearFormat from "carbon-icons-svelte/lib/TextClearFormat.svelte";
 
 
   export let data: PageData
-  $: ({ anouncement } = data)
+  $: ({ anouncement, canManage } = data)
 
   let store: FormStore | undefined
 
   async function submit (data: any) {
-    const { id, addLink, ...rest } = data
+    const { id, addLink, isActive, ...rest } = data
     const { success, messages, data: newData } = id ? await api.updateAnnouncement(id, rest, false) : await api.createAnnouncement(rest, false)
-    if (success) toasts.add({ message: 'This message has been saved.', title: 'Success', type: 'success' })
+    if (success) toasts.add({ message: 'This announcement has been saved.', title: 'Success', type: 'success' })
     return {
       success,
       messages,
@@ -28,7 +27,7 @@
   }
 
   async function validate (data: any) {
-    const { id, addLink, ...rest } = data
+    const { id, addLink, isActive, ...rest } = data
     const { messages } = id ? await api.updateAnnouncement(id, rest) : await api.createAnnouncement(rest)
     return messages
   }
@@ -44,7 +43,7 @@
     store?.setField('type', 'toggle')
   }
 
-  $: enabled = anouncement?.enabled || ((anouncement?.end != null && DateTime.fromISO(anouncement.end) >= DateTime.now()) && anouncement?.start != null && DateTime.fromISO(anouncement.start) <= DateTime.now())
+  $: isActive = anouncement?.isActive ?? false
 
 </script>
 <IntroPanel
@@ -53,18 +52,18 @@
 >
   <div class="flex items-center gap-2">
     <TagSet
-      tags={enabled ? [{ label: 'Active', type: 'green' }] : [{ label: 'Inactive', type: 'purple' }]}
+      tags={isActive ? [{ label: 'Active', type: 'green' }] : [{ label: 'Inactive', type: 'purple' }]}
       tagType="status"
       tagSize="sm"
     />
-    <span class="text-sm">{enabled ? 'This message is currently displaying to applicants.' : 'This message is not currently displaying to applicants.'}</span>
+    <span class="text-sm">{isActive ? 'This message is currently displaying to applicants.' : 'This message is not currently displaying to applicants.'}</span>
   </div>
 </IntroPanel>
 
 <Form
   let:data
-  {submit}
-  {validate}
+  submit={canManage ? submit : undefined}
+  validate={canManage ? validate : undefined}
   bind:store
   on:saved={saved}
   hideFallbackMessage
@@ -73,6 +72,7 @@
   <FieldRadio
     path='type'
     required
+    disabled={!canManage}
     labelText="Display duration"
     defaultValue='toggle'
     class="md:w-[645px]"
@@ -81,23 +81,23 @@
       { label: 'Date range', value: 'date' }
     ]} />
     {#if data.type === 'toggle'}
-      <FieldToggle path='enabled' hideLabel labelText='Enable/Disable' labelA='Message inactive' labelB='Message active' />
+      <FieldToggle path='enabled' disabled={!canManage} hideLabel labelText='Enable/Disable' labelA='Message inactive' labelB='Message active' />
     {:else}
       <div class="md:w-[645px] flow datetime-full">
-        <FieldDateTime required path='start' labelText='Start date' defaultTime='24:00'/>
-        <FieldDateTime required path='end' labelText='End date' helperText='This is how long the message will display.' defaultTime='24:00' />
+        <FieldDateTime path='start' disabled={!canManage} labelText='Start date' helperText='Leave blank to start displaying as soon as it is saved.' defaultTime='24:00'/>
+        <FieldDateTime path='end' disabled={!canManage} labelText='End date' helperText='How long the message displays. Leave blank to display indefinitely.' defaultTime='24:00' />
         <div class="flex justify-end mt-0">
-          <Button size='small' kind='ghost' on:click={() => { store?.setField('start', undefined); store?.setField('end', undefined)}} icon={TextClearFormat}>Clear dates</Button>
+          <Button size='small' kind='ghost' disabled={!canManage} on:click={() => { store?.setField('start', undefined); store?.setField('end', undefined)}} icon={TextClearFormat}>Clear dates</Button>
         </div>
       </div>
     {/if}
 
     <div class="md:w-[645px] flow">
-      <FieldTextArea rows={1} required path='subject' labelText='Message title' maxCount={40} class="md:w-[645px] textarea"/>
-      <FieldTextArea required path='body' labelText='Message text' maxCount={125} class="md:w-[645px]"/>
+      <FieldTextArea rows={1} required disabled={!canManage} path='subject' labelText='Message title' maxCount={40} class="md:w-[645px] textarea"/>
+      <FieldTextArea required disabled={!canManage} path='body' labelText='Message text' maxCount={125} class="md:w-[645px]"/>
     </div>
 
-    <FieldCheckbox path='addLink' labelText='Add link' on:change={(e: any) => {
+    <FieldCheckbox path='addLink' disabled={!canManage} labelText='Add link' on:change={(e: any) => {
       if (!e.target.checked) {
         store?.setField('linkText', undefined)
         store?.setField('link', undefined)
@@ -106,8 +106,8 @@
 
     {#if data.addLink}
       <div class="flex flex-col sm:flex-row gap-4 md:w-[645px] addLink">
-        <FieldTextArea required class='textarea w-full' maxCount={30} rows={1} path='linkText' labelText='Link text' />
-        <FieldTextInput required class='w-full' path='link' labelText='URL' />
+        <FieldTextArea required disabled={!canManage} class='textarea w-full' maxCount={30} rows={1} path='linkText' labelText='Link text' />
+        <FieldTextInput required disabled={!canManage} class='w-full' path='link' labelText='URL' />
       </div>
     {/if}
 
@@ -137,8 +137,10 @@
     {/if}
   
     <div slot='submit' class="flex gap-4">
-      <Button type='submit'>Save</Button>
-      <Button kind='ghost' on:click={reset} icon={TextClearFormat}>Reset</Button>
+      {#if canManage}
+        <Button type='submit'>Save</Button>
+        <Button kind='ghost' on:click={reset} icon={TextClearFormat}>Reset</Button>
+      {/if}
     </div>
 </Form>
 

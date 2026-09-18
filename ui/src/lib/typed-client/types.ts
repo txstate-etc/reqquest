@@ -21,9 +21,6 @@ export default {
     ],
     "types": {
         "Access": {
-            "createAnnouncement": [
-                45
-            ],
             "createAppRequestOther": [
                 45
             ],
@@ -36,14 +33,14 @@ export default {
             "createRole": [
                 45
             ],
-            "deleteAnnouncement": [
-                45
-            ],
-            "updateAnnouncement": [
+            "manageAnnouncements": [
                 45
             ],
             "user": [
                 17
+            ],
+            "viewAnnouncementManagement": [
+                45
             ],
             "viewAppRequestList": [
                 45
@@ -430,6 +427,9 @@ export default {
             ],
             "id": [
                 53
+            ],
+            "isActive": [
+                45
             ],
             "link": [
                 89

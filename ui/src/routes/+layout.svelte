@@ -104,9 +104,9 @@
       ]
     },
     {
-      title: 'Manage announcement',
+      title: 'Manage Announcement',
       group: 'Administration',
-      hideFromSideNav: !access?.createAnnouncement,
+      hideFromSideNav: !access?.viewAnnouncementManagement,
       icon: Time,
       routeId: '/announcement'
     },

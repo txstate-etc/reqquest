@@ -1,10 +1,10 @@
-import { Arg, Ctx, FieldResolver, ID, Mutation, Query, Resolver, Root } from 'type-graphql'
+import { Arg, Ctx, ID, Mutation, Query, Resolver } from 'type-graphql'
 import { ValidatedResponse } from '@txstate-mws/graphql-server'
-import { Announcement, AnnouncementActions, AnnouncementFilters, AnnouncementService, AnnouncementUpdate, RQContext, ValidatedAnnouncementResponse } from '../internal.js'
+import { Announcement, AnnouncementFilters, AnnouncementService, AnnouncementUpdate, RQContext, ValidatedAnnouncementResponse } from '../internal.js'
 
 @Resolver(of => Announcement)
 export class AnnouncementResolver {
-  @Query(returns => [Announcement], { description: 'Retrieve site-wide announcements. Applicants only ever see currently active announcements; users with the Announcement view control see them all.' })
+  @Query(returns => [Announcement], { description: 'Retrieve site-wide announcements. Any authenticated user may retrieve any announcement, including ones that are disabled or outside their date range; pass filter.active to limit the result to the announcements that should be displaying right now.' })
   async announcements (
     @Ctx() ctx: RQContext,
     @Arg('filter', type => AnnouncementFilters, { nullable: true }) filter?: AnnouncementFilters) {

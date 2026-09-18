@@ -271,12 +271,11 @@ export async function initAccess () {
     }
   }
   controlGroups.Announcement = {
-    title: 'Admin - Manage Announcements',
+    title: 'Admin - Announcements',
     description: 'These controls govern site-wide announcements. Any user may see an announcement that is currently active; these controls are about managing them.',
     controls: {
-      create: { description: 'Create new announcements.' },
-      update: { description: 'Update existing announcements, including turning them on and off.' },
-      delete: { description: 'Delete existing announcements.' }
+      view: { description: 'View the announcement management page without being able to change anything.' },
+      manage: { description: 'Manage site-wide announcements, including turning them on and off.' }
     }
   }
   for (const controlGroup of Object.keys(controlGroups)) {

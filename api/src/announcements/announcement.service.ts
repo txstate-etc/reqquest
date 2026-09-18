@@ -1,6 +1,6 @@
 import { MutationMessageType, ValidatedResponse } from '@txstate-mws/graphql-server'
 import { isBlank, isNotBlank } from 'txstate-utils'
-import { Announcement, AnnouncementFilters, AnnouncementUpdate, AuthService, cleanHTML, createAnnouncement, deleteAnnouncement, getAnnouncements, setAnnouncementEnabled, updateAnnouncement, ValidatedAnnouncementResponse, validateHTML } from '../internal.js'
+import { Announcement, AnnouncementFilters, AnnouncementUpdate, AuthService, cleanHTML, createAnnouncement, deleteAnnouncement, getAnnouncements, updateAnnouncement, ValidatedAnnouncementResponse, validateHTML } from '../internal.js'
 
 export class AnnouncementService extends AuthService<Announcement> {
   async find (filter?: AnnouncementFilters) {
@@ -11,28 +11,17 @@ export class AnnouncementService extends AuthService<Announcement> {
     const announcements = await this.find({ ids: [id] })
     return announcements[0]
   }
+
+  mayManage () {
+    return this.hasControl('Announcement', 'manage')
+  }
+
   /**
-   * The announcements that should be displaying right now. Everyone may see these, since the whole
-   * point of an announcement is to be shown to every user of the system.
+   * Deliberately not named `mayView`: AuthorizedServiceSync declares a protected `mayView(obj)`
+   * that removeUnauthorized() uses as a per-row filter, and this is a page-level right.
    */
-  async findActive () {
-    return await this.find({ active: true })
-  }
-
-  mayView (announcement: Announcement) {
-    return this.hasControl('Announcement', 'view')
-  }
-
-  mayCreate () {
-    return this.hasControl('Announcement', 'create')
-  }
-
-  mayUpdate () {
-    return this.hasControl('Announcement', 'update')
-  }
-
-  mayDelete () {
-    return this.hasControl('Announcement', 'delete')
+  mayViewAnnouncementManagement () {
+    return this.hasControl('Announcement', 'view') || this.mayManage()
   }
 
   validate (update: AnnouncementUpdate) {
@@ -51,11 +40,9 @@ export class AnnouncementService extends AuthService<Announcement> {
     }
 
     if (update.type === 'date') {
-      if (update.start == null) {
-        response.addMessage('Start date is required', 'start')
-      } else if (update.end == null) {
-        response.addMessage('End date is required', 'end')
-      } else if (update.end <= update.start) {
+      if (update.start == null && update.end == null) {
+        response.addMessage('Provide a start date, an end date, or both.', 'start')
+      } else if (update.start != null && update.end != null && update.end <= update.start) {
         response.addMessage('End date must be after the start date.', 'end')
       }
     }
@@ -63,16 +50,16 @@ export class AnnouncementService extends AuthService<Announcement> {
   }
 
   async create (update: AnnouncementUpdate, validateOnly?: boolean) {
-    if (!this.mayCreate()) throw new Error('You are not allowed to create an announcement.')
+    if (!this.mayManage()) throw new Error('You are not allowed to create an announcement.')
     const exists = await this.find()
     if (exists.length) throw new Error('An announcement already exists')
     const response = this.validate(update)
     if (validateOnly || response.hasErrors()) return response
-    const id = await createAnnouncement({ 
+    const id = await createAnnouncement({
       ...update,
       body: cleanHTML(update.body ?? ''),
       subject: cleanHTML(update.subject ?? ''),
-      enabled: update.type === 'date' ? false : update.enabled,
+      enabled: update.type === 'date' ? true : update.enabled,
       start: update.type === 'toggle' ? undefined : update.start,
       end: update.type === 'toggle' ? undefined : update.end
     })
@@ -81,16 +68,16 @@ export class AnnouncementService extends AuthService<Announcement> {
   }
 
   async update (id: string, update: AnnouncementUpdate, validateOnly?: boolean) {
+    if (!this.mayManage()) throw new Error('You are not allowed to update this announcement.')
     const announcement = await this.findByID(id)
     if (!announcement) throw new Error('Announcement not found.')
-    if (!this.mayUpdate()) throw new Error('You are not allowed to update this announcement.')
     const response = this.validate(update)
     if (validateOnly || response.hasErrors()) return response
-    await updateAnnouncement(id, { 
+    await updateAnnouncement(id, {
       ...update,
       body: cleanHTML(update.body ?? ''),
       subject: cleanHTML(update.subject ?? ''),
-      enabled: update.type === 'date' ? false : update.enabled,
+      enabled: update.type === 'date' ? true : update.enabled,
       start: update.type === 'toggle' ? undefined : update.start,
       end: update.type === 'toggle' ? undefined : update.end
     })
@@ -99,9 +86,9 @@ export class AnnouncementService extends AuthService<Announcement> {
   }
 
   async delete (id: string) {
+    if (!this.mayManage()) throw new Error('You are not allowed to delete this announcement.')
     const announcement = await this.findByID(id)
     if (!announcement) throw new Error('Announcement not found.')
-    if (!this.mayDelete()) throw new Error('You are not allowed to delete this announcement.')
     await deleteAnnouncement(id)
     return new ValidatedResponse({ success: true })
   }

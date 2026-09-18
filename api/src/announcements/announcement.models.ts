@@ -44,10 +44,7 @@ export class Announcement {
   @Field({ description: 'The type of announcement, toggleable or date range' })
   type: string
 
-  /**
-   * Whether the announcement should be displaying right now: enabled and inside its date range.
-   * Resolved as a field so the UI can show admins why an enabled announcement is not visible yet.
-   */
+  @Field(type => Boolean, { description: 'Whether the announcement should be displaying right now: enabled and inside whatever date bounds it has.' })
   isActive (now = DateTime.now()) {
     if (!this.enabled) return false
     if (this.start != null && this.start > now) return false
@@ -67,7 +64,7 @@ export class AnnouncementFilters {
   @Field({ nullable: true, description: 'Return only enabled (true) or only disabled (false) announcements.' })
   enabled?: boolean
 
-  @Field({ nullable: true, description: 'Return only the announcements that should be displayed at this moment: enabled OR within their date range.' })
+  @Field({ nullable: true, description: 'Return only the announcements that should be displaying right now (true) or only those that should not (false). Omit to return all announcements regardless of state.' })
   active?: boolean
 }
 

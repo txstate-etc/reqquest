@@ -4,9 +4,11 @@ import { api } from "$internal";
 
 export const load: PageLoad = async ({ parent }) => {
   const parentData = await parent()
-  if (!parentData?.access?.createAnnouncement) throw error(403)
+  if (!parentData?.access?.viewAnnouncementManagement) throw error(403)
+  const canManage = !!parentData?.access?.manageAnnouncements
 
-  const anouncement = await api.getAnnouncement(false)
+  // no filter: the editor needs the announcement whether or not it is currently displaying
+  const anouncement = await api.getAnnouncement()
 
-  return { anouncement }
+  return { anouncement, canManage }
 }

@@ -14,8 +14,6 @@ export type Scalars = {
 }
 
 export interface Access {
-    /** Current user is permitted to create announcements. */
-    createAnnouncement: Scalars['Boolean']
     /** Current user may create a new app request on behalf of another user and should be shown the Create App Request button on the reviewer dashboard or main app request list. */
     createAppRequestOther: Scalars['Boolean']
     /** Current user may create a new app request for themselves and should be shown the Create App Request button. */
@@ -24,12 +22,12 @@ export interface Access {
     createPeriod: Scalars['Boolean']
     /** Current user is permitted to create new roles in the role management UI. */
     createRole: Scalars['Boolean']
-    /** Current user is permitted to delete announcements. */
-    deleteAnnouncement: Scalars['Boolean']
-    /** Current user is permitted to update announcements. */
-    updateAnnouncement: Scalars['Boolean']
+    /** Current user is permitted to manage site-wide announcements: create, update, and delete them. */
+    manageAnnouncements: Scalars['Boolean']
     /** The current user, if any. */
     user: (AccessUser | null)
+    /** Current user is permitted to view the announcement management page, whether or not they may change anything. */
+    viewAnnouncementManagement: Scalars['Boolean']
     /** Current user is permitted to view the app request list. */
     viewAppRequestList: Scalars['Boolean']
     /** Current user is permitted to view the applicant dashboard. */
@@ -192,6 +190,8 @@ export interface Announcement {
     /** The announcement will not display after this date. Null means it displays until it is disabled. */
     end: (Scalars['DateTime'] | null)
     id: Scalars['ID']
+    /** Whether the announcement should be displaying right now: enabled and inside whatever date bounds it has. */
+    isActive: Scalars['Boolean']
     /** URL the announcement directs the user to for more information. */
     link: (Scalars['String'] | null)
     /** The text to display for the link. */
@@ -799,7 +799,7 @@ export interface Query {
      */
     access: Access
     accessUsers: AccessUser[]
-    /** Retrieve site-wide announcements. Applicants only ever see currently active announcements; users with the Announcement view control see them all. */
+    /** Retrieve site-wide announcements. Any authenticated user may retrieve any announcement, including ones that are disabled or outside their date range; pass filter.active to limit the result to the announcements that should be displaying right now. */
     announcements: Announcement[]
     /** The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order. */
     appRequestActivity: AppRequestActivity[]
@@ -930,8 +930,6 @@ export interface ValidatedResponse {
 }
 
 export interface AccessGenqlSelection{
-    /** Current user is permitted to create announcements. */
-    createAnnouncement?: boolean | number
     /** Current user may create a new app request on behalf of another user and should be shown the Create App Request button on the reviewer dashboard or main app request list. */
     createAppRequestOther?: boolean | number
     /** Current user may create a new app request for themselves and should be shown the Create App Request button. */
@@ -940,12 +938,12 @@ export interface AccessGenqlSelection{
     createPeriod?: boolean | number
     /** Current user is permitted to create new roles in the role management UI. */
     createRole?: boolean | number
-    /** Current user is permitted to delete announcements. */
-    deleteAnnouncement?: boolean | number
-    /** Current user is permitted to update announcements. */
-    updateAnnouncement?: boolean | number
+    /** Current user is permitted to manage site-wide announcements: create, update, and delete them. */
+    manageAnnouncements?: boolean | number
     /** The current user, if any. */
     user?: AccessUserGenqlSelection
+    /** Current user is permitted to view the announcement management page, whether or not they may change anything. */
+    viewAnnouncementManagement?: boolean | number
     /** Current user is permitted to view the app request list. */
     viewAppRequestList?: boolean | number
     /** Current user is permitted to view the applicant dashboard. */
@@ -1168,6 +1166,8 @@ export interface AnnouncementGenqlSelection{
     /** The announcement will not display after this date. Null means it displays until it is disabled. */
     end?: boolean | number
     id?: boolean | number
+    /** Whether the announcement should be displaying right now: enabled and inside whatever date bounds it has. */
+    isActive?: boolean | number
     /** URL the announcement directs the user to for more information. */
     link?: boolean | number
     /** The text to display for the link. */
@@ -1183,7 +1183,7 @@ export interface AnnouncementGenqlSelection{
 }
 
 export interface AnnouncementFilters {
-/** Return only the announcements that should be displayed at this moment: enabled OR within their date range. */
+/** Return only the announcements that should be displaying right now (true) or only those that should not (false). Omit to return all announcements regardless of state. */
 active?: (Scalars['Boolean'] | null),
 /** Return only enabled (true) or only disabled (false) announcements. */
 enabled?: (Scalars['Boolean'] | null),
@@ -1931,7 +1931,7 @@ export interface QueryGenqlSelection{
      */
     access?: AccessGenqlSelection
     accessUsers?: (AccessUserGenqlSelection & { __args?: {filter?: (AccessUserFilter | null), paged?: (Pagination | null)} })
-    /** Retrieve site-wide announcements. Applicants only ever see currently active announcements; users with the Announcement view control see them all. */
+    /** Retrieve site-wide announcements. Any authenticated user may retrieve any announcement, including ones that are disabled or outside their date range; pass filter.active to limit the result to the announcements that should be displaying right now. */
     announcements?: (AnnouncementGenqlSelection & { __args?: {filter?: (AnnouncementFilters | null)} })
     /** The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order. */
     appRequestActivity?: (AppRequestActivityGenqlSelection & { __args: {
