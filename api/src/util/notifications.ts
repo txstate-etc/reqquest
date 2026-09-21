@@ -4,6 +4,15 @@ import type { RQContext } from './auth.js'
 type AppRequestNotificationCB = (ctx: RQContext, appRequest: AppRequest, oldAppRequest: AppRequest) => void | Promise<void>
 type ApplicationPhaseNotificationCB = (ctx: RQContext, appRequest: AppRequest, application: Application, oldPhase: ApplicationPhase) => void | Promise<void>
 type ApplicationRescindNotificationCB = (ctx: RQContext, appRequest: AppRequest, application: Application, reason: string) => void | Promise<void>
+type AppRequestCreatedNotificationCB = (ctx: RQContext, appRequest: AppRequest) => void | Promise<void>
+
+export const appRequestCreatedNotifications: AppRequestCreatedNotificationCB[] = [
+  async (ctx, ar) => {
+    const { from } = appConfig.emailConfig
+    // A new app request was created, either by the applicant or by an admin on their behalf
+    await ctx.svc(MailService).sendmulti({ from, userIds: [ar.userInternalId], templateKey: 'app_request_start', extra: appConfig.emailConfig })
+  }
+]
 
 export const appRequestNotifications: AppRequestNotificationCB[] = [
   async (ctx, ar, oldAppRequest) => {

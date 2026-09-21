@@ -51,5 +51,12 @@ export const mailMigrations: DatabaseMigration[] = [
       // application_complete shipped with a variable name 'applicationName' nothing supplies, so it rendered blank.
       await db.update("UPDATE mail_templates SET body = REPLACE(body, '{{applicationName}}', '{{appName}}') WHERE templateKey = 'application_complete'")
     }
+  },
+  {
+    id: '20260921000000',
+    async execute (db) {
+      // seed the app_request_start template, leaving existing rows untouched
+      await seedMailTemplates(db)
+    }
   }
 ]
