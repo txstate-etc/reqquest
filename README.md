@@ -729,40 +729,42 @@ index advances once per `reminderDays`, so the hourly re-runs in between insert 
 
 ## Custom: `hooks.scheduled`
 
-For time-based logic the built-in job does not cover, register jobs beside the other hooks:
+For time-based logic the built-in job does not cover, register jobs beside the other hooks. The
+rc demo carries a real one: when a new period opens, everyone who submitted a request in the
+previous period is told, unless they already have a request in the new one. It is three small
+files, and together they are the recipe for any downstream scheduled email:
+
+- [demos/src/rc/hooks/periodOpenedNotification.ts](demos/src/rc/hooks/periodOpenedNotification.ts) -
+  the `ScheduledHook`: `minutesBetween` plus a `run (ctx)` that reads with `getPeriods` /
+  `getAppRequests`, decides who qualifies, and calls `MailService.sendmulti` with a `dedupKey`.
+- [demos/src/rc/mail/periodOpened.template.ts](demos/src/rc/mail/periodOpened.template.ts) - the
+  project's own mail template, the same plain-object shape as the platform's built-in ones.
+- [demos/src/rc/testdata.ts](demos/src/rc/testdata.ts) - a migration that inserts that template
+  with `createMailTemplate`. Keep it **outside** any `installTestData` guard: the template is part
+  of the application, not test data, and `createMailTemplate` is a no-op on an existing row so an
+  edited template survives redeploys.
+
+Registration is one line in `appConfig`:
 
 ```ts
 hooks: {
   scheduled: {
-    stale_review_nudge: {
-      minutesBetween: 24 * 60,
-      duringHour: 8,                       // container TZ
-      async run (ctx) {
-        // read with the *.database functions, then
-        await ctx.svc(MailService).sendmulti({
-          from: appConfig.emailConfig.from,
-          userIds,
-          templateKey: 'my_template',
-          extra: { ...appConfig.emailConfig },
-          dedupKey: userId => `stale_review_${appRequestId}_${userId}_${weekNumber}`
-        })
-      }
-    }
+    period_opened_notification: periodOpenedNotification   // key becomes task name hook_period_opened_notification
   }
 }
 ```
 
 Rules that follow from how the scheduler works:
 
-- The key becomes the task name (`hook_stale_review_nudge`), and one replica runs it per interval.
+- The key becomes the task name (`hook_<key>`), and one replica runs it per interval.
 - The scheduler sleeps 90 seconds between passes, so `minutesBetween: 1` really means about 1.5
   minutes, and `duringHour` / `duringDayOfWeek` / `duringDayOfMonth` use the container's `TZ`.
 - `ctx` is a system context with no user and no roles. Read through the `*.database` functions and
   non-authorizing services such as `MailService`; anything authorized will be denied.
 - Always pass a `dedupKey` for anything a recurring job sends. The job will run again, and the
   unique index is what keeps it from emailing the same person twice for the same event.
-- `periodClosingReminder` in `api/src/util/periodClosingReminder.ts` is the reference
-  implementation of all of the above.
+- `periodClosingReminder` in `api/src/util/periodClosingReminder.ts` (built in) and rc's
+  `periodOpenedNotification` (downstream) are the two reference implementations of all of the above.
 
 # Downstream setup: keeping the UI in step with the API
 
