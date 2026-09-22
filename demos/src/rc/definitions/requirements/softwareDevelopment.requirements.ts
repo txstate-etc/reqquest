@@ -26,6 +26,7 @@ export const data_related_puzzle_req: RequirementDefinition = {
   resolve: (data, config) => {
     const writtenAutomationData = data['data_related_puzzle_prompt'] as DataRelatedPuzzlePromptData
     if (writtenAutomationData?.puzzleAnswer == null) return { status: RequirementStatus.PENDING }
+    if (writtenAutomationData?.puzzleAnswer == 'NA') return { status: RequirementStatus.DISQUALIFYING, reason: 'NA for data related puzzle is disqualifying' }
     return { status: RequirementStatus.MET }
   }
 }
@@ -40,6 +41,9 @@ export const assess_data_related_puzzle_req: RequirementDefinition = {
   resolve: (data, config) => {
     const niceData = data['assess_data_related_puzzle_prompt'] as AssessPuzzleSolutionPromptData
     if (niceData?.score == null) return { status: RequirementStatus.PENDING }
+    if (['Excellent', 'Unacceptable'].includes(niceData?.score) && niceData?.explanation == null) return { status: RequirementStatus.DISQUALIFYING, reason: 'Excellent or unacceptable score requires explanation of score' }
+    if (['Good', 'Neutral', 'Poor'].includes(niceData?.score) && niceData?.explanation != null) return { status: RequirementStatus.DISQUALIFYING, reason: 'Good neutral or poor score requires NO explanation of score.  Please remove' }
+    if (niceData.score === 'Unacceptable') return { status: RequirementStatus.DISQUALIFYING, reason: 'Puzzle solution was judged unacceptable', blame: ['data_related_puzzle_prompt'] }
     return { status: RequirementStatus.MET }
   }
 }
