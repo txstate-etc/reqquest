@@ -2,7 +2,7 @@ import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { rescindApplication, restoreApplication, advanceWorkflow, appConfig, Application, ApplicationPhase, ApplicationRescindedStatus, ApplicationStatus, AppRequest, AppRequestPhase, AppRequestService, AppRequestStatus, AppRequestStatusDB, appRequestTransaction, AuthService, evaluateAppRequest, getApplications, PeriodWorkflowStage, programRegistry, ProgramService, reverseWorkflow, ValidatedAppRequestResponse, WorkflowStage } from '../internal.js'
 import { BaseService } from '@txstate-mws/graphql-server'
 import { isBlank } from 'txstate-utils'
-import { applicationPhaseNotifications, applicationRescindNotifications } from '../util/notifications.js'
+import { applicationPhaseNotifications, applicationBenefitRescindRestoreNotifications } from '../util/notifications.js'
 
 const appByInternalIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
@@ -182,7 +182,7 @@ export class ApplicationService extends AuthService<Application> {
     await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, `Rescinded ${application.navTitle}: ${reason}.`)
     const newApplication = (await this.findByInternalId(application.internalId))!
     try {
-      await Promise.all(applicationRescindNotifications.map(n => n(this.ctx, resp.appRequest!, newApplication, reason)))
+      await Promise.all(applicationBenefitRescindRestoreNotifications.map(n => n(this.ctx, resp.appRequest!, newApplication, reason)))
     } catch (err) {
       console.error(err)
     }
@@ -205,7 +205,7 @@ export class ApplicationService extends AuthService<Application> {
     await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, `Restored ${application.navTitle}: ${reason}.`)
     const newApplication = (await this.findByInternalId(application.internalId))!
     try {
-      await Promise.all(applicationRescindNotifications.map(n => n(this.ctx, resp.appRequest!, newApplication, reason)))
+      await Promise.all(applicationBenefitRescindRestoreNotifications.map(n => n(this.ctx, resp.appRequest!, newApplication, reason)))
     } catch (err) {
       console.error(err)
     }

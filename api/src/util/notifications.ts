@@ -3,7 +3,7 @@ import type { RQContext } from './auth.js'
 
 type AppRequestNotificationCB = (ctx: RQContext, appRequest: AppRequest, oldAppRequest: AppRequest) => void | Promise<void>
 type ApplicationPhaseNotificationCB = (ctx: RQContext, appRequest: AppRequest, application: Application, oldPhase: ApplicationPhase) => void | Promise<void>
-type ApplicationRescindNotificationCB = (ctx: RQContext, appRequest: AppRequest, application: Application, reason: string) => void | Promise<void>
+type ApplicationBenefitRescindRestoreNotificationCB = (ctx: RQContext, appRequest: AppRequest, application: Application, reason: string) => void | Promise<void>
 
 export const appRequestNotifications: AppRequestNotificationCB[] = [
   async (ctx, ar, oldAppRequest) => {
@@ -31,7 +31,7 @@ export const applicationPhaseNotifications: ApplicationPhaseNotificationCB[] = [
   }
 ]
 
-export const applicationRescindNotifications: ApplicationRescindNotificationCB[] = [
+export const applicationBenefitRescindRestoreNotifications: ApplicationBenefitRescindRestoreNotificationCB[] = [
   async (ctx, ar, application, reason) => {
     const { from } = appConfig.emailConfig
     // An approved/accepted application was pulled back from the applicant.
