@@ -683,6 +683,85 @@ This section summarizes the main activities users can perform in ReqQuest. Activ
 
 If your project has additional phases or custom activities, be sure to add them here to keep this list up to date.
 
+# Scheduled email
+
+Every built-in email so far is a reaction to a mutation: a hook in `appConfig.hooks` or one of the
+platform's own callbacks queues a row in `mail_outbox`, and a scheduler inside the API process
+drains that outbox roughly every 90 seconds. Time-based email - "the period closes in a week and
+you haven't submitted" - runs on that same scheduler.
+
+Everything runs **inside the API process**, not in a separate cron container. The scheduler claims
+each job with an atomic update on the `tasks` table, so with several API replicas exactly one of
+them runs a given job per interval. A job is a plain `(ctx) => Promise<void>`, so if one ever grows
+heavy enough to want its own container, the downstream project can import the same function from a
+second entrypoint built from the same image.
+
+## Built-in: period-closing reminder
+
+Configured from `emailConfig` in your `RQServer.start` call - no code required:
+
+```ts
+emailConfig: {
+  appName: 'Reqquest',
+  signature: 'Mobile Web Systems',
+  from: 'Reqquest <reqquest@txstate.edu>',
+  periodClosing: {
+    daysBefore: 14,     // first reminder once closeDate is within 14 days
+    reminderDays: 3     // then every 3 days while the request is still STARTED
+  }
+}
+```
+
+- `periodClosing.daysBefore` enables the job. Omit it and nothing is scheduled.
+- `periodClosing.reminderDays` sets the follow-up cadence. Omit it (or 0) for a single reminder.
+- Recipients are owners of app requests in the period that are `STARTED` (not submitted) and not
+  closed. The set is recomputed on every run, so submitting the request or the period closing ends
+  the reminders on its own.
+- The `period_closing_reminder` template ships disabled, like every built-in email. Enable it in
+  the admin UI to actually send. Variables available: `periodName`, `closeDate`, `daysUntilClose`,
+  plus everything in `emailConfig`.
+
+The job runs hourly. It is idempotent because each queued email carries a dedup key
+(`period_closing_<period>_<user>_<occurrence>`) and `mail_outbox.dedupKey` is unique: the occurrence
+index advances once per `reminderDays`, so the hourly re-runs in between insert nothing.
+
+## Custom: `hooks.scheduled`
+
+For time-based logic the built-in job does not cover, register jobs beside the other hooks:
+
+```ts
+hooks: {
+  scheduled: {
+    stale_review_nudge: {
+      minutesBetween: 24 * 60,
+      duringHour: 8,                       // container TZ
+      async run (ctx) {
+        // read with the *.database functions, then
+        await ctx.svc(MailService).sendmulti({
+          from: appConfig.emailConfig.from,
+          userIds,
+          templateKey: 'my_template',
+          extra: { ...appConfig.emailConfig },
+          dedupKey: userId => `stale_review_${appRequestId}_${userId}_${weekNumber}`
+        })
+      }
+    }
+  }
+}
+```
+
+Rules that follow from how the scheduler works:
+
+- The key becomes the task name (`hook_stale_review_nudge`), and one replica runs it per interval.
+- The scheduler sleeps 90 seconds between passes, so `minutesBetween: 1` really means about 1.5
+  minutes, and `duringHour` / `duringDayOfWeek` / `duringDayOfMonth` use the container's `TZ`.
+- `ctx` is a system context with no user and no roles. Read through the `*.database` functions and
+  non-authorizing services such as `MailService`; anything authorized will be denied.
+- Always pass a `dedupKey` for anything a recurring job sends. The job will run again, and the
+  unique index is what keeps it from emailing the same person twice for the same event.
+- `periodClosingReminder` in `api/src/util/periodClosingReminder.ts` is the reference
+  implementation of all of the above.
+
 # Downstream setup: keeping the UI in step with the API
 
 Your programs, requirements, and prompts are defined in TypeScript on the API side, and each prompt

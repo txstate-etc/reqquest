@@ -172,7 +172,6 @@ export interface RQContext extends Context {
 }
 
 export type RQContextClass = typeof Context & (new (req: FastifyRequest) => RQContext)
-export type RQMockContextClass = typeof Context & (new (claims: any) => RQContext)
 
 export function rqContextMixin (Ctx: typeof Context): RQContextClass {
   return class extends Ctx {
@@ -238,4 +237,25 @@ export function rqContextMixin (Ctx: typeof Context): RQContextClass {
   }
 }
 
-export const DGMockContext = rqContextMixin(MockContext as any) as RQMockContextClass
+/**
+ * An RQContext that belongs to no user and holds no roles. Built from the library's request-less
+ * `MockContext` so it can exist outside an HTTP request, but it is production code: this is what
+ * scheduled jobs run under. Construct it through `runAsSystem` rather than directly.
+ */
+export const RQSystemContext = rqContextMixin(MockContext as any) as typeof Context & (new (claims: any) => RQContext)
+
+/**
+ * Run `work` with a context that belongs to no user and holds no roles - for scheduled jobs and
+ * other code that runs outside a request. Anything authorized will be denied, so the work should
+ * go through `*.database` functions and non-authorizing services (e.g. MailService).
+ */
+export async function runAsSystem<T> (work: (ctx: RQContext) => T | Promise<T>): Promise<T> {
+  const ctx = new RQSystemContext({})
+  ctx.authInfo = {
+    user: undefined,
+    roleLookups: [],
+    acceptancePeriods: new Set(await acceptancePeriodsCache.get()),
+    nonBlockingPeriods: new Set(await nonBlockingWorkflowPeriodsCache.get())
+  }
+  return await work(ctx)
+}

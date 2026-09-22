@@ -26,6 +26,7 @@ export interface MailOutboxRow {
   lastErrorAt?: Date
   lastErrorMessage?: string
   updatedAt: Date
+  dedupKey?: string
 }
 
 export const createMailTemplate = async ({ templateKey, description, audience, variables, subject, body }: Pick<MailTemplateRow, 'templateKey' | 'description' | 'audience' | 'variables' | 'subject' | 'body'>, tdb: Queryable = db) => {
@@ -38,11 +39,15 @@ export const createMailTemplate = async ({ templateKey, description, audience, v
   `, [templateKey, description, audience, variables, subject, body, true])
 }
 
-export const createMailOutbox = async ({ templateKey, emailTo, variables, status, replyTo }: Pick<MailOutboxRow, 'templateKey' | 'emailTo' | 'variables' | 'status' | 'replyTo'>) => {
+/**
+ * Returns the new row's id, or 0 when a `dedupKey` was given and a row with that key already
+ * exists - the unique index plus INSERT IGNORE is what makes recurring jobs idempotent.
+ */
+export const createMailOutbox = async ({ templateKey, emailTo, variables, status, replyTo, dedupKey }: Pick<MailOutboxRow, 'templateKey' | 'emailTo' | 'variables' | 'status' | 'replyTo' | 'dedupKey'>) => {
   return await db.insert(`
-    INSERT INTO mail_outbox (templateKey, emailTo, variables, status, replyTo)
-    VALUES (?, ?, ?, ?, ?)
-  `, [templateKey, emailTo, variables, status, replyTo])
+    INSERT ${dedupKey ? 'IGNORE ' : ''}INTO mail_outbox (templateKey, emailTo, variables, status, replyTo, dedupKey)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `, [templateKey, emailTo, variables, status, replyTo, dedupKey ?? null])
 }
 
 export const getPendingMail = async (): Promise<MailOutboxRow[]> => {

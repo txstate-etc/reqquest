@@ -21,6 +21,8 @@ import {
   ensurePromptSigningKey, mailMigrations, announcementMigrations, AnnouncementResolver
 } from './internal.js'
 import { scheduler, schedulerMigration } from './util/scheduler.js'
+import { periodClosingReminder } from './util/periodClosingReminder.js'
+import { runAsSystem } from './util/auth.js'
 import { FastifyTxStateOptions } from 'fastify-txstate'
 import { fromQuery } from 'txstate-utils'
 import { mail } from './util/mail.js'
@@ -180,6 +182,14 @@ export class RQServer extends GQLServer {
     ensurePromptSigningKey()
     await super.start({ ...options, resolvers })
     await scheduler.schedule('mail_outbox', mail.syncRows, { minutesBetween: 1 })
+    // built-in period-closing reminder, enabled by emailConfig.periodClosing.daysBefore
+    if (options.appConfig.emailConfig.periodClosing?.daysBefore) {
+      await scheduler.schedule('period_closing_reminder', () => runAsSystem(periodClosingReminder), { minutesBetween: 60 })
+    }
+    // downstream time-based jobs, see AppDefinition.hooks.scheduled
+    for (const [name, { run, ...opts }] of Object.entries(options.appConfig.hooks?.scheduled ?? {})) {
+      await scheduler.schedule(`hook_${name}`, () => runAsSystem(run), opts)
+    }
   }
 }
 

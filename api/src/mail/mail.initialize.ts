@@ -51,5 +51,16 @@ export const mailMigrations: DatabaseMigration[] = [
       // application_complete shipped with a variable name 'applicationName' nothing supplies, so it rendered blank.
       await db.update("UPDATE mail_templates SET body = REPLACE(body, '{{applicationName}}', '{{appName}}') WHERE templateKey = 'application_complete'")
     }
+  },
+  {
+    id: '20260922000000',
+    async execute (db) {
+      // dedupKey lets a recurring job (the period-closing reminder) enqueue idempotently:
+      // INSERT IGNORE against the unique index means a re-run adds nothing.
+      const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'mail_outbox' AND COLUMN_NAME = 'dedupKey'")
+      if (!exists) await db.execute('ALTER TABLE mail_outbox ADD COLUMN dedupKey VARCHAR(255) NULL, ADD UNIQUE INDEX mail_outbox_dedupKey (dedupKey)')
+      // seed the period_closing_reminder template, leaving existing rows untouched
+      await seedMailTemplates(db)
+    }
   }
 ]
