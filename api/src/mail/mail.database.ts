@@ -38,6 +38,13 @@ export const createMailTemplate = async ({ templateKey, description, audience, v
   `, [templateKey, description, audience, variables, subject, body, true])
 }
 
+export const updateMailTemplateContent = async ({ templateKey, subject, body, description }: Pick<MailTemplateRow, 'templateKey' | 'subject' | 'body' | 'description'>, tdb: Queryable = db) => {
+  // for data migrations that revise the wording of a template already seeded into existing databases
+  return await tdb.update(`
+    UPDATE mail_templates SET subject = ?, body = ?, description = ? WHERE templateKey = ?
+  `, [subject, body, description, templateKey])
+}
+
 export const createMailOutbox = async ({ templateKey, emailTo, variables, status, replyTo }: Pick<MailOutboxRow, 'templateKey' | 'emailTo' | 'variables' | 'status' | 'replyTo'>) => {
   return await db.insert(`
     INSERT INTO mail_outbox (templateKey, emailTo, variables, status, replyTo)

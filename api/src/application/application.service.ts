@@ -181,7 +181,11 @@ export class ApplicationService extends AuthService<Application> {
     resp.appRequest = await this.svc(AppRequestService).findByInternalId(application.appRequestInternalId)
     await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, `Rescinded ${application.navTitle}: ${reason}.`)
     const newApplication = (await this.findByInternalId(application.internalId))!
-    await Promise.all(applicationRescindNotifications.map(n => n(this.ctx, resp.appRequest!, newApplication, reason)))
+    try {
+      await Promise.all(applicationRescindNotifications.map(n => n(this.ctx, resp.appRequest!, newApplication, reason)))
+    } catch (err) {
+      console.error(err)
+    }
     return resp
   }
 
@@ -200,7 +204,11 @@ export class ApplicationService extends AuthService<Application> {
     resp.appRequest = await this.svc(AppRequestService).findByInternalId(application.appRequestInternalId)
     await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, `Restored ${application.navTitle}: ${reason}.`)
     const newApplication = (await this.findByInternalId(application.internalId))!
-    await Promise.all(applicationRescindNotifications.map(n => n(this.ctx, resp.appRequest!, newApplication, reason)))
+    try {
+      await Promise.all(applicationRescindNotifications.map(n => n(this.ctx, resp.appRequest!, newApplication, reason)))
+    } catch (err) {
+      console.error(err)
+    }
     return resp
   }
 

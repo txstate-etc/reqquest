@@ -1,12 +1,14 @@
-const subject = 'Your {{programName}} Benefit Has Been Restored'
+const subject = 'Update Regarding Your {{appName}} Request'
 
 const body = `Hello,
 
-Your {{programName}} benefit, which had previously been rescinded, has been restored.
+A status change has occurred regarding your request for {{appName}}. Your previously rescinded {{programName}} benefit has been restored and is approved again.
 
-Reason: {{reason}}
+The following rationale has been provided:
 
-Please log in to the {{appName}} to review the current status of your request, along with any updates provided by the reviewer or next steps that may require your attention.
+{{reason}}
+
+Please log in to your account to review specific status details for your application and check for any required next steps.
 
 <a href="{{loginLink}}">Login</a>
 

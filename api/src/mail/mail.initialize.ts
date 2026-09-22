@@ -1,5 +1,7 @@
 import { DatabaseMigration } from '../migrations'
 import { seedMailTemplates } from './mail.seed.js'
+import { updateMailTemplateContent } from './mail.database.js'
+import { applicationRescindedTemplate, applicationRestoredTemplate } from './templates/index.js'
 
 export const mailMigrations: DatabaseMigration[] = [
   {
@@ -50,6 +52,17 @@ export const mailMigrations: DatabaseMigration[] = [
     async execute (db) {
       // application_complete shipped with a variable name 'applicationName' nothing supplies, so it rendered blank.
       await db.update("UPDATE mail_templates SET body = REPLACE(body, '{{applicationName}}', '{{appName}}') WHERE templateKey = 'application_complete'")
+    }
+  },
+  {
+    id: '20260922000000',
+    async execute (db) {
+      // application_rescinded and application_restored were revised to the wording approved in reqquest-txstate#389.
+      // The seeder deliberately leaves existing rows alone, so push the new content onto databases that already hold
+      // the originals. This overwrites any local edits to those two rows; there is no admin edit surface yet.
+      for (const { templateKey, subject, body, description } of [applicationRescindedTemplate, applicationRestoredTemplate]) {
+        await updateMailTemplateContent({ templateKey, subject, body, description }, db)
+      }
     }
   }
 ]

@@ -49,7 +49,8 @@ export const complexTestMigrations: DatabaseMigration[] = [
             { controlGroup: 'Program', controls: ['view', 'configure', 'disable'], allow: true },
             { controlGroup: 'Prompt', controls: ['view', 'configure'], allow: true },
             { controlGroup: 'Requirement', controls: ['view', 'configure', 'disable'], allow: true },
-            { controlGroup: 'Role', controls: ['view', 'create', 'update', 'delete'], allow: true }
+            { controlGroup: 'Role', controls: ['view', 'create', 'update', 'delete'], allow: true },
+            { controlGroup: 'ApplicationApproved', controls: ['rescind', 'restore'], allow: true }
           ]
         }
       }
