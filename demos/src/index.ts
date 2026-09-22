@@ -110,7 +110,7 @@ async function main () {
         signature: 'Mobile Web Systems',
         from: 'Reqquest <reqquest@txstate.edu>',
         // remind applicants with an unsubmitted request starting 14 days before the period closes,
-        // then every 3 days until it closes or they submit (template must also be enabled in admin)
+        // then every 3 days until it closes or they submit (sends only while the period_closing_reminder template is enabled)
         periodClosing: { daysBefore: 14, reminderDays: 3 }
       }
     },

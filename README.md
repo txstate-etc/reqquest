@@ -717,8 +717,10 @@ emailConfig: {
 - Recipients are owners of app requests in the period that are `STARTED` (not submitted) and not
   closed. The set is recomputed on every run, so submitting the request or the period closing ends
   the reminders on its own.
-- The `period_closing_reminder` template ships disabled, like every built-in email. Enable it in
-  the admin UI to actually send. Variables available: `periodName`, `closeDate`, `daysUntilClose`,
+- The `period_closing_reminder` template seeds **enabled**, like every built-in email. There is no
+  admin screen for templates yet: to turn one off, set `mail_templates.enabled = 0` for its
+  `templateKey` (the `toggleMailTemplate` database function does exactly that). Variables available:
+  `periodName`, `closeDate`, `daysUntilClose`,
   plus everything in `emailConfig`.
 
 The job runs hourly. It is idempotent because each queued email carries a dedup key

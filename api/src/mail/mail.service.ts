@@ -3,7 +3,7 @@ import { AccessUserService, createMailOutbox, getMailTemplate } from '../interna
 
 export class MailService extends BaseService {
   /**
-   * Queue one email per user. Does nothing when the template is disabled in the admin UI.
+   * Queue one email per user. Does nothing when the template's `enabled` flag is off in `mail_templates`.
    *
    * `dedupKey` makes the call idempotent per recipient: a second call producing the same key
    * for the same user is silently dropped. Prevent email the same person twice for the same event.
