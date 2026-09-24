@@ -75,8 +75,9 @@ export type OptOutApplication = ApplicationForDetails & { prompt: AnsweredPrompt
 
 export enum PromptIndicators {
   AUTOMATION = 1,
-  WARNING = 2,
-  DISQUALIFYING = 3
+  PENDING = 2,
+  WARNING = 3,
+  DISQUALIFYING = 4
 }
 
 export const translateMutations = {

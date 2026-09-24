@@ -122,3 +122,119 @@ test.describe.serial('Reviewer screen panels follow the program\'s reviewSection
     await expect(panels.filter({ hasNot: reviewerPage.locator('dt') })).toHaveCount(0)
   })
 })
+
+/**
+ * A requirement that resolves PENDING with a reason marks its blamed prompt on the reviewer screen the same way a
+ * WARNING or DISQUALIFYING one does: an icon in the prompt's title cell whose tooltip carries the reason. The default
+ * demo's `other_cats_reviewer_req` returns PENDING blaming `vaccine_review_prompt` until the reviewer assesses the
+ * records, which only happens when the applicant has other cats.
+ */
+test.describe.serial('Reviewer screen shows a PENDING reason as a prompt tooltip', { tag: '@default' }, () => {
+  const timeZone = 'America/Chicago'
+  const stamp = Date.now()
+  const periodName = `Reviewer Screen Pending Period ${stamp}`
+  const periodCode = `RSP${stamp}`
+  const openDate = DateTime.now().setZone(timeZone).minus({ days: 1 }).toISO()
+  const closeDate = DateTime.now().setZone(timeZone).plus({ days: 1 }).toISO()
+
+  let periodId = 0
+  let appRequestId = 0
+  const programKey = 'adopt_a_cat_program'
+
+  // the qualified applicant answers, except this applicant has other cats and uploads their records
+  const doc = (i: number) => ({ _type: 'UploadInfo', name: `doc${i}.pdf`, mime: 'application/pdf', size: 100, multipartIndex: i })
+  const answers = new Map<string, Map<string, any>>([
+    ...promptMapApplicantQualified,
+    ['other_cats_prompt', new Map([['other_cats', { hasOtherCats: true }]])],
+    ['other_cats_vaccines_prompt', new Map([['docs', { distemperDoc: doc(0), rabiesDoc: doc(1), felineLeukemiaDoc: doc(2), felineHIVDoc: doc(3) }]])]
+  ])
+
+  test('Admin - create and review period', async ({ adminRequest }) => {
+    const create = `
+      mutation CreatePeriod($name: String!, $code: String!, $openDate: DateTime!, $closeDate: DateTime!) {
+        createPeriod(period: { name: $name, code: $code, openDate: $openDate, closeDate: $closeDate }, validateOnly: false) {
+          period { id }
+          messages { message }
+        }
+      }
+    `
+    const { createPeriod } = await adminRequest.graphql<{ createPeriod: { period: { id: number }, messages: { message: string }[] } }>(create, { name: periodName, code: periodCode, openDate, closeDate })
+    periodId = createPeriod.period.id
+    expect(periodId).toBeTruthy()
+    const review = `
+      mutation MarkPeriodReviewed($periodId: ID!) {
+        markPeriodReviewed(periodId: $periodId) { period { id reviewed } messages { message } }
+      }
+    `
+    const { markPeriodReviewed } = await adminRequest.graphql<{ markPeriodReviewed: { period: { reviewed: boolean } } }>(review, { periodId })
+    expect(markPeriodReviewed.period.reviewed).toEqual(true)
+  })
+
+  test('Applicant - answer with other cats and submit', async ({ applicantRequest }) => {
+    const create = `
+      mutation CreateAppRequest($login: String!, $periodId: ID!) {
+        createAppRequest(login: $login, periodId: $periodId, validateOnly: false) {
+          appRequest { id }
+          messages { message }
+        }
+      }
+    `
+    const { createAppRequest } = await applicantRequest.graphql<{ createAppRequest: { appRequest: { id: number } | null, messages: { message: string }[] } }>(create, { login: 'applicant', periodId })
+    expect(createAppRequest.appRequest, createAppRequest.messages.map(m => m.message).join('; ')).not.toBeNull()
+    appRequestId = createAppRequest.appRequest!.id
+
+    const getPrompts = `
+      query GetPrompts($appRequestIds: [ID!]) {
+        appRequests(filter: { ids: $appRequestIds }) {
+          applications { requirements { prompts { id key answered visibility } } }
+        }
+      }
+    `
+    const updatePrompt = `
+      mutation UpdatePrompt($promptId: ID!, $data: JsonData!) {
+        updatePrompt(promptId: $promptId, data: $data, validateOnly: false) { success messages { message } }
+      }
+    `
+    for (let i = 0; i < answers.size; i++) {
+      const response = await applicantRequest.graphql<{ appRequests: { applications: { requirements: { prompts: { id: number, key: string, answered: boolean, visibility: string }[] }[] }[] }[] }>(getPrompts, { appRequestIds: [appRequestId] })
+      const available = response.appRequests.flatMap(r => r.applications.flatMap(a => a.requirements.flatMap(req => req.prompts.filter(p => !p.answered && p.visibility === 'AVAILABLE'))))
+      if (available.length === 0) break
+      for (const prompt of available) {
+        for (const value of answers.get(prompt.key)?.values() ?? []) {
+          const { updatePrompt: result } = await applicantRequest.graphql<{ updatePrompt: { success: boolean, messages: { message: string }[] } }>(updatePrompt, { promptId: prompt.id, data: value })
+          expect(result.success, `${prompt.key}: ${result.messages.map(m => m.message).join('; ')}`).toEqual(true)
+        }
+      }
+    }
+
+    const submit = `
+      mutation SubmitAppRequest($appRequestId: ID!) {
+        submitAppRequest(appRequestId: $appRequestId) { success messages { message } }
+      }
+    `
+    const { submitAppRequest } = await applicantRequest.graphql<{ submitAppRequest: { success: boolean, messages: { message: string }[] } }>(submit, { appRequestId })
+    expect(submitAppRequest.success, submitAppRequest.messages.map(m => m.message).join('; ')).toEqual(true)
+  })
+
+  test('Reviewer - the blamed prompt carries the PENDING reason, other prompts do not', async ({ reviewerPage }) => {
+    await reviewerPage.goto(`/requests/${appRequestId}/approve/${programKey}`)
+    const customPanel = reviewerPage.locator('.panel').filter({ has: reviewerPage.locator('.panel-header', { hasText: 'Other cats in the home' }) })
+    await expect(customPanel).toBeVisible()
+
+    // the reviewer prompt the requirement blames gets the indicator and its reason
+    const vaccineReview = customPanel.locator('dt', { hasText: 'Vaccine Review' }).first()
+    const indicator = vaccineReview.locator('.indicator-tooltip')
+    await expect(indicator).toBeVisible()
+    await expect(indicator.locator('svg')).toHaveCount(1)
+    await indicator.locator('.bx--tooltip__trigger').hover()
+    await expect(reviewerPage.locator('.bx--tooltip--shown')).toContainText('Reviewer must assess all vaccine records.')
+
+    // ...but the applicant prompt the same requirement also consults does not, because blame names one prompt
+    await expect(customPanel.locator('dt', { hasText: 'Do you have other cats?' }).locator('.indicator-tooltip')).toHaveCount(0)
+
+    // and a PENDING requirement that gives no reason shows nothing at all
+    const reviewerPanel = reviewerPage.locator('.panel').filter({ has: reviewerPage.locator('.panel-header', { hasText: 'Reviewer Questions' }) })
+    await expect(reviewerPanel.locator('dt', { hasText: 'Assess Applicant\'s Niceness' })).toBeVisible()
+    await expect(reviewerPanel.locator('dt', { hasText: 'Assess Applicant\'s Niceness' }).locator('.indicator-tooltip')).toHaveCount(0)
+  })
+})

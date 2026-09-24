@@ -139,6 +139,8 @@
           promptIndicator[key] = { indicator: PromptIndicators.DISQUALIFYING, reason: req.statusReason ?? undefined }
         } else if (req.status === enumRequirementStatus.WARNING && (promptIndicator[key]?.indicator ?? 0) < PromptIndicators.WARNING) {
           promptIndicator[key] = { indicator: PromptIndicators.WARNING, reason: req.statusReason ?? undefined }
+        } else if (req.status === enumRequirementStatus.PENDING && req.statusReason && (promptIndicator[key]?.indicator ?? 0) < PromptIndicators.PENDING) {
+          promptIndicator[key] = { indicator: PromptIndicators.PENDING, reason: req.statusReason }
         }
       }
       if (req.workflowStage) {
