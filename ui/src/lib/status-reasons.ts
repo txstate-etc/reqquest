@@ -21,11 +21,14 @@ const statusFeedbackType: Record<string, Feedback['type']> = {
  * through several programs) collapse into one notification; when the prompt's entries span more than one
  * program, each notification is titled with the program(s) it came from.
  *
- * `blamedOnly` keeps only entries whose requirement explicitly named this prompt in `blame`, which is what
- * the framework's own edit forms pass.
+ * `blamedOnly` keeps only entries whose requirement explicitly named this prompt in `blame`, and `statuses`
+ * keeps only entries with one of those statuses - the framework's edit forms pass both, with `statuses` from
+ * `uiRegistry.statusReasonNotificationStatuses(promptKey)`. A display component may do the same to follow
+ * the project's configuration, or pass neither to show everything it was handed.
  */
-export function statusReasonsToFeedback (statusReasons?: StatusReason[] | null, opts?: { blamedOnly?: boolean }): Feedback[] {
-  const entries = (statusReasons ?? []).filter(r => !opts?.blamedOnly || r.blamed)
+export function statusReasonsToFeedback (statusReasons?: StatusReason[] | null, opts?: { blamedOnly?: boolean, statuses?: Iterable<string> }): Feedback[] {
+  const allowed = opts?.statuses ? new Set(opts.statuses) : undefined
+  const entries = (statusReasons ?? []).filter(r => (!opts?.blamedOnly || r.blamed) && (allowed == null || allowed.has(r.status)))
   const programs = new Set(entries.map(r => r.programName))
   const grouped = new Map<string, { type: Feedback['type'], message: string, programs: Set<string> }>()
   for (const r of entries) {

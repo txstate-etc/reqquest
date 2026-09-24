@@ -1,6 +1,7 @@
 import type { LayoutStructureNode, LayoutStructureNodeRoot, ShellItem, UserProfile } from '@txstate-mws/carbon-svelte'
 import type { Component } from 'svelte'
 import type { ProgramKey, PromptKey, RequirementKey } from './keys.js'
+import type { RequirementStatus } from './typed-client/index.js'
 import { plural } from 'txstate-utils'
 
 export interface PromptLoader {
@@ -158,14 +159,36 @@ export interface PromptDefinition {
   applicantPromptPage? : ApplicantPromptPageDefinition
 
   /**
-   * Whether the framework renders requirement status reasons as inline notifications below this prompt's
+   * Which requirement status reasons the framework renders as inline notifications below this prompt's
    * form component, on every edit form: the applicant prompt page, the accept page, and the reviewer's
    * inline and modal forms. Only reasons whose requirement explicitly `blame`s this prompt are rendered.
    *
-   * Defaults to the global `UIConfig.statusReasonNotifications`, which defaults to true. Set false to render
-   * nothing here and handle the `statusReasons` prop inside your own form component instead.
+   * A boolean switches every status on or off; an object such as `{ PENDING: true, WARNING: false }` sets
+   * only the statuses it names. Resolution is layered per status: the built-in default
+   * (`DEFAULT_STATUS_REASON_NOTIFICATIONS`, everything except PENDING), then the global
+   * `UIConfig.statusReasonNotifications`, then this value - so a prompt that only names PENDING still
+   * follows the global setting for every other status. Set false to render nothing here and handle the
+   * `statusReasons` prop inside your own form component instead.
    */
-  statusReasonNotifications?: boolean
+  statusReasonNotifications?: StatusReasonNotificationConfig
+}
+
+/**
+ * Per-status switch for the framework's inline status-reason notifications: a boolean for every status, or
+ * an object naming only the statuses to change (true = show, false = hide).
+ */
+export type StatusReasonNotificationConfig = boolean | Partial<Record<RequirementStatus, boolean>>
+
+/**
+ * What the framework renders when neither `UIConfig` nor the prompt says otherwise: every status except
+ * PENDING, whose reasons are usually instructions ("Reviewer must assess...") rather than findings.
+ */
+export const DEFAULT_STATUS_REASON_NOTIFICATIONS: Record<RequirementStatus, boolean> = {
+  DISQUALIFYING: true,
+  WARNING: true,
+  MET: true,
+  NOT_APPLICABLE: true,
+  PENDING: false
 }
 
 /**
@@ -275,13 +298,14 @@ export interface UIConfig<PK extends string = PromptKey, RK extends string = Req
   applicantPromptPage? : ApplicantPromptPageDefinition
 
   /**
-   * Global default for `PromptDefinition.statusReasonNotifications`: whether every framework edit form (the
-   * applicant prompt page, the accept page, and the reviewer's inline and modal forms) renders the requirement
-   * status reasons that `blame` a prompt as inline notifications below its form component. Defaults to true.
-   * Set false to render nothing and handle the `statusReasons` prop inside your own form components; a
-   * prompt-level value overrides this one.
+   * Global layer of `PromptDefinition.statusReasonNotifications`: which requirement status reasons every
+   * framework edit form (the applicant prompt page, the accept page, and the reviewer's inline and modal
+   * forms) renders as inline notifications below a prompt's form component. A boolean sets every status; an
+   * object such as `{ PENDING: true }` changes only the statuses it names on top of the built-in default
+   * (everything except PENDING). A prompt's own value then overrides this one, status by status. Set false
+   * to render nothing anywhere and handle the `statusReasons` prop inside your own form components.
    */
-  statusReasonNotifications?: boolean
+  statusReasonNotifications?: StatusReasonNotificationConfig
 
   /**
    * Applicant Review submission page title and subtitle text.
@@ -472,8 +496,24 @@ export class UIRegistry {
     return this.warnIfMissing('prompt', key, this.promptMap[key])
   }
 
-  showStatusReasonNotifications (key: string): boolean {
-    return this.promptMap[key]?.statusReasonNotifications ?? this.config.statusReasonNotifications ?? true
+  protected statusReasonStatusCache = new Map<string, Set<RequirementStatus>>()
+  
+  // the statuses whose requirement reasons the framework renders below this prompt's edit form
+  statusReasonNotificationStatuses (key: string): Set<RequirementStatus> {
+    let statuses = this.statusReasonStatusCache.get(key)
+    if (statuses) return statuses
+    const resolved = { ...DEFAULT_STATUS_REASON_NOTIFICATIONS }
+    for (const layer of [this.config.statusReasonNotifications, this.promptMap[key]?.statusReasonNotifications]) {
+      if (layer == null) continue
+      if (typeof layer === 'boolean') {
+        for (const status of Object.keys(resolved) as RequirementStatus[]) resolved[status] = layer
+      } else {
+        for (const [status, on] of Object.entries(layer)) if (on != null) resolved[status as RequirementStatus] = on
+      }
+    }
+    statuses = new Set((Object.keys(resolved) as RequirementStatus[]).filter(status => resolved[status]))
+    this.statusReasonStatusCache.set(key, statuses)
+    return statuses
   }
 
   getRequirement (key: string): RequirementDefinition | undefined {

@@ -74,7 +74,7 @@ Both members of the pair are mounted with `<svelte:component>`, so they are unty
 | `gatheredConfigData` | yes | yes | configuration gathered from related definitions. |
 | `invalidated` / `invalidatedReason` | yes | yes | set when a reviewer sent the prompt back for correction. |
 | `appRequestId` | **sometimes** | yes | present on the applicant page, the opt-out modal, the display path, and the `formMode: 'full'` modal - but **not** on the reviewer's inline edit form. Guard it, or register `formMode: 'full'` if you truly need it. |
-| `statusReasons` | yes | yes | `{ status, statusReason, programName, blamed }[]` - every requirement status and reason aimed at this prompt, across programs. `blamed` is true when the requirement's `resolve` named this prompt in `blame` (it may be a requirement other than this prompt's own, e.g. a reviewer requirement blaming an applicant answer); false when it named no prompt and the entry is the fallback attached to all of that requirement's prompts. The framework already renders the **blamed** entries below every edit form as inline notifications (see `statusReasonNotifications` below), so a form component normally needs nothing. Display components receive the same list and render nothing by default; call `statusReasonsToFeedback(statusReasons, { blamedOnly })` from `@reqquest/ui` to get `Feedback` objects for `FormInlineNotification`. Applicants get an empty list for reviewer-phase requirements the API redacts. |
+| `statusReasons` | yes | yes | `{ status, statusReason, programName, blamed }[]` - every requirement status and reason aimed at this prompt, across programs. `blamed` is true when the requirement's `resolve` named this prompt in `blame` (it may be a requirement other than this prompt's own, e.g. a reviewer requirement blaming an applicant answer); false when it named no prompt and the entry is the fallback attached to all of that requirement's prompts. The framework already renders the **blamed** entries below every edit form as inline notifications (see `statusReasonNotifications` below), so a form component normally needs nothing. Display components receive the same list and render nothing by default; call `statusReasonsToFeedback(statusReasons, { blamedOnly, statuses })` from `@reqquest/ui` to get `Feedback` objects for `FormInlineNotification`, passing `uiRegistry.statusReasonNotificationStatuses(key)` as `statuses` to follow the project's `statusReasonNotifications` configuration. Applicants get an empty list for reviewer-phase requirements the API redacts. |
 
 `prestageData` has a trap worth knowing before you hit it. Read the **prop**, not the mutation:
 
@@ -176,14 +176,21 @@ export const uiRegistry = new UIRegistry(config)
   per-prompt override of the CSS applied to the framework `Form` that wraps applicant prompts, the
   corrections notice, and the wrapper around the status reason notices. The global version of the
   same setting lives on `UIConfig`.
-- **`statusReasonNotifications`** `boolean` (default `true`) - whether the framework renders the
-  requirement status reasons that `blame` this prompt as inline notifications below its form
-  component, on every edit form (applicant prompt page, accept page, reviewer inline and modal
-  forms). They are styled like svelte-forms validation messages, keyed by status
-  (DISQUALIFYING error, WARNING warning, PENDING info, MET success). They describe the last *saved*
-  answer and refresh after each save. Set `false` to render nothing and
-  use the `statusReasons` prop in your own form component instead. `UIConfig.statusReasonNotifications`
-  sets the global default; the prompt-level value overrides it.
+- **`statusReasonNotifications`** `boolean | { PENDING?, WARNING?, DISQUALIFYING?, MET?, NOT_APPLICABLE? }` -
+  which requirement status reasons that `blame` this prompt the framework renders as inline
+  notifications below its form component, on every edit form (applicant prompt page, accept page,
+  reviewer inline and modal forms). They are styled like svelte-forms validation messages, keyed by
+  status (DISQUALIFYING error, WARNING warning, PENDING info, MET success), describe the last *saved*
+  answer and refresh after each save. A boolean switches every status; an object changes only the
+  statuses it names. Resolution is layered **per status**: the built-in default (everything **except
+  PENDING**), then `UIConfig.statusReasonNotifications`, then this prompt's value. So
+  `UIConfig: { PENDING: true }` turns PENDING notices on everywhere, and a prompt with
+  `{ WARNING: false }` hides only its warnings while still following the global PENDING choice.
+  `false` at either level renders nothing (for that prompt, or everywhere) - use the `statusReasons`
+  prop in your own form component instead. `statusReasonsToFeedback(statusReasons, { blamedOnly,
+  statuses })` from `@reqquest/ui` applies the same filters; pass
+  `uiRegistry.statusReasonNotificationStatuses(key)` as `statuses` if a display component should
+  follow the project's configuration.
 
 ### Keys, and how they stay honest
 

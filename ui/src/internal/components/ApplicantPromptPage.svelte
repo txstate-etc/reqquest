@@ -25,8 +25,7 @@
   export let statusReasons: StatusReason[] = []
   $: ({ prompt, appRequest: appRequestForExport, dataVersion } = data)
   $: def = uiRegistry.getPrompt(prompt.key)
-  $: statusFeedback = statusReasonsToFeedback(statusReasons, { blamedOnly: true })
-  $: showStatusNotices = uiRegistry.showStatusReasonNotifications(prompt.key)
+  $: statusFeedback = statusReasonsToFeedback(statusReasons, { blamedOnly: true, statuses: uiRegistry.statusReasonNotificationStatuses(prompt.key) })
   const nextHref = getContext<Writable<{ nextHref: ResolvedPathname, prevHref: ResolvedPathname | undefined }>>('nextHref')
 
   let store: FormStore | undefined
@@ -104,7 +103,7 @@
   {:else}
   <Form class={def.applicantPromptPage?.formClass ?? uiRegistry.config.applicantPromptPage?.formClass} bind:store hideFallbackMessage unsavedWarning submit={onSubmit} validate={onValidate} preloadAsDraft={!prompt.hasSavedData} preload={prompt.preloadData} on:saved={onSaved} let:data>
     <svelte:component this={def.formComponent} {data} appRequestId={appRequestForExport.id} appRequestData={appRequestForExport.data} prestageData={{latest: prompt.prestageData, current: appRequestForExport.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} {statusReasons} />
-    {#if showStatusNotices && statusFeedback.length}
+    {#if statusFeedback.length}
       <div class={def.applicantPromptPage?.statusReasonInlineNotificationClass ?? uiRegistry.config.applicantPromptPage?.statusReasonInlineNotificationClass}>
         {#each statusFeedback as message}
           <FormInlineNotification {message} />
