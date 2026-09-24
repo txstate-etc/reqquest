@@ -4,4 +4,4 @@
 
   export let data: PageData
 </script>
-<ApplicantPromptPage {data} />
+<ApplicantPromptPage {data} statusReasons={data.promptsById[data.prompt.id]?.statusReasons ?? []} />

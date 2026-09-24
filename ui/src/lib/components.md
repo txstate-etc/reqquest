@@ -10,10 +10,10 @@ Versions this describes (the versions a downstream project resolves through `@re
 
 | package | version |
 |---|---|
-| `@reqquest/ui` | 1.12.1 |
-| `@txstate-mws/carbon-svelte` | 1.11.0 |
+| `@reqquest/ui` | 1.13.0 |
+| `@txstate-mws/carbon-svelte` | 1.12.0 |
 | `@txstate-mws/svelte-forms` | 2.1.9 |
-| `carbon-components-svelte` | 0.110.2 |
+| `carbon-components-svelte` | 0.111.1 |
 | `carbon-icons-svelte` | 13.15.0 |
 | `svelte` | 5.x, **no runes** |
 
@@ -108,6 +108,7 @@ Both members of the pair are mounted with `<svelte:component>`, so they are unty
 | `gatheredConfigData` | yes | yes | configuration gathered from related definitions. |
 | `invalidated` / `invalidatedReason` | yes | yes | set when a reviewer sent the prompt back for correction. |
 | `appRequestId` | **sometimes** | yes | present on the applicant page, the opt-out modal, the display path, and the `formMode: 'full'` modal - but **not** on the reviewer's inline edit form. Guard it, or register `formMode: 'full'` if you truly need it. |
+| `statusReasons` | yes | yes | `{ status, statusReason, programName, blamed }[]` - every requirement status and reason aimed at this prompt, across programs. `blamed` is true when the requirement's `resolve` named this prompt in `blame` (it may be a requirement other than this prompt's own, e.g. a reviewer requirement blaming an applicant answer); false when it named no prompt and the entry is the fallback attached to all of that requirement's prompts. The framework already renders the **blamed** entries below every edit form as inline notifications (see `statusReasonNotifications` below), so a form component normally needs nothing. Display components receive the same list and render nothing by default; call `statusReasonsToFeedback(statusReasons, { blamedOnly })` from `@reqquest/ui` to get `Feedback` objects for `FormInlineNotification`. Applicants get an empty list for reviewer-phase requirements the API redacts. |
 
 `prestageData` has a trap worth knowing before you hit it. Read the **prop**, not the mutation:
 
@@ -205,9 +206,18 @@ export const uiRegistry = new UIRegistry(config)
   `fetched` only.
 - **`icon`** `Component` - navigation icon.
 - **`loader`** `{ skeletonComponent, delay? } | boolean` (default `false`) - see the snippet above.
-- **`applicantPromptPage`** `{ formClass?, invalidatedInlineNotificationClass? }` - per-prompt
-  override of the CSS applied to the framework `Form` that wraps applicant prompts. The global
-  version of the same setting lives on `UIConfig`.
+- **`applicantPromptPage`** `{ formClass?, invalidatedInlineNotificationClass?, statusReasonInlineNotificationClass? }` -
+  per-prompt override of the CSS applied to the framework `Form` that wraps applicant prompts, the
+  corrections notice, and the wrapper around the status reason notices. The global version of the
+  same setting lives on `UIConfig`.
+- **`statusReasonNotifications`** `boolean` (default `true`) - whether the framework renders the
+  requirement status reasons that `blame` this prompt as inline notifications below its form
+  component, on every edit form (applicant prompt page, accept page, reviewer inline and modal
+  forms). They are styled like svelte-forms validation messages, keyed by status
+  (DISQUALIFYING error, WARNING warning, PENDING info, MET success). They describe the last *saved*
+  answer and refresh after each save. Set `false` to render nothing and
+  use the `statusReasons` prop in your own form component instead. `UIConfig.statusReasonNotifications`
+  sets the global default; the prompt-level value overrides it.
 
 ### Keys, and how they stay honest
 
@@ -1757,6 +1767,20 @@ Import: `import { CardSkeleton } from '@txstate-mws/carbon-svelte'`
 
 - **`width`** (default: `300`) - The width of the card in pixels
 
+### ExpandCollapseAll
+
+> One ghost button that opens or closes every member of a collapsible set at once, labelled to describe what the next activation will do. `members` is the whole input: the label is derived from it, and an empty set renders nothing. `PanelGroup` and `ColumnList` each own their set and can render this already wired, so most pages never build the array themselves. The **root element is a wrapper `div`, not the Button**, and `class` is the only prop forwarded to it. That is what lets a caller position the control without colliding with carbon's button classes. In a flex row the wrapper is exactly the Button's height, so it costs no layout. @example ```svelte <script lang="ts"> import { ExpandCollapseAll, PanelGroup, Panel } from '@txstate-mws/carbon-svelte' </script> <PanelGroup let:members let:expandAll let:collapseAll> <ExpandCollapseAll class="[ flex justify-end mb-2 ]" {members} on:expand={expandAll} on:collapse={collapseAll} /> <Panel expandable title="Petition">…</Panel> <Panel expandable title="Supporting documents">…</Panel> <Panel expandable title="Advisor recommendation">…</Panel> <Panel expandable title="Course substitutions">…</Panel> <Panel expandable title="Decision history">…</Panel> </PanelGroup> ```
+
+Import: `import { ExpandCollapseAll } from '@txstate-mws/carbon-svelte'`
+
+<!-- no upstream doc at this version; props extracted from the component source -->
+
+#### Props
+
+- **`members`** `boolean[]` **(required)** - The expanded state of every member of the collapsible set, one boolean each. The label reads "Collapse all" only while every member is expanded, and an empty array renders nothing. Inside a `PanelGroup` this is the group's `let:members`; `ColumnList` builds it from its expandable rows; any other set (e.g. carbon `Accordion`, your own markup) builds it itself.
+- **`size`** `'small' | 'medium' | 'large'` (default: `'medium'`) - Button size.
+- **`describedById`** `string | undefined` (default: `undefined`) - Id of an element naming the set this button acts on, applied to the Button as `aria-describedby`.
+
 ### FilterUISkeleton
 
 Import: `import { FilterUISkeleton } from '@txstate-mws/carbon-svelte'`
@@ -1772,6 +1796,29 @@ Import: `import { FilterUISkeleton } from '@txstate-mws/carbon-svelte'`
 Import: `import { GeneralTextSkeleton } from '@txstate-mws/carbon-svelte'`
 
 <!-- no upstream doc at this version; props extracted from the component source -->
+
+### Image
+
+> A single presentational image, rendered as exactly one img element with no wrapper. Three layout modes: `aspect` locks a ratio and cover-crops; `cropHeight` crops to a fixed CSS height at whatever width the container gives; with neither, the image renders at its intrinsic ratio, never upscaling past its natural width. `anchor` picks the visible region in both crop modes. While the file downloads the box is reserved empty space. Give intrinsic images `width` and `height` so the browser can reserve it before the file arrives. `class`, `style` and any other undeclared attribute (fetchpriority, crossorigin, id, ...) all land on the img. Purely presentational: a consumer who needs a linked image wraps it in an anchor. @example ```svelte <script lang="ts"> import { Image } from '@txstate-mws/carbon-svelte' </script> <Image src="/photo.jpg" aspect="widescreen" anchor={{ x: 75, y: 25 }} /> ``` A banner cropped to a fixed height at fluid width: ```svelte <Image src="/photo.jpg" cropHeight="180px" anchor="object-bottom" /> ``` Intrinsic ratio with the box reserved from the file's real pixel dimensions: ```svelte <Image src="/photo.jpg" width={1600} height={900} /> ```
+
+Import: `import { Image } from '@txstate-mws/carbon-svelte'`
+
+<!-- no upstream doc at this version; props extracted from the component source -->
+
+#### Props
+
+- **`src`** `string | undefined` (default: `undefined`) - Image source URL. Optional so async data can be passed directly: with `src` undefined the component renders nothing.
+- **`alt`** (default: `''`) - Alt text for accessibility. Defaults to empty string: images are decorative by default. When `alt` describes specific content and the image is cropped (`aspect` or `cropHeight`), choose `anchor` appropriately so cover-cropping doesn't cut away what the alt text describes.
+- **`srcset`** `string | undefined` (default: `undefined`) - Native srcset attribute, passed through to the img element: the same image at several widths ('/photo-400.jpg 400w, /photo-800.jpg 800w'), letting the browser download the smallest file that will still look sharp. Pairs with `sizes`.
+- **`sizes`** `string | undefined` (default: `undefined`) - Native `sizes` attribute. Passed through as given, but a lazy image that has a `srcset` and no `sizes` gets `'auto'` by default, so the browser picks a candidate sized to the laid-out box instead of assuming 100vw.
+- **`loading`** `'lazy' | 'eager'` (default: `'lazy'`) - Native loading attribute for the img element. Defaults to 'lazy': the file is not fetched until the image is about to scroll into view.
+- **`width`** `number | undefined` (default: `undefined`) - The image file's intrinsic width in pixels, passed through as the native `width` attribute. Set it together with `height` in intrinsic mode: the browser derives an aspect ratio from the pair and reserves the box before the file arrives, which prevents layout shift. Ignored for layout in the crop modes (`aspect` or `cropHeight`), since CSS already gives the box. These are pixel counts, not CSS lengths.
+- **`height`** `number | undefined` (default: `undefined`) - The image file's intrinsic height in pixels, passed through as the native `height` attribute. See `width`.
+- **`anchor`** `ImageAnchor` (default: `'object-center'`) - Which part of the image stays visible when it is cover-cropped: one of the nine `object-*` position shorthands, or an `{ x, y }` focal point in percentages. Live in both crop modes (`aspect` or `cropHeight`); inert in intrinsic mode. A focal point keeps its relative position in the crop (CSS `object-position` semantics); it is never pulled to the center.
+- **`aspect`** `ImageAspect | undefined` (default: `undefined`) - Locks the image to an aspect ratio, cropping via cover-fit: 'square' (1:1), 'widescreen' (16:9), 'standard' (4:3), any CSS ratio string like '21/9', or a bare width/height number like 1.7778. Ratio strings use the CSS slash form; a colon form like '4:5' is invalid CSS and the browser silently drops it, leaving the image uncropped. When omitted the image renders at its intrinsic ratio with no cropping, unless `cropHeight` is set.
+- **`cropHeight`** `string | undefined` (default: `undefined`) - Crops the image to an explicit CSS height ('180px', '50vh', '100%') at whatever width the container gives, via cover-fit, which also upscales a file smaller than the box. This is the unlocked mode, for banners and fills where the ratio can't be known ahead of time. Percentage heights resolve against the parent, which must be sized; against an unsized parent they silently behave as auto. Ignored when `aspect` is set.
+- **`className`** (default: `''`) - Extra classes for the img, the hook for placing and sizing the component from outside.
+- **`style`** `string | undefined` (default: `undefined`) - Inline styles for the img. The component's own style directives reserve `aspect-ratio`, `height` and `object-position` in every mode, so Svelte drops those properties from this string. The `aspect`, `cropHeight` and `anchor` props are the way to set them.
 
 ### LoadingIcon
 
@@ -1797,6 +1844,18 @@ Import: `import { PanelDialog } from '@txstate-mws/carbon-svelte'`
 - **`disableSubmit`** (default: `false`) - Disables the submit button when true.
 - **`loadingSubmit`** (default: `false`) - Show a loading spinner on the submit button and disable it when true.
 - **`size`** `'small' | 'large'` (default: `'small'`) - Size of the dialog. 'small' is 32rem wide, 'large' is 64rem wide and centered.
+
+### PanelGroup
+
+Import: `import { PanelGroup } from '@txstate-mws/carbon-svelte'`
+
+<!-- no upstream doc at this version; props extracted from the component source -->
+
+#### Props
+
+- **`showExpandAll`** (default: `false`) - One Panel's handle on the group. / export interface PanelMembership { /** This Panel's state, narrowed to one boolean. / expanded: Readable<boolean> /** This Panel pushing its own change up: a header click, or an app writing `expanded`. */ report: (expanded: boolean) => void /** Call on destroy. Drops the key from the mounted set and keeps its state. */ leave: () => void } export interface PanelGroupContextValue { /** Called by an expandable Panel as it mounts. Seeds state on first sight only, so a Panel remounting under the same key reads back the state it left. / join: (finalKey: string, initial: boolean) => PanelMembership } /** Module scope on purpose: an instance-scope key is a fresh object per instance. / export const PANEL_GROUP_CONTEXT = {} </script> <script lang="ts"> import { dev } from '$app/environment' import { setContext } from 'svelte' import { derived, writable } from 'svelte/store' import ExpandCollapseAll from './ExpandCollapseAll.svelte' /** Render an expand-all control above the group's Panels, right aligned. Leave it off and wire your own `ExpandCollapseAll` from the `let:` slot props when the control belongs in a toolbar you already have.
+- **`expandAllSize`** `'small' | 'medium' | 'large'` (default: `'medium'`) - Size of the built-in expand-all control. Only used when `showExpandAll` is set; a control you place yourself takes its own `size` prop.
+- **`describedById`** `string | undefined` (default: `undefined`) - Id of an element naming this group, forwarded to the built-in "Expand all" control as `aria-describedby` so a screen reader user can tell two "Expand all" buttons apart when a screen has more than one set.
 
 ### ScrollOverflow
 
@@ -3400,7 +3459,7 @@ Import: `import { FieldMultiselectPills } from '@txstate-mws/carbon-svelte'`
 - **`id`** (default: `randomid()`)
 - **`labelText`** `string` (default: `''`)
 - **`placeholder`** (default: `''`) - Text to display in the text input when it's empty.
-- **`disabled`** (default: `false`) - When there are no items (e.g. it's a filtered search and there were no results), we still display one disabled item in the menu to let the user know what is going on. Use this prop to specify the message.
+- **`disabled`** `boolean | undefined` (default: `undefined`) - When there are no items (e.g. it's a filtered search and there were no results), we still display one disabled item in the menu to let the user know what is going on. Use this prop to specify the message. */ /** Indicates if the field is disabled.
 - **`defaultValue`** `string[]` (default: `[]`)
 - **`conditional`** `boolean | undefined` (default: `undefined`)
 - **`required`** (default: `false`)

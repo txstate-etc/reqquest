@@ -153,8 +153,19 @@ export interface PromptDefinition {
   /**
    * This is the same applicantPromptPage CSS configurations that exist at the UIConfig (global applicant page prompt) level.  Used in a situation where a specific prompt
    * requires a specific layout that doesn't match default.  This will override global configuration
+   * (`formClass`, `invalidatedInlineNotificationClass`, `statusReasonInlineNotificationClass`).
    */
   applicantPromptPage? : ApplicantPromptPageDefinition
+
+  /**
+   * Whether the framework renders requirement status reasons as inline notifications below this prompt's
+   * form component, on every edit form: the applicant prompt page, the accept page, and the reviewer's
+   * inline and modal forms. Only reasons whose requirement explicitly `blame`s this prompt are rendered.
+   *
+   * Defaults to the global `UIConfig.statusReasonNotifications`, which defaults to true. Set false to render
+   * nothing here and handle the `statusReasons` prop inside your own form component instead.
+   */
+  statusReasonNotifications?: boolean
 }
 
 /**
@@ -173,6 +184,11 @@ export interface ApplicantPromptPageDefinition {
    * CSS class settings specific to the corrections inline notification within the Form
    */
   invalidatedInlineNotificationClass?: string
+  /**
+   * CSS class applied to the wrapper around the requirement status reason notifications rendered below the
+   * prompt's form component.
+   */
+  statusReasonInlineNotificationClass?: string
 }
 
 export interface Terminologies {
@@ -257,6 +273,15 @@ export interface UIConfig<PK extends string = PromptKey, RK extends string = Req
  * individual prompt level if specific prompts desire specific layouts
  */
   applicantPromptPage? : ApplicantPromptPageDefinition
+
+  /**
+   * Global default for `PromptDefinition.statusReasonNotifications`: whether every framework edit form (the
+   * applicant prompt page, the accept page, and the reviewer's inline and modal forms) renders the requirement
+   * status reasons that `blame` a prompt as inline notifications below its form component. Defaults to true.
+   * Set false to render nothing and handle the `statusReasons` prop inside your own form components; a
+   * prompt-level value overrides this one.
+   */
+  statusReasonNotifications?: boolean
 
   /**
    * Applicant Review submission page title and subtitle text.
@@ -445,6 +470,10 @@ export class UIRegistry {
 
   getPrompt (key: string): PromptDefinition | undefined {
     return this.warnIfMissing('prompt', key, this.promptMap[key])
+  }
+
+  showStatusReasonNotifications (key: string): boolean {
+    return this.promptMap[key]?.statusReasonNotifications ?? this.config.statusReasonNotifications ?? true
   }
 
   getRequirement (key: string): RequirementDefinition | undefined {

@@ -16,11 +16,15 @@ export interface AnsweredPrompt {
   prestageData: Record<string, any>
   configurationData: Record<string, any>
   gatheredConfigData: Record<string, any>
-  statusReasons: {
-    status: string
-    statusReason: string | null
-    programName: string
-  }[]
+  statusReasons: StatusReason[]
+}
+
+export interface StatusReason {
+  status: string
+  statusReason: string | null
+  programName: string
+  // true when the requirement's `blame` explicitly named this prompt
+  blamed: boolean
 }
 
 export interface PromptSection {

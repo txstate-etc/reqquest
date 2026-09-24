@@ -9,7 +9,7 @@
   import View from 'carbon-icons-svelte/lib/View.svelte'
   import { invalidateAll } from '$app/navigation'
   import { api, getApplicationStatusInfo, hasDisplayablePrompts } from '$internal'
-  import { CommentCard, enumPromptVisibility, enumRequirementStatus, enumRequirementType, InfoCard, PromptIndicators } from '$lib'
+  import { CommentCard, enumPromptVisibility, enumRequirementStatus, enumRequirementType, InfoCard, PromptIndicators, type StatusReason } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../../../local'
   import ApproveLayout from '../ApproveLayout.svelte'
@@ -107,8 +107,12 @@
   // share a prompt and one requirement is disqualifying while the other is just a warning, we need to show the
   // disqualifying indicator.
   let promptIndicator: Record<string, { indicator: typeof PromptIndicators[keyof typeof PromptIndicators], reason: string | undefined } | undefined>
+  // every requirement status reason aimed at each prompt key (all statuses, blamed or fallback), for the
+  // inline notifications under the reviewer's edit forms and the `statusReasons` prop of every prompt component
+  let promptStatusReasons: Record<string, StatusReason[]>
   $: {
     promptIndicator = {}
+    promptStatusReasons = {}
     const general: Section = { key: 'general', title: 'General Questions', requirements: [] }
     const program: Section = { key: 'program', title: application.title, requirements: [] }
     const reviewer: Section = { key: 'reviewer', title: 'Reviewer Questions', requirements: [] }
@@ -135,6 +139,7 @@
         ? req.blame
         : req.prompts.filter(p => p.visibility !== enumPromptVisibility.UNREACHABLE).map(p => p.key)
       for (const key of faulted) {
+        (promptStatusReasons[key] ??= []).push({ status: req.status, statusReason: req.statusReason, programName: application.title, blamed: !!req.blame?.length })
         if (req.status === enumRequirementStatus.DISQUALIFYING && (promptIndicator[key]?.indicator ?? 0) < PromptIndicators.DISQUALIFYING) {
           promptIndicator[key] = { indicator: PromptIndicators.DISQUALIFYING, reason: req.statusReason ?? undefined }
         } else if (req.status === enumRequirementStatus.WARNING && (promptIndicator[key]?.indicator ?? 0) < PromptIndicators.WARNING) {
@@ -271,7 +276,7 @@
       </InfoCard>
     {/if}
   </svelte:fragment>
-  <ReviewerQuestions {sections} {lastStageKey} {appRequest} {application} {promptIndicator} {basicRequestData} bind:loading/>
+  <ReviewerQuestions {sections} {lastStageKey} {appRequest} {application} {promptIndicator} {promptStatusReasons} {basicRequestData} bind:loading/>
 </ApproveLayout>
 
 

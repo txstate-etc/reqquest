@@ -73,6 +73,6 @@
     {#if def?.formComponent == null}
       <MissingDefinitionNotification kind="prompt" definitionKey={prompt.key} />
     {:else}
-    <svelte:component this={def.formComponent} {data} appRequestId={appRequest.id} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} />
+    <svelte:component this={def.formComponent} {data} appRequestId={appRequest.id} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} statusReasons={optOutSelected?.prompt.statusReasons ?? []} />
     {/if}
 </PanelFormDialog>

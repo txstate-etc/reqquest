@@ -19,5 +19,5 @@
     <DelayedSkeleton {loader} />
   {/if}
 {:then { prompt, appRequest }}
-  <ApplicantPromptPage data={{ prompt, appRequest, dataVersion: appRequest.dataVersion }} />
+  <ApplicantPromptPage data={{ prompt, appRequest, dataVersion: appRequest.dataVersion }} statusReasons={data.basicPromptData?.statusReasons ?? []} />
 {/await}

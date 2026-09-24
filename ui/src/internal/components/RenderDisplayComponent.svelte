@@ -1,6 +1,7 @@
 <script lang="ts">
   import { InlineNotification } from 'carbon-components-svelte'
   import type { PromptDefinition } from '../../lib/registry.js'
+  import type { StatusReason } from '../../lib/types.js'
 
   export let def: PromptDefinition | undefined
   export let appRequestId: string
@@ -11,6 +12,8 @@
   export let gatheredConfigData: Record<string, any>
   export let showMoot = false
   export let showInlineReviewNotification = false 
+  // requirement status reasons aimed at this prompt, forwarded to the display component
+  export let statusReasons: StatusReason[] = []
 
 </script>
 
@@ -21,7 +24,7 @@
     <em>No display component registered.</em>
     <pre>{JSON.stringify(appData[prompt.key] ?? {}, null, 2)}</pre>
   {:else}
-    <svelte:component this={def.displayComponent} {appRequestId} data={appData[prompt.key]} appRequestData={appData} {prestageData} {configData} {gatheredConfigData} invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} />
+    <svelte:component this={def.displayComponent} {appRequestId} data={appData[prompt.key]} appRequestData={appData} {prestageData} {configData} {gatheredConfigData} invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} {statusReasons} />
   {/if}
   {#if prompt.invalidated && (showMoot || !prompt.moot) && showInlineReviewNotification}
     <InlineNotification class="mt-6 lg:mt-4" kind="warning" title="Applicant has made corrections:" subtitle={prompt.invalidatedReason ?? 'Requires review'} lowContrast hideCloseButton />
