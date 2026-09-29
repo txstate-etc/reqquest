@@ -432,10 +432,13 @@ class API extends APIBase {
       let hasWarningForNav = false
       for (const req of reqsForCompletion) {
         const showWarnings = application.ineligiblePhase !== enumIneligiblePhases.PREQUAL || req.type === enumRequirementType.PREQUAL  
-        // PENDING change only if previously was eligibile, if ineligiible or pending just remain      
-        if (completionStatus === 'ELIGIBLE' && req.status === enumRequirementStatus.PENDING) {
-          completionStatus = 'PENDING'
-          if (requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'PENDING'
+        // PENDING only demotes ELIGIBLE; INELIGIBLE is precise and PENDING just remains. The two statuses are
+        // demoted independently: the first PENDING requirement may be a non-navigation type (e.g. an APPROVAL
+        // requirement interleaved between QUALIFICATION ones), and that must not stop a later PENDING
+        // QUALIFICATION requirement from marking the nav status PENDING.
+        if (req.status === enumRequirementStatus.PENDING) {
+          if (completionStatus === 'ELIGIBLE') completionStatus = 'PENDING'
+          if (completionStatusForNav === 'ELIGIBLE' && requirementTypesForNavigation.has(req.type)) completionStatusForNav = 'PENDING'
         }
         //WARNING makes no completion status changes, whatever application state remains (pending, inel, eli), just append warning reasons
         else if (req.status === enumRequirementStatus.WARNING) {
