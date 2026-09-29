@@ -2,6 +2,7 @@
   import { Form } from '@txstate-mws/svelte-forms'
   import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
+  import WatsonHealthStackedMove from 'carbon-icons-svelte/lib/WatsonHealthStackedMove.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import { enumRequirementStatus, enumRequirementType, PromptIndicators, statusReasonsToFeedback, translateMutations, type PhaseChangeMutations, type StatusReason } from '$lib'
   import { isInlineReviewerEditPrompt, isDisplayablePrompt, hasDisplayablePrompts, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api, PromptSaveQueue, type BasicRequestData } from '$internal'
@@ -233,6 +234,8 @@
                         <WarningIconYellow />
                     {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.DISQUALIFYING}
                         <WarningFilled size={20} class="disqualifying-icon" style="fill: var(--cds-support-01, #da1e28)" />
+                    {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.PENDING}
+                        <WatsonHealthStackedMove size={20} class="pending-icon" style="fill: var(--cds-support-04, #0043ce)" />
                     {/if}
                     </svelte:fragment>
                     {promptIndicator[prompt.key]?.reason}
@@ -430,6 +433,9 @@
   }
   :global(.disqualifying-icon) {
     fill: var(--cds-support-01, #da1e28);
+  }
+  :global(.pending-icon) {
+    fill: var(--cds-support-04, #0043ce);
   }
   :global(.panel:has(.isReviewerQuestion.disabled) .panel-header) {
     background-color: #8C8C8C !important;
