@@ -39,6 +39,13 @@ export const createMailTemplate = async ({ templateKey, description, audience, v
   `, [templateKey, description, audience, variables, subject, body, true])
 }
 
+export const updateMailTemplateContent = async ({ templateKey, subject, body, description }: Pick<MailTemplateRow, 'templateKey' | 'subject' | 'body' | 'description'>, tdb: Queryable = db) => {
+  // for data migrations that revise the wording of a template already seeded into existing databases
+  return await tdb.update(`
+    UPDATE mail_templates SET subject = ?, body = ?, description = ? WHERE templateKey = ?
+  `, [subject, body, description, templateKey])
+}
+
 /**
  * Returns the new row's id, or 0 when a `dedupKey` was given and a row with that key already
  * exists - the unique index plus INSERT IGNORE is what makes recurring jobs idempotent.

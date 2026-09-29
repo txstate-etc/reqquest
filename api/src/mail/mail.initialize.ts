@@ -1,5 +1,7 @@
 import { DatabaseMigration } from '../migrations'
 import { seedMailTemplates } from './mail.seed.js'
+import { updateMailTemplateContent } from './mail.database.js'
+import { applicationRescindedTemplate, applicationRestoredTemplate } from './templates/index.js'
 
 export const mailMigrations: DatabaseMigration[] = [
   {
@@ -55,6 +57,12 @@ export const mailMigrations: DatabaseMigration[] = [
   {
     id: '20260922000000',
     async execute (db) {
+      // application_rescinded and application_restored were revised to the wording approved in reqquest-txstate#389.
+      // The seeder deliberately leaves existing rows alone, so push the new content onto databases that already hold
+      // the originals. This overwrites any local edits to those two rows; there is no admin edit surface yet.
+      for (const { templateKey, subject, body, description } of [applicationRescindedTemplate, applicationRestoredTemplate]) {
+        await updateMailTemplateContent({ templateKey, subject, body, description }, db)
+      }
       // dedupKey lets a recurring job (the period-closing reminder) enqueue idempotently:
       // INSERT IGNORE against the unique index means a re-run adds nothing.
       const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'mail_outbox' AND COLUMN_NAME = 'dedupKey'")
