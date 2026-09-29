@@ -387,7 +387,7 @@
     grid-column: 1 / -1;
   }
   .prompts dt.isReviewerQuestion, .prompts dd.isReviewerQuestion {
-    background-color: var(--cds-tag-background-cyan);
+    background-color: var(--background-cool-light);
   }
   .prompts dt.isReviewerQuestion.disabled, .prompts dd.isReviewerQuestion.disabled {
     background-color: #f2f2f2;
