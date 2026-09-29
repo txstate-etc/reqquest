@@ -13,7 +13,7 @@ import {
   PaginationInfoWithTotalItems, Pagination, appRequestComplete, appRequestReturnToNonBlocking,
   countAppRequests
 } from '../internal.js'
-import { applicationPhaseNotifications, appRequestNotifications } from '../util/notifications.js'
+import { applicationPhaseNotifications, appRequestCreatedNotifications, appRequestNotifications } from '../util/notifications.js'
 
 const phaseNames = {
   [AppRequestPhase.ACCEPTANCE]: 'offer acceptance',
@@ -388,14 +388,7 @@ export class AppRequestService extends AuthService<AppRequest> {
     }
     if (validateOnly || response.hasErrors()) return response
     const internalId = await createAppRequest(period.internalId, this.user!.internalId)
-    this.loaders.clear()
-    response.appRequest = await this.findByInternalId(internalId)
-    try {
-      await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, undefined)
-    } catch (err) {
-      console.error(err)
-    }
-    return response
+    return await this.afterCreate(internalId, response)
   }
 
   /**
@@ -423,10 +416,15 @@ export class AppRequestService extends AuthService<AppRequest> {
     // now that we're sure we want to create the app request, we can upsert the user
     const user = await AccessDatabase.upsertAccessUser(rqUser!)
     const internalId = await createAppRequest(period.internalId, user.internalId)
+    return await this.afterCreate(internalId, response)
+  }
+
+  async afterCreate (internalId: number, response: ValidatedAppRequestResponse) {
     this.loaders.clear()
     response.appRequest = await this.findByInternalId(internalId)
     try {
       await appConfig.hooks?.appRequestStatus?.(this.ctx, response.appRequest!, undefined)
+      await Promise.all(appRequestCreatedNotifications.map(n => n(this.ctx, response.appRequest!)))
     } catch (err) {
       console.error(err)
     }

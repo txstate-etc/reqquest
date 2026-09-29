@@ -1,4 +1,4 @@
-import { CategoryTag, RQServer } from '@reqquest/api'
+import { type AppDefinition, CategoryTag, RQServer } from '@reqquest/api'
 import { analyticsPlugin, unifiedAuthenticate } from 'fastify-txstate'
 import { DateTime } from 'luxon'
 
@@ -26,6 +26,7 @@ import { rcTestMigrations } from './rc/testdata.js'
 import { rcPrograms } from './rc/definitions/programs.js'
 import * as rcRequirements from './rc/definitions/requirements/index.js'
 import * as rcPrompts from './rc/definitions/prompts/index.js'
+import { rcHooks } from './rc/hooks/index.js'
 
 interface UserOtherInfo {
   email: string
@@ -43,7 +44,7 @@ async function main () {
 
   await server.app.register(analyticsPlugin, { appName: 'reqquest', authorize: req => !!req.auth?.username.length })
 
-  const { programs, requirements, prompts, migrations, multipleRequestsPerPeriod } = configureDemoInstanceParams()
+  const { programs, requirements, prompts, migrations, multipleRequestsPerPeriod, hooks } = configureDemoInstanceParams()
 
   const userTypes: Record<string, { groups: string[] }> = {
     su: { groups: ['sudoers'] },
@@ -108,8 +109,12 @@ async function main () {
       emailConfig: {
         appName: 'Reqquest',
         signature: 'Mobile Web Systems',
-        from: 'Reqquest <reqquest@txstate.edu>'
-      }
+        from: 'Reqquest <reqquest@txstate.edu>',
+        // remind applicants with an unsubmitted request starting 14 days before the period closes,
+        // then every 3 days until it closes or they submit (sends only while the period_closing_reminder template is enabled)
+        periodClosing: { daysBefore: 14, reminderDays: 3 }
+      },
+      hooks
     },
     programs,
     requirements,
@@ -126,34 +131,39 @@ function configureDemoInstanceParams () {
     requirements: simpleRequirements,
     prompts: simplePrompts,
     migrations: simpleTestMigrations,
-    multipleRequestsPerPeriod: false
+    multipleRequestsPerPeriod: false,
+    hooks: undefined as AppDefinition['hooks']
   }
   else if (process.env.DEMO_INSTANCE === 'multi') return {
     programs: multiPrograms,
     requirements: multiRequirements,
     prompts: multiPrompts,
     migrations: multiTestMigrations,
-    multipleRequestsPerPeriod: true
+    multipleRequestsPerPeriod: true,
+    hooks: undefined as AppDefinition['hooks']
   }
   else if (process.env.DEMO_INSTANCE === 'complex') return {
     programs: complexPrograms,
     requirements: complexRequirements,
     prompts: complexPrompts,
     migrations: complexTestMigrations,
-    multipleRequestsPerPeriod: false
+    multipleRequestsPerPeriod: false,
+    hooks: undefined as AppDefinition['hooks']
   }
   else if (process.env.DEMO_INSTANCE === 'rc') return {
     programs: rcPrograms,
     requirements: rcRequirements,
     prompts: rcPrompts,
     migrations: rcTestMigrations,
-    multipleRequestsPerPeriod: false
+    multipleRequestsPerPeriod: false,
+    hooks: rcHooks
   }
   return {
     programs: defaultPrograms,
     requirements: defaultRequirements,
     prompts: defaultPrompts,
     migrations: defaultTestMigrations,
-    multipleRequestsPerPeriod: false
+    multipleRequestsPerPeriod: false,
+    hooks: undefined as AppDefinition['hooks']
   }
 }

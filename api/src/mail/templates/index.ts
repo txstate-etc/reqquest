@@ -1,5 +1,7 @@
 export * from './applicantReturn.template.js'
+export * from './applicantStart.template.js'
 export * from './reviewComplete.template.js'
 export * from './applicationComplete.tempate.js'
 export * from './applicationRescinded.template.js'
 export * from './applicationRestored.template.js'
+export * from './periodClosingReminder.template.js'

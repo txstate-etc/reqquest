@@ -5,6 +5,8 @@ export * from './scalar/index.js'
 export * from './util/auth.js'
 export * from './util/filters.js'
 export * from './util/mail.js'
+export * from './util/scheduler.js'
+export * from './util/periodClosingReminder.js'
 export * from './access/access.structure.js'
 export * from './access/access.seed.js'
 
