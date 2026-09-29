@@ -2,6 +2,7 @@ import { FastifyRequest } from 'fastify'
 import { AccessUser, AccessUserCategoryInput, AccessUserIdentifierInput, ApplicationPhase, AppRequest, AppRequestStatus, CategoryTag, RQContext, RQContextClass } from '../internal.js'
 import { DateTime } from 'luxon'
 import type { ProgramKey } from './keys.js'
+import type { SchedulerOpts } from '../util/scheduler.js'
 
 export interface AppRequestData {
   [keys: string]: any
@@ -175,15 +176,42 @@ export interface AppDefinition {
      * is different from the new data.
      */
     updatePrompt?: (ctx: RQContext, appRequest: AppRequest, appRequestData: AppRequestData, promptKey: string, oldData: any) => void | Promise<void>
+    /**
+     * Jobs that run on a timer rather than in response to a mutation. Each key becomes a row in
+     * the `tasks` table (prefixed `hook_`), and the scheduler's atomic claim on that row guarantees
+     * exactly one API replica runs the job per interval, so this is mutli node safe.
+     *
+     * The job receives a system context with no user and no roles - read through the `*.database`
+     * functions and services that do not authorize, not through the authorized service wrappers.
+     *
+     * A recurring job must be idempotent: pass a `dedupKey` to `MailService.sendmulti` so a job
+     * that runs hourly cannot email the same person twice for the same event. See
+     * `periodClosingReminder` in `util/periodClosingReminder.ts` for the reference pattern.
+     *
+     * The scheduler currently loop sleeps 90 seconds between passes, so the real floor for `minutesBetween`
+     * is about 1.5 minutes, and `duringHour` is evaluated in the container's `TZ`.
+     */
+    scheduled?: Record<string, ScheduledHook>
   }
   /**
-   * Variables used for email templates
+   * Variables used for email templates. Everything here is spread into the Handlebars context of
+   * every built-in email, so plain string keys become template variables.
    */
   emailConfig: {
     appName: string
     signature: string
     from: string
-  } & Record<string, string>
+    // Enables the built-in period-closing reminder. Applicants who have started but not submitted
+    periodClosing?: {
+      daysBefore: number
+      // Cadence of follow-up reminders after the first one.
+      reminderDays?: number
+    }
+  } & Record<string, any>
+}
+
+export interface ScheduledHook extends SchedulerOpts {
+  run: (ctx: RQContext) => void | Promise<void>
 }
 
 export const appConfig = {
