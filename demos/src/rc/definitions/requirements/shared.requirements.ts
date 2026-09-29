@@ -43,6 +43,9 @@ export const reviewer_override_gpa_warning_req: RequirementDefinition = {
     if (preQualPromptData.gpa >= minimumGpa) return { status: RequirementStatus.NOT_APPLICABLE }
     const overrideGpaWarningData = data['reviewer_override_gpa_warning_prompt'] as OverrideGPAWarningData
     if (overrideGpaWarningData?.override == null) return { status: RequirementStatus.PENDING }
+    if (overrideGpaWarningData.override) {
+      return { status: RequirementStatus.WARNING, reason: 'Overriding gpa may have unintended consequences', blame: ['reviewer_override_gpa_warning_prompt'] }
+    }
     return { status: RequirementStatus.MET }
   }
 }

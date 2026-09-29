@@ -6,13 +6,14 @@
    * the app request since the prompt should only be visible in a single spot.
    */
 
-  import { Form, confirmationStore } from '@txstate-mws/carbon-svelte'
+  import { Form, FormInlineNotification, confirmationStore } from '@txstate-mws/carbon-svelte'
   import type { FormStore } from '@txstate-mws/svelte-forms'
   import { Button, InlineNotification } from 'carbon-components-svelte'
   import { getContext } from 'svelte'
   import { get, type Writable } from 'svelte/store'
   import { goto, invalidate } from '$app/navigation'
   import type { ResolvedPathname } from '$app/types'
+  import { statusReasonsToFeedback, type StatusReason } from '$lib'
   import { uiRegistry } from '../../local/index.js'
   import { api } from '../api.js'
   import type { PageData } from '../../routes/requests/[id]/apply/[promptId]/$types.js'
@@ -21,8 +22,10 @@
 
 
   export let data: Awaited<PageData['applicantPromptPromise']> & { dataVersion: number }
+  export let statusReasons: StatusReason[] = []
   $: ({ prompt, appRequest: appRequestForExport, dataVersion } = data)
   $: def = uiRegistry.getPrompt(prompt.key)
+  $: statusFeedback = statusReasonsToFeedback(statusReasons, { blamedOnly: true, statuses: uiRegistry.statusReasonNotificationStatuses(prompt.key) })
   const nextHref = getContext<Writable<{ nextHref: ResolvedPathname, prevHref: ResolvedPathname | undefined }>>('nextHref')
 
   let store: FormStore | undefined
@@ -99,7 +102,14 @@
     </div>
   {:else}
   <Form class={def.applicantPromptPage?.formClass ?? uiRegistry.config.applicantPromptPage?.formClass} bind:store hideFallbackMessage unsavedWarning submit={onSubmit} validate={onValidate} preloadAsDraft={!prompt.hasSavedData} preload={prompt.preloadData} on:saved={onSaved} let:data>
-    <svelte:component this={def.formComponent} {data} appRequestId={appRequestForExport.id} appRequestData={appRequestForExport.data} prestageData={{latest: prompt.prestageData, current: appRequestForExport.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} />
+    <svelte:component this={def.formComponent} {data} appRequestId={appRequestForExport.id} appRequestData={appRequestForExport.data} prestageData={{latest: prompt.prestageData, current: appRequestForExport.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} {statusReasons} />
+    {#if statusFeedback.length}
+      <div class={def.applicantPromptPage?.statusReasonInlineNotificationClass ?? uiRegistry.config.applicantPromptPage?.statusReasonInlineNotificationClass}>
+        {#each statusFeedback as message}
+          <FormInlineNotification {message} />
+        {/each}
+      </div>
+    {/if}
     <svelte:fragment slot="submit" let:submitting>
       <div class='form-submit flex gap-12 justify-center mt-16'>
         {#if hasPreviousPrompt}

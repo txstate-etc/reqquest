@@ -3,7 +3,7 @@
   import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
-  import { enumRequirementStatus, enumRequirementType, PromptIndicators, translateMutations, type PhaseChangeMutations } from '$lib'
+  import { enumRequirementStatus, enumRequirementType, PromptIndicators, statusReasonsToFeedback, translateMutations, type PhaseChangeMutations, type StatusReason } from '$lib'
   import { isInlineReviewerEditPrompt, isDisplayablePrompt, hasDisplayablePrompts, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api, PromptSaveQueue, type BasicRequestData } from '$internal'
   import { FormInlineNotification, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { Tooltip } from 'carbon-components-svelte'
@@ -24,6 +24,7 @@
   /** the stage panel that gets the "Send to" button once the application is ready for workflow */
   export let lastStageKey: string | undefined = undefined
   export let promptIndicator: Record<string, any>
+  export let promptStatusReasons: Record<string, StatusReason[]> = {}
   export let loading = false
   export let appRequest: PageData['appRequest']
   export let application: PageData['appRequest']['applications'][0]
@@ -248,7 +249,10 @@
             <dd class="flow" class:small class:large class:isReviewerQuestion class:disabled={disabled} class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
               {#if editMode}
                 <Form bind:store={saveQueue.stores[prompt.id]} preload={prompt.preloadData} submit={onPromptSubmit(prompt)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptAutoSaved} let:data let:messages>
-                    <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason}  />
+                    <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} statusReasons={promptStatusReasons[prompt.key] ?? []} />
+                    {#each statusReasonsToFeedback(promptStatusReasons[prompt.key], { blamedOnly: true, statuses: uiRegistry.statusReasonNotificationStatuses(prompt.key) }) as message}
+                      <FormInlineNotification {message} />
+                    {/each}
                     {#each messages as message (message.message, message.type)}
                       <FormInlineNotification {message} />
                     {/each}
@@ -263,6 +267,7 @@
                     prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}}
                     configData={prompt.configurationData}
                     gatheredConfigData={prompt.gatheredConfigData} showMoot
+                    statusReasons={promptStatusReasons[prompt.key] ?? []}
                     showInlineReviewNotification={prompt.actions.update && prompt.invalidated && !applicantRequirementTypes.has(requirement.type)} />
                 </div>
                 {#if !large}
@@ -328,7 +333,11 @@
         gatheredConfigData={editingPromptWithData.gatheredConfigData}
         invalidated={editingPromptWithData.invalidated}
         invalidatedReason={editingPromptWithData.invalidatedReason}
+        statusReasons={promptStatusReasons[editingPromptWithData.key] ?? []}
       />
+      {#each statusReasonsToFeedback(promptStatusReasons[editingPromptWithData.key], { blamedOnly: true, statuses: uiRegistry.statusReasonNotificationStatuses(editingPromptWithData.key) }) as message}
+        <FormInlineNotification {message} />
+      {/each}
       {/if}
     {:else if fetchingEditPrompt}
       {@const loader = uiRegistry.getPrompt(promptBeingEdited.key)?.loader}

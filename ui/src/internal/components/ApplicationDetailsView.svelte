@@ -159,7 +159,7 @@
                   {prompt.title}
                 </dt>
                 <dd class="prompt-answer flow" class:large={def?.displayMode === 'large'}>
-                  <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appData} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
+                  <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appData} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} statusReasons={prompt.statusReasons} />
                   {#if showCorrectionsInline && canMakeCorrections && needsCorrection(prompt)}
                     <div class="correction-notice">
                       <Button kind="ghost" size="small" icon={Edit} iconDescription="Edit this answer" href={`/requests/${appRequest.id}/apply/${prompt.id}`} class="edit-button" />
@@ -203,7 +203,7 @@
                       {prompt.title}
                     </dt>
                     <dd class="prompt-answer flow" class:large={def?.displayMode === 'large'}>
-                      <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appData} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} />
+                      <RenderDisplayComponent {def} appRequestId={appRequest.id} appData={appData} prompt={prompt} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData} statusReasons={prompt.statusReasons} />
                       {#if showCorrectionsInline && canMakeCorrections && needsCorrection(prompt)}
                         <Button kind="ghost" size="small" icon={Edit} iconDescription="Edit this answer" href={`/requests/${appRequest.id}/apply/${prompt.id}`} class="edit-button" />
                       {/if}

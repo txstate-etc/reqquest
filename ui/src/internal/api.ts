@@ -8,7 +8,7 @@ import {
   createClient, enumAppRequestIndexDestination, enumIneligiblePhases, enumPromptVisibility, enumRequirementStatus, enumRequirementType,
   type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleGroup, type AccessRoleInput, type AccessUserFilter,
   type AppRequestActivityFilters, type AppRequestFilter, type IneligiblePhases, type Pagination, type PeriodUpdate, type PromptVisibility,
-  type RequirementStatus, type RequirementType, type PhaseChangeMutations, type CompletionStatus,
+  type RequirementStatus, type RequirementType, type PhaseChangeMutations, type CompletionStatus, type StatusReason,
   type PeriodFilters
 } from '$lib'
 import { applicantVisiblePromptVisibilities } from './status-utils.js'
@@ -346,8 +346,8 @@ class API extends APIBase {
     return appRequest
   }
 
-  static splitPromptsForApplicant<P extends { id: string, key: string, visibility: PromptVisibility, moot: boolean }, R extends { type: RequirementType, status: RequirementStatus, statusReason: string | null, prompts: P[] }, A extends { title: string, ineligiblePhase: IneligiblePhases | null, requirements: R[] }>(applications: A[]) {
-    type ReturnPrompt = P & { statusReasons: { status: string, statusReason: string | null, programName: string }[] }
+  static splitPromptsForApplicant<P extends { id: string, key: string, visibility: PromptVisibility, moot: boolean }, R extends { type: RequirementType, status: RequirementStatus, statusReason: string | null, blame?: string[] | null, prompts: P[] }, A extends { title: string, ineligiblePhase: IneligiblePhases | null, requirements: R[] }>(applications: A[]) {
+    type ReturnPrompt = P & { statusReasons: StatusReason[] }
     type ReturnRequirement = R & { prompts: ReturnPrompt[] }
     type ReturnApplication = A & { requirements: ReturnRequirement[], completionStatus: CompletionStatus, hasWarning: boolean, warningReasons: string[], ineligibleReasons: string[], metReasons: string[]}
     const prequalPrompts: ReturnPrompt[] = []
@@ -361,6 +361,8 @@ class API extends APIBase {
     const applicationsAcceptNoDupes: ReturnApplication[] = []
     const promptsById: Record<string, ReturnPrompt> = {}
     const promptsByKey: Record<string, ReturnPrompt[]> = {}
+    // every prompt object we hand out, dupes included, so the status reasons pass below reaches all of them
+    const allPromptRefs: ReturnPrompt[] = []
 
     const seenForReview = new Set<string>()
     const seenForNav = new Set<string>()
@@ -383,8 +385,9 @@ class API extends APIBase {
         const promptsAcceptWithDupes: ReturnPrompt[] = []
         const promptsAcceptNoDupes: ReturnPrompt[] = []
         for (const prompt of requirement.prompts) {
-          const retPrompt = { ...prompt, statusReasons: [{ ...pick(requirement, 'status', 'statusReason'), programName: application.title }] }
+          const retPrompt: ReturnPrompt = { ...prompt, statusReasons: [] }
           const withDupesPrompt = { ...retPrompt }
+          allPromptRefs.push(retPrompt, withDupesPrompt)
           promptsById[prompt.id] = retPrompt
           if (prompt.moot || prompt.visibility === enumPromptVisibility.UNREACHABLE) continue
           promptsByKey[prompt.key] ??= []
@@ -472,10 +475,19 @@ class API extends APIBase {
       applicationsAcceptWithDupes.push({ ...application, requirements: requirementsAcceptWithDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, metReasons: metReasonsFull, hasWarning })
       applicationsAcceptNoDupes.push({ ...application, requirements: requirementsAcceptNoDupes, completionStatus, warningReasons: warningReasonsFull, ineligibleReasons: ineligibleReasonsFull, metReasons: metReasonsFull, hasWarning })
     }
-    for (const prompts of Object.values(promptsByKey)) {
-      const statusReasons = prompts.map(p => p.statusReasons[0])
-      for (const prompt of prompts) prompt.statusReasons = statusReasons
+    const reasonsByKey: Record<string, StatusReason[]> = {}
+    for (const application of applications) {
+      for (const requirement of application.requirements) {
+        const blamed = !!requirement.blame?.length
+        const targets = blamed
+          ? requirement.blame!
+          : requirement.prompts.filter(p => p.visibility !== enumPromptVisibility.UNREACHABLE).map(p => p.key)
+        for (const key of targets) {
+          (reasonsByKey[key] ??= []).push({ ...pick(requirement, 'status', 'statusReason'), programName: application.title, blamed })
+        }
+      }
     }
+    for (const prompt of allPromptRefs) prompt.statusReasons = reasonsByKey[prompt.key] ?? []
     return { prequalPrompts, postqualPrompts, qualPrompts, applicationsReviewWithDupes, applicationsReviewNoDupes, applicationsForNavWithDupes, applicationsForNavNoDupes, applicationsAcceptWithDupes, applicationsAcceptNoDupes, promptsByKey, promptsById }
   }
 
@@ -508,6 +520,7 @@ class API extends APIBase {
             type: true,
             status: true,
             statusReason: true,
+            blame: true,
             prompts: {
               id: true,
               key: true,
