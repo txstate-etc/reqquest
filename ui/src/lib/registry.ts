@@ -200,7 +200,7 @@ export type StatusReasonNotificationConfig = boolean | Partial<Record<Requiremen
 export const DEFAULT_STATUS_REASON_NOTIFICATIONS: Record<RequirementStatus, Required<StatusReasonViewableBy>> = {
   DISQUALIFYING: { applicant: true, reviewer: false },
   WARNING: { applicant: true, reviewer: false },
-  MET: { applicant: true, reviewer: false },
+  MET: { applicant: false, reviewer: false },
   NOT_APPLICABLE: { applicant: false, reviewer: false },
   PENDING: { applicant: false, reviewer: false }
 }
