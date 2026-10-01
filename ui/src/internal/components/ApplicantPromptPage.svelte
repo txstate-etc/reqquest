@@ -25,7 +25,7 @@
   export let statusReasons: StatusReason[] = []
   $: ({ prompt, appRequest: appRequestForExport, dataVersion } = data)
   $: def = uiRegistry.getPrompt(prompt.key)
-  $: statusFeedback = statusReasonsToFeedback(statusReasons, { blamedOnly: true, statuses: uiRegistry.statusReasonNotificationStatuses(prompt.key) })
+  $: statusFeedback = statusReasonsToFeedback(statusReasons, { blamedOnly: true, statuses: uiRegistry.statusReasonNotificationStatuses(prompt.key, 'applicant') })
   const nextHref = getContext<Writable<{ nextHref: ResolvedPathname, prevHref: ResolvedPathname | undefined }>>('nextHref')
 
   let store: FormStore | undefined

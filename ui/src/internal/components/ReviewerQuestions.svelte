@@ -253,7 +253,7 @@
               {#if editMode}
                 <Form bind:store={saveQueue.stores[prompt.id]} preload={prompt.preloadData} submit={onPromptSubmit(prompt)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptAutoSaved} let:data let:messages>
                     <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} statusReasons={promptStatusReasons[prompt.key] ?? []} />
-                    {#each statusReasonsToFeedback(promptStatusReasons[prompt.key], { blamedOnly: true, statuses: uiRegistry.statusReasonNotificationStatuses(prompt.key) }) as message}
+                    {#each statusReasonsToFeedback(promptStatusReasons[prompt.key], { blamedOnly: true, statuses: uiRegistry.statusReasonNotificationStatuses(prompt.key, 'reviewer') }) as message}
                       <FormInlineNotification {message} />
                     {/each}
                     {#each messages as message (message.message, message.type)}
@@ -338,7 +338,7 @@
         invalidatedReason={editingPromptWithData.invalidatedReason}
         statusReasons={promptStatusReasons[editingPromptWithData.key] ?? []}
       />
-      {#each statusReasonsToFeedback(promptStatusReasons[editingPromptWithData.key], { blamedOnly: true, statuses: uiRegistry.statusReasonNotificationStatuses(editingPromptWithData.key) }) as message}
+      {#each statusReasonsToFeedback(promptStatusReasons[editingPromptWithData.key], { blamedOnly: true, statuses: uiRegistry.statusReasonNotificationStatuses(editingPromptWithData.key, 'reviewer') }) as message}
         <FormInlineNotification {message} />
       {/each}
       {/if}

@@ -160,35 +160,49 @@ export interface PromptDefinition {
 
   /**
    * Which requirement status reasons the framework renders as inline notifications below this prompt's
-   * form component, on every edit form: the applicant prompt page, the accept page, and the reviewer's
-   * inline and modal forms. Only reasons whose requirement explicitly `blame`s this prompt are rendered.
+   * form component, and to whom. Only reasons whose requirement explicitly `blame`s this prompt are
+   * rendered. The audience is the UI surface: `applicant` is the applicant prompt page, the accept page and
+   * the opt-out modal; `reviewer` is the reviewer's inline and modal forms.
    *
-   * A boolean switches every status on or off; an object such as `{ PENDING: true, WARNING: false }` sets
-   * only the statuses it names. Resolution is layered per status: the built-in default
-   * (`DEFAULT_STATUS_REASON_NOTIFICATIONS`, everything except PENDING), then the global
-   * `UIConfig.statusReasonNotifications`, then this value - so a prompt that only names PENDING still
-   * follows the global setting for every other status. Set false to render nothing here and handle the
-   * `statusReasons` prop inside your own form component instead.
+   * A boolean switches every status for both audiences. An object names statuses; each status takes a
+   * boolean (both audiences) or `{ applicant?, reviewer? }` to set one side only, e.g.
+   * `{ PENDING: { reviewer: true }, DISQUALIFYING: { applicant: false } }`. Resolution is layered per status
+   * and per audience: the built-in default (`DEFAULT_STATUS_REASON_NOTIFICATIONS`, everything except
+   * PENDING), then the global `UIConfig.statusReasonNotifications`, then this value - each layer changes only
+   * what it names. Set false to render nothing here and handle the `statusReasons` prop inside your own form
+   * component instead.
    */
   statusReasonNotifications?: StatusReasonNotificationConfig
 }
 
 /**
- * Per-status switch for the framework's inline status-reason notifications: a boolean for every status, or
- * an object naming only the statuses to change (true = show, false = hide).
+ * Who sees a status's reasons: the applicant-facing edit forms, the reviewer-facing edit forms, or both.
+ * Leave a side out to inherit it from the layer below.
  */
-export type StatusReasonNotificationConfig = boolean | Partial<Record<RequirementStatus, boolean>>
+export interface StatusReasonViewableBy {
+  applicant?: boolean
+  reviewer?: boolean
+}
+export type StatusReasonAudience = keyof StatusReasonViewableBy
+
+/**
+ * Per-status, per-audience switch for the framework's inline status-reason notifications: a boolean for
+ * every status and both audiences, or an object naming only the statuses to change, each as a boolean (both
+ * audiences) or a `StatusReasonViewableBy` (one side at a time).
+ */
+export type StatusReasonNotificationConfig = boolean | Partial<Record<RequirementStatus, boolean | StatusReasonViewableBy>>
 
 /**
  * What the framework renders when neither `UIConfig` nor the prompt says otherwise: every status except
- * PENDING, whose reasons are usually instructions ("Reviewer must assess...") rather than findings.
+ * PENDING, whose reasons are usually instructions ("Reviewer must assess...") rather than findings, for
+ * applicants and reviewers alike.
  */
-export const DEFAULT_STATUS_REASON_NOTIFICATIONS: Record<RequirementStatus, boolean> = {
-  DISQUALIFYING: true,
-  WARNING: true,
-  MET: true,
-  NOT_APPLICABLE: true,
-  PENDING: false
+export const DEFAULT_STATUS_REASON_NOTIFICATIONS: Record<RequirementStatus, Required<StatusReasonViewableBy>> = {
+  DISQUALIFYING: { applicant: true, reviewer: false },
+  WARNING: { applicant: true, reviewer: false },
+  MET: { applicant: true, reviewer: false },
+  NOT_APPLICABLE: { applicant: false, reviewer: false },
+  PENDING: { applicant: false, reviewer: false }
 }
 
 /**
@@ -298,12 +312,13 @@ export interface UIConfig<PK extends string = PromptKey, RK extends string = Req
   applicantPromptPage? : ApplicantPromptPageDefinition
 
   /**
-   * Global layer of `PromptDefinition.statusReasonNotifications`: which requirement status reasons every
-   * framework edit form (the applicant prompt page, the accept page, and the reviewer's inline and modal
-   * forms) renders as inline notifications below a prompt's form component. A boolean sets every status; an
-   * object such as `{ PENDING: true }` changes only the statuses it names on top of the built-in default
-   * (everything except PENDING). A prompt's own value then overrides this one, status by status. Set false
-   * to render nothing anywhere and handle the `statusReasons` prop inside your own form components.
+   * Global layer of `PromptDefinition.statusReasonNotifications`: which requirement status reasons the
+   * framework's edit forms render as inline notifications below a prompt's form component, and to which
+   * audience (`applicant` = applicant prompt page, accept page, opt-out modal; `reviewer` = the reviewer's
+   * inline and modal forms). A boolean sets every status for both audiences; an object such as
+   * `{ PENDING: { reviewer: true } }` changes only what it names on top of the built-in default (everything
+   * except PENDING). A prompt's own value then overrides this one, per status and per audience. Set false to
+   * render nothing anywhere and handle the `statusReasons` prop inside your own form components.
    */
   statusReasonNotifications?: StatusReasonNotificationConfig
 
@@ -497,22 +512,32 @@ export class UIRegistry {
   }
 
   protected statusReasonStatusCache = new Map<string, Set<RequirementStatus>>()
-  
-  // the statuses whose requirement reasons the framework renders below this prompt's edit form
-  statusReasonNotificationStatuses (key: string): Set<RequirementStatus> {
-    let statuses = this.statusReasonStatusCache.get(key)
+
+  // The statuses whose requirement reasons the framework renders below this prompt's edit form for the given
+  statusReasonNotificationStatuses (key: string, audience: StatusReasonAudience): Set<RequirementStatus> {
+    const cacheKey = `${audience}:${key}`
+    let statuses = this.statusReasonStatusCache.get(cacheKey)
     if (statuses) return statuses
-    const resolved = { ...DEFAULT_STATUS_REASON_NOTIFICATIONS }
+    const allStatuses = Object.keys(DEFAULT_STATUS_REASON_NOTIFICATIONS) as RequirementStatus[]
+    const resolved = Object.fromEntries(allStatuses.map(status => [status, { ...DEFAULT_STATUS_REASON_NOTIFICATIONS[status] }])) as Record<RequirementStatus, Required<StatusReasonViewableBy>>
+    const setBoth = (status: RequirementStatus, on: boolean) => { resolved[status] = { applicant: on, reviewer: on } }
     for (const layer of [this.config.statusReasonNotifications, this.promptMap[key]?.statusReasonNotifications]) {
       if (layer == null) continue
       if (typeof layer === 'boolean') {
-        for (const status of Object.keys(resolved) as RequirementStatus[]) resolved[status] = layer
-      } else {
-        for (const [status, on] of Object.entries(layer)) if (on != null) resolved[status as RequirementStatus] = on
+        for (const status of allStatuses) setBoth(status, layer)
+        continue
+      }
+      for (const [status, value] of Object.entries(layer) as [RequirementStatus, boolean | StatusReasonViewableBy | undefined][]) {
+        if (value == null) continue
+        if (typeof value === 'boolean') setBoth(status, value)
+        else {
+          if (value.applicant != null) resolved[status].applicant = value.applicant
+          if (value.reviewer != null) resolved[status].reviewer = value.reviewer
+        }
       }
     }
-    statuses = new Set((Object.keys(resolved) as RequirementStatus[]).filter(status => resolved[status]))
-    this.statusReasonStatusCache.set(key, statuses)
+    statuses = new Set(allStatuses.filter(status => resolved[status][audience]))
+    this.statusReasonStatusCache.set(cacheKey, statuses)
     return statuses
   }
 
