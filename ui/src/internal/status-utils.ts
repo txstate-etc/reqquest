@@ -237,6 +237,14 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, { description: str
   }
 }
 
+// Reviewer status tag, plus a 'Closed' tag when the request was closed after submission
+export function getReviewerStatusTags (status: AppRequestStatus, phase: AppRequestPhase | undefined, closedAt: string | null | undefined): TagItem[] {
+  const config = REVIEWER_STATUS_CONFIG[status]
+  const tags: TagItem[] = [{ label: config.label, type: config.color }]
+  if (closedAt != null && phase !== enumAppRequestPhase.STARTED) tags.push({ label: 'Closed', type: 'yellow' })
+  return tags
+}
+
 // Get complete AppRequest status information
 export function getAppRequestStatusInfo (status: AppRequestStatus, phase: AppRequestPhase, closedAt: string | null | undefined): AppStatusConfig {
   const info = (closedAt == null || phase === enumAppRequestPhase.COMPLETE || phase === enumAppRequestPhase.WORKFLOW_NONBLOCKING || status === enumAppRequestStatus.WITHDRAWN || status === enumAppRequestStatus.CANCELLED)
