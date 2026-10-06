@@ -1,4 +1,6 @@
 * Applicant Dashboard (entry point for applicants)
+  * Time-sensitive announcement banner, when one is active (managed under Manage Announcement)
+    * Rendered as a labelled `region` landmark, not a live `alert`, because it is present at page load; screen readers read it once in reading order
   * Create a new App Request
     * Select a period to create the app request in, if more than one is open
   * View list of open / relevant / recent app requests
@@ -78,3 +80,7 @@
   * View All Automated Email Types (e.g. applicant has submitted, reviewer has sent back for more info, etc.)
     * Edit the template for each email type
     * Enable or disable the email type
+* Manage Announcement
+  * Single site-wide announcement with subject, body, optional link and link text
+  * Enable/disable by toggle or by a start/end date range
+  * Live preview of the banner exactly as applicants will see it
