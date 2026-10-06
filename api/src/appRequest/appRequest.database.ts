@@ -7,7 +7,7 @@ import { clone, isNotBlank, omit, stringify } from 'txstate-utils'
 import {
   ApplicationPhase, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter,
   AppRequestPhase, AppRequestStatus, evaluateAppRequest, getApplications, getPeriodWorkflowStages, Pagination, PaginationInfoWithTotalItems, promptRegistry,
-  RQContext, type AppRequestData
+  RQContext, type AppRequestData, advanceWorkflow, RequirementType
 } from '../internal.js'
 
 /**
@@ -252,8 +252,34 @@ export async function updateAppRequestData (appRequestId: number, data: AppReque
 }
 
 export async function submitAppRequest (appRequestId: number) {
-  await db.update('UPDATE app_requests SET phase = ?, submittedData = data, submittedAt=NOW() WHERE id = ?', [AppRequestPhase.SUBMITTED, appRequestId])
-  await evaluateAppRequest(appRequestId)
+  return await appRequestTransaction(appRequestId, async db => {
+    await db.update('UPDATE app_requests SET phase = ?, submittedData = data, submittedAt=NOW() WHERE id = ?', [AppRequestPhase.SUBMITTED, appRequestId])
+    await evaluateAppRequest(appRequestId, db)
+    return await autoAdvanceAfterSubmit(appRequestId, db)
+  })
+}
+
+/**
+ * Right after submission, an application whose program has no reviewer questions (no enabled PREAPPROVAL or
+ * APPROVAL requirements) has no immediate review, so it moves on by itself: into its first blocking workflow
+ * stage, or to REVIEW_COMPLETE when the program has none. 
+ */
+export async function autoAdvanceAfterSubmit (appRequestId: number, db: Queryable) {
+  const applications = await getApplications({ appRequestIds: [String(appRequestId)] }, db)
+  const ready = applications.filter(a => a.phase === ApplicationPhase.READY_FOR_WORKFLOW)
+  if (!ready.length) return []
+  // only enabled requirements have records, so no rows means none are enabled this period
+  const binds: any[] = []
+  const withReviewerQuestions = new Set((await db.getvals<string | number>(`
+    SELECT DISTINCT applicationId FROM application_requirements
+    WHERE applicationId IN (${db.in(binds, ready.map(a => a.id))}) AND type IN (${db.in(binds, [RequirementType.PREAPPROVAL, RequirementType.APPROVAL])})
+  `, binds)).map(String))
+  const advancing = ready.filter(a => !withReviewerQuestions.has(String(a.id)))
+  if (!advancing.length) return []
+  for (const application of advancing) await advanceWorkflow(application.id, db)
+  await evaluateAppRequest(appRequestId, db)
+  const advancedIds = new Set(advancing.map(a => a.id))
+  return (await getApplications({ appRequestIds: [String(appRequestId)] }, db)).filter(a => advancedIds.has(a.id))
 }
 
 export async function appRequestReturnToApplicant (appRequestId: number, dataVersion?: number) {

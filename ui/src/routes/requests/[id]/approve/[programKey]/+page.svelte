@@ -23,8 +23,7 @@
   export let data: PageData
   $: ({ basicRequestData, appRequest, programKey, requestId } = data)
   $: application = appRequest.applications.find(a => a.programKey === programKey)!
-  // mirrors the API's "no trailing work" rule: nothing a reviewer can act on exists for this program, the
-  // eligibility decision was made by the system at submission
+  // mirrors the API's "no trailing work" rule
   $: nothingToReview = !application.requirements.some(r => r.workflowStage || r.type === enumRequirementType.PREAPPROVAL || r.type === enumRequirementType.APPROVAL || r.type === enumRequirementType.ACCEPTANCE)
   $: notes = appRequest?.notes ?? []
   $: latestNote = notes[0]

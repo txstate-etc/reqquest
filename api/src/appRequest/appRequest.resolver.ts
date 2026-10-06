@@ -88,7 +88,7 @@ export class AppRequestResolver {
     return await ctx.svc(AppRequestService).create(periodId, login, validateOnly)
   }
 
-  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Submit the app request.' })
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Submit the app request. Applications whose program has no reviewer questions (no PREAPPROVAL or APPROVAL requirements) advance on their own into their first blocking workflow stage or to REVIEW_COMPLETE; when nothing is left to review, the review is completed automatically as well.' })
   async submitAppRequest (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
     const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
     if (!appRequest) throw new Error('App request not found.')

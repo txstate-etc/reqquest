@@ -11,7 +11,7 @@ import {
   reopenAppRequest, appRequestReturnToApplicant, acceptOffer, ApplicationService, RequirementPromptService,
   AppRequestPhase, appRequestReturnToOffer, appRequestReturnToReview, promptRegistry,
   PaginationInfoWithTotalItems, Pagination, appRequestComplete, appRequestReturnToNonBlocking,
-  countAppRequests, getApplications, allApplicationsAutoCompleted
+  countAppRequests, getApplications, allApplicationsAutoCompleted, ApplicationPhase, programRegistry
 } from '../internal.js'
 import { applicationPhaseNotifications, appRequestCreatedNotifications, appRequestNotifications } from '../util/notifications.js'
 
@@ -431,7 +431,7 @@ export class AppRequestService extends AuthService<AppRequest> {
     return response
   }
 
-  async phaseChange (appRequest: AppRequest, check: (response: ValidatedAppRequestResponse) => Promise<void>, action: (response: ValidatedAppRequestResponse) => Promise<void>, activity: string | (() => string)) {
+  async phaseChange (appRequest: AppRequest, check: (response: ValidatedAppRequestResponse) => Promise<void>, action: (response: ValidatedAppRequestResponse) => Promise<void>, activity: string | (() => string | string[])) {
     const response = new ValidatedAppRequestResponse()
     await check(response)
     if (response.hasErrors()) return response
@@ -439,7 +439,8 @@ export class AppRequestService extends AuthService<AppRequest> {
     const beforeAppsByProgramKey = keyby(beforeApps, app => app.programKey)
     await action(response)
     if (response.hasErrors()) return response
-    await this.recordActivity(appRequest.internalId, typeof activity === 'function' ? activity() : activity)
+    const activities = typeof activity === 'function' ? activity() : activity
+    for (const entry of Array.isArray(activities) ? activities : [activities]) await this.recordActivity(appRequest.internalId, entry)
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
     try {
@@ -450,6 +451,7 @@ export class AppRequestService extends AuthService<AppRequest> {
         const oldPhase = beforeAppsByProgramKey[app.programKey]?.phase
         if (app.phase !== oldPhase) {
           await appConfig.hooks?.applicationPhase?.(this.ctx, response.appRequest!, app.programKey, oldPhase)
+          await Promise.all(applicationPhaseNotifications.map(n => n(this.ctx, response.appRequest!, app, oldPhase)))
         }
       }
     } catch (err) {
@@ -458,32 +460,50 @@ export class AppRequestService extends AuthService<AppRequest> {
     return response
   }
 
+  /** the phase a completed review moves the request into, decided per period */
+  private reviewCompleteNextPhase (periodId: string) {
+    return this.isAcceptancePeriod(periodId)
+      ? AppRequestPhase.ACCEPTANCE
+      : this.isNonBlockingWorkflowPeriod(periodId)
+        ? AppRequestPhase.WORKFLOW_NONBLOCKING
+        : AppRequestPhase.COMPLETE
+  }
+
   async submit (appRequest: AppRequest) {
-    let autoCompleted = false
+    const activity: string[] = ['Submitted request for review.']
     return await this.phaseChange(appRequest,
       async () => {
         if (!this.maySubmit(appRequest)) throw new Error('You may not submit this app request.')
       },
       async () => {
-        await submitAppRequest(appRequest.internalId)
-        // when no program has anything left after submission, there is nothing for a reviewer to do, so the request completes now
-        // regardless of whether the period has acceptance or non-blocking workflow, since no application takes part in either
+        // applications with no reviewer questions move into their first trailing phase on their own
+        const advanced = await submitAppRequest(appRequest.internalId)
+        for (const app of advanced) {
+          const stageTitle = programRegistry.getWorkflowStageByKey(app.workflowStageKey)?.title
+          activity.push(`Advanced ${app.navTitle} to ${stageTitle ?? 'review complete'} automatically: no reviewer questions.`)
+        }
         const applications = await getApplications({ appRequestIds: [String(appRequest.internalId)] })
         if (allApplicationsAutoCompleted(applications)) {
+          // when no program has anything left after submission, there is nothing for a reviewer to do, so the request completes now
+          // regardless of whether the period has acceptance or non-blocking workflow, since no application takes part in either
           await appRequestComplete(appRequest.internalId)
-          autoCompleted = true
+          activity.push('No review required, completed automatically.')
+        } else if (applications.every(a => a.phase === ApplicationPhase.REVIEW_COMPLETE || a.phase === ApplicationPhase.COMPLETE)) {
+          // nothing had reviewer questions, so there is no review for anyone to complete by hand: the same step as Complete Review
+          const [submitted] = await getAppRequests({ internalIds: [appRequest.internalId] })
+          if (submitted?.status === AppRequestStatus.REVIEW_COMPLETE) {
+            const nextPhase = this.reviewCompleteNextPhase(appRequest.periodId)
+            await appRequestMakeOffer(appRequest.internalId, nextPhase)
+            activity.push(`Completed Review automatically, advanced to ${phaseNames[nextPhase]}.`)
+          }
         }
       },
-      () => autoCompleted ? 'Submitted request; no review required, completed automatically.' : 'Submitted request for review.'
+      () => activity
     )
   }
 
   async completeReview (appRequest: AppRequest) {
-    const nextPhase = this.isAcceptancePeriod(appRequest.periodId)
-      ? AppRequestPhase.ACCEPTANCE
-      : this.isNonBlockingWorkflowPeriod(appRequest.periodId)
-        ? AppRequestPhase.WORKFLOW_NONBLOCKING
-        : AppRequestPhase.COMPLETE
+    const nextPhase = this.reviewCompleteNextPhase(appRequest.periodId)
     return await this.phaseChange(appRequest,
       async () => {
         if (!this.mayCompleteReview(appRequest)) throw new Error('You may not complete review of this app request.')

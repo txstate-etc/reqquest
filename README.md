@@ -149,9 +149,13 @@ to publish the results to the applicant.
   A program with nothing to do after submission - no PREAPPROVAL, APPROVAL, ACCEPTANCE or workflow requirements
   enabled for the period - skips all of this: its application moves straight to COMPLETE when the request is submitted,
   eligible or not, and sits out any acceptance or non-blocking workflow phase the request later enters. When that is
-  true of every program in the request, submission completes the whole request with no reviewer involved. An
-  application ruled out before submission whose program does have reviewer work still holds the request in review,
-  since a reviewer may yet make it eligible.
+  true of every program in the request, submission completes the whole request with no reviewer involved.
+
+  A program with trailing work but no reviewer questions (no PREAPPROVAL or APPROVAL requirements enabled) has no
+  immediate review either: at submission its application is advanced on its own into its first blocking workflow
+  stage, or to REVIEW_COMPLETE when there is none, eligible or not - exactly as if a reviewer had advanced it. When
+  every application is then REVIEW_COMPLETE (or COMPLETE), the review is completed automatically as well and the
+  request moves into acceptance, non-blocking workflow or completion with no reviewer involved.
 
 ## Acceptance (optional, performed by the applicant)
 
