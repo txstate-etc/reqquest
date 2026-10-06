@@ -524,6 +524,11 @@ function detectReviewInProgress (ctx: EvaluationContext, approvalRequirements: A
 
 const presubmissionIneligiblePhases: IneligiblePhases[] = [IneligiblePhases.PREQUAL, IneligiblePhases.QUALIFICATION]
 
+/** ruled out before submission (PREQUAL or QUALIFICATION), so a reviewer has nothing to decide for it */
+export function isPresubmissionIneligible (application: Application) {
+  return !!application.ineligiblePhase && presubmissionIneligiblePhases.includes(application.ineligiblePhase)
+}
+
 function computeApplicationPhase (
   phase: EvaluationPhase,
   application: Application,
@@ -541,7 +546,7 @@ function computeApplicationPhase (
   case 'complete':
     return ApplicationPhase.COMPLETE
   case 'nonblocking':
-    if (application.ineligiblePhase && presubmissionIneligiblePhases.includes(application.ineligiblePhase)) return ApplicationPhase.READY_TO_COMPLETE
+    if (isPresubmissionIneligible(application)) return ApplicationPhase.READY_TO_COMPLETE
     // not `settled`: that reads the aggregate resolution, where a fail outranks a pending, and here a failed requirement must never hide a pending one
     if (summary.firstPending != null || application.awaitingCorrection) return ApplicationPhase.WORKFLOW_NONBLOCKING
     return hasNonblockingWorkflowRequirements ? ApplicationPhase.READY_FOR_WORKFLOW : ApplicationPhase.READY_TO_COMPLETE
@@ -643,7 +648,7 @@ function autoCompletedReviewFinished (ctx: EvaluationContext) {
   const { appRequest, applications } = ctx
   return appRequest.phase === AppRequestPhase.SUBMITTED && !appRequest.awaitingCorrection
     && applications.some(a => a.phase === ApplicationPhase.COMPLETE)
-    && applications.every(a => a.phase === ApplicationPhase.COMPLETE || a.phase === ApplicationPhase.REVIEW_COMPLETE || (a.ineligiblePhase && presubmissionIneligiblePhases.includes(a.ineligiblePhase)))
+    && applications.every(a => a.phase === ApplicationPhase.COMPLETE || a.phase === ApplicationPhase.REVIEW_COMPLETE || isPresubmissionIneligible(a))
 }
 
 /** Request status when every application is INELIGIBLE, REJECTED or RESCINDED. */
@@ -653,7 +658,7 @@ function deadApplicationsStatus (ctx: EvaluationContext, acc: RequestAccumulator
     if (appRequest.awaitingCorrection) return AppRequestStatus.APPROVAL
     if (singleProgramReviewFinished(ctx)) return AppRequestStatus.REVIEW_COMPLETE
     if (autoCompletedReviewFinished(ctx)) return AppRequestStatus.REVIEW_COMPLETE
-    if (applications.every(a => a.phase === ApplicationPhase.REVIEW_COMPLETE || (a.ineligiblePhase && presubmissionIneligiblePhases.includes(a.ineligiblePhase)))) return AppRequestStatus.REVIEW_COMPLETE
+    if (applications.every(a => a.phase === ApplicationPhase.REVIEW_COMPLETE || isPresubmissionIneligible(a))) return AppRequestStatus.REVIEW_COMPLETE
     return acc.reviewStartedApplicationIds.size ? AppRequestStatus.REVIEW_IN_PROGRESS : AppRequestStatus.APPROVAL
   }
   if (applications.some(a => a.ineligiblePhase === IneligiblePhases.ACCEPTANCE)) return AppRequestStatus.NOT_ACCEPTED

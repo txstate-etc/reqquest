@@ -11,7 +11,7 @@ import {
   reopenAppRequest, appRequestReturnToApplicant, acceptOffer, ApplicationService, RequirementPromptService,
   AppRequestPhase, appRequestReturnToOffer, appRequestReturnToReview, promptRegistry,
   PaginationInfoWithTotalItems, Pagination, appRequestComplete, appRequestReturnToNonBlocking,
-  countAppRequests, getApplications, allApplicationsAutoCompleted, ApplicationPhase, programRegistry
+  countAppRequests, getApplications, allApplicationsAutoCompleted, isPresubmissionIneligible, ApplicationPhase, programRegistry
 } from '../internal.js'
 import { applicationPhaseNotifications, appRequestCreatedNotifications, appRequestNotifications } from '../util/notifications.js'
 
@@ -486,8 +486,9 @@ export class AppRequestService extends AuthService<AppRequest> {
           // regardless of whether the period has acceptance or non-blocking workflow, since no application takes part in either
           await appRequestComplete(appRequest.internalId)
           activity.push('No review required, completed automatically.')
-        } else if (applications.every(a => a.phase === ApplicationPhase.REVIEW_COMPLETE || a.phase === ApplicationPhase.COMPLETE)) {
-          // nothing had reviewer questions, so there is no review for anyone to complete by hand: the same step as Complete Review
+        } else if (applications.every(a => a.phase === ApplicationPhase.REVIEW_COMPLETE || a.phase === ApplicationPhase.COMPLETE || isPresubmissionIneligible(a))) {
+          // nothing had reviewer questions, so there is no review for anyone to complete by hand: the same step as Complete Review.
+          // an application ruled out before submission is skipped past review, so its reviewer questions do not hold the request
           const [submitted] = await getAppRequests({ internalIds: [appRequest.internalId] })
           if (submitted?.status === AppRequestStatus.REVIEW_COMPLETE) {
             const nextPhase = this.reviewCompleteNextPhase(appRequest.periodId)

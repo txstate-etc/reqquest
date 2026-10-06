@@ -7,8 +7,8 @@ import type { CatTowerPromptData } from '../../demos/src/default/definitions/mod
 /**
  * A program with nothing after submission (no PREAPPROVAL, APPROVAL, workflow or acceptance requirements) needs no one to act on
  * it, so its application is COMPLETE as soon as the request is submitted. The whole request only completes on its own when that
- * is true of every program - an application ruled out before submission whose program does have reviewer work still goes to
- * review, since a reviewer may make it eligible.
+ * is true of every program, or when the only programs that do have reviewer work were ruled out before submission - those have
+ * nothing for a reviewer to decide, so the review completes itself.
  *
  * In the default demo the dog program is applicant-only, the cat program has two APPROVAL requirements.
  */
@@ -82,19 +82,15 @@ test.describe.serial('App Request - auto-complete programs with no reviewer work
     expect(state.status).toEqual('APPROVED')
   })
 
-  test('Cat ruled out before submission still goes to review, it is not auto-completed', async ({ applicant2Request, suRequest }) => {
+  test('Cat ruled out before submission does not hold the review, it completes automatically', async ({ applicant2Request, suRequest }) => {
     const appRequestId = await createAndSubmit(applicant2Request.graphql, 'applicant2', periodId, promptMapCatIneligible)
-    let state = await getState(suRequest.graphql, appRequestId)
-    expect(state.phase).toEqual('SUBMITTED')
-    expect(state.status).toEqual('REVIEW_COMPLETE')
-    expect(application(state, dog).phase).toEqual('COMPLETE')
-    expect(application(state, cat).status).toEqual('INELIGIBLE')
-    expect(application(state, cat).phase).not.toEqual('COMPLETE')
-
-    await expectAction(suRequest.graphql, 'completeReview', requestAction('completeReview'), { appRequestId })
-    state = await getState(suRequest.graphql, appRequestId)
+    const state = await getState(suRequest.graphql, appRequestId)
+    // the period has no acceptance or non-blocking workflow, so the automatic Complete Review lands at COMPLETE
     expect(state.phase).toEqual('COMPLETE')
     expect(state.status).toEqual('APPROVED')
+    expect(application(state, dog).status).toEqual('ELIGIBLE')
+    expect(application(state, cat).status).toEqual('INELIGIBLE')
+    for (const app of state.applications) expect(app.phase, app.programKey).toEqual('COMPLETE')
   })
 
   let noReviewPeriodId = 0
