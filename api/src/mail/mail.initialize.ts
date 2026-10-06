@@ -70,5 +70,15 @@ export const mailMigrations: DatabaseMigration[] = [
       // seed the period_closing_reminder template, leaving existing rows untouched
       await seedMailTemplates(db)
     }
+  },
+  {
+    id: '20261006000000',
+    async execute (db) {
+      // application_rescinded and application_restored wording was revised again after 20260922000000 shipped in v1.15.0;
+      // push the new content onto databases that already hold the earlier version. Overwrites local edits to those rows.
+      for (const { templateKey, subject, body, description } of [applicationRescindedTemplate, applicationRestoredTemplate]) {
+        await updateMailTemplateContent({ templateKey, subject, body, description }, db)
+      }
+    }
   }
 ]
