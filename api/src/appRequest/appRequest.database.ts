@@ -262,7 +262,7 @@ export async function submitAppRequest (appRequestId: number) {
 /**
  * Right after submission, an application whose program has no reviewer questions (no enabled PREAPPROVAL or
  * APPROVAL requirements) has no immediate review, so it moves on by itself: into its first blocking workflow
- * stage, or to REVIEW_COMPLETE when the program has none. 
+ * stage, or to REVIEW_COMPLETE when the program has none.
  */
 export async function autoAdvanceAfterSubmit (appRequestId: number, db: Queryable) {
   const applications = await getApplications({ appRequestIds: [String(appRequestId)] }, db)
@@ -293,15 +293,18 @@ export async function appRequestReturnToApplicant (appRequestId: number, dataVer
   })
 }
 
+/** the final status of a completed request: the best outcome any of its applications reached */
+function completedAppRequestStatus (applications: { status: ApplicationStatus }[]) {
+  const statuses = new Set(applications.map(a => a.status))
+  if (statuses.has(ApplicationStatus.ACCEPTED)) return AppRequestStatus.ACCEPTED
+  if (statuses.has(ApplicationStatus.ELIGIBLE)) return AppRequestStatus.APPROVED
+  if (statuses.has(ApplicationStatus.REJECTED)) return AppRequestStatus.NOT_ACCEPTED
+  return AppRequestStatus.NOT_APPROVED
+}
+
 export async function appRequestComplete (appRequestId: number, tdb: Queryable = db) {
   const applications = await getApplications({ appRequestIds: [String(appRequestId)] }, tdb)
-  const computedStatus = applications.some(a => a.status === ApplicationStatus.ACCEPTED)
-    ? AppRequestStatus.ACCEPTED
-    : applications.some(a => a.status === ApplicationStatus.ELIGIBLE)
-      ? AppRequestStatus.APPROVED
-      : applications.some(a => a.status === ApplicationStatus.REJECTED)
-        ? AppRequestStatus.NOT_ACCEPTED
-        : AppRequestStatus.NOT_APPROVED
+  const computedStatus = completedAppRequestStatus(applications)
   await tdb.execute('UPDATE applications SET computedPhase = ?, workflowStage = NULL WHERE appRequestId = ?', [ApplicationPhase.COMPLETE, appRequestId])
   await tdb.execute('UPDATE app_requests SET phase = ?, computedStatus = ? WHERE id = ?', [AppRequestPhase.COMPLETE, computedStatus, appRequestId])
 }

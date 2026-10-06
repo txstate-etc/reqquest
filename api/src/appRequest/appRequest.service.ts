@@ -462,11 +462,9 @@ export class AppRequestService extends AuthService<AppRequest> {
 
   /** the phase a completed review moves the request into, decided per period */
   private reviewCompleteNextPhase (periodId: string) {
-    return this.isAcceptancePeriod(periodId)
-      ? AppRequestPhase.ACCEPTANCE
-      : this.isNonBlockingWorkflowPeriod(periodId)
-        ? AppRequestPhase.WORKFLOW_NONBLOCKING
-        : AppRequestPhase.COMPLETE
+    if (this.isAcceptancePeriod(periodId)) return AppRequestPhase.ACCEPTANCE
+    if (this.isNonBlockingWorkflowPeriod(periodId)) return AppRequestPhase.WORKFLOW_NONBLOCKING
+    return AppRequestPhase.COMPLETE
   }
 
   async submit (appRequest: AppRequest) {
