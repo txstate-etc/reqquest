@@ -11,7 +11,7 @@ import {
   reopenAppRequest, appRequestReturnToApplicant, acceptOffer, ApplicationService, RequirementPromptService,
   AppRequestPhase, appRequestReturnToOffer, appRequestReturnToReview, promptRegistry,
   PaginationInfoWithTotalItems, Pagination, appRequestComplete, appRequestReturnToNonBlocking,
-  countAppRequests
+  countAppRequests, getApplications, allApplicationsAutoCompleted
 } from '../internal.js'
 import { applicationPhaseNotifications, appRequestCreatedNotifications, appRequestNotifications } from '../util/notifications.js'
 
@@ -431,7 +431,7 @@ export class AppRequestService extends AuthService<AppRequest> {
     return response
   }
 
-  async phaseChange (appRequest: AppRequest, check: (response: ValidatedAppRequestResponse) => Promise<void>, action: (response: ValidatedAppRequestResponse) => Promise<void>, activity: string) {
+  async phaseChange (appRequest: AppRequest, check: (response: ValidatedAppRequestResponse) => Promise<void>, action: (response: ValidatedAppRequestResponse) => Promise<void>, activity: string | (() => string)) {
     const response = new ValidatedAppRequestResponse()
     await check(response)
     if (response.hasErrors()) return response
@@ -439,7 +439,7 @@ export class AppRequestService extends AuthService<AppRequest> {
     const beforeAppsByProgramKey = keyby(beforeApps, app => app.programKey)
     await action(response)
     if (response.hasErrors()) return response
-    await this.recordActivity(appRequest.internalId, activity)
+    await this.recordActivity(appRequest.internalId, typeof activity === 'function' ? activity() : activity)
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
     try {
@@ -459,14 +459,22 @@ export class AppRequestService extends AuthService<AppRequest> {
   }
 
   async submit (appRequest: AppRequest) {
+    let autoCompleted = false
     return await this.phaseChange(appRequest,
       async () => {
         if (!this.maySubmit(appRequest)) throw new Error('You may not submit this app request.')
       },
       async () => {
         await submitAppRequest(appRequest.internalId)
+        // when no program has anything left after submission, there is nothing for a reviewer to do, so the request completes now
+        // regardless of whether the period has acceptance or non-blocking workflow, since no application takes part in either
+        const applications = await getApplications({ appRequestIds: [String(appRequest.internalId)] })
+        if (allApplicationsAutoCompleted(applications)) {
+          await appRequestComplete(appRequest.internalId)
+          autoCompleted = true
+        }
       },
-      'Submitted request for review.'
+      () => autoCompleted ? 'Submitted request; no review required, completed automatically.' : 'Submitted request for review.'
     )
   }
 

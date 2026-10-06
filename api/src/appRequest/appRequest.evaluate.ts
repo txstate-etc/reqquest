@@ -100,7 +100,7 @@ export const applicantRequirementTypes = new Set<RequirementType>([
 export async function ensureAppRequestRecords (appRequest: AppRequest, db: Queryable) {
   const disabledPrograms = new Set(await db.getvals<string>('SELECT programKey FROM period_programs WHERE periodId = ? AND disabled = 1', [appRequest.periodId]))
   const disabledRequirements = await db.getall<{ programKey: string, requirementKey: string }>('SELECT programKey, requirementKey FROM period_program_requirements WHERE periodId = ? AND disabled = 1', [appRequest.periodId])
-  const disabledRequirementLookup = disabledRequirements.reduce((acc, { programKey, requirementKey }) => ({ ...acc, [programKey]: { [requirementKey]: true } }), {} as Record<string, Record<string, boolean>>)
+  const disabledRequirementLookup = disabledRequirements.reduce((acc, { programKey, requirementKey }) => ({ ...acc, [programKey]: { ...acc[programKey], [requirementKey]: true } }), {} as Record<string, Record<string, boolean>>)
   const programs = programRegistry.list().filter(program => !disabledPrograms.has(program.key))
   const reqKeyLookup: Record<string, Set<string>> = {}
   for (const program of programs) {
@@ -308,8 +308,11 @@ function evaluateApplication (ctx: EvaluationContext, application: Application, 
   // must still read as in review rather than awaiting a reviewer.
   if (phase === 'review' && reviewInProgress) acc.reviewStartedApplicationIds.add(application.id)
 
+  // a program with nothing after submission - no reviewer, workflow or acceptance requirements - needs no one to act on it once submitted
+  const noTrailingWork = !buckets.preapproval.length && !buckets.approval.length && !buckets.acceptance.length && !buckets.blockingWorkflow.length && !buckets.nonblockingWorkflow.length
+
   // phase reads the ineligiblePhase from the previous evaluation, so it is computed before ineligiblePhase is refreshed
-  application.phase = computeApplicationPhase(phase, application, summary, firstAwaitingCorrectionRequirement, reviewInProgress, buckets.nonblockingWorkflow.length > 0)
+  application.phase = computeApplicationPhase(phase, application, summary, firstAwaitingCorrectionRequirement, reviewInProgress, buckets.nonblockingWorkflow.length > 0, noTrailingWork)
   application.ineligiblePhase = computeIneligiblePhase(phase, summary, application.ineligiblePhase)
 
   for (const requirement of requirementsToLock(phase, application, buckets)) {
@@ -318,8 +321,9 @@ function evaluateApplication (ctx: EvaluationContext, application: Application, 
 }
 
 function classifyEvaluationPhase (appRequest: AppRequest, application: Application, activeWorkflowStage: PeriodWorkflowStage | undefined): EvaluationPhase {
-  if (application.phase === ApplicationPhase.COMPLETE || application.phase === ApplicationPhase.READY_TO_COMPLETE) return 'complete'
+  // checked before 'complete': an application auto-completed at submission must be re-evaluated when the request is returned to the applicant
   if (appRequest.phase === AppRequestPhase.STARTED) return 'applicant'
+  if (application.phase === ApplicationPhase.COMPLETE || application.phase === ApplicationPhase.READY_TO_COMPLETE) return 'complete'
   if (appRequest.phase === AppRequestPhase.ACCEPTANCE) return 'acceptance'
   if (application.workflowStageKey) return activeWorkflowStage?.blocking ? 'blocking' : 'nonblocking'
   if (appRequest.phase === AppRequestPhase.WORKFLOW_NONBLOCKING) return 'nonblocking'
@@ -526,7 +530,8 @@ function computeApplicationPhase (
   summary: ResolutionSummary,
   firstAwaitingCorrectionRequirement: ApplicationRequirement | undefined,
   reviewInProgress: boolean,
-  hasNonblockingWorkflowRequirements: boolean
+  hasNonblockingWorkflowRequirements: boolean,
+  noTrailingWork: boolean
 ): ApplicationPhase {
   const settled = summary.resolution !== 'pending' && !application.awaitingCorrection
   const attentionRequirement = summary.nonPassing ?? firstAwaitingCorrectionRequirement
@@ -546,6 +551,8 @@ function computeApplicationPhase (
     if (settled) return ApplicationPhase.READY_TO_SUBMIT
     return attentionRequirement?.type === RequirementType.PREQUAL ? ApplicationPhase.PREQUAL : ApplicationPhase.QUALIFICATION
   case 'review':
+    // eligible or not, there is nothing left for anyone to do on this application
+    if (settled && noTrailingWork) return ApplicationPhase.COMPLETE
     if (settled) return reviewDonePhase
     if (attentionRequirement?.type === RequirementType.PREAPPROVAL) return ApplicationPhase.PREAPPROVAL
     return reviewInProgress ? ApplicationPhase.REVIEW_IN_PROGRESS : ApplicationPhase.APPROVAL
@@ -628,12 +635,24 @@ function singleProgramReviewFinished (ctx: EvaluationContext) {
   return applications.length === 1 && !workflowStages.filter(s => s.blocking).length && (applications[0].phase === ApplicationPhase.READY_FOR_WORKFLOW || applications[0].phase === ApplicationPhase.REVIEW_COMPLETE)
 }
 
+export function allApplicationsAutoCompleted (applications: Application[]) {
+  return applications.length > 0 && applications.every(a => a.phase === ApplicationPhase.COMPLETE)
+}
+
+function autoCompletedReviewFinished (ctx: EvaluationContext) {
+  const { appRequest, applications } = ctx
+  return appRequest.phase === AppRequestPhase.SUBMITTED && !appRequest.awaitingCorrection
+    && applications.some(a => a.phase === ApplicationPhase.COMPLETE)
+    && applications.every(a => a.phase === ApplicationPhase.COMPLETE || a.phase === ApplicationPhase.REVIEW_COMPLETE || (a.ineligiblePhase && presubmissionIneligiblePhases.includes(a.ineligiblePhase)))
+}
+
 /** Request status when every application is INELIGIBLE, REJECTED or RESCINDED. */
 function deadApplicationsStatus (ctx: EvaluationContext, acc: RequestAccumulators): AppRequestStatus {
   const { appRequest, applications } = ctx
   if (appRequest.phase === AppRequestPhase.SUBMITTED) {
     if (appRequest.awaitingCorrection) return AppRequestStatus.APPROVAL
     if (singleProgramReviewFinished(ctx)) return AppRequestStatus.REVIEW_COMPLETE
+    if (autoCompletedReviewFinished(ctx)) return AppRequestStatus.REVIEW_COMPLETE
     if (applications.every(a => a.phase === ApplicationPhase.REVIEW_COMPLETE || (a.ineligiblePhase && presubmissionIneligiblePhases.includes(a.ineligiblePhase)))) return AppRequestStatus.REVIEW_COMPLETE
     return acc.reviewStartedApplicationIds.size ? AppRequestStatus.REVIEW_IN_PROGRESS : AppRequestStatus.APPROVAL
   }
@@ -651,6 +670,7 @@ function liveApplicationsStatus (ctx: EvaluationContext, acc: RequestAccumulator
   const anyPending = applications.some(a => a.status === ApplicationStatus.PENDING)
   if (applications.some(a => a.phase === ApplicationPhase.READY_TO_SUBMIT) && !anyPending && !appRequest.awaitingCorrection) return AppRequestStatus.READY_TO_SUBMIT
   if (appRequest.phase === AppRequestPhase.SUBMITTED && singleProgramReviewFinished(ctx) && !appRequest.awaitingCorrection) return AppRequestStatus.REVIEW_COMPLETE
+  if (autoCompletedReviewFinished(ctx)) return AppRequestStatus.REVIEW_COMPLETE
   // once a reviewer has begun their work on any application, the whole request reads as in-progress so this trumps review-phase statuses
   if (applications.some(a => a.phase === ApplicationPhase.REVIEW_IN_PROGRESS)) return AppRequestStatus.REVIEW_IN_PROGRESS
   // exclude prequal and qual ineligible applications from affecting AppRequestStatus, since they never require approval to the next step and we don't want them blocking the appRequest from moving forward

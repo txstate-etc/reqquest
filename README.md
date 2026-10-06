@@ -146,6 +146,13 @@ application can be marked (by a reviewer) as REVIEW_COMPLETE. Once all applicati
 REVIEW_COMPLETE, the App Request as a whole will be marked as REVIEW_COMPLETE. A reviewer is now able
 to publish the results to the applicant.
 
+  A program with nothing to do after submission - no PREAPPROVAL, APPROVAL, ACCEPTANCE or workflow requirements
+  enabled for the period - skips all of this: its application moves straight to COMPLETE when the request is submitted,
+  eligible or not, and sits out any acceptance or non-blocking workflow phase the request later enters. When that is
+  true of every program in the request, submission completes the whole request with no reviewer involved. An
+  application ruled out before submission whose program does have reviewer work still holds the request in review,
+  since a reviewer may yet make it eligible.
+
 ## Acceptance (optional, performed by the applicant)
 
 8. ACCEPTANCE (optional) - In some projects, there may be an acceptance step where the approval
@@ -312,7 +319,8 @@ rather than leaving it PENDING, or the request will never complete.
 * COMPLETE
 
   There is nothing left to do on this application. Other applications may still be working through their own
-  non-blocking workflow stages.
+  non-blocking workflow stages. An application whose program has nothing to do after submission reaches this phase
+  as soon as the request is submitted.
 
 ## Requirements
 Requirements are business rules that govern whether an applicant will be eligible for

@@ -339,6 +339,8 @@ export async function acceptOffer (appRequestId: number, nextPhase: AppRequestPh
     if (incomingDataVersion && existingDataVersion !== incomingDataVersion) throw new Error('Someone else is working on the same request and made changes since you loaded. Reload the page to try again.')
     const applications = await getApplications({ appRequestIds: [String(appRequestId)] }, db)
     for (const application of applications) {
+      // an application with nothing to do after submission was completed then, it has no non-blocking workflow to enter
+      if (application.phase === ApplicationPhase.COMPLETE) continue
       // non-blocking workflow is non-sequential so there is no active stage pointer. All non-blocking requirements
       // become visible/editable at once and marks the application READY_TO_COMPLETE once they are all
       // resolved. Completion is via the whole-request complete action, not per stage advancing.
