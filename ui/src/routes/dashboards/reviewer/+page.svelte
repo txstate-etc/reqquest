@@ -8,7 +8,7 @@
   import { toQuery } from 'txstate-utils'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { api, APPLICATION_STATUS_CONFIG, FieldNestedMultiselect, getReviewerStatusTags, REVIEWER_STATUS_CONFIG, type NestedMultiselectItem } from '$internal'
+  import { api, APPLICATION_STATUS_CONFIG, FieldNestedMultiselect, getReviewerStatusTags, ProgramStatusCell, REVIEWER_STATUS_CONFIG, type NestedMultiselectItem } from '$internal'
   import { enumApplicationRescindedStatus, enumApplicationStatus } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../local/index.js'
@@ -35,9 +35,17 @@
         : undefined
     }))
 
-  async function downloadCSV () {
+  // export only those requests selected, otherwise export whatever the current filters show.
+  async function downloadCSV (ids?: string[]) {
     const ticket = await api.getDownloadTicket()
-    location.href = `${api.baseUrl}/csv/${ticket}/requests/reviewerdashboard${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv${location.search || ('?' + toQuery(_defaultReviewerDashboardFilters))}`
+    const query = ids?.length ? '?' + toQuery({ f: { ids } }) : (location.search || ('?' + toQuery(_defaultReviewerDashboardFilters)))
+    location.href = `${api.baseUrl}/csv/${ticket}/requests/reviewerdashboard${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv${query}`
+  }
+
+  /** Date on one line, time beneath it. Output is our own luxon formatting, so it is safe for ColumnList's {@html} render. */
+  function twoLineDate (iso: string) {
+    const d = DateTime.fromISO(iso)
+    return `<div>${d.toFormat('D')}</div><div>${d.toFormat('t')}</div>`
   }
 
   onMount(() => {
@@ -116,16 +124,20 @@
     autoHideColumns
     searchable
     listActions={[
-      { label: 'Download', icon: DocExport, onClick: downloadCSV }
+      { label: 'Download', icon: DocExport, onClick: () => downloadCSV() }
+    ]}
+    selectedActions={rows => [
+      { label: 'Download selected', icon: DocExport, onClick: () => downloadCSV(rows.map(r => r.id)) }
     ]}
     columns={[
       { id: 'request', label: 'Request #', fixed: '90px', minWidth: 90, tags: row => [{ label: String(row.id) }] },
       { id: 'period', label: uiRegistry.getWord('period'), render: r => r.period.name },
       { id: 'login', label: uiRegistry.getWord('login'), minWidth: 100, tags: r => [{ label: r.applicant.login, type: 'green' }] },
       { id: 'name', label: 'Name', get: 'applicant.fullname' },
-      { id: 'dateSubmitted', label: 'Date Submitted', minWidth: 150, render: r => DateTime.fromISO(r.createdAt).toFormat('f') },
+      { id: 'dateSubmitted', label: 'Date Submitted', minWidth: 120, render: r => twoLineDate(r.createdAt) },
+      { id: 'program', label: 'Program', minWidth: 220, component: ProgramStatusCell },
       { id: 'status', label: 'Status', minWidth: 150, tags: r => getReviewerStatusTags(r.status, r.phase, r.closedAt) },
-      { id: 'lastUpdated', label: 'Last Updated', minWidth: 150, render: r => DateTime.fromISO(r.updatedAt).toFormat('f') },
+      { id: 'lastUpdated', label: 'Last Updated', minWidth: 120, render: r => twoLineDate(r.updatedAt) },
       ...appRequestIndexes.map(index => ({
         id: 'cat_' + index.category,
         label: index.categoryLabel,
@@ -150,7 +162,12 @@
         }
       }
     ]}
-  />
+  >
+    <svelte:fragment let:row>
+      <div class="[ mb-2 ]"><strong>Programs</strong></div>
+      <ProgramStatusCell {row} rollup={false} />
+    </svelte:fragment>
+  </ColumnList>
 
   <Pagination
     {totalItems}

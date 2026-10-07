@@ -8,6 +8,7 @@ export type { NestedMultiselectItem, NestedMultiselectChild } from './FieldNeste
 export { default as IntroPanel } from './IntroPanel.svelte'
 export { default as MissingDefinitionNotification } from './MissingDefinitionNotification.svelte'
 export { default as PeriodPanel } from './PeriodPanel.svelte'
+export { default as ProgramStatusCell } from './ProgramStatusCell.svelte'
 export { default as RenderDisplayComponent } from './RenderDisplayComponent.svelte'
 export { default as ReviewerQuestions } from './ReviewerQuestions.svelte'
 export { default as AppRequestActions } from './ReviewerActions.svelte'

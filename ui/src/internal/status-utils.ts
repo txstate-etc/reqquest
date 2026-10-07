@@ -354,6 +354,11 @@ export function getApplicationStatusInfo (status: string, appRequestPhase: strin
   return tags
 }
 
+/** `getApplicationStatusInfo` as TagSet items. Shared by the applicant program list and the reviewer dashboard's Program column. */
+export function getApplicationStatusTags (status: string, appRequestPhase: string, closedAt: string | null | undefined, rescindedStatus?: string | null): TagItem[] {
+  return getApplicationStatusInfo(status, appRequestPhase, closedAt, rescindedStatus).map(info => ({ label: info.label, type: info.color }))
+}
+
 export const applicantStatuses = new Set<AppRequestStatus>([
   enumAppRequestStatus.STARTED,
   enumAppRequestStatus.READY_TO_SUBMIT

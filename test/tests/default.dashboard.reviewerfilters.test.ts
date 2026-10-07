@@ -124,4 +124,43 @@ test.describe.serial('Reviewer dashboard filter toolbar', { tag: '@default' }, (
     await expect(reviewerPage.locator('.quickfilters-form button[aria-haspopup="dialog"] .bx--tag')).toHaveText('3')
     await expect(requestTag).toBeVisible()
   })
+
+  test('Reviewer - Program column, two-line dates, expansion and bulk download', async ({ reviewerPage }) => {
+    // autoHideColumns drops Last Updated at Playwright's default width, so widen for this test and restore afterwards
+    const original = reviewerPage.viewportSize() ?? { width: 1280, height: 720 }
+    await reviewerPage.setViewportSize({ width: 1800, height: 900 })
+    await reviewerPage.goto(`/dashboards/reviewer?q.status.0=STARTED&f.periodIds.0=${periodId}`)
+    const requestTag = reviewerPage.locator('[role="listitem"].bx--tag', { hasText: new RegExp(`^\\s*${appRequestId}\\s*$`) })
+    const row = reviewerPage.locator('.column-list-row').filter({ has: requestTag })
+    await expect(row).toBeVisible()
+
+    // two programs render inline: title followed by its status tag
+    const programCell = row.locator('.column-list-col.program')
+    await expect(programCell).toContainText('Adopt a Dog')
+    await expect(programCell).toContainText('Adopt a Cat')
+    await expect(programCell.locator('[role="listitem"].bx--tag', { hasText: 'Pending' })).toHaveCount(2)
+    await expect(programCell.locator('.bx--tag', { hasText: /programs$/ })).toHaveCount(0)
+
+    // dates split into a date line and a time line
+    await expect(row.locator('.column-list-col.dateSubmitted div')).toHaveCount(2)
+    await expect(row.locator('.column-list-col.lastUpdated div')).toHaveCount(2)
+
+    // the chevron expands to the full program list
+    await row.getByRole('button', { name: 'Expand Row' }).click()
+    const detail = row.locator('.column-list-expandable')
+    await expect(detail).toContainText('Programs')
+    await expect(detail).toContainText('Adopt a Dog')
+    await expect(detail).toContainText('Adopt a Cat')
+    await row.getByRole('button', { name: 'Collapse Row' }).click()
+    await expect(detail).toHaveCount(0)
+
+    // selecting a row reveals the bulk download action
+    // carbon hides the input behind its label, so click the label and confirm the input toggled
+    await row.locator('.column-list-col.checkbox label').click()
+    await expect(row.getByLabel('select row')).toBeChecked()
+    await expect(reviewerPage.getByRole('status').filter({ hasText: '1 row selected' })).toBeVisible()
+    // ActionSet renders actions as menuitems with the label as the icon description
+    await expect(reviewerPage.getByRole('menuitem', { name: 'Download selected' })).toBeVisible()
+    await reviewerPage.setViewportSize(original)
+  })
 })
