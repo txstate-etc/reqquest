@@ -135,7 +135,7 @@
       { id: 'name', label: 'Name', get: 'applicant.fullname' },
       { id: 'dateSubmitted', label: 'Date Submitted', minWidth: 120, render: r => twoLineDate(r.createdAt) },
       { id: 'program', label: 'Program', minWidth: 220, component: ProgramStatusCell },
-      { id: 'status', label: 'Status', minWidth: 150, tags: r => getReviewerStatusTags(r.status, r.phase, r.closedAt) },
+      { id: 'status', label: 'Application status', minWidth: 150, tags: r => getReviewerStatusTags(r.status, r.phase, r.closedAt) },
       { id: 'lastUpdated', label: 'Last Updated', minWidth: 120, render: r => twoLineDate(r.updatedAt) },
       ...appRequestIndexes.map(index => ({
         id: 'cat_' + index.category,

@@ -73,6 +73,13 @@ test.describe.serial('Reviewer dashboard program rollup', { tag: '@complex' }, (
     const tooltip = reviewerPage.locator('.bx--tooltip [role="dialog"]')
     await expect(tooltip).toBeVisible()
     for (const title of programTitles) await expect(tooltip).toContainText(`${title}: Pending`)
+    // the box must fit its content: no horizontal overflow and every line fully inside the viewport
+    const overflow = await tooltip.evaluate(el => ({ scrollWidth: el.scrollWidth, clientWidth: el.clientWidth }))
+    expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth)
+    const box = (await tooltip.boundingBox())!
+    const viewport = reviewerPage.viewportSize()!
+    expect(box.x).toBeGreaterThanOrEqual(0)
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width)
 
     // the expanded row shows the full list without the rollup
     await row.getByRole('button', { name: 'Expand Row' }).click()

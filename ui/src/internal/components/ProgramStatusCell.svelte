@@ -12,7 +12,7 @@
    * When true and the request has more than `maxInline` programs, collapse to a single grey
    * "N programs" tag whose tooltip lists each program with its status labels. The expanded
    * row detail renders with rollup={false} to show the full list.
-   */
+  */
   export let rollup = true
   export let maxInline = 2
 
@@ -27,7 +27,7 @@
 
 {#if collapsed}
   <div class="program-rollup">
-    <Tooltip hideIcon portalTooltip direction="bottom" align="start">
+    <Tooltip hideIcon direction="bottom" align="start">
       <svelte:fragment slot="triggerText">
         <Tag size="sm" type="gray">{programs.length} programs</Tag>
       </svelte:fragment>
@@ -61,8 +61,15 @@
     align-items: center;
     gap: 0.25rem 0.5rem;
   }
+  .program-rollup {
+    position: relative;
+  }
   .program-rollup :global(.bx--tooltip__label) {
     display: inline-block;
+  }
+  /* carbon caps tooltips at 18rem; program titles plus their status labels need more room */
+  .program-rollup :global(.bx--tooltip) {
+    max-width: 28rem;
   }
   .program-rollup-list {
     margin: 0;
@@ -71,6 +78,5 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    white-space: nowrap;
   }
 </style>
