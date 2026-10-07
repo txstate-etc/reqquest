@@ -286,12 +286,12 @@ export class ConfigurationService extends AuthService<Configuration> {
       response.addMessage(source === 'code'
         ? `"${name}" is the default name of the program ${holders}.`
         : source === 'locked'
-          ? `"${name}" has already been used by the program ${holders}.`
-          : `"${name}" is currently used by the program ${holders}.`, field, MutationMessageType.error)
+          ? `"${name}" has already been used by ${holders}.`
+          : `"${name}" is currently used by ${holders}.`, field, MutationMessageType.error)
     }
   }
 
-  /** e.g. "Adopt a Cat in 2026 and 2027" or "Adopt a Cat in 2026 and Foster a Pet in 2027" */
+  /** e.g. "Adopt a Cat in 2026" or "Adopt a Cat in multiple periods and Foster a Pet in 2027" */
   private describeHolders (conflicts: ProgramNameConflict[]) {
     const byProgram = new Map<string, string[]>()
     for (const c of conflicts) {
@@ -300,6 +300,7 @@ export class ConfigurationService extends AuthService<Configuration> {
       byProgram.set(c.otherKey, periods)
     }
     const and = (items: string[]) => items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}` : items[0]
-    return and([...byProgram].map(([key, periods]) => `${programRegistry.get(key)?.title ?? key}${periods.length ? ` in ${and(periods)}` : ''}`))
+    const where = (periods: string[]) => periods.length > 1 ? ' in multiple periods' : periods.length ? ` in ${periods[0]}` : ''
+    return and([...byProgram].map(([key, periods]) => `${programRegistry.get(key)?.title ?? key}${where(periods)}`))
   }
 }

@@ -116,11 +116,11 @@ test.describe.serial('Per-period program labels', { tag: '@default' }, () => {
     const save = async (key: string, data: any, validateOnly = false) => (await adminRequest.graphql<ConflictResponse>(conflictQuery, { periodId, key, data, validateOnly })).updateConfiguration
 
     // another program's override title, matched ignoring case and extra spaces - in validation and on
-    // save - naming every period that still holds it
+    // save - summarizing the periods when more than one still holds it
     for (const validateOnly of [true, false]) {
       const resp = await save('adopt_a_cat_program', { title: '  canine   COMPANIONS ' }, validateOnly)
       const message = resp.messages.find(m => m.arg === 'title' && m.type === 'error')?.message
-      expect(message).toContain('is currently used by the program Adopt a Dog in Program Labels Copy and Program Labels')
+      expect(message).toContain('is currently used by the program Adopt a Dog in multiple periods')
     }
     // another program's override navTitle
     const navResp = await save('adopt_a_cat_program', { navTitle: 'dogs' })
