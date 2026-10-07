@@ -42,7 +42,6 @@
     location.href = `${api.baseUrl}/csv/${ticket}/requests/reviewerdashboard${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv${query}`
   }
 
-  /** Date on one line, time beneath it. Output is our own luxon formatting, so it is safe for ColumnList's {@html} render. */
   function twoLineDate (iso: string) {
     const d = DateTime.fromISO(iso)
     return `<div>${d.toFormat('D')}</div><div>${d.toFormat('t')}</div>`
