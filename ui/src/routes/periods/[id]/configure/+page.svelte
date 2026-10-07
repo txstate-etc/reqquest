@@ -84,7 +84,7 @@
 <!-- Configuring Period: {period.name}{#if period.code} ({period.code}){/if} -->
 
 {#if !period.reviewed}
-  <InlineNotification kind='warning' lowContrast title='Confirm Fall 2026 period configurations:' subtitle={`Please confirm when ${period.name} configuration updates are complete`} >
+  <InlineNotification kind='warning' lowContrast title={`${period.name} period configurations:`} subtitle={`Please confirm when ${period.name} configuration updates are complete`} >
     <svelte:fragment slot="actions">
       <NotificationActionButton on:click={confirmReview}>Confirm Review</NotificationActionButton>
     </svelte:fragment>
