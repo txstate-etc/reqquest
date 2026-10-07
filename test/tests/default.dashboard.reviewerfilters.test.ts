@@ -64,6 +64,11 @@ test.describe.serial('Reviewer dashboard filter toolbar', { tag: '@default' }, (
     await reviewerPage.goto('/dashboards/reviewer')
     // the status quick filter holds groups of statuses (one option per label), hence the nested index
     await expect(reviewerPage).toHaveURL(/q\.status\.0\.0=/)
+    // default = Review pending (PREAPPROVAL + APPROVAL) and In review, nothing else
+    await expect(reviewerPage).toHaveURL(/q\.status\.0\.0=PREAPPROVAL/)
+    await expect(reviewerPage).toHaveURL(/q\.status\.0\.1=APPROVAL/)
+    await expect(reviewerPage).toHaveURL(/q\.status\.1\.0=REVIEW_IN_PROGRESS/)
+    expect(reviewerPage.url()).not.toMatch(/q\.status\.2\./)
     const quickLabels = reviewerPage.locator('.quickfilters-form .bx--label')
     await expect(quickLabels.filter({ hasText: /^Application status$/ })).toBeVisible()
     await expect(quickLabels.filter({ hasText: /^Program status$/ })).toBeVisible()
@@ -75,9 +80,16 @@ test.describe.serial('Reviewer dashboard filter toolbar', { tag: '@default' }, (
 
     // PREAPPROVAL and APPROVAL share the "Review pending" label, so they appear as one option that filters both
     const statusSelect = reviewerPage.locator('.bx--multi-select__wrapper').filter({ has: reviewerPage.locator('.bx--label', { hasText: /^Application status$/ }) })
+    await expect(statusSelect.locator('.bx--tag .bx--tag__label')).toHaveText('2')
     await statusSelect.getByRole('combobox').click()
     const reviewPending = reviewerPage.getByRole('option', { name: 'Review pending' })
     await expect(reviewPending).toHaveCount(1)
+    // the request-level roll-up reads "Not approved"; "Ineligible" belongs to the per-program Program status filter
+    await expect(reviewerPage.getByRole('option', { name: 'Not approved' })).toHaveCount(1)
+    await expect(reviewerPage.getByRole('option', { name: 'Ineligible' })).toHaveCount(0)
+    // likewise the acceptance-phase roll-ups avoid per-offer wording, which belongs to program status
+    for (const name of ['Awaiting acceptance', 'Ready to accept', 'Accepted', 'Declined']) await expect(reviewerPage.getByRole('option', { name, exact: true })).toHaveCount(1)
+    for (const name of ['Offer pending', 'Almost accepted', 'Offer accepted', 'Offer declined']) await expect(reviewerPage.getByRole('option', { name, exact: true })).toHaveCount(0)
     await reviewerPage.goto('/dashboards/reviewer?q.status.0.0=STARTED')
     await statusSelect.getByRole('combobox').click()
     await reviewPending.click()

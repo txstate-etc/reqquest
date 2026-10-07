@@ -186,17 +186,17 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, { description: str
     color: 'blue'
   },
   ACCEPTANCE: {
-    label: 'Offer pending',
+    label: 'Awaiting acceptance',
     description: 'Waiting for you to respond to the offer.',
     color: 'purple'
   },
-  ACCEPTED: { 
-    label: 'Offer accepted',
+  ACCEPTED: {
+    label: 'Accepted',
     description: 'You have accepted an offer.',
     color: 'green'
   },
   READY_TO_ACCEPT: {
-    label: 'Almost accepted',
+    label: 'Ready to accept',
     description: 'You have been offered and can now accept.',
     color: 'purple'
   },
@@ -211,12 +211,12 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, { description: str
     color: 'green'
   },
   NOT_APPROVED: {
-    label: 'Ineligible',
+    label: 'Not approved',
     description: `Your ${uiRegistry.getWord('appRequest').toLowerCase()} was not approved.`,
     color: 'red'
   },
-  NOT_ACCEPTED: { 
-    label: 'Offer declined',
+  NOT_ACCEPTED: {
+    label: 'Declined',
     description: 'The offer was not accepted.',
     color: 'gray'
   },

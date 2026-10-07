@@ -6,7 +6,8 @@ import { api, flattenStatusFilter, getReviewerStatusFilterOptions } from '$inter
 import { enumAppRequestStatus, type AppRequestFilter } from '$lib'
 import type { PageLoad } from './$types'
 
-export const _reviewerDashboardInReviewStatuses = [enumAppRequestStatus.PREAPPROVAL, enumAppRequestStatus.APPROVAL, enumAppRequestStatus.REVIEW_IN_PROGRESS, enumAppRequestStatus.ACCEPTANCE, enumAppRequestStatus.READY_TO_ACCEPT, enumAppRequestStatus.REVIEW_COMPLETE]
+// statuses that are waiting on a reviewer (not on the applicant): the default view and the "to review" count
+export const _reviewerDashboardInReviewStatuses = [enumAppRequestStatus.PREAPPROVAL, enumAppRequestStatus.APPROVAL, enumAppRequestStatus.REVIEW_IN_PROGRESS]
 const inReview = new Set<string>(_reviewerDashboardInReviewStatuses)
 // quick-filter defaults (FilterUI keeps quick filters under `q`), so the Application status dropdown shows them preselected.
 export const _defaultReviewerDashboardFilters = { q: { status: getReviewerStatusFilterOptions().filter(o => o.value.some(s => inReview.has(s))).map(o => o.value) } }
