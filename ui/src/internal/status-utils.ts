@@ -245,15 +245,9 @@ export function getReviewerStatusTags (status: AppRequestStatus, phase: AppReque
   return tags
 }
 
-// Get complete AppRequest status information
+// Get complete AppRequest status information. Closing does not change the status
 export function getAppRequestStatusInfo (status: AppRequestStatus, phase: AppRequestPhase, closedAt: string | null | undefined): AppStatusConfig {
-  const info = (closedAt == null || phase === enumAppRequestPhase.COMPLETE || phase === enumAppRequestPhase.WORKFLOW_NONBLOCKING || status === enumAppRequestStatus.WITHDRAWN || status === enumAppRequestStatus.CANCELLED)
-    ? APP_REQUEST_STATUS_CONFIG[status]
-    : {
-      ...APP_REQUEST_STATUS_CONFIG[status],
-      tags: [{ label: 'Incomplete', type: 'red' as const }],
-      description: 'This was closed before being completed.'
-    }
+  const info = APP_REQUEST_STATUS_CONFIG[status]
   const ret = { ...info, tags: [...info.tags] }
   if (closedAt != null && phase !== enumAppRequestPhase.STARTED) ret.tags.push({ label: 'Closed', type: 'yellow' })
   return ret
@@ -335,20 +329,13 @@ export function getApplicationStatusInfo (status: string, appRequestPhase: strin
       color: 'red'
     }
   }
-  if (appRequestPhase !== enumAppRequestPhase.COMPLETE && appRequestPhase !== enumAppRequestPhase.WORKFLOW_NONBLOCKING && closedAt != null) {
-    if (appRequestPhase === enumAppRequestPhase.STARTED) {
-      return [{
-        label: 'Cancelled',
-        description: `${uiRegistry.getWord('appRequest')} was cancelled before submission.`,
-        color: 'gray'
-      }]
-    } else {
-      return [{
-        label: 'Incomplete',
-        description: 'This was closed before being completed.',
-        color: 'red'
-      }]
-    }
+  // closing before submission is a cancellation; after submission closing leaves the status as it was
+  if (appRequestPhase === enumAppRequestPhase.STARTED && closedAt != null) {
+    return [{
+      label: 'Cancelled',
+      description: `${uiRegistry.getWord('appRequest')} was cancelled before submission.`,
+      color: 'gray'
+    }]
   }
   // before submission - never submitted, or returned to the applicant
   if (appRequestPhase === enumAppRequestPhase.STARTED && status === enumApplicationStatus.ELIGIBLE) {
