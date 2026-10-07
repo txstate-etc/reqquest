@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ColumnList, FieldDate, FilterUI, Pagination, IntroPanel } from '@txstate-mws/carbon-svelte'
+  import { ColumnList, FieldDate, FieldMultiselect, FilterUI, Pagination, IntroPanel } from '@txstate-mws/carbon-svelte'
   import { Tile } from 'carbon-components-svelte'
   import DocExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
   import View from 'carbon-icons-svelte/lib/View.svelte'
@@ -8,21 +8,36 @@
   import { toQuery } from 'txstate-utils'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { api, getReviewerStatusTags } from '$internal'
+  import { api, APPLICATION_STATUS_CONFIG, FieldNestedMultiselect, getReviewerStatusTags, REVIEWER_STATUS_CONFIG, type NestedMultiselectItem } from '$internal'
+  import { enumApplicationRescindedStatus, enumApplicationStatus } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../local/index.js'
-  import { _reviewerDashboardInReviewStatuses, _defaultReviewerDashboardFilters } from './+page.js'
+  import { _defaultReviewerDashboardFilters } from './+page.js'
 
   export let data: PageData
-  $: ({ appRequests, totalItems, period, filters, appCount, appRequestIndexes } = data)
+  $: ({ appRequests, totalItems, period, appCount, appRequestIndexes, programs } = data)
   $: periodStart = period?.openDate ? DateTime.fromISO(period.openDate) : undefined
   $: periodClose = period?.closeDate ? DateTime.fromISO(period.closeDate) : undefined
   $: periodArchive = period?.archiveDate ? DateTime.fromISO(period.archiveDate) : undefined
   let now = DateTime.now()
 
+  const rescindableStatuses = new Set<string>([enumApplicationStatus.ELIGIBLE, enumApplicationStatus.ACCEPTED])
+  const programStatusItems: NestedMultiselectItem[] = Object.entries(APPLICATION_STATUS_CONFIG)
+    .filter(([status]) => status !== enumApplicationStatus.RESCINDED)
+    .map(([status, config]) => ({
+      value: { status },
+      label: config.label,
+      children: rescindableStatuses.has(status)
+        ? [
+            { value: { status, rescindedStatus: enumApplicationRescindedStatus.RESCINDED }, label: 'Rescinded' },
+            { value: { status, rescindedStatus: enumApplicationRescindedStatus.RESTORED }, label: 'Restored' }
+          ]
+        : undefined
+    }))
+
   async function downloadCSV () {
     const ticket = await api.getDownloadTicket()
-    location.href = `${api.baseUrl}/csv/${ticket}/requests/reviewerdashboard${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv${location.search || ('?' + toQuery({ reviewStarted: false, ..._defaultReviewerDashboardFilters }))}`
+    location.href = `${api.baseUrl}/csv/${ticket}/requests/reviewerdashboard${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv${location.search || ('?' + toQuery(_defaultReviewerDashboardFilters))}`
   }
 
   onMount(() => {
@@ -69,19 +84,37 @@
     </Tile>
   </div>
 
-  <FilterUI tabs={[
-    { label: 'Awaiting Review', value: { reviewStarted: false, complete: false, status: _reviewerDashboardInReviewStatuses } },
-    { label: 'Review in Progress', value: { reviewStarted: true, complete: false, status: _reviewerDashboardInReviewStatuses } },
-    { label: 'Completed Review', value: { complete: true } }
-  ]}>
+  <FilterUI search>
+    <svelte:fragment slot="quickfilters">
+      <FieldMultiselect
+        path="status"
+        labelText="Application status"
+        label="Choose one or more"
+        hideLabel={false}
+        items={Object.entries(REVIEWER_STATUS_CONFIG).map(([value, config]) => ({ value, label: config.label }))}
+      />
+      <FieldNestedMultiselect
+        path="applicationStatuses"
+        labelText="Program status"
+        items={programStatusItems}
+      />
+      <FieldMultiselect
+        path="programKeys"
+        labelText="Program"
+        label="Choose one or more"
+        hideLabel={false}
+        items={programs.map(p => ({ value: p.key, label: p.title }))}
+      />
+    </svelte:fragment>
+    <FieldDate path="submittedAfter" labelText="Submitted After" placeholder="Select a date" beginningOfDay />
+    <FieldDate path="submittedBefore" labelText="Submitted Before" placeholder="Select a date" endOfDay />
   </FilterUI>
 
-  <IntroPanel title={filters.reviewStarted ? 'Review in progress' : filters.complete ? 'Completed review' : 'Review not started'} subtitle={filters.reviewStarted ? 'These are applications that are in progress, if you are looking for reviews you have participated in, filter by your name.' : filters.complete ? 'These applications have been completely reviewed.' : 'These are applications waiting to be reviewed.'} />
+  <IntroPanel title="Review queue" subtitle="Applications awaiting or under review. Use the filters above to narrow the list." />
 
   <ColumnList
     autoHideColumns
     searchable
-    filterTitle='Request Filters'
     listActions={[
       { label: 'Download', icon: DocExport, onClick: downloadCSV }
     ]}
@@ -117,12 +150,7 @@
         }
       }
     ]}
-  >
-    <svelte:fragment slot="filters">
-      <FieldDate path='submittedAfter' labelText='Submitted After' beginningOfDay />
-      <FieldDate path='submittedBefore' labelText='Submitted Before' endOfDay />
-    </svelte:fragment>
-  </ColumnList>
+  />
 
   <Pagination
     {totalItems}

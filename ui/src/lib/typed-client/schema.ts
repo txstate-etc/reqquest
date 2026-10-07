@@ -1328,6 +1328,8 @@ search?: (Scalars['String'] | null),
 users?: (Scalars['ID'][] | null)}
 
 export interface AppRequestFilter {
+/** Only return appRequests with at least one application matching one of the given entries (OR). When programKeys is also given, the same application must match both. */
+applicationStatuses?: (ApplicationStatusFilter[] | null),
 /** true -> only return appRequests that are closed. false -> only return appRequests that are open. null -> return all appRequests. */
 closed?: (Scalars['Boolean'] | null),
 /** Only return appRequests that were closed after this date. Open appRequests will be filtered out. */
@@ -1346,6 +1348,8 @@ indexes?: (AppRequestIndexFilter[] | null),
 logins?: (Scalars['ID'][] | null),
 /** Only return appRequests that are owned by the current user. */
 own?: (Scalars['Boolean'] | null),periodIds?: (Scalars['ID'][] | null),
+/** Only return appRequests that have an application for one of the given programs. When applicationStatuses is also given, the same application must match both. */
+programKeys?: (Scalars['ID'][] | null),
 /** Only return appRequests where at least one application is in one of the given rescinded states. Rescinding is per-application, so this is independent of the appRequest status. */
 rescindedStatus?: (ApplicationRescindedStatus[] | null),
 /** Only return appRequests that have had their review started. true -> return review started, false -> return not started. Note that this is NOT mutually exclusive with complete or closed, it very simply means that a non-applicant has taken an action on it. */
@@ -1526,6 +1530,12 @@ export interface ApplicationRequirementGenqlSelection{
     __typename?: boolean | number
     __scalar?: boolean | number
 }
+
+
+/** Matches an application by its stored status and, optionally, its rescind state. Status is the stored computedStatus, so RESCINDED is not a valid value here - express it as status ELIGIBLE or ACCEPTED with rescindedStatus RESCINDED. */
+export interface ApplicationStatusFilter {
+/** When omitted, matches applications currently in the given status (not rescinded). When given, matches only applications in exactly that rescind state. */
+rescindedStatus?: (ApplicationRescindedStatus | null),status: ApplicationStatus}
 
 export interface CategoryGenqlSelection{
     /** This is indexed name of the category. Categories are indexed to allow for quick filtering of a list of items. e.g. institutionalRoles */

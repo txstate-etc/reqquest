@@ -5,7 +5,7 @@ import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
 import { clone, isNotBlank, omit, stringify } from 'txstate-utils'
 import {
-  ApplicationPhase, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter,
+  ApplicationPhase, ApplicationRescindedStatus, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter,
   AppRequestPhase, AppRequestStatus, evaluateAppRequest, getApplications, getPeriodWorkflowStages, Pagination, PaginationInfoWithTotalItems, promptRegistry,
   RQContext, type AppRequestData
 } from '../internal.js'
@@ -100,6 +100,27 @@ function processFilters (filter?: AppRequestFilter) {
   }
   if (filter?.periodIds?.length) {
     where.push(`ar.periodId IN (${db.in(binds, filter.periodIds)})`)
+  }
+  if (filter?.programKeys?.length || filter?.applicationStatuses?.length) {
+    // One EXISTS covering both program and application status so the two conditions apply to the
+    // same application, e.g. "has a Cat Adoption application that is INELIGIBLE".
+    const conds: string[] = []
+    if (filter.programKeys?.length) {
+      conds.push(`pa.programKey IN (${db.in(binds, filter.programKeys)})`)
+    }
+    if (filter.applicationStatuses?.length) {
+      const statusConds = filter.applicationStatuses.map(entry => {
+        if (entry.rescindedStatus) {
+          binds.push(entry.status, entry.rescindedStatus)
+          return '(pa.computedStatus = ? AND pa.rescindedStatus = ?)'
+        }
+        // RESCINDED is derived (see deriveApplicationStatus), so "currently in this status" means not rescinded.
+        binds.push(entry.status, ApplicationRescindedStatus.RESCINDED)
+        return '(pa.computedStatus = ? AND (pa.rescindedStatus IS NULL OR pa.rescindedStatus != ?))'
+      })
+      conds.push(`(${statusConds.join(' OR ')})`)
+    }
+    where.push(`EXISTS (SELECT 1 FROM applications pa WHERE pa.appRequestId = ar.id AND ${conds.join(' AND ')})`)
   }
   if (filter?.userInternalIds?.length) {
     where.push(`ar.userId IN (${db.in(binds, filter.userInternalIds)})`)

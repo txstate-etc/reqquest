@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon'
 import { Field, ID, InputType, Int, ObjectType, registerEnumType } from 'type-graphql'
-import { ApplicationRescindedStatus, AppRequestActivityRow, AppRequestRow, AppRequestStatusDB, JsonData, PromptTagDefinition } from '../internal.js'
+import { ApplicationRescindedStatus, ApplicationStatus, AppRequestActivityRow, AppRequestRow, AppRequestStatusDB, JsonData, PromptTagDefinition } from '../internal.js'
 import { ValidatedResponse } from '@txstate-mws/graphql-server'
 
 export enum AppRequestStatus {
@@ -198,6 +198,15 @@ export class AppRequestIndexFilter {
   tags!: string[]
 }
 
+@InputType({ description: 'Matches an application by its stored status and, optionally, its rescind state. Status is the stored computedStatus, so RESCINDED is not a valid value here - express it as status ELIGIBLE or ACCEPTED with rescindedStatus RESCINDED.' })
+export class ApplicationStatusFilter {
+  @Field(type => ApplicationStatus)
+  status!: ApplicationStatus
+
+  @Field(type => ApplicationRescindedStatus, { nullable: true, description: 'When omitted, matches applications currently in the given status (not rescinded). When given, matches only applications in exactly that rescind state.' })
+  rescindedStatus?: ApplicationRescindedStatus
+}
+
 @ObjectType({ description: 'This represents an index as registered by one of the project\'s prompt definitions.' })
 export class IndexCategory {
   constructor (def: PromptTagDefinition) {
@@ -265,6 +274,12 @@ export class AppRequestFilter {
 
   @Field(type => [ApplicationRescindedStatus], { nullable: true, description: 'Only return appRequests where at least one application is in one of the given rescinded states. Rescinding is per-application, so this is independent of the appRequest status.' })
   rescindedStatus?: ApplicationRescindedStatus[]
+
+  @Field(type => [ID], { nullable: true, description: 'Only return appRequests that have an application for one of the given programs. When applicationStatuses is also given, the same application must match both.' })
+  programKeys?: string[]
+
+  @Field(type => [ApplicationStatusFilter], { nullable: true, description: 'Only return appRequests with at least one application matching one of the given entries (OR). When programKeys is also given, the same application must match both.' })
+  applicationStatuses?: ApplicationStatusFilter[]
 
   @Field(type => [ID], { nullable: true })
   periodIds?: string[]

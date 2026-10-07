@@ -593,6 +593,11 @@ input AppRequestActivityFilters {
 
 input AppRequestFilter {
   """
+  Only return appRequests with at least one application matching one of the given entries (OR). When programKeys is also given, the same application must match both.
+  """
+  applicationStatuses: [ApplicationStatusFilter!]
+
+  """
   true -> only return appRequests that are closed. false -> only return appRequests that are open. null -> return all appRequests.
   """
   closed: Boolean
@@ -628,6 +633,11 @@ input AppRequestFilter {
   """Only return appRequests that are owned by the current user."""
   own: Boolean
   periodIds: [ID!]
+
+  """
+  Only return appRequests that have an application for one of the given programs. When applicationStatuses is also given, the same application must match both.
+  """
+  programKeys: [ID!]
 
   """
   Only return appRequests where at least one application is in one of the given rescinded states. Rescinding is per-application, so this is independent of the appRequest status.
@@ -1128,7 +1138,7 @@ enum ApplicationStatus {
   ACCEPTED
 
   """
-  All application requirements up to and including WORKFLOW_BLOCKING requirements are resolving as MET (or NOT_APPLICABLE or WARNING). If there is an acceptance phase, the acceptance is still pending.
+  Every requirement the current phase evaluates is resolving as MET (or NOT_APPLICABLE or WARNING). Before submission that is only the applicant requirements (PREQUAL, QUALIFICATION, POSTQUAL), so ELIGIBLE means nothing so far disqualifies - not that the program has been approved. After submission it covers all requirements up to and including WORKFLOW_BLOCKING. If there is an acceptance phase, the acceptance is still pending.
   """
   ELIGIBLE
 
@@ -1151,6 +1161,17 @@ enum ApplicationStatus {
   The application has been rescinded (pulled back from applicant) post approval.
   """
   RESCINDED
+}
+
+"""
+Matches an application by its stored status and, optionally, its rescind state. Status is the stored computedStatus, so RESCINDED is not a valid value here - express it as status ELIGIBLE or ACCEPTED with rescindedStatus RESCINDED.
+"""
+input ApplicationStatusFilter {
+  """
+  When omitted, matches applications currently in the given status (not rescinded). When given, matches only applications in exactly that rescind state.
+  """
+  rescindedStatus: ApplicationRescindedStatus
+  status: ApplicationStatus!
 }
 
 type Category {

@@ -290,6 +290,40 @@ export function getStatusActionType (status: AppRequestStatus): 'navigate' | 'do
 // === Application Status ===
 // ========================================
 
+/** Display labels for the per-program ApplicationStatus values. Shared by status tags and the reviewer dashboard's Program status filter. */
+export const APPLICATION_STATUS_CONFIG: Record<string, ApplicationStatusTagInfo> = {
+  ACCEPTED: {
+    label: 'Offer accepted',
+    description: 'Offer accepted and all requirements met.',
+    color: 'green'
+  },
+  ELIGIBLE: {
+    label: 'Approved',
+    description: 'All requirements met, acceptance pending.',
+    color: 'green'
+  },
+  INELIGIBLE: {
+    label: 'Ineligible',
+    description: 'One or more requirements not met.',
+    color: 'red'
+  },
+  PENDING: {
+    label: 'Pending',
+    description: 'Awaiting further information.',
+    color: 'purple'
+  },
+  REJECTED: {
+    label: 'Offer declined',
+    description: 'Offer rejected or requirements not met.',
+    color: 'red'
+  },
+  RESCINDED: {
+    label: 'Rescinded',
+    description: 'Previously approved and has since been rescinded.',
+    color: 'red'
+  }
+}
+
 /**
  * Map ApplicationStatus enum to display info.
  *
@@ -297,38 +331,6 @@ export function getStatusActionType (status: AppRequestStatus): 'navigate' | 'do
  * plus a 'Restored' tag noting that it had been rescinded. Every other case returns a single tag.
  */
 export function getApplicationStatusInfo (status: string, appRequestPhase: string, closedAt: string | null | undefined, rescindedStatus?: string | null): ApplicationStatusTagInfo[] {
-  const statusMap: Record<string, ApplicationStatusTagInfo> = {
-    ACCEPTED: {
-      label: 'Offer accepted',
-      description: 'Offer accepted and all requirements met.',
-      color: 'green'
-    },
-    ELIGIBLE: {
-      label: 'Approved',
-      description: 'All requirements met, acceptance pending.',
-      color: 'green'
-    },
-    INELIGIBLE: {
-      label: 'Ineligible',
-      description: 'One or more requirements not met.',
-      color: 'red'
-    },
-    PENDING: {
-      label: 'Pending',
-      description: 'Awaiting further information.',
-      color: 'purple'
-    },
-    REJECTED: {
-      label: 'Offer declined',
-      description: 'Offer rejected or requirements not met.',
-      color: 'red'
-    },
-    RESCINDED: {
-      label: 'Rescinded',
-      description: 'Previously approved and has since been rescinded.',
-      color: 'red'
-    }
-  }
   // closing before submission is a cancellation; after submission closing leaves the status as it was
   if (appRequestPhase === enumAppRequestPhase.STARTED && closedAt != null) {
     return [{
@@ -341,7 +343,7 @@ export function getApplicationStatusInfo (status: string, appRequestPhase: strin
   if (appRequestPhase === enumAppRequestPhase.STARTED && status === enumApplicationStatus.ELIGIBLE) {
     return [{ label: 'Pending', description: 'Awaiting submission.', color: 'purple' }]
   }
-  const tags = [statusMap[status] ?? { label: status, description: 'Unknown status.', color: 'gray' as const }]
+  const tags = [APPLICATION_STATUS_CONFIG[status] ?? { label: status, description: 'Unknown status.', color: 'gray' as const }]
   if (rescindedStatus === enumApplicationRescindedStatus.RESTORED) {
     tags.push({
       label: 'Restored',

@@ -233,6 +233,17 @@ class API extends APIBase {
     return response
   }
 
+  async getPrograms () {
+    const response = await this.client.query({
+      __name: 'GetPrograms',
+      programs: {
+        key: true,
+        title: true
+      }
+    })
+    return response.programs
+  }
+
   async getApplicationCount (filter: AppRequestFilter = {}) {
     const response = await this.client.query({
       __name: 'GetApplicationCount',
