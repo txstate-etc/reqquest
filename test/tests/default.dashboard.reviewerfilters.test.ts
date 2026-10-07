@@ -2,25 +2,25 @@ import { DateTime } from 'luxon'
 import { expect, test } from './fixtures.js'
 
 /**
- * The reviewer dashboard's toolbar replaces the old Awaiting/In Progress/Completed tabs with a search box
- * and three quick filters: Application status (the appRequest status), Program status (the per-program
- * application status, with Rescinded/Restored sub-options under the two statuses that can be rescinded)
- * and Program. Program status is a custom FloatingPortal control rather than a Carbon MultiSelect, and its
- * value is sent to the API as-is (`applicationStatuses: [{ status, rescindedStatus? }]`).
+ * The reviewer dashboard filters by review stage through three status-based tabs: Review Pending
+ * (PREAPPROVAL + APPROVAL), In Review (REVIEW_IN_PROGRESS) and Review Complete (REVIEW_COMPLETE onward).
+ * There is no search box and no quick filter; the submitted-date filters live in the "More filters" dialog.
+ * The list itself shows each program with its status tag(s), two-line dates, row checkboxes with a bulk
+ * download, and expandable rows listing every program.
  */
-test.describe.serial('Reviewer dashboard filter toolbar', { tag: '@default' }, () => {
+test.describe.serial('Reviewer dashboard tabs and list', { tag: '@default' }, () => {
   const timeZone = 'America/Chicago'
   const stamp = Date.now()
-  const periodName = `Reviewer Dashboard Filters Period ${stamp}`
-  const periodCode = `RDF${stamp}`
+  const periodName = `Reviewer Dashboard Tabs Period ${stamp}`
+  const periodCode = `RDT${stamp}`
   const openDate = DateTime.now().setZone(timeZone).minus({ days: 1 }).toISO()
   const closeDate = DateTime.now().setZone(timeZone).plus({ days: 1 }).toISO()
 
   let periodId = ''
   let appRequestId = ''
 
-  test('Admin - create period', async ({ adminRequest }) => {
-    const query = `
+  test('Admin - create and review period', async ({ adminRequest }) => {
+    const create = `
       mutation CreatePeriod($name: String!, $code: String!, $openDate: DateTime!, $closeDate: DateTime!) {
         createPeriod(period: { name: $name, code: $code, openDate: $openDate, closeDate: $closeDate }, validateOnly: false) {
           period { id }
@@ -28,18 +28,15 @@ test.describe.serial('Reviewer dashboard filter toolbar', { tag: '@default' }, (
         }
       }
     `
-    const { createPeriod } = await adminRequest.graphql<{ createPeriod: { period: { id: string }, messages: { message: string }[] } }>(query, { name: periodName, code: periodCode, openDate, closeDate })
+    const { createPeriod } = await adminRequest.graphql<{ createPeriod: { period: { id: string } } }>(create, { name: periodName, code: periodCode, openDate, closeDate })
     periodId = createPeriod.period.id
     expect(periodId).toBeTruthy()
-  })
-
-  test('Admin - mark period reviewed so it accepts requests', async ({ adminRequest }) => {
-    const query = `
+    const review = `
       mutation MarkPeriodReviewed($periodId: ID!) {
         markPeriodReviewed(periodId: $periodId) { period { id reviewed } messages { message } }
       }
     `
-    const { markPeriodReviewed } = await adminRequest.graphql<{ markPeriodReviewed: { period: { reviewed: boolean } } }>(query, { periodId })
+    const { markPeriodReviewed } = await adminRequest.graphql<{ markPeriodReviewed: { period: { reviewed: boolean } } }>(review, { periodId })
     expect(markPeriodReviewed.period.reviewed).toEqual(true)
   })
 
@@ -55,106 +52,47 @@ test.describe.serial('Reviewer dashboard filter toolbar', { tag: '@default' }, (
     const { createAppRequest } = await applicantRequest.graphql<{ createAppRequest: { appRequest: { id: string, status: string, applications: { programKey: string, status: string }[] } | null, messages: { message: string }[] } }>(create, { login: 'applicant', periodId })
     expect(createAppRequest.appRequest, createAppRequest.messages.map(m => m.message).join('; ')).not.toBeNull()
     appRequestId = createAppRequest.appRequest!.id
-    // nothing answered yet, so every program's application is PENDING - the Program status assertions below rely on that
     expect(createAppRequest.appRequest!.status).toEqual('STARTED')
     expect(createAppRequest.appRequest!.applications.every(a => a.status === 'PENDING')).toEqual(true)
   })
 
-  test('Reviewer - bare visit lands on the default quick filters, tabs are gone', async ({ reviewerPage }) => {
+  test('Reviewer - bare visit lands on Review Pending; tabs are the only filter control', async ({ reviewerPage }) => {
     await reviewerPage.goto('/dashboards/reviewer')
-    // the status quick filter holds groups of statuses (one option per label), hence the nested index
-    await expect(reviewerPage).toHaveURL(/q\.status\.0\.0=/)
-    // default = Review pending (PREAPPROVAL + APPROVAL) and In review, nothing else
-    await expect(reviewerPage).toHaveURL(/q\.status\.0\.0=PREAPPROVAL/)
-    await expect(reviewerPage).toHaveURL(/q\.status\.0\.1=APPROVAL/)
-    await expect(reviewerPage).toHaveURL(/q\.status\.1\.0=REVIEW_IN_PROGRESS/)
-    expect(reviewerPage.url()).not.toMatch(/q\.status\.2\./)
-    const quickLabels = reviewerPage.locator('.quickfilters-form .bx--label')
-    await expect(quickLabels.filter({ hasText: /^Application status$/ })).toBeVisible()
-    await expect(quickLabels.filter({ hasText: /^Program status$/ })).toBeVisible()
-    await expect(quickLabels.filter({ hasText: /^Program$/ })).toBeVisible()
-    // the fields themselves carry the placeholder, the heading sits above them
-    await expect(reviewerPage.locator('.quickfilters-form .bx--list-box__label', { hasText: 'Choose one or more' })).toHaveCount(3)
+    await expect(reviewerPage).toHaveURL(/t\.status\.0=PREAPPROVAL/)
+    await expect(reviewerPage).toHaveURL(/t\.status\.1=APPROVAL/)
+    for (const name of ['Review Pending', 'In Review', 'Review Complete']) await expect(reviewerPage.getByRole('radio', { name })).toBeVisible()
+    await expect(reviewerPage.getByRole('radio', { name: 'Review Pending' })).toBeChecked()
     await expect(reviewerPage.getByRole('radio', { name: 'Awaiting Review' })).toHaveCount(0)
-    await expect(reviewerPage.getByRole('button', { name: /More filters/i })).toBeVisible()
+    // no search box, no quick filters
+    await expect(reviewerPage.locator('.quickfilters-form')).toHaveCount(0)
+    await expect(reviewerPage.getByRole('combobox')).toHaveCount(0)
+    await expect(reviewerPage.locator('.nested-multiselect')).toHaveCount(0)
+    await expect(reviewerPage.getByRole('heading', { name: 'Review pending' })).toBeVisible()
 
-    // PREAPPROVAL and APPROVAL share the "Review pending" label, so they appear as one option that filters both
-    const statusSelect = reviewerPage.locator('.bx--multi-select__wrapper').filter({ has: reviewerPage.locator('.bx--label', { hasText: /^Application status$/ }) })
-    await expect(statusSelect.locator('.bx--tag .bx--tag__label')).toHaveText('2')
-    await statusSelect.getByRole('combobox').click()
-    const reviewPending = reviewerPage.getByRole('option', { name: 'Review pending' })
-    await expect(reviewPending).toHaveCount(1)
-    // the request-level roll-up reads "Not approved"; "Ineligible" belongs to the per-program Program status filter
-    await expect(reviewerPage.getByRole('option', { name: 'Not approved' })).toHaveCount(1)
-    await expect(reviewerPage.getByRole('option', { name: 'Ineligible' })).toHaveCount(0)
-    // likewise the acceptance-phase roll-ups avoid per-offer wording, which belongs to program status
-    for (const name of ['Awaiting acceptance', 'Ready to accept', 'Accepted', 'Declined']) await expect(reviewerPage.getByRole('option', { name, exact: true })).toHaveCount(1)
-    for (const name of ['Offer pending', 'Almost accepted', 'Offer accepted', 'Offer declined']) await expect(reviewerPage.getByRole('option', { name, exact: true })).toHaveCount(0)
-    await reviewerPage.goto('/dashboards/reviewer?q.status.0.0=STARTED')
-    await statusSelect.getByRole('combobox').click()
-    await reviewPending.click()
-    await expect(reviewerPage).toHaveURL(/q\.status\.1\.0=PREAPPROVAL/)
-    await expect(reviewerPage).toHaveURL(/q\.status\.1\.1=APPROVAL/)
+    await reviewerPage.getByRole('radio', { name: 'In Review' }).click()
+    await expect(reviewerPage).toHaveURL(/t\.status\.0=REVIEW_IN_PROGRESS/)
+    expect(reviewerPage.url()).not.toMatch(/PREAPPROVAL/)
+    await expect(reviewerPage.getByRole('heading', { name: 'In review' })).toBeVisible()
+
+    await reviewerPage.getByRole('radio', { name: 'Review Complete' }).click()
+    await expect(reviewerPage).toHaveURL(/t\.status\.0=REVIEW_COMPLETE/)
+    await expect(reviewerPage).toHaveURL(/NOT_APPROVED/)
+    await expect(reviewerPage.getByRole('heading', { name: 'Review complete' })).toBeVisible()
+
+    // the submitted-date filters survive in the dialog (FilterUI labels the button "Add filters" when there are no quick filters)
+    await reviewerPage.getByRole('button', { name: /(More|Add) filters/i }).click()
+    await expect(reviewerPage.getByLabel('Submitted After')).toBeVisible()
+    await expect(reviewerPage.getByLabel('Submitted Before')).toBeVisible()
     await reviewerPage.keyboard.press('Escape')
-  })
-
-  test('Reviewer - Program and Program status filters narrow the list', async ({ reviewerPage }) => {
-    // scope to this test's period and to unsubmitted requests so the fresh request shows regardless of other suites' data
-    await reviewerPage.goto(`/dashboards/reviewer?q.status.0.0=STARTED&f.periodIds.0=${periodId}`)
-    // ColumnList renders its cell tags as listitems; the trigger's selection-count badge is also a .bx--tag, so scope by role
-    const requestTag = reviewerPage.locator('[role="listitem"].bx--tag', { hasText: new RegExp(`^\\s*${appRequestId}\\s*$`) })
-    await expect(requestTag).toBeVisible()
-
-    // Program: a Carbon MultiSelect. The request has an application for every program, so it stays listed.
-    const programSelect = reviewerPage.locator('.bx--multi-select__wrapper').filter({ has: reviewerPage.locator('.bx--label', { hasText: /^Program$/ }) })
-    await programSelect.getByRole('combobox').click()
-    await reviewerPage.getByRole('option', { name: 'Adopt a Dog' }).click()
-    await expect(reviewerPage).toHaveURL(/q\.programKeys\.0=adopt_a_dog_program/)
-    await reviewerPage.keyboard.press('Escape')
-    await expect(requestTag).toBeVisible()
-
-    // Program status: the FloatingPortal control. Rescinded/Restored sit only under Offer accepted and Approved.
-    const trigger = reviewerPage.locator('.quickfilters-form button[aria-haspopup="dialog"]')
-    await expect(trigger).toContainText('Choose one or more')
-    await trigger.click()
-    const dialog = reviewerPage.getByRole('dialog', { name: 'Program status' })
-    await expect(dialog).toBeVisible()
-    const options = (await dialog.locator('label').allInnerTexts()).map(t => t.trim())
-    expect(options).toEqual(['Offer accepted', 'Rescinded', 'Restored', 'Approved', 'Rescinded', 'Restored', 'Ineligible', 'Pending', 'Offer declined'])
-
-    // Approved alone: the dog application is PENDING, so the request drops out
-    await dialog.getByText('Approved', { exact: true }).click()
-    await expect(reviewerPage).toHaveURL(/q\.applicationStatuses\.0\.status=ELIGIBLE/)
-    await expect(requestTag).toHaveCount(0)
-
-    // adding Pending brings it back (entries OR together)
-    await dialog.getByText('Pending', { exact: true }).click()
-    await expect(reviewerPage).toHaveURL(/q\.applicationStatuses\.1\.status=PENDING/)
-    await expect(requestTag).toBeVisible()
-
-    // a nested option carries the rescind state alongside its parent status
-    await dialog.getByText('Rescinded', { exact: true }).nth(1).click()
-    await expect(reviewerPage).toHaveURL(/q\.applicationStatuses\.2\.status=ELIGIBLE/)
-    await expect(reviewerPage).toHaveURL(/q\.applicationStatuses\.2\.rescindedStatus=RESCINDED/)
-    await expect(requestTag).toBeVisible()
-
-    // Escape closes the portal and returns focus to the trigger, which now shows the selection count
-    await reviewerPage.keyboard.press('Escape')
-    await expect(dialog).toHaveCount(0)
-    await expect(trigger).toBeFocused()
-    await expect(trigger.locator('.bx--tag')).toHaveText('3')
-
-    // the selection lives in the URL, so a reload restores it
-    await reviewerPage.reload()
-    await expect(reviewerPage.locator('.quickfilters-form button[aria-haspopup="dialog"] .bx--tag')).toHaveText('3')
-    await expect(requestTag).toBeVisible()
   })
 
   test('Reviewer - Program column, two-line dates, expansion and bulk download', async ({ reviewerPage }) => {
     // autoHideColumns drops Last Updated at Playwright's default width, so widen for this test and restore afterwards
     const original = reviewerPage.viewportSize() ?? { width: 1280, height: 720 }
     await reviewerPage.setViewportSize({ width: 1800, height: 900 })
-    await reviewerPage.goto(`/dashboards/reviewer?q.status.0.0=STARTED&f.periodIds.0=${periodId}`)
+    // dialog-key filters: scope to this test's period and to unsubmitted requests without implying a tab
+    await reviewerPage.goto(`/dashboards/reviewer?f.status.0=STARTED&f.periodIds.0=${periodId}`)
+    // ColumnList renders its cell tags as listitems; the trigger's selection-count badge is also a .bx--tag, so scope by role
     const requestTag = reviewerPage.locator('[role="listitem"].bx--tag', { hasText: new RegExp(`^\\s*${appRequestId}\\s*$`) })
     const row = reviewerPage.locator('.column-list-row').filter({ has: requestTag })
     await expect(row).toBeVisible()

@@ -1,11 +1,17 @@
+<script lang="ts" context="module">
+  export interface ProgramStatusRow {
+    phase: string
+    closedAt?: string | null
+    applications: { programKey: string, title: string, status: string, rescindedStatus?: string | null }[]
+  }
+</script>
+
 <script lang="ts">
   import { TagSet } from '@txstate-mws/carbon-svelte'
   import { Tag, Tooltip } from 'carbon-components-svelte'
-  import type { ReviewerDashboardRequest } from '../api.js'
   import { getApplicationStatusTags } from '../status-utils.js'
 
-  /** The appRequest row from the reviewer dashboard list. */
-  export let row: ReviewerDashboardRequest
+  export let row: ProgramStatusRow
   /** ColumnList passes the column definition too; unused here. */
   export let col: unknown = undefined
   /**

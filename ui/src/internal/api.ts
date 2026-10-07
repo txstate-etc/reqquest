@@ -20,7 +20,6 @@ export type PromptForEditing = Awaited<ReturnType<typeof api.getApplicantPrompt>
 export type ReviewData = Awaited<ReturnType<typeof api.getReviewData>>
 export type PromptDataLegion = Awaited<ReturnType<typeof api.getPromptDataLegion>>
 export type BasicRequestData = Awaited<ReturnType<typeof api.getBasicRequestData>>
-export type ReviewerDashboardRequest = Awaited<ReturnType<typeof api.getReviewerDashboardRequests>>['appRequests'][number]
 
 class API extends APIBase {
   baseUrl = PUBLIC_API_BASE
@@ -801,7 +800,10 @@ class API extends APIBase {
         closedAt: true,
         updatedAt: true,
         applications: {
-          title: true
+          title: true,
+          programKey: true,
+          status: true,
+          rescindedStatus: true
         },
         applicant: {
           login: true,

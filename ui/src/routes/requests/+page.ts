@@ -12,10 +12,11 @@ export const load: PageLoad = async ({ url, parent }) => {
   const { page, pagesize } = extractPaginationParams(url)
   const { status, ...rest } = extractMergedFilters(url)
   const filters: Omit<AppRequestFilter, 'indexes'> = { ...rest, status: flattenStatusFilter(status) }
-  const [response, allPeriods] = await Promise.all([
+  const [response, allPeriods, programs] = await Promise.all([
     api.getAppRequests(filters, { page, perPage: pagesize }),
-    api.getPeriodList()
+    api.getPeriodList(),
+    api.getPrograms()
   ])
   const openPeriods = allPeriods.filter(p => p.actions.createAppRequest)
-  return { ...response, allPeriods, openPeriods, filters }
+  return { ...response, allPeriods, openPeriods, filters, programs }
 }

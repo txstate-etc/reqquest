@@ -17,6 +17,11 @@ export function machineDateTime (dt: DateTime | string) {
   return dateTime.toISO({ suppressMilliseconds: true })
 }
 
+export function twoLineDateHtml (iso: string) {
+  const d = DateTime.fromISO(iso)
+  return `<div>${d.toFormat('D')}</div><div>${d.toFormat('t')}</div>`
+}
+
 export function booleanToWord (bool?: boolean) {
   return bool ? 'Yes' : 'No'
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ColumnList, FieldDate, FieldMultiselect, FilterUI, Pagination, IntroPanel } from '@txstate-mws/carbon-svelte'
+  import { ColumnList, FieldDate, FilterUI, Pagination, IntroPanel } from '@txstate-mws/carbon-svelte'
   import { Tile } from 'carbon-components-svelte'
   import DocExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
   import View from 'carbon-icons-svelte/lib/View.svelte'
@@ -8,42 +8,31 @@
   import { toQuery } from 'txstate-utils'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { api, APPLICATION_STATUS_CONFIG, FieldNestedMultiselect, getReviewerStatusFilterOptions, getReviewerStatusTags, ProgramStatusCell, type NestedMultiselectItem } from '$internal'
-  import { enumApplicationRescindedStatus, enumApplicationStatus } from '$lib'
+  import { api, getReviewerStatusTags, ProgramStatusCell, twoLineDateHtml } from '$internal'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../local/index.js'
+  import { _inReviewStatuses, _reviewCompleteStatuses, _reviewPendingStatuses } from './+page.js'
 
   export let data: PageData
-  $: ({ appRequests, totalItems, period, appCount, appRequestIndexes, programs, filters } = data)
+  $: ({ appRequests, totalItems, period, appCount, appRequestIndexes, filters } = data)
   $: periodStart = period?.openDate ? DateTime.fromISO(period.openDate) : undefined
   $: periodClose = period?.closeDate ? DateTime.fromISO(period.closeDate) : undefined
   $: periodArchive = period?.archiveDate ? DateTime.fromISO(period.archiveDate) : undefined
   let now = DateTime.now()
 
-  const rescindableStatuses = new Set<string>([enumApplicationStatus.ELIGIBLE, enumApplicationStatus.ACCEPTED])
-  const programStatusItems: NestedMultiselectItem[] = Object.entries(APPLICATION_STATUS_CONFIG)
-    .filter(([status]) => status !== enumApplicationStatus.RESCINDED)
-    .map(([status, config]) => ({
-      value: { status },
-      label: config.label,
-      children: rescindableStatuses.has(status)
-        ? [
-            { value: { status, rescindedStatus: enumApplicationRescindedStatus.RESCINDED }, label: 'Rescinded' },
-            { value: { status, rescindedStatus: enumApplicationRescindedStatus.RESTORED }, label: 'Restored' }
-          ]
-        : undefined
-    }))
+  const tabs = [
+    { label: 'Review Pending', value: { status: _reviewPendingStatuses }, title: 'Review pending', subtitle: 'Submitted applications that no reviewer has started on yet.' },
+    { label: 'In Review', value: { status: _inReviewStatuses }, title: 'In review', subtitle: 'Applications a reviewer is actively working on.' },
+    { label: 'Review Complete', value: { status: _reviewCompleteStatuses }, title: 'Review complete', subtitle: 'Applications whose review is finished, including results already released to the applicant.' }
+  ]
+  // the active tab is whichever one's statuses the current filter carries; default to the first
+  $: activeTab = tabs.find(t => t.value.status.some(s => filters.status?.includes(s))) ?? tabs[0]
 
   // export only those requests selected, otherwise export whatever the current filters show.
   async function downloadCSV (ids?: string[]) {
     const ticket = await api.getDownloadTicket()
     const query = '?' + toQuery({ f: ids?.length ? { ids } : filters } as unknown as Parameters<typeof toQuery>[0])
     location.href = `${api.baseUrl}/csv/${ticket}/requests/reviewerdashboard${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv${query}`
-  }
-
-  function twoLineDate (iso: string) {
-    const d = DateTime.fromISO(iso)
-    return `<div>${d.toFormat('D')}</div><div>${d.toFormat('t')}</div>`
   }
 
   onMount(() => {
@@ -90,34 +79,12 @@
     </Tile>
   </div>
 
-  <FilterUI search>
-    <svelte:fragment slot="quickfilters">
-      <FieldMultiselect
-        path="status"
-        labelText="Application status"
-        label="Choose one or more"
-        hideLabel={false}
-        json
-        items={getReviewerStatusFilterOptions()}
-      />
-      <FieldNestedMultiselect
-        path="applicationStatuses"
-        labelText="Program status"
-        items={programStatusItems}
-      />
-      <FieldMultiselect
-        path="programKeys"
-        labelText="Program"
-        label="Choose one or more"
-        hideLabel={false}
-        items={programs.map(p => ({ value: p.key, label: p.title }))}
-      />
-    </svelte:fragment>
+  <FilterUI tabs={tabs.map(t => ({ label: t.label, value: t.value }))} tabsAriaLabel="Review stage">
     <FieldDate path="submittedAfter" labelText="Submitted After" placeholder="Select a date" beginningOfDay />
     <FieldDate path="submittedBefore" labelText="Submitted Before" placeholder="Select a date" endOfDay />
   </FilterUI>
 
-  <IntroPanel title="Review queue" subtitle="Applications awaiting or under review. Use the filters above to narrow the list." />
+  <IntroPanel title={activeTab.title} subtitle={activeTab.subtitle} />
 
   <ColumnList
     autoHideColumns
@@ -133,10 +100,10 @@
       { id: 'period', label: uiRegistry.getWord('period'), render: r => r.period.name },
       { id: 'login', label: uiRegistry.getWord('login'), minWidth: 100, tags: r => [{ label: r.applicant.login, type: 'green' }] },
       { id: 'name', label: 'Name', get: 'applicant.fullname' },
-      { id: 'dateSubmitted', label: 'Date Submitted', minWidth: 120, render: r => twoLineDate(r.createdAt) },
+      { id: 'dateSubmitted', label: 'Date Submitted', minWidth: 120, render: r => twoLineDateHtml(r.createdAt) },
       { id: 'program', label: 'Program', minWidth: 220, component: ProgramStatusCell },
       { id: 'status', label: 'Application status', minWidth: 150, tags: r => getReviewerStatusTags(r.status, r.phase, r.closedAt) },
-      { id: 'lastUpdated', label: 'Last Updated', minWidth: 120, render: r => twoLineDate(r.updatedAt) },
+      { id: 'lastUpdated', label: 'Last Updated', minWidth: 120, render: r => twoLineDateHtml(r.updatedAt) },
       ...appRequestIndexes.map(index => ({
         id: 'cat_' + index.category,
         label: index.categoryLabel,

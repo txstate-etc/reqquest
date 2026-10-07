@@ -372,6 +372,28 @@ export function getApplicationStatusInfo (status: string, appRequestPhase: strin
   return tags
 }
 
+export interface ProgramStatusFilterItem {
+  value: { status: string, rescindedStatus?: string }
+  label: string
+  children?: { value: { status: string, rescindedStatus?: string }, label: string }[]
+}
+
+export function getProgramStatusFilterItems (): ProgramStatusFilterItem[] {
+  const rescindable = new Set<string>([enumApplicationStatus.ELIGIBLE, enumApplicationStatus.ACCEPTED])
+  return Object.entries(APPLICATION_STATUS_CONFIG)
+    .filter(([status]) => status !== enumApplicationStatus.RESCINDED)
+    .map(([status, config]) => ({
+      value: { status },
+      label: config.label,
+      children: rescindable.has(status)
+        ? [
+            { value: { status, rescindedStatus: enumApplicationRescindedStatus.RESCINDED }, label: 'Rescinded' },
+            { value: { status, rescindedStatus: enumApplicationRescindedStatus.RESTORED }, label: 'Restored' }
+          ]
+        : undefined
+    }))
+}
+
 /** `getApplicationStatusInfo` as TagSet items. Shared by the applicant program list and the reviewer dashboard's Program column. */
 export function getApplicationStatusTags (status: string, appRequestPhase: string, closedAt: string | null | undefined, rescindedStatus?: string | null): TagItem[] {
   return getApplicationStatusInfo(status, appRequestPhase, closedAt, rescindedStatus).map(info => ({ label: info.label, type: info.color }))

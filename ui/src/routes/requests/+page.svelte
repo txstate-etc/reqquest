@@ -6,15 +6,14 @@
   import { htmlEncode, isBlank, isNotBlank, keyby, sortby, toQuery } from 'txstate-utils'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { api, getReviewerStatusFilterOptions, getReviewerStatusTags } from '$internal'
-  import { enumApplicationRescindedStatus } from '$lib'
+  import { api, FieldNestedMultiselect, getProgramStatusFilterItems, getReviewerStatusFilterOptions, getReviewerStatusTags, ProgramStatusCell, twoLineDateHtml } from '$internal'
   import { uiRegistry } from '../../local/index.js'
   import type { PageData } from './$types.js'
   import { _defaultRequestListFilters } from './+page.js'
 
   export let data: PageData
 
-  $: ({ appRequests, appRequestIndexes: indexes, allPeriods, openPeriods, access, filters } = data)
+  $: ({ appRequests, appRequestIndexes: indexes, allPeriods, openPeriods, access, filters, programs } = data)
   $: requests = appRequests.map(r => ({ ...r, indexByCat: keyby(r.indexCategories, 'category') }))
   $: indexColumns = sortby(indexes.filter(idx => idx.appRequestListPriority), 'appRequestListPriority').map(idx => ({
     id: idx.category,
@@ -69,9 +68,10 @@
   }
   let showDateFilters = isNotBlank(filters?.closedAfter) || isNotBlank(filters?.closedBefore) || isNotBlank(filters?.updatedAfter) || isNotBlank(filters?.updatedBefore) || isNotBlank(filters?.submittedAfter) || isNotBlank(filters?.submittedBefore)
 
-  async function downloadCSV () {
+  async function downloadCSV (ids?: string[]) {
     const ticket = await api.getDownloadTicket()
-    location.href = `${api.baseUrl}/csv/${ticket}/requests/requests${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv?${toQuery({ f: filters ?? _defaultRequestListFilters } as Parameters<typeof toQuery>[0])}`
+    const query = toQuery({ f: ids?.length ? { ids } : (filters ?? _defaultRequestListFilters) } as unknown as Parameters<typeof toQuery>[0])
+    location.href = `${api.baseUrl}/csv/${ticket}/requests/requests${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv?${query}`
   }
 </script>
 <div class='[ px-[20px] ]'>
@@ -79,19 +79,23 @@
     <svelte:fragment slot="quickfilters">
       <FieldMultiselect
         path="status"
-        label="Status"
-        placeholder="Status"
+        labelText="Application status"
+        label="Choose one or more"
+        hideLabel={false}
         json
         items={getReviewerStatusFilterOptions()}
       />
+      <FieldNestedMultiselect
+        path="applicationStatuses"
+        labelText="Program status"
+        items={getProgramStatusFilterItems()}
+      />
       <FieldMultiselect
-        path="rescindedStatus"
-        label="Rescind status"
-        placeholder="Rescind status"
-        items={[
-          { value: enumApplicationRescindedStatus.RESCINDED, label: 'Rescinded' },
-          { value: enumApplicationRescindedStatus.RESTORED, label: 'Restored' }
-        ]}
+        path="programKeys"
+        labelText="Program"
+        label="Choose one or more"
+        hideLabel={false}
+        items={programs.map(p => ({ value: p.key, label: p.title }))}
       />
       {#each filterIndexes as filterIdx, i (filterIdx.category)}
         {#if i < 2}
@@ -183,10 +187,14 @@
       { id: 'login', label: uiRegistry.getWord('login'), minWidth: 100, tags: r => [{ label: r.applicant.login, type: 'green' }] },
       { id: 'period', label: uiRegistry.getWord('period'), minWidth: 150, render: r => htmlEncode(r.period.name) },
       { id: 'name', label: 'Name', render: r => r.applicant.fullname, grow: 2 },
-      { id: 'dateSubmitted', label: 'Submitted', minWidth: 150, render: r => DateTime.fromISO(r.createdAt).toFormat('f') },
-      { id: 'status', label: 'Status', minWidth: 150, tags: r => getReviewerStatusTags(r.status, r.phase, r.closedAt) },
+      { id: 'dateSubmitted', label: 'Submitted', minWidth: 120, render: r => twoLineDateHtml(r.createdAt) },
+      { id: 'program', label: 'Program', minWidth: 220, component: ProgramStatusCell },
+      { id: 'status', label: 'Application status', minWidth: 150, tags: r => getReviewerStatusTags(r.status, r.phase, r.closedAt) },
       ...indexColumns,
-      { id: 'lastUpdated', label: 'Last Updated', minWidth: 150, render: r => DateTime.fromISO(r.updatedAt).toFormat('f') }
+      { id: 'lastUpdated', label: 'Last Updated', minWidth: 120, render: r => twoLineDateHtml(r.updatedAt) }
+    ]}
+    selectedActions={rows => [
+      { label: 'Download selected', icon: DocExport, onClick: () => downloadCSV(rows.map(r => r.id)) }
     ]}
     listActions={[
       ...(access.createAppRequestOther
@@ -201,7 +209,12 @@
       { icon: View, label: 'View', onClick: () => { goto(`/requests/${row.id}/approve`) } }
     ]}
     rows={requests}
-  />
+  >
+    <svelte:fragment let:row>
+      <div class="[ mb-2 ]"><strong>Programs</strong></div>
+      <ProgramStatusCell {row} rollup={false} />
+    </svelte:fragment>
+  </ColumnList>
   <Pagination
     totalItems={data.pageInfo.appRequests?.totalItems}
     page={data.pageInfo.appRequests?.currentPage}
