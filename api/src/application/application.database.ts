@@ -21,6 +21,7 @@ export interface ApplicationRow {
   rescindedStatus?: ApplicationRescindedStatus
   rescindedReason?: string
   restoredReason?: string
+  programLabels?: string | null
 }
 
 function processFilters (filter: ApplicationFilter) {
@@ -42,9 +43,11 @@ export async function getApplications (filter: ApplicationFilter, tdb: Queryable
     SELECT a.id, a.appRequestId, ar.periodId, a.programKey, ar.userId, a.computedStatus, a.computedStatusReason, a.computedPhase,
       a.computedIneligiblePhase, a.computedAwaitingCorrection, a.workflowStage,
       a.rescindedStatus, a.rescindedReason, a.restoredReason,
-      ar.status AS appRequestStatus, ar.phase AS appRequestPhase, ar.computedStatus AS appRequestComputedStatus       
+      ar.status AS appRequestStatus, ar.phase AS appRequestPhase, ar.computedStatus AS appRequestComputedStatus,
+      pc.data AS programLabels
     FROM applications a
     INNER JOIN app_requests ar ON ar.id = a.appRequestId
+    LEFT JOIN period_configurations pc ON pc.periodId = ar.periodId AND pc.definitionKey = a.programKey
     ${whereClause}
     ORDER BY evaluationOrder
   `, binds)

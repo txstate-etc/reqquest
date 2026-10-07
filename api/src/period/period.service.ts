@@ -1,7 +1,7 @@
 import { BaseService, ValidatedResponse } from '@txstate-mws/graphql-server'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 import { intersect, isBlank, keyby, pick } from 'txstate-utils'
-import { AuthService, Configuration, ConfigurationFilters, createPeriod, deletePeriod, getConfigurationData, getConfigurations, getPeriods, getPeriodsEmpty, markPeriodReviewed, Period, PeriodFilters, PeriodUpdate, promptRegistry, requirementRegistry, updatePeriod, upsertConfiguration, ValidatedConfigurationResponse, ValidatedPeriodResponse } from '../internal.js'
+import { AuthService, Configuration, ConfigurationFilters, createPeriod, deletePeriod, getConfigurationData, getConfigurations, getPeriods, getPeriodsEmpty, markPeriodReviewed, normalizeProgramLabels, Period, PeriodFilters, PeriodUpdate, Program, programAliasCache, programRegistry, promptRegistry, requirementRegistry, updatePeriod, upsertConfiguration, validateProgramLabels, ValidatedConfigurationResponse, ValidatedPeriodResponse } from '../internal.js'
 import { DateTime } from 'luxon'
 
 const periodByIdLoader = new PrimaryKeyLoader({
@@ -163,13 +163,16 @@ export class ConfigurationServiceInternal extends BaseService<Configuration> {
   }
 
   async findByPeriodIdAndKey (periodId: string, key: string) {
-    return await this.loaders.get(configurationByIdLoader).load({ periodId, key })
+    const configuration = await this.loaders.get(configurationByIdLoader).load({ periodId, key })
+    // periods created before programs had label configuration have no row for them, an empty one means no overrides
+    if (!configuration && programRegistry.get(key)) return new Configuration({ periodId: Number(periodId), definitionKey: key, createdAt: new Date(), updatedAt: new Date() })
+    return configuration
   }
 
   async findByPeriodId (periodId: string, filter?: ConfigurationFilters) {
     const configurations = await this.loaders.get(configurationsByPeriodIdLoader, filter).load(periodId)
     const configByKey = keyby(configurations, 'key')
-    const allKeys = intersect({ skipEmpty: true }, filter?.keys ?? [], [...promptRegistry.keys(), ...requirementRegistry.keys()])
+    const allKeys = intersect({ skipEmpty: true }, filter?.keys ?? [], [...promptRegistry.keys(), ...requirementRegistry.keys(), ...programRegistry.reachable.map(p => p.key)])
     return allKeys.map(key => configByKey[key] ?? new Configuration({ periodId: Number(periodId), definitionKey: key, createdAt: new Date(), updatedAt: new Date() }))
   }
 
@@ -202,6 +205,8 @@ export class ConfigurationService extends AuthService<Configuration> {
   }
 
   async getFetchedData (periodId: string, definitionKey: string) {
+    // programs only carry label overrides, there is nothing for them to fetch
+    if (programRegistry.get(definitionKey)) return undefined
     const definition = promptRegistry.get(definitionKey) ?? requirementRegistry.get(definitionKey)
     if (!definition) throw new Error('Configuration definition not found')
     const [period, configuration] = await Promise.all([
@@ -229,14 +234,21 @@ export class ConfigurationService extends AuthService<Configuration> {
     if (!cfg) throw new Error('Configuration not found')
     if (!await this.mayUpdate(cfg)) throw new Error('You are not allowed to update this configuration.')
     const response = new ValidatedConfigurationResponse({ success: true })
-    const registry = cfg.type === 'Prompt' ? promptRegistry : requirementRegistry
-    const valid = registry.validateConfig(key, data)
-    if (!valid) throw new Error('Invalid configuration data format.')
-    const processedData = cfg.configuredObject.definition.configuration?.preProcessData?.(data, this.ctx, validateOnly) ?? data
-    const messages = await cfg.configuredObject.definition.configuration?.validate?.(processedData) ?? []
-    for (const feedback of messages) response.addMessage(feedback.message)
+    let processedData: any
+    if (cfg.configuredObject instanceof Program) {
+      if (!validateProgramLabels(data)) throw new Error('Invalid configuration data format.')
+      processedData = normalizeProgramLabels(data)
+    } else {
+      const registry = cfg.type === 'Prompt' ? promptRegistry : requirementRegistry
+      const valid = registry.validateConfig(key, data)
+      if (!valid) throw new Error('Invalid configuration data format.')
+      processedData = cfg.configuredObject.definition.configuration?.preProcessData?.(data, this.ctx, validateOnly) ?? data
+      const messages = await cfg.configuredObject.definition.configuration?.validate?.(processedData) ?? []
+      for (const feedback of messages) response.addMessage(feedback.message)
+    }
     if (validateOnly || response.hasErrors()) return response
     await upsertConfiguration(periodId, key, processedData)
+    if (cfg.configuredObject instanceof Program) await programAliasCache.clear()
     this.loaders.clear()
     response.configuration = await this.findByPeriodIdAndKey(periodId, key)
     return response

@@ -28,7 +28,7 @@
   $: disabledRequirements = program.requirements.filter(r => !r.enabled)
 
 </script>
-  <Panel title={program.title} expandable expanded>
+  <Panel title={program.title} expandable expanded noPrimaryAction actions={[{ label: 'Rename program', onClick: onClick('program', program), disabled: !program.configuration.actions.update }]}>
     {#each enabledRequirements as requrementEntries, i (i)}
     {@const type = requrementEntries[0]}
     {@const requirements = requrementEntries[1]}

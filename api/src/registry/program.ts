@@ -26,11 +26,21 @@ export interface ProgramDefinition {
   key?: string
   /**
    * The name of the program.
+   *
+   * This is the default. Administrators may override it for a single period on the period
+   * configuration screen without touching the key, and each app request shows the name from its own
+   * period. Overrides lock along with the rest of the period's configuration once it has app requests.
+   *
+   * Code that reads `title` from the definition gets this default. For the name in a given period, use
+   * `Application.title` or `PeriodProgram.title`, which apply the override.
    */
   title: string
   /**
    * Display title for the program in the navigation. You probably want it to be shorter than
    * the full title. If not provided, the title will be used.
+   *
+   * Like `title`, it can be overridden per period. When only the title is overridden, the overriding
+   * title is used here too, so the old short name does not linger in navigation.
    */
   navTitle?: string
   /**

@@ -1,5 +1,5 @@
 import { Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
-import { ApplicationRow, AppRequestPhase, AppRequestStatus, AppRequestStatusDB, ProgramDefinitionProcessed, programRegistry } from '../internal.js'
+import { ApplicationRow, AppRequestPhase, AppRequestStatus, AppRequestStatusDB, parseProgramLabels, ProgramDefinitionProcessed, programRegistry, resolveProgramLabels } from '../internal.js'
 
 export enum ApplicationStatus {
   PENDING = 'PENDING',
@@ -134,8 +134,9 @@ export class Application {
     this.status = deriveApplicationStatus(this.computedStatus, this.rescindedStatus)
     this.statusReason = row.computedStatusReason
     this.awaitingCorrection = !!row.computedAwaitingCorrection
-    this.title = this.program.title
-    this.navTitle = this.program.title ?? this.program.title
+    const { title, navTitle } = resolveProgramLabels(this.program, parseProgramLabels(row.programLabels))
+    this.title = title
+    this.navTitle = navTitle
     this.applicantDescription = this.program.applicantDescription
     this.eligibilityDescription = this.program.eligibilityDescription
     this.authorizationKeys = { program: [this.program.key] }
