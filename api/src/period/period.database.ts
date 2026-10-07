@@ -477,7 +477,13 @@ export const programAliasCache = new Cache(async () => {
 }, { freshseconds: 60 }) // short, so API instances that did not save the label catch up quickly
 
 export async function getProgramAliasNote (key: string) {
-  const aliases = (await programAliasCache.get())[key]
+  const seen = new Set([normalizeProgramName(programRegistry.get(key).title)])
+  const aliases = (await programAliasCache.get())[key]?.filter(alias => {
+    const normalized = normalizeProgramName(alias)
+    if (seen.has(normalized)) return false
+    seen.add(normalized)
+    return true
+  })
   return aliases?.length ? `aka ${aliases.join(', ')}` : undefined
 }
 
