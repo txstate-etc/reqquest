@@ -45,6 +45,7 @@ const createPeriodQuery = `
 test.describe.serial('Per-period program labels', { tag: '@default' }, () => {
   const programKey = 'adopt_a_dog_program'
   let periodId = ''
+  let copyPeriodId = ''
 
   async function getPrograms (request: { graphql: <T>(query: string, variables?: Record<string, any>) => Promise<T> }, id: string) {
     const { periods } = await request.graphql<{ periods: { id: string, programs: PeriodProgramLabels[] }[] }>(programsQuery, { ids: [id] })
@@ -96,9 +97,57 @@ test.describe.serial('Per-period program labels', { tag: '@default' }, () => {
       copyPeriodId: periodId
     })
     expect(createPeriod.success).toEqual(true)
-    const dog = (await getPrograms(adminRequest, String(createPeriod.period.id))).find(p => p.key === programKey)!
+    copyPeriodId = String(createPeriod.period.id)
+    const dog = (await getPrograms(adminRequest, copyPeriodId)).find(p => p.key === programKey)!
     expect(dog.title).toEqual('Canine Companions')
     expect(dog.navTitle).toEqual('Dogs')
+  })
+
+  test('Admin - a name used by one program cannot be given to another', async ({ adminRequest }) => {
+    const conflictQuery = `
+      mutation UpdateConfiguration($periodId: ID!, $key: String!, $data: JsonData!, $validateOnly: Boolean) {
+        updateConfiguration(periodId: $periodId, key: $key, data: $data, validateOnly: $validateOnly) {
+          success
+          messages { message arg type }
+        }
+      }
+    `
+    type ConflictResponse = { updateConfiguration: { success: boolean, messages: { message: string, arg?: string, type: string }[] } }
+    const save = async (key: string, data: any, validateOnly = false) => (await adminRequest.graphql<ConflictResponse>(conflictQuery, { periodId, key, data, validateOnly })).updateConfiguration
+
+    // another program's override title, matched ignoring case and extra spaces - in validation and on
+    // save - naming every period that still holds it
+    for (const validateOnly of [true, false]) {
+      const resp = await save('adopt_a_cat_program', { title: '  canine   COMPANIONS ' }, validateOnly)
+      const message = resp.messages.find(m => m.arg === 'title' && m.type === 'error')?.message
+      expect(message).toContain('is currently used by the program Adopt a Dog in Program Labels Copy and Program Labels')
+    }
+    // another program's override navTitle
+    const navResp = await save('adopt_a_cat_program', { navTitle: 'dogs' })
+    expect(navResp.messages.some(m => m.arg === 'navTitle' && m.type === 'error')).toEqual(true)
+    // another program's code title
+    const codeResp = await save('adopt_a_cat_program', { title: 'Adopt a Dog' })
+    expect(codeResp.messages.find(m => m.arg === 'title' && m.type === 'error')?.message).toEqual('"Adopt a Dog" is the default name of the program Adopt a Dog.')
+
+    // none of the rejected saves landed
+    const cat = (await getPrograms(adminRequest, periodId)).find(p => p.key === 'adopt_a_cat_program')!
+    expect(cat.title).toEqual('Adopt a Cat')
+
+    // removing the name from one unlocked period is not enough while another still holds it
+    expect((await save(programKey, {})).success).toEqual(true)
+    const stillHeld = await save('adopt_a_cat_program', { title: 'Canine Companions' })
+    expect(stillHeld.messages.find(m => m.arg === 'title')?.message).toContain('Adopt a Dog in Program Labels Copy.')
+    // once no period holds it, it is free for another program
+    expect((await adminRequest.graphql<ConflictResponse>(conflictQuery, { periodId: copyPeriodId, key: programKey, data: {} })).updateConfiguration.success).toEqual(true)
+    expect((await save('adopt_a_cat_program', { title: 'Canine Companions' })).success).toEqual(true)
+    // put things back for the tests below: the cat lets go, the dog takes its names again in both periods
+    expect((await save('adopt_a_cat_program', {})).success).toEqual(true)
+    expect((await adminRequest.graphql<ConflictResponse>(conflictQuery, { periodId: copyPeriodId, key: programKey, data: { title: 'Canine Companions', navTitle: 'Dogs' } })).updateConfiguration.success).toEqual(true)
+
+    // a program may reuse its own names, and take one nobody has used
+    expect((await save(programKey, { title: 'Canine Companions', navTitle: 'Dogs' })).success).toEqual(true)
+    expect((await save('adopt_a_cat_program', { title: 'Feline Friends' })).success).toEqual(true)
+    expect((await save('adopt_a_cat_program', {})).success).toEqual(true)
   })
 
   test('Admin - grant restriction options list the other names a program has gone by', async ({ adminRequest }) => {

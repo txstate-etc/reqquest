@@ -1,6 +1,6 @@
 import db from 'mysql2-async/db'
 import type { Queryable } from 'mysql2-async'
-import { Configuration, ConfigurationFilters, ensureAppRequestRecords, getAppRequests, Period, parseProgramLabels, PeriodFilters, PeriodUpdate, programRegistry, promptRegistry, requirementRegistry, RequirementType } from '../internal.js'
+import { Configuration, ConfigurationFilters, ensureAppRequestRecords, getAppRequests, normalizeProgramName, Period, parseProgramLabels, PeriodFilters, PeriodUpdate, programRegistry, promptRegistry, requirementRegistry, RequirementType } from '../internal.js'
 import { Cache, keyby, stringify } from 'txstate-utils'
 
 export interface PeriodRow {
@@ -286,9 +286,9 @@ export async function getConfigurationData (ids: { periodId: string, definitionK
   return rows.map(row => ({ periodId: String(row.periodId), definitionKey: row.definitionKey, data: JSON.parse(row.data || '{}') }))
 }
 
-export async function upsertConfiguration (periodId: string, key: string, data: any) {
+export async function upsertConfiguration (periodId: string, key: string, data: any, tdb: Queryable = db) {
   const dataStr = stringify(data)
-  await db.update(`
+  await tdb.update(`
     INSERT INTO period_configurations (periodId, definitionKey, data)
     VALUES (?, ?, ?)
     ON DUPLICATE KEY UPDATE data = VALUES(data)
@@ -479,4 +479,65 @@ export const programAliasCache = new Cache(async () => {
 export async function getProgramAliasNote (key: string) {
   const aliases = (await programAliasCache.get())[key]
   return aliases?.length ? `aka ${aliases.join(', ')}` : undefined
+}
+
+export interface ProgramNameConflict {
+  /** the name as the caller passed it */
+  name: string
+  /** the program that holds it */
+  otherKey: string
+  /**
+   * code: it is the other program's title or navTitle in its definition
+   * locked: a period that has app requests uses it - configuration there can no longer change, so it never frees up
+   * unlocked: a period that can still be configured uses it right now - it frees up once removed there
+   */
+  source: 'code' | 'locked' | 'unlocked'
+  periodName?: string
+}
+
+/**
+ * Which of `names` belong to a program other than `programKey`, so that a name only ever means one
+ * program. A name is held by another program when it is
+ * - that program's title or navTitle in code,
+ * - its label in a locked period (one with app requests) - permanently, as that history is frozen, or
+ * - its label in an unlocked period, but only while it is still there. Every unlocked period counts,
+ *   not just the one being edited, otherwise two periods could each give the name to a different
+ *   program and keep it once both lock.
+ *
+ * Reads the database directly rather than `programAliasCache`, so a save cannot slip past a name
+ * another instance stored moments ago.
+ */
+export async function findProgramNameConflicts (programKey: string, names: (string | undefined)[], tdb: Queryable = db) {
+  const wanted = new Map<string, string>()
+  for (const name of names) if (name) wanted.set(normalizeProgramName(name), name)
+  const conflicts: ProgramNameConflict[] = []
+  if (!wanted.size) return conflicts
+  const claim = (otherKey: string, otherName: string | undefined, source: ProgramNameConflict['source'], periodName?: string) => {
+    if (!otherName || otherKey === programKey) return
+    const name = wanted.get(normalizeProgramName(otherName))
+    if (name && !conflicts.some(c => c.name === name && c.otherKey === otherKey && c.source === source && c.periodName === periodName)) conflicts.push({ name, otherKey, source, periodName })
+  }
+  for (const program of programRegistry.list()) {
+    claim(program.key, program.title, 'code')
+    claim(program.key, program.navTitle, 'code')
+  }
+  const otherKeys = programRegistry.keys().filter(key => key !== programKey)
+  if (otherKeys.length) {
+    const binds: any[] = []
+    const rows = await tdb.getall<{ definitionKey: string, data: string | null, periodName: string, locked: 0 | 1 }>(`
+      SELECT pc.definitionKey, pc.data, p.name AS periodName,
+        EXISTS (SELECT 1 FROM app_requests ar WHERE ar.periodId = p.id) AS locked
+      FROM period_configurations pc
+      INNER JOIN periods p ON p.id = pc.periodId
+      WHERE pc.definitionKey IN (${db.in(binds, otherKeys)})
+      ORDER BY p.openDate DESC
+    `, binds)
+    for (const row of rows) {
+      const labels = parseProgramLabels(row.data)
+      const source = row.locked ? 'locked' : 'unlocked'
+      claim(row.definitionKey, labels?.title, source, row.periodName)
+      claim(row.definitionKey, labels?.navTitle, source, row.periodName)
+    }
+  }
+  return conflicts
 }

@@ -1,4 +1,4 @@
-import { AppRequest, AppRequestPhase, assertNoKeyCollisions, requirementRegistry } from '../internal.js'
+import { AppRequest, AppRequestPhase, assertNoKeyCollisions, assertNoProgramTitleCollisions, requirementRegistry } from '../internal.js'
 import type { RequirementKey } from './keys.js'
 
 export interface ProgramDefinition {
@@ -198,6 +198,7 @@ export class ProgramRegistry {
         }
       }
     }
+    assertNoProgramTitleCollisions()
     requirementRegistry.finalize()
   }
 
