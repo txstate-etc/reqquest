@@ -260,6 +260,15 @@ export class AppRequestIndexCategory extends IndexCategory {
 @ObjectType()
 export class AppRequestActions {}
 
+@ObjectType({ description: 'Applicant counts for a set of appRequests. A request is a returning application when its applicant also submitted a request in an earlier period (by open date); otherwise it is a first-time application. Unsubmitted drafts in earlier periods do not count.' })
+export class AppRequestApplicantCounts {
+  @Field(type => Int, { description: 'Matching appRequests whose applicant submitted nothing in any earlier period.' })
+  firstTime!: number
+
+  @Field(type => Int, { description: 'Matching appRequests whose applicant also submitted a request in an earlier period.' })
+  returning!: number
+}
+
 @InputType()
 export class AppRequestFilter {
   constructor () {

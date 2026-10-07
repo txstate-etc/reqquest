@@ -55,7 +55,8 @@ class API extends APIBase {
         createAppRequestSelf: true,
         createAppRequestOther: true,
         viewAnnouncementManagement: true,
-        manageAnnouncements: true
+        manageAnnouncements: true,
+        viewMetrics: true
       }
     })
     return response.access
@@ -233,6 +234,32 @@ class API extends APIBase {
     })
 
     return response
+  }
+
+  /** First-time vs returning applicant counts (an applicant's first request in a period is first-time). */
+  async getAppRequestApplicantCounts (filter: AppRequestFilter = {}) {
+    const response = await this.client.query({
+      __name: 'GetAppRequestApplicantCounts',
+      countAppRequestApplicants: {
+        __args: { filter },
+        firstTime: true,
+        returning: true
+      }
+    })
+    return response.countAppRequestApplicants
+  }
+
+  /** Average seconds from submission to decision across applications, from the Metrics API. Requires access.viewMetrics. */
+  async getReviewDecisionTiming () {
+    const response = await this.client.query({
+      __name: 'GetReviewDecisionTiming',
+      applicationMetrics: {
+        toDecision: {
+          avg: true
+        }
+      }
+    })
+    return response.applicationMetrics.toDecision.avg ?? null
   }
 
   async getPrograms () {

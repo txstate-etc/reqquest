@@ -40,6 +40,27 @@ test.describe.serial('Reviewer dashboard tabs and list', { tag: '@default' }, ()
     expect(markPeriodReviewed.period.reviewed).toEqual(true)
   })
 
+  const dashboardStatuses = ['PREAPPROVAL', 'APPROVAL', 'REVIEW_IN_PROGRESS', 'REVIEW_COMPLETE', 'ACCEPTANCE', 'READY_TO_ACCEPT', 'ACCEPTED', 'NOT_ACCEPTED', 'APPROVED', 'NOT_APPROVED']
+  const countsQuery = `
+    query Counts($statuses: [AppRequestStatus!]) {
+      all: countAppRequestApplicants { firstTime returning }
+      dashboard: countAppRequestApplicants(filter: { closed: false, status: $statuses }) { firstTime returning }
+    }
+  `
+  type Counts = { firstTime: number, returning: number }
+  let countsBefore: { all: Counts, dashboard: Counts } = { all: { firstTime: 0, returning: 0 }, dashboard: { firstTime: 0, returning: 0 } }
+  let applicantHasEarlierSubmission = false
+
+  test('Reviewer - note applicant counts before the new request', async ({ reviewerRequest }) => {
+    countsBefore = await reviewerRequest.graphql<{ all: Counts, dashboard: Counts }>(countsQuery, { statuses: dashboardStatuses })
+    // other suites' periods open earlier than ours (each opens "a day ago" at an earlier instant), so a submitted
+    // request by this login in any of them makes the new request a returning application
+    const { countAppRequests } = await reviewerRequest.graphql<{ countAppRequests: number }>(`
+      query { countAppRequests(filter: { logins: ["applicant"], status: [PREAPPROVAL, APPROVAL, REVIEW_IN_PROGRESS, REVIEW_COMPLETE, ACCEPTANCE, READY_TO_ACCEPT, ACCEPTED, NOT_ACCEPTED, APPROVED, NOT_APPROVED, WITHDRAWN] }) }
+    `)
+    applicantHasEarlierSubmission = countAppRequests > 0
+  })
+
   test('Applicant - create an unsubmitted app request', async ({ applicantRequest }) => {
     const create = `
       mutation CreateAppRequest($login: String!, $periodId: ID!) {
@@ -56,34 +77,73 @@ test.describe.serial('Reviewer dashboard tabs and list', { tag: '@default' }, ()
     expect(createAppRequest.appRequest!.applications.every(a => a.status === 'PENDING')).toEqual(true)
   })
 
-  test('Reviewer - bare visit lands on Review Pending; tabs are the only filter control', async ({ reviewerPage }) => {
+  test('Reviewer - an unsubmitted request is invisible to the dashboard counts; overall it is returning only after an earlier submission', async ({ reviewerRequest }) => {
+    const after = await reviewerRequest.graphql<{ all: Counts, dashboard: Counts }>(countsQuery, { statuses: dashboardStatuses })
+    // the dashboard scope excludes drafts, so the tiles do not move
+    expect(after.dashboard).toEqual(countsBefore.dashboard)
+    if (applicantHasEarlierSubmission) {
+      expect(after.all.returning).toEqual(countsBefore.all.returning + 1)
+      expect(after.all.firstTime).toEqual(countsBefore.all.firstTime)
+    } else {
+      expect(after.all.firstTime).toEqual(countsBefore.all.firstTime + 1)
+      expect(after.all.returning).toEqual(countsBefore.all.returning)
+    }
+  })
+
+  test('Reviewer - bare visit lands on Review Pending; tabs carry counts; stat tiles and list toolbar match the design', async ({ reviewerPage }) => {
     await reviewerPage.goto('/dashboards/reviewer')
     await expect(reviewerPage).toHaveURL(/t\.status\.0=PREAPPROVAL/)
     await expect(reviewerPage).toHaveURL(/t\.status\.1=APPROVAL/)
-    for (const name of ['Review Pending', 'In Review', 'Review Complete']) await expect(reviewerPage.getByRole('radio', { name })).toBeVisible()
-    await expect(reviewerPage.getByRole('radio', { name: 'Review Pending' })).toBeChecked()
+    // tabs carry their counts in the label
+    const pendingTab = reviewerPage.getByRole('radio', { name: /^Review Pending \(\d+\)$/ })
+    await expect(pendingTab).toBeVisible()
+    await expect(pendingTab).toBeChecked()
+    await expect(reviewerPage.getByRole('radio', { name: /^In Review \(\d+\)$/ })).toBeVisible()
+    await expect(reviewerPage.getByRole('radio', { name: /^Review Complete \(\d+\)$/ })).toBeVisible()
     await expect(reviewerPage.getByRole('radio', { name: 'Awaiting Review' })).toHaveCount(0)
-    // no search box, no quick filters
+    // no search box or quick filters in the filter bar, and no dialog button there either (the list header owns those)
     await expect(reviewerPage.locator('.quickfilters-form')).toHaveCount(0)
     await expect(reviewerPage.getByRole('combobox')).toHaveCount(0)
     await expect(reviewerPage.locator('.nested-multiselect')).toHaveCount(0)
-    await expect(reviewerPage.getByRole('heading', { name: 'Review pending' })).toBeVisible()
+    await expect(reviewerPage.getByRole('button', { name: /(More|Add) filters/i })).toHaveCount(0)
+    await expect(reviewerPage.getByRole('heading', { name: 'Review not started' })).toBeVisible()
 
-    await reviewerPage.getByRole('radio', { name: 'In Review' }).click()
+    // stat tiles: applicant counts always; average review time only for users who may view metrics (the demo reviewer may not)
+    await expect(reviewerPage.locator('.stat-tile', { hasText: 'First time application' })).toContainText(/\d+ applications?/)
+    await expect(reviewerPage.locator('.stat-tile', { hasText: 'Returning application' })).toContainText(/\d+ applications?/)
+    await expect(reviewerPage.locator('.periods-open')).toHaveCount(0)
+    // reviewers may read metrics; the tile shows whenever an average exists
+    const token = (await reviewerPage.evaluate(() => sessionStorage.getItem('token')))!
+    const metrics = await reviewerPage.request.post('http://api/graphql', { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, data: JSON.stringify({ query: '{ access { viewMetrics } applicationMetrics { toDecision { avg } } }' }) })
+    const { data } = await metrics.json() as { data: { access: { viewMetrics: boolean }, applicationMetrics: { toDecision: { avg: number | null } } } }
+    expect(data.access.viewMetrics).toEqual(true)
+    const avgTile = reviewerPage.locator('.stat-tile', { hasText: 'Avg. time to finish review' })
+    if (data.applicationMetrics.toDecision.avg != null) await expect(avgTile).toContainText(/(\d+ (day|hour|minute)s?|under a minute)/)
+    else await expect(avgTile).toHaveCount(0)
+    // the tabs sit at the bottom of the tile row
+    const [tabBox, tileBox] = await Promise.all([pendingTab.boundingBox(), reviewerPage.locator('.stat-tile', { hasText: 'First time application' }).boundingBox()])
+    expect(Math.abs((tabBox!.y + tabBox!.height) - (tileBox!.y + tileBox!.height))).toBeLessThan(6)
+
+    await reviewerPage.getByRole('radio', { name: /^In Review \(\d+\)$/ }).click()
     await expect(reviewerPage).toHaveURL(/t\.status\.0=REVIEW_IN_PROGRESS/)
     expect(reviewerPage.url()).not.toMatch(/PREAPPROVAL/)
-    await expect(reviewerPage.getByRole('heading', { name: 'In review' })).toBeVisible()
+    await expect(reviewerPage.getByRole('heading', { name: 'Review in progress' })).toBeVisible()
 
-    await reviewerPage.getByRole('radio', { name: 'Review Complete' }).click()
+    await reviewerPage.getByRole('radio', { name: /^Review Complete \(\d+\)$/ }).click()
     await expect(reviewerPage).toHaveURL(/t\.status\.0=REVIEW_COMPLETE/)
     await expect(reviewerPage).toHaveURL(/NOT_APPROVED/)
     await expect(reviewerPage.getByRole('heading', { name: 'Review complete' })).toBeVisible()
 
-    // the submitted-date filters survive in the dialog (FilterUI labels the button "Add filters" when there are no quick filters)
-    await reviewerPage.getByRole('button', { name: /(More|Add) filters/i }).click()
+    // list header toolbar: magnifier opens the search field, funnel opens the date filters, Export is the primary action
+    await reviewerPage.getByRole('button', { name: /^Search / }).click()
+    await expect(reviewerPage.getByRole('searchbox')).toBeVisible()
+    await reviewerPage.keyboard.press('Escape')
+    await reviewerPage.getByRole('button', { name: /^Filter / }).click()
     await expect(reviewerPage.getByLabel('Submitted After')).toBeVisible()
     await expect(reviewerPage.getByLabel('Submitted Before')).toBeVisible()
     await reviewerPage.keyboard.press('Escape')
+    await expect(reviewerPage.getByRole('menuitem', { name: 'Export' })).toBeVisible()
+    await expect(reviewerPage.getByRole('menuitem', { name: 'Download' })).toHaveCount(0)
   })
 
   test('Reviewer - Program column, two-line dates, expansion and bulk download', async ({ reviewerPage }) => {
@@ -107,6 +167,9 @@ test.describe.serial('Reviewer dashboard tabs and list', { tag: '@default' }, ()
     // dates split into a date line and a time line
     await expect(row.locator('.column-list-col.dateSubmitted div')).toHaveCount(2)
     await expect(row.locator('.column-list-col.lastUpdated div')).toHaveCount(2)
+
+    // "Expand all" appears in the list header once there are at least two expandable rows
+    if (await reviewerPage.locator('.column-list-row').count() >= 2) await expect(reviewerPage.getByRole('button', { name: 'Expand all' })).toBeVisible()
 
     // the chevron expands to the full program list
     await row.getByRole('button', { name: 'Expand Row' }).click()

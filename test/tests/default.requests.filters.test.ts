@@ -60,6 +60,9 @@ test.describe.serial('All Applications filters and list', { tag: '@default' }, (
   })
 
   test('Reviewer - toolbar has the three quick filters with grouped, program-safe status labels', async ({ reviewerPage }) => {
+    // wide enough that the toolbar stays on one line, so the alignment check below compares items in the same row
+    const original = reviewerPage.viewportSize() ?? { width: 1280, height: 720 }
+    await reviewerPage.setViewportSize({ width: 2400, height: 900 })
     await reviewerPage.goto('/requests')
     const quickLabels = reviewerPage.locator('.quickfilters-form .bx--label')
     await expect(quickLabels.filter({ hasText: /^Application status$/ })).toBeVisible()
@@ -67,6 +70,13 @@ test.describe.serial('All Applications filters and list', { tag: '@default' }, (
     await expect(quickLabels.filter({ hasText: /^Program$/ })).toBeVisible()
     await expect(quickLabels.filter({ hasText: /^Rescind status$/ })).toHaveCount(0)
     await expect(reviewerPage.locator('.quickfilters-form .bx--list-box__label', { hasText: 'Choose one or more' })).toHaveCount(3)
+    // the search box and More filters button sit level with the dropdown fields, not with the labels above them
+    const bottoms = await Promise.all([
+      reviewerPage.getByRole('searchbox').boundingBox(),
+      reviewerPage.getByRole('button', { name: /More filters/i }).boundingBox(),
+      reviewerPage.locator('.quickfilters-form').getByRole('combobox').first().boundingBox()
+    ].map(async b => { const box = (await b)!; return box.y + box.height }))
+    expect(Math.max(...bottoms) - Math.min(...bottoms)).toBeLessThan(6)
 
     // PREAPPROVAL and APPROVAL share the "Review pending" label, so they appear as one option that filters both
     const statusSelect = reviewerPage.locator('.bx--multi-select__wrapper').filter({ has: reviewerPage.locator('.bx--label', { hasText: /^Application status$/ }) })
@@ -82,6 +92,7 @@ test.describe.serial('All Applications filters and list', { tag: '@default' }, (
     await expect(reviewerPage).toHaveURL(/q\.status\.0\.0=PREAPPROVAL/)
     await expect(reviewerPage).toHaveURL(/q\.status\.0\.1=APPROVAL/)
     await reviewerPage.keyboard.press('Escape')
+    await reviewerPage.setViewportSize(original)
   })
 
   test('Reviewer - Program and Program status filters narrow the list', async ({ reviewerPage }) => {

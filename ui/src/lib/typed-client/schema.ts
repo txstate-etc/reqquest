@@ -298,6 +298,16 @@ export interface AppRequestActivity {
 }
 
 
+/** Applicant counts for a set of appRequests. A request is a returning application when its applicant also submitted a request in an earlier period (by open date); otherwise it is a first-time application. Unsubmitted drafts in earlier periods do not count. */
+export interface AppRequestApplicantCounts {
+    /** Matching appRequests whose applicant submitted nothing in any earlier period. */
+    firstTime: Scalars['Int']
+    /** Matching appRequests whose applicant also submitted a request in an earlier period. */
+    returning: Scalars['Int']
+    __typename: 'AppRequestApplicantCounts'
+}
+
+
 /** This represents an index category attached to an app request. Its tagStrings property contains the tag values that have been extracted from the app request data. */
 export interface AppRequestIndexCategory {
     /** If this is > 0, the index values should be shown on the main app request list page, sorted by this priority in descending order. */
@@ -808,6 +818,8 @@ export interface Query {
     applicationMetrics: ApplicationMetric
     /** This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant. */
     controlGroups: AccessControlGroup[]
+    /** First-time vs returning applicant counts for the matching appRequests (see AppRequestApplicantCounts). */
+    countAppRequestApplicants: AppRequestApplicantCounts
     countAppRequests: Scalars['Int']
     pageInfo: PaginationResponse
     periods: Period[]
@@ -1326,6 +1338,17 @@ impersonatedUsers?: (Scalars['ID'][] | null),
 search?: (Scalars['String'] | null),
 /** Return activities that were performed by one of the given logins. Also returns activities that were performed while one of the given logins was impersonating someone else. */
 users?: (Scalars['ID'][] | null)}
+
+
+/** Applicant counts for a set of appRequests. A request is a returning application when its applicant also submitted a request in an earlier period (by open date); otherwise it is a first-time application. Unsubmitted drafts in earlier periods do not count. */
+export interface AppRequestApplicantCountsGenqlSelection{
+    /** Matching appRequests whose applicant submitted nothing in any earlier period. */
+    firstTime?: boolean | number
+    /** Matching appRequests whose applicant also submitted a request in an earlier period. */
+    returning?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
 
 export interface AppRequestFilter {
 /** Only return appRequests with at least one application matching one of the given entries (OR). When programKeys is also given, the same application must match both. */
@@ -1954,6 +1977,8 @@ export interface QueryGenqlSelection{
     applicationMetrics?: (ApplicationMetricGenqlSelection & { __args?: {filter?: (MetricApplicationFilters | null)} })
     /** This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant. */
     controlGroups?: AccessControlGroupGenqlSelection
+    /** First-time vs returning applicant counts for the matching appRequests (see AppRequestApplicantCounts). */
+    countAppRequestApplicants?: (AppRequestApplicantCountsGenqlSelection & { __args?: {filter?: (AppRequestFilter | null)} })
     countAppRequests?: { __args: {filter?: (AppRequestFilter | null)} } | boolean | number
     pageInfo?: PaginationResponseGenqlSelection
     periods?: (PeriodGenqlSelection & { __args?: {filter?: (PeriodFilters | null)} })
@@ -2238,6 +2263,14 @@ export interface ValidatedResponseGenqlSelection{
     export const isAppRequestActivity = (obj?: { __typename?: any } | null): obj is AppRequestActivity => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isAppRequestActivity"')
       return AppRequestActivity_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppRequestApplicantCounts_possibleTypes: string[] = ['AppRequestApplicantCounts']
+    export const isAppRequestApplicantCounts = (obj?: { __typename?: any } | null): obj is AppRequestApplicantCounts => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppRequestApplicantCounts"')
+      return AppRequestApplicantCounts_possibleTypes.includes(obj.__typename)
     }
     
 

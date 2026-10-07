@@ -75,6 +75,7 @@
   }
 </script>
 <div class='[ px-[20px] ]'>
+  <div class="requests-filters">
   <FilterUI search>
     <svelte:fragment slot="quickfilters">
       <FieldMultiselect
@@ -178,6 +179,7 @@
       {/if}
     {/each}
   </FilterUI>
+  </div>
   <IntroPanel title="All Applications" subtitle="This is where you can see all applications submitted to the business app. Browse them all or use the filters above to narrow down applications." />
   <ColumnList
     autoHideColumns
@@ -241,6 +243,11 @@
 </PanelFormDialog>
 
 <style>
+  /* the quick-filter fields carry labels above them; bottom-align the row so the search box and
+     More filters button sit level with the fields rather than with the labels */
+  .requests-filters :global(.filter-ui-container) {
+    align-items: flex-end;
+  }
   .app-requests-intro {
     background-color: var(--cds-layer);
   }

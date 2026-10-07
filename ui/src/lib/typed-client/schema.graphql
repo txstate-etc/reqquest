@@ -591,6 +591,21 @@ input AppRequestActivityFilters {
   users: [ID!]
 }
 
+"""
+Applicant counts for a set of appRequests. A request is a returning application when its applicant also submitted a request in an earlier period (by open date); otherwise it is a first-time application. Unsubmitted drafts in earlier periods do not count.
+"""
+type AppRequestApplicantCounts {
+  """
+  Matching appRequests whose applicant submitted nothing in any earlier period.
+  """
+  firstTime: Int!
+
+  """
+  Matching appRequests whose applicant also submitted a request in an earlier period.
+  """
+  returning: Int!
+}
+
 input AppRequestFilter {
   """
   Only return appRequests with at least one application matching one of the given entries (OR). When programKeys is also given, the same application must match both.
@@ -1888,6 +1903,11 @@ type Query {
   This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant.
   """
   controlGroups: [AccessControlGroup!]!
+
+  """
+  First-time vs returning applicant counts for the matching appRequests (see AppRequestApplicantCounts).
+  """
+  countAppRequestApplicants(filter: AppRequestFilter): AppRequestApplicantCounts!
   countAppRequests(filter: AppRequestFilter): Int!
   pageInfo: PaginationResponse!
   periods(filter: PeriodFilters): [Period!]!

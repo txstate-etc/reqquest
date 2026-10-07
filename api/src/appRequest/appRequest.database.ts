@@ -225,6 +225,33 @@ export async function countAppRequests (filter?: AppRequestFilter, tdb: Queryabl
   return count
 }
 
+/** Statuses a request holds before it has ever been submitted; a prior request in one of these is a draft, not a previous application. */
+const unsubmittedStatuses = [AppRequestStatus.STARTED, AppRequestStatus.READY_TO_SUBMIT, AppRequestStatus.DISQUALIFIED, AppRequestStatus.CANCELLED]
+
+/**
+ * First-time vs returning applicants for the matching appRequests. A request is "returning" when its
+ * applicant also submitted a request in an earlier period (by open date); everything else is first-time.
+ */
+export async function countAppRequestApplicants (filter?: AppRequestFilter, tdb: Queryable = db) {
+  const { joins, where, binds } = processFilters(filter)
+  const priorBinds: any[] = []
+  const priorStatusList = db.in(priorBinds, unsubmittedStatuses)
+  const row = await tdb.getrow<{ total: number, returning: number }>(`
+    SELECT COUNT(DISTINCT ar.id) AS total,
+      COUNT(DISTINCT CASE WHEN EXISTS (
+        SELECT 1 FROM app_requests prev INNER JOIN periods pp ON pp.id = prev.periodId
+        WHERE prev.userId = ar.userId AND pp.openDate < p.openDate AND prev.computedStatus NOT IN (${priorStatusList})
+      ) THEN ar.id END) AS returning
+    FROM app_requests ar
+    INNER JOIN periods p ON p.id = ar.periodId
+    ${Array.from(joins.values()).join('\n')}
+    ${where.length === 0 ? '' : `WHERE (${where.join(') AND (')})`}
+  `, [...priorBinds, ...binds])
+  const total = Number(row?.total ?? 0)
+  const returning = Number(row?.returning ?? 0)
+  return { firstTime: total - returning, returning }
+}
+
 export async function getAppRequestTags (appRequestIds: string[], tdb: Queryable = db) {
   if (appRequestIds.length === 0) return {}
   const rows = await tdb.getall<{ id: number, category: string, tag: string }>(`

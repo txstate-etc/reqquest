@@ -11,7 +11,8 @@ import {
   reopenAppRequest, appRequestReturnToApplicant, acceptOffer, ApplicationService, RequirementPromptService,
   AppRequestPhase, appRequestReturnToOffer, appRequestReturnToReview, promptRegistry,
   PaginationInfoWithTotalItems, Pagination, appRequestComplete, appRequestReturnToNonBlocking,
-  countAppRequests
+  countAppRequests,
+  countAppRequestApplicants
 } from '../internal.js'
 import { applicationPhaseNotifications, appRequestCreatedNotifications, appRequestNotifications } from '../util/notifications.js'
 
@@ -127,6 +128,11 @@ export class AppRequestService extends AuthService<AppRequest> {
   async count (filter?: AppRequestFilter) {
     filter = this.preprocessFilter(filter)
     return await countAppRequests(filter)
+  }
+
+  async countApplicants (filter?: AppRequestFilter) {
+    filter = this.preprocessFilter(filter)
+    return await countAppRequestApplicants(filter)
   }
 
   async findById (id: string) {
