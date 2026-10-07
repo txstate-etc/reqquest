@@ -238,6 +238,24 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, { description: str
 }
 
 // Reviewer status tag, plus a 'Closed' tag when the request was closed after submission
+export interface StatusFilterOption { value: AppRequestStatus[], label: string }
+
+export function getReviewerStatusFilterOptions (): StatusFilterOption[] {
+  const byLabel = new Map<string, AppRequestStatus[]>()
+  for (const [status, config] of Object.entries(REVIEWER_STATUS_CONFIG) as [AppRequestStatus, { label: string }][]) {
+    const group = byLabel.get(config.label)
+    if (group) group.push(status)
+    else byLabel.set(config.label, [status])
+  }
+  return Array.from(byLabel, ([label, value]) => ({ value, label }))
+}
+
+export function flattenStatusFilter (status: unknown): AppRequestStatus[] | undefined {
+  if (!Array.isArray(status)) return undefined
+  const flat = Array.from(new Set(status.flat(2).filter((s): s is AppRequestStatus => typeof s === 'string')))
+  return flat.length ? flat : undefined
+}
+
 export function getReviewerStatusTags (status: AppRequestStatus, phase: AppRequestPhase | undefined, closedAt: string | null | undefined): TagItem[] {
   const config = REVIEWER_STATUS_CONFIG[status]
   const tags: TagItem[] = [{ label: config.label, type: config.color }]

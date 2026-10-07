@@ -62,7 +62,8 @@ test.describe.serial('Reviewer dashboard filter toolbar', { tag: '@default' }, (
 
   test('Reviewer - bare visit lands on the default quick filters, tabs are gone', async ({ reviewerPage }) => {
     await reviewerPage.goto('/dashboards/reviewer')
-    await expect(reviewerPage).toHaveURL(/q\.status\.0=/)
+    // the status quick filter holds groups of statuses (one option per label), hence the nested index
+    await expect(reviewerPage).toHaveURL(/q\.status\.0\.0=/)
     const quickLabels = reviewerPage.locator('.quickfilters-form .bx--label')
     await expect(quickLabels.filter({ hasText: /^Application status$/ })).toBeVisible()
     await expect(quickLabels.filter({ hasText: /^Program status$/ })).toBeVisible()
@@ -71,11 +72,23 @@ test.describe.serial('Reviewer dashboard filter toolbar', { tag: '@default' }, (
     await expect(reviewerPage.locator('.quickfilters-form .bx--list-box__label', { hasText: 'Choose one or more' })).toHaveCount(3)
     await expect(reviewerPage.getByRole('radio', { name: 'Awaiting Review' })).toHaveCount(0)
     await expect(reviewerPage.getByRole('button', { name: /More filters/i })).toBeVisible()
+
+    // PREAPPROVAL and APPROVAL share the "Review pending" label, so they appear as one option that filters both
+    const statusSelect = reviewerPage.locator('.bx--multi-select__wrapper').filter({ has: reviewerPage.locator('.bx--label', { hasText: /^Application status$/ }) })
+    await statusSelect.getByRole('combobox').click()
+    const reviewPending = reviewerPage.getByRole('option', { name: 'Review pending' })
+    await expect(reviewPending).toHaveCount(1)
+    await reviewerPage.goto('/dashboards/reviewer?q.status.0.0=STARTED')
+    await statusSelect.getByRole('combobox').click()
+    await reviewPending.click()
+    await expect(reviewerPage).toHaveURL(/q\.status\.1\.0=PREAPPROVAL/)
+    await expect(reviewerPage).toHaveURL(/q\.status\.1\.1=APPROVAL/)
+    await reviewerPage.keyboard.press('Escape')
   })
 
   test('Reviewer - Program and Program status filters narrow the list', async ({ reviewerPage }) => {
     // scope to this test's period and to unsubmitted requests so the fresh request shows regardless of other suites' data
-    await reviewerPage.goto(`/dashboards/reviewer?q.status.0=STARTED&f.periodIds.0=${periodId}`)
+    await reviewerPage.goto(`/dashboards/reviewer?q.status.0.0=STARTED&f.periodIds.0=${periodId}`)
     // ColumnList renders its cell tags as listitems; the trigger's selection-count badge is also a .bx--tag, so scope by role
     const requestTag = reviewerPage.locator('[role="listitem"].bx--tag', { hasText: new RegExp(`^\\s*${appRequestId}\\s*$`) })
     await expect(requestTag).toBeVisible()
@@ -129,7 +142,7 @@ test.describe.serial('Reviewer dashboard filter toolbar', { tag: '@default' }, (
     // autoHideColumns drops Last Updated at Playwright's default width, so widen for this test and restore afterwards
     const original = reviewerPage.viewportSize() ?? { width: 1280, height: 720 }
     await reviewerPage.setViewportSize({ width: 1800, height: 900 })
-    await reviewerPage.goto(`/dashboards/reviewer?q.status.0=STARTED&f.periodIds.0=${periodId}`)
+    await reviewerPage.goto(`/dashboards/reviewer?q.status.0.0=STARTED&f.periodIds.0=${periodId}`)
     const requestTag = reviewerPage.locator('[role="listitem"].bx--tag', { hasText: new RegExp(`^\\s*${appRequestId}\\s*$`) })
     const row = reviewerPage.locator('.column-list-row').filter({ has: requestTag })
     await expect(row).toBeVisible()

@@ -58,7 +58,7 @@ test.describe.serial('Reviewer dashboard program rollup', { tag: '@complex' }, (
   })
 
   test('Reviewer - three programs collapse to a rollup tag with a tooltip', async ({ reviewerPage }) => {
-    await reviewerPage.goto(`/dashboards/reviewer?q.status.0=STARTED&f.periodIds.0=${periodId}`)
+    await reviewerPage.goto(`/dashboards/reviewer?q.status.0.0=STARTED&f.periodIds.0=${periodId}`)
     const requestTag = reviewerPage.locator('[role="listitem"].bx--tag', { hasText: new RegExp(`^\\s*${appRequestId}\\s*$`) })
     const row = reviewerPage.locator('.column-list-row').filter({ has: requestTag })
     await expect(row).toBeVisible()

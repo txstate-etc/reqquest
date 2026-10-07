@@ -6,7 +6,7 @@
   import { htmlEncode, isBlank, isNotBlank, keyby, sortby, toQuery } from 'txstate-utils'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { api, getReviewerStatusTags, REVIEWER_STATUS_CONFIG } from '$internal'
+  import { api, getReviewerStatusFilterOptions, getReviewerStatusTags } from '$internal'
   import { enumApplicationRescindedStatus } from '$lib'
   import { uiRegistry } from '../../local/index.js'
   import type { PageData } from './$types.js'
@@ -71,7 +71,7 @@
 
   async function downloadCSV () {
     const ticket = await api.getDownloadTicket()
-    location.href = `${api.baseUrl}/csv/${ticket}/requests/requests${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv${location.search || ('?' + toQuery({ ..._defaultRequestListFilters }))}`
+    location.href = `${api.baseUrl}/csv/${ticket}/requests/requests${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv?${toQuery({ f: filters ?? _defaultRequestListFilters } as Parameters<typeof toQuery>[0])}`
   }
 </script>
 <div class='[ px-[20px] ]'>
@@ -81,7 +81,8 @@
         path="status"
         label="Status"
         placeholder="Status"
-        items={Object.entries(REVIEWER_STATUS_CONFIG).map(([value, config]) => ({ value, label: config.label }))}
+        json
+        items={getReviewerStatusFilterOptions()}
       />
       <FieldMultiselect
         path="rescindedStatus"

@@ -8,14 +8,13 @@
   import { toQuery } from 'txstate-utils'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { api, APPLICATION_STATUS_CONFIG, FieldNestedMultiselect, getReviewerStatusTags, ProgramStatusCell, REVIEWER_STATUS_CONFIG, type NestedMultiselectItem } from '$internal'
+  import { api, APPLICATION_STATUS_CONFIG, FieldNestedMultiselect, getReviewerStatusFilterOptions, getReviewerStatusTags, ProgramStatusCell, type NestedMultiselectItem } from '$internal'
   import { enumApplicationRescindedStatus, enumApplicationStatus } from '$lib'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../local/index.js'
-  import { _defaultReviewerDashboardFilters } from './+page.js'
 
   export let data: PageData
-  $: ({ appRequests, totalItems, period, appCount, appRequestIndexes, programs } = data)
+  $: ({ appRequests, totalItems, period, appCount, appRequestIndexes, programs, filters } = data)
   $: periodStart = period?.openDate ? DateTime.fromISO(period.openDate) : undefined
   $: periodClose = period?.closeDate ? DateTime.fromISO(period.closeDate) : undefined
   $: periodArchive = period?.archiveDate ? DateTime.fromISO(period.archiveDate) : undefined
@@ -38,7 +37,7 @@
   // export only those requests selected, otherwise export whatever the current filters show.
   async function downloadCSV (ids?: string[]) {
     const ticket = await api.getDownloadTicket()
-    const query = ids?.length ? '?' + toQuery({ f: { ids } }) : (location.search || ('?' + toQuery(_defaultReviewerDashboardFilters)))
+    const query = '?' + toQuery({ f: ids?.length ? { ids } : filters } as unknown as Parameters<typeof toQuery>[0])
     location.href = `${api.baseUrl}/csv/${ticket}/requests/reviewerdashboard${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv${query}`
   }
 
@@ -98,7 +97,8 @@
         labelText="Application status"
         label="Choose one or more"
         hideLabel={false}
-        items={Object.entries(REVIEWER_STATUS_CONFIG).map(([value, config]) => ({ value, label: config.label }))}
+        json
+        items={getReviewerStatusFilterOptions()}
       />
       <FieldNestedMultiselect
         path="applicationStatuses"
