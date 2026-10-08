@@ -70,7 +70,7 @@ test.describe.serial('Reviewer dashboard program rollup', { tag: '@complex' }, (
 
     // hovering lists every program with its status labels; the tooltip is portalled to the body
     await rollup.hover()
-    const tooltip = reviewerPage.locator('.bx--tooltip [role="dialog"]')
+    const tooltip = reviewerPage.getByRole('tooltip')
     await expect(tooltip).toBeVisible()
     for (const title of programTitles) await expect(tooltip).toContainText(`${title}: Pending`)
     // the box must fit its content: no horizontal overflow and every line fully inside the viewport
@@ -80,6 +80,20 @@ test.describe.serial('Reviewer dashboard program rollup', { tag: '@complex' }, (
     const viewport = reviewerPage.viewportSize()!
     expect(box.x).toBeGreaterThanOrEqual(0)
     expect(box.x + box.width).toBeLessThanOrEqual(viewport.width)
+    // nothing in the list paints over it: the topmost element at its centre belongs to the tooltip
+    const onTop = await tooltip.evaluate(el => {
+      const r = el.getBoundingClientRect()
+      return el.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2))
+    })
+    expect(onTop).toEqual(true)
+
+    // keyboard: focusing the tag opens it, Escape closes it
+    await reviewerPage.mouse.move(0, 0)
+    await expect(tooltip).toHaveCount(0)
+    await programCell.locator('.program-rollup__trigger').focus()
+    await expect(tooltip).toBeVisible()
+    await reviewerPage.keyboard.press('Escape')
+    await expect(tooltip).toHaveCount(0)
 
     // the expanded row shows the full list without the rollup
     await row.getByRole('button', { name: 'Expand Row' }).click()

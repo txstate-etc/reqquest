@@ -8,7 +8,9 @@
 
 <script lang="ts">
   import { TagSet } from '@txstate-mws/carbon-svelte'
-  import { Tag, Tooltip } from 'carbon-components-svelte'
+  import { FloatingPortal, Tag } from 'carbon-components-svelte'
+  import { onDestroy } from 'svelte'
+  import { randomid } from 'txstate-utils'
   import { getApplicationStatusTags } from '../status-utils.js'
 
   export let row: ProgramStatusRow
@@ -29,21 +31,46 @@
   }))
   $: collapsed = rollup && programs.length > maxInline
   $: void col
+
+  const tooltipId = randomid()
+  let triggerRef: HTMLElement | null = null
+  let tooltipOpen = false
+  let closeTimer: ReturnType<typeof setTimeout> | undefined
+  function show () {
+    clearTimeout(closeTimer)
+    tooltipOpen = true
+  }
+  function hideSoon () {
+    clearTimeout(closeTimer)
+    closeTimer = setTimeout(() => { tooltipOpen = false }, 150)
+  }
+  function hideNow () {
+    clearTimeout(closeTimer)
+    tooltipOpen = false
+  }
+  function onKeydown (e: KeyboardEvent) {
+    if (e.key === 'Escape' && tooltipOpen) { e.stopPropagation(); hideNow() }
+  }
+  onDestroy(() => clearTimeout(closeTimer))
 </script>
 
 {#if collapsed}
-  <div class="program-rollup">
-    <Tooltip hideIcon direction="bottom" align="start">
-      <svelte:fragment slot="triggerText">
-        <Tag size="sm" type="gray">{programs.length} programs</Tag>
-      </svelte:fragment>
+  <!-- focusable so keyboard users can reveal the tooltip; a <button> can't hold carbon's Tag (it renders a div) -->
+  <!-- svelte-ignore a11y-no-noninteractive-tabindex a11y-no-static-element-interactions -->
+  <span bind:this={triggerRef} class="program-rollup__trigger" tabindex="0" aria-describedby={tooltipOpen ? tooltipId : undefined}
+    on:mouseenter={show} on:mouseleave={hideSoon} on:focus={show} on:blur={hideNow} on:keydown={onKeydown}>
+    <Tag size="sm" type="gray">{programs.length} programs</Tag>
+  </span>
+  <FloatingPortal anchor={triggerRef} open={tooltipOpen} direction="bottom" intrinsicWidth intrinsicAlign="start" gapBottom={4}>
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <div id={tooltipId} role="tooltip" class="program-rollup__tooltip" on:mouseenter={show} on:mouseleave={hideSoon}>
       <ul class="program-rollup-list">
         {#each programs as program (program.key)}
           <li><strong>{program.title}</strong>: {program.tags.map(t => t.label).join(', ')}</li>
         {/each}
       </ul>
-    </Tooltip>
-  </div>
+    </div>
+  </FloatingPortal>
 {:else}
   <div class="program-list">
     {#each programs as program (program.key)}
@@ -67,14 +94,22 @@
     align-items: center;
     gap: 0.25rem 0.5rem;
   }
-  .program-rollup {
-    position: relative;
-  }
-  .program-rollup :global(.bx--tooltip__label) {
+  .program-rollup__trigger {
     display: inline-block;
+    cursor: default;
   }
-  /* carbon caps tooltips at 18rem; program titles plus their status labels need more room */
-  .program-rollup :global(.bx--tooltip) {
+  .program-rollup__trigger:focus-visible {
+    outline: 2px solid var(--cds-focus, #0f62fe);
+    outline-offset: 1px;
+  }
+  .program-rollup__tooltip {
+    background: var(--cds-inverse-02, #393939);
+    color: var(--cds-inverse-01, #ffffff);
+    padding: 1rem;
+    border-radius: 2px;
+    box-shadow: 0 2px 6px var(--cds-shadow, rgba(0, 0, 0, 0.3));
+    font-size: 0.875rem;
+    line-height: 1.25rem;
     max-width: 28rem;
   }
   .program-rollup-list {

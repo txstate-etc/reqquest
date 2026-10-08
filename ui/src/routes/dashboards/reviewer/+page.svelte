@@ -41,7 +41,7 @@
 </script>
 
 <div class='intro-wide [ px-8 ]'>
-  <div class="review-header [ flex justify-between items-end flex-wrap gap-4 mb-4 ]">
+  <div class="review-header [ flex justify-between items-start flex-wrap-reverse gap-4 mb-4 ]">
     <div class="review-tabs">
       <FilterUI tabs={tabs.map(t => ({ label: t.label, value: t.value }))} tabsAriaLabel="Review stage" />
     </div>

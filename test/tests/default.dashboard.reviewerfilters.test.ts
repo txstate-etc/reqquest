@@ -131,6 +131,12 @@ test.describe.serial('Reviewer dashboard tabs and list', { tag: '@default' }, ()
     // the tabs sit at the bottom of the tile row
     const [tabBox, tileBox] = await Promise.all([pendingTab.boundingBox(), reviewerPage.locator('.stat-tile', { hasText: 'First time application' }).boundingBox()])
     expect(Math.abs((tabBox!.y + tabBox!.height) - (tileBox!.y + tileBox!.height))).toBeLessThan(6)
+    // on a narrow screen the row wraps and the tabs drop below the tiles, staying directly above the intro panel
+    const fullSize = reviewerPage.viewportSize()!
+    await reviewerPage.setViewportSize({ width: 700, height: fullSize.height })
+    const [narrowTab, narrowTile] = await Promise.all([pendingTab.boundingBox(), reviewerPage.locator('.stat-tile', { hasText: 'First time application' }).boundingBox()])
+    expect(narrowTab!.y).toBeGreaterThanOrEqual(narrowTile!.y + narrowTile!.height)
+    await reviewerPage.setViewportSize(fullSize)
 
     await reviewerPage.getByRole('radio', { name: /^In Review \(\d+\)$/ }).click()
     await expect(reviewerPage).toHaveURL(/t\.status\.0=REVIEW_IN_PROGRESS/)
