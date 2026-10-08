@@ -510,6 +510,7 @@ class API extends APIBase {
           status: true,
           rescindedStatus: true,
           ineligiblePhase: true,
+          hiddenIneligiblePreSubmit: true,
           statusReason: true,
           title: true,
           navTitle: true,

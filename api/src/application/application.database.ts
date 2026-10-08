@@ -14,6 +14,7 @@ export interface ApplicationRow {
   computedPhase: ApplicationPhase
   computedIneligiblePhase?: IneligiblePhases
   computedAwaitingCorrection: 0 | 1
+  ineligiblePreSubmit: 0 | 1
   workflowStage: string
   appRequestStatus: AppRequestStatusDB
   appRequestComputedStatus: AppRequestStatus
@@ -35,12 +36,20 @@ function processFilters (filter: ApplicationFilter) {
   return { where, binds }
 }
 
+export async function snapshotIneligiblePreSubmit (appRequestId: number, tdb: Queryable = db) {
+  await tdb.update('UPDATE applications SET ineligiblePreSubmit = (computedStatus = ?) WHERE appRequestId = ?', [ApplicationStatus.INELIGIBLE, appRequestId])
+}
+
+export async function clearIneligiblePreSubmit (appRequestId: number, tdb: Queryable = db) {
+  await tdb.update('UPDATE applications SET ineligiblePreSubmit = 0 WHERE appRequestId = ?', [appRequestId])
+}
+
 export async function getApplications (filter: ApplicationFilter, tdb: Queryable = db) {
   const { where, binds } = processFilters(filter)
   const whereClause = where.length > 0 ? `WHERE (${where.join(') AND (')})` : ''
   const rows = await tdb.getall<ApplicationRow>(`
     SELECT a.id, a.appRequestId, ar.periodId, a.programKey, ar.userId, a.computedStatus, a.computedStatusReason, a.computedPhase,
-      a.computedIneligiblePhase, a.computedAwaitingCorrection, a.workflowStage,
+      a.computedIneligiblePhase, a.computedAwaitingCorrection, a.ineligiblePreSubmit, a.workflowStage,
       a.rescindedStatus, a.rescindedReason, a.restoredReason,
       ar.status AS appRequestStatus, ar.phase AS appRequestPhase, ar.computedStatus AS appRequestComputedStatus       
     FROM applications a

@@ -518,7 +518,7 @@ function detectReviewInProgress (ctx: EvaluationContext, approvalRequirements: A
     .some(p => !ctx.applicantPromptKeys.has(p.key) && p.answered && ctx.data[p.key] != null))
 }
 
-const presubmissionIneligiblePhases: IneligiblePhases[] = [IneligiblePhases.PREQUAL, IneligiblePhases.QUALIFICATION]
+const applicantRequirementIneligiblePhases: IneligiblePhases[] = [IneligiblePhases.PREQUAL, IneligiblePhases.QUALIFICATION]
 
 function computeApplicationPhase (
   phase: EvaluationPhase,
@@ -536,7 +536,7 @@ function computeApplicationPhase (
   case 'complete':
     return ApplicationPhase.COMPLETE
   case 'nonblocking':
-    if (application.ineligiblePhase && presubmissionIneligiblePhases.includes(application.ineligiblePhase)) return ApplicationPhase.READY_TO_COMPLETE
+    if (application.ineligiblePhase && applicantRequirementIneligiblePhases.includes(application.ineligiblePhase)) return ApplicationPhase.READY_TO_COMPLETE
     // not `settled`: that reads the aggregate resolution, where a fail outranks a pending, and here a failed requirement must never hide a pending one
     if (summary.firstPending != null || application.awaitingCorrection) return ApplicationPhase.WORKFLOW_NONBLOCKING
     return hasNonblockingWorkflowRequirements ? ApplicationPhase.READY_FOR_WORKFLOW : ApplicationPhase.READY_TO_COMPLETE
@@ -634,7 +634,7 @@ function deadApplicationsStatus (ctx: EvaluationContext, acc: RequestAccumulator
   if (appRequest.phase === AppRequestPhase.SUBMITTED) {
     if (appRequest.awaitingCorrection) return AppRequestStatus.APPROVAL
     if (singleProgramReviewFinished(ctx)) return AppRequestStatus.REVIEW_COMPLETE
-    if (applications.every(a => a.phase === ApplicationPhase.REVIEW_COMPLETE || (a.ineligiblePhase && presubmissionIneligiblePhases.includes(a.ineligiblePhase)))) return AppRequestStatus.REVIEW_COMPLETE
+    if (applications.every(a => a.phase === ApplicationPhase.REVIEW_COMPLETE || (a.ineligiblePhase && applicantRequirementIneligiblePhases.includes(a.ineligiblePhase)))) return AppRequestStatus.REVIEW_COMPLETE
     return acc.reviewStartedApplicationIds.size ? AppRequestStatus.REVIEW_IN_PROGRESS : AppRequestStatus.APPROVAL
   }
   if (applications.some(a => a.ineligiblePhase === IneligiblePhases.ACCEPTANCE)) return AppRequestStatus.NOT_ACCEPTED

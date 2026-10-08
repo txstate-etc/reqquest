@@ -5,12 +5,12 @@
   import { IntroPanel, TabLinks, applicantStatuses, REVIEWER_STATUS_CONFIG, longNumericTime } from '$internal'
   import { uiRegistry } from '../../../../local/index.js'
   import { enumAppRequestPhase } from '$lib'
-  import { isIneligiblePreSubmission } from '$internal'
+  import { isIneligibleByApplicantRequirement } from '$internal'
 
   export let data: LayoutData
   $: ({ basicRequestData, requestId } = data)
-  $: eligibleApplications = basicRequestData.applications.filter(a => !isIneligiblePreSubmission(a))
-  $: ineligibleApplications = basicRequestData.applications.filter(a => isIneligiblePreSubmission(a))
+  $: eligibleApplications = basicRequestData.applications.filter(a => !isIneligibleByApplicantRequirement(a))
+  $: ineligibleApplications = basicRequestData.applications.filter(a => isIneligibleByApplicantRequirement(a))
   $: activeIneligible = ineligibleApplications.find(a => resolve(`/requests/${requestId}/approve/${a.programKey}`) === $page.url.pathname)
   $: navTabs = [
     ...(eligibleApplications.map(a => ({

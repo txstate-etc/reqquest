@@ -34,5 +34,22 @@ export const applicationMigrations: DatabaseMigration[] = [
       const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_NAME = 'applications' AND COLUMN_NAME = 'computedAwaitingCorrection'")
       if (!exists) await db.execute('ALTER TABLE applications ADD COLUMN computedAwaitingCorrection TINYINT(1) NOT NULL DEFAULT 0 AFTER computedIneligiblePhase')
     }
+  },
+  {
+    id: '20261008000000',
+    async execute (db) {
+      const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_NAME = 'applications' AND COLUMN_NAME = 'ineligiblePreSubmit'")
+      if (!exists) {
+        await db.execute('ALTER TABLE applications ADD COLUMN ineligiblePreSubmit TINYINT(1) NOT NULL DEFAULT 0 AFTER computedAwaitingCorrection')
+        // best available approximation for requests submitted before this column existed - it cannot tell
+        // a reviewer-caused applicant requirement failure from one the applicant submitted with
+        await db.update(`
+          UPDATE applications a
+          INNER JOIN app_requests ar ON ar.id = a.appRequestId
+          SET a.ineligiblePreSubmit = 1
+          WHERE ar.submittedAt IS NOT NULL AND a.computedIneligiblePhase IN ('PREQUAL', 'QUALIFICATION')
+        `)
+      }
+    }
   }
 ]
