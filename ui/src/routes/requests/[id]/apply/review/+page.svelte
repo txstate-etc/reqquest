@@ -1,6 +1,6 @@
 <script lang="ts">
   import { toasts } from '@txstate-mws/svelte-components'
-  import { Button } from 'carbon-components-svelte'
+  import { Button, Loading } from 'carbon-components-svelte'
   import Touch_1 from 'carbon-icons-svelte/lib/Touch_1.svelte'
   import { getContext } from 'svelte'
   import type { Writable } from 'svelte/store'
@@ -24,6 +24,8 @@
   const nextHref = getContext<Writable<{ nextHref?: ResolvedPathname, prevHref?: ResolvedPathname }>>('nextHref')
   $: previousHref = nextHref ? $nextHref.prevHref : undefined
 
+  $: loading = false
+
   async function handleBack () {
     if (previousHref) {
       // eslint-disable-next-line svelte/no-navigation-without-resolve -- already resolved
@@ -32,7 +34,9 @@
   }
 
   async function onSubmit () {
+    loading = true
     const resp = await api.appRequestPhaseChange(appRequestForExport.id, 'submitAppRequest')
+    loading = false
     if (resp.success) {
       toasts.add({ type: 'success', title: 'Submission Succeeded', message: 'Successfully submitted application for review' })
       await goto(resolve('/dashboards/applicant'))
@@ -50,6 +54,9 @@
     }
   })
 </script>
+{#if loading}
+  <Loading />
+{/if}
 <div class:max-w-screen-md={uiRegistry.config.applicantReviewMaxWidth !== false} class:mx-auto={uiRegistry.config.applicantReviewMaxWidth !== false}>
   <ApplicationDetailsView
     appRequest={appRequestForExport}
