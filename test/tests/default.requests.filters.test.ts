@@ -1,5 +1,6 @@
 import { DateTime } from 'luxon'
 import { expect, test } from './fixtures.js'
+import { createSubmittedClosedRequest } from './default.submitclose.js'
 
 /**
  * All Applications carries the filter toolbar: a search box and three quick filters. Application status is
@@ -57,6 +58,12 @@ test.describe.serial('All Applications filters and list', { tag: '@default' }, (
     // nothing answered yet, so every program's application is PENDING - the Program status assertions below rely on that
     expect(createAppRequest.appRequest!.status).toEqual('STARTED')
     expect(createAppRequest.appRequest!.applications.every(a => a.status === 'PENDING')).toEqual(true)
+  })
+
+  let closedRequestId = ''
+
+  test('Applicant2 - submit a request, Reviewer - close it', async ({ applicant2Request, reviewerRequest }) => {
+    closedRequestId = await createSubmittedClosedRequest(applicant2Request, reviewerRequest, 'applicant2', periodId)
   })
 
   test('Reviewer - toolbar has the three quick filters with grouped, program-safe status labels', async ({ reviewerPage }) => {
@@ -210,6 +217,51 @@ test.describe.serial('All Applications filters and list', { tag: '@default' }, (
     await expect(row.getByLabel('select row')).toBeChecked()
     await expect(reviewerPage.getByRole('status').filter({ hasText: '1 row selected' })).toBeVisible()
     await expect(reviewerPage.getByRole('menuitem', { name: 'Download selected' })).toBeVisible()
+    await reviewerPage.setViewportSize(original)
+  })
+
+  test('Reviewer - Closed filters from Application status and shows as a tag; quick filters move into the dialog when narrow', async ({ reviewerPage }) => {
+    const original = reviewerPage.viewportSize() ?? { width: 1280, height: 720 }
+    await reviewerPage.setViewportSize({ width: 2400, height: 900 })
+    await reviewerPage.goto(`/requests?f.periodIds.0=${periodId}`)
+    const idTag = (id: string) => reviewerPage.locator('[role="listitem"].bx--tag', { hasText: new RegExp(`^\\s*${id}\\s*$`) })
+    const rowFor = (id: string) => reviewerPage.locator('.column-list-row').filter({ has: idTag(id) })
+    // All Applications lists open and closed requests alike until filtered
+    await expect(idTag(closedRequestId)).toBeVisible()
+    await expect(idTag(appRequestId)).toBeVisible()
+    // closing is request-level: one Closed tag in the Programs section of the closed request only
+    const closedTagIn = (id: string) => rowFor(id).locator('.column-list-col.program [role="listitem"].bx--tag', { hasText: /^\s*Closed\s*$/ })
+    await expect(closedTagIn(closedRequestId)).toHaveCount(1)
+    await expect(closedTagIn(appRequestId)).toHaveCount(0)
+
+    // Closed is an Application status option; picking it narrows to closed requests, and the dialog copy follows
+    const quickStatus = reviewerPage.locator('.quickfilters-form .bx--multi-select__wrapper').filter({ has: reviewerPage.locator('.bx--label', { hasText: /^Application status$/ }) })
+    await quickStatus.getByRole('combobox').click()
+    await reviewerPage.getByRole('option', { name: 'Closed', exact: true }).click()
+    await reviewerPage.keyboard.press('Escape')
+    await expect(reviewerPage).toHaveURL(/q\.status\.0\.0=CLOSED/)
+    await expect(idTag(closedRequestId)).toBeVisible()
+    await expect(idTag(appRequestId)).toHaveCount(0)
+
+    // at full width the quick filters stay in the bar, so the More filters dialog opens with Periods
+    await reviewerPage.getByRole('button', { name: /^(More filters|\d+ filters?)$/ }).click()
+    const dialog = reviewerPage.locator('dialog[open]')
+    let labels = (await dialog.locator('.bx--label').allInnerTexts()).map(t => t.trim()).filter(Boolean)
+    expect(labels[0]).toEqual('Periods')
+    for (const label of ['Application status', 'Program status', 'Program']) expect(labels).not.toContain(label)
+    // index filters (the default demo has State) follow Periods in the dialog, not the quick bar
+    const quickLabels = (await reviewerPage.locator('.quickfilters-form .bx--label').allInnerTexts()).map(t => t.trim()).filter(Boolean)
+    expect(quickLabels).toEqual(['Application status', 'Program status', 'Program'])
+    const indexLabels = labels.slice(1, labels.findIndex(l => l === 'Created After'))
+    for (const label of indexLabels) expect(quickLabels).not.toContain(label)
+    await dialog.getByRole('button', { name: 'Cancel' }).click()
+
+    // on a narrow screen FilterUI moves the quick filters into the dialog, and Periods trails Program
+    await reviewerPage.setViewportSize({ width: 700, height: 900 })
+    await reviewerPage.getByRole('button', { name: /^(Add filters|\d+ filters?)$/ }).click()
+    labels = (await dialog.locator('.bx--label').allInnerTexts()).map(t => t.trim()).filter(Boolean)
+    expect(labels.slice(0, 4)).toEqual(['Application status', 'Program status', 'Program', 'Periods'])
+    await dialog.getByRole('button', { name: 'Cancel' }).click()
     await reviewerPage.setViewportSize(original)
   })
 })

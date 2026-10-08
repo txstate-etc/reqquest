@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ColumnList, FieldDate, FilterUI, Pagination, IntroPanel } from '@txstate-mws/carbon-svelte'
+  import { ColumnList, FieldCheckbox, FieldDate, FieldMultiselect, FilterUI, Pagination, IntroPanel } from '@txstate-mws/carbon-svelte'
   import { Tile } from 'carbon-components-svelte'
   import DocExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
   import View from 'carbon-icons-svelte/lib/View.svelte'
@@ -8,13 +8,13 @@
   import { pluralize, toQuery } from 'txstate-utils'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { api, getReviewerStatusTags, ProgramStatusCell, twoLineDateHtml } from '$internal'
+  import { api, FieldNestedMultiselect, getProgramStatusFilterItems, getReviewerStatusTags, ProgramStatusCell, twoLineDateHtml } from '$internal'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../local/index.js'
   import { _inReviewStatuses, _reviewCompleteStatuses, _reviewPendingStatuses } from './+page.js'
 
   export let data: PageData
-  $: ({ appRequests, totalItems, appRequestIndexes, filters, tabCounts, applicantCounts, avgDecisionSeconds } = data)
+  $: ({ appRequests, totalItems, appRequestIndexes, filters, tabCounts, applicantCounts, avgDecisionSeconds, programs, periods } = data)
 
   // tab labels carry the count of open requests in that stage
   $: tabs = [
@@ -111,8 +111,13 @@
     ]}
   >
     <svelte:fragment slot="filters">
+      <FieldNestedMultiselect path="applicationStatuses" labelText="Program status" items={getProgramStatusFilterItems()} />
+      <FieldMultiselect path="programKeys" labelText="Program" label="Choose one or more" items={programs.map(p => ({ value: p.key, label: p.title }))} />
+      <FieldMultiselect path="periodIds" labelText={uiRegistry.getPlural('period')} label="Choose one or more" items={periods.map(p => ({ value: p.id, label: p.name }))} filterable />
       <FieldDate path="submittedAfter" labelText="Submitted After" placeholder="Select a date" beginningOfDay />
       <FieldDate path="submittedBefore" labelText="Submitted Before" placeholder="Select a date" endOfDay />
+      <!-- the dashboard lists open requests; closed ones appear only when asked for here -->
+      <FieldCheckbox path="closed" labelText="Closed or Cancelled only" />
     </svelte:fragment>
     <svelte:fragment let:row>
       <div class="[ mb-2 ]"><strong>Programs</strong></div>

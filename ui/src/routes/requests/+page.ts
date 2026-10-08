@@ -1,5 +1,5 @@
 import { extractMergedFilters, extractPaginationParams } from '@txstate-mws/carbon-svelte'
-import { api, flattenStatusFilter } from '$internal'
+import { api, splitStatusFilter } from '$internal'
 import type { AppRequestFilter } from '$lib'
 import type { PageLoad } from './$types'
 import { error } from '@sveltejs/kit'
@@ -11,7 +11,7 @@ export const load: PageLoad = async ({ url, parent }) => {
   if (!access.viewAppRequestList) throw error(403)
   const { page, pagesize } = extractPaginationParams(url)
   const { status, ...rest } = extractMergedFilters(url)
-  const filters: Omit<AppRequestFilter, 'indexes'> = { ...rest, status: flattenStatusFilter(status) }
+  const filters: Omit<AppRequestFilter, 'indexes'> = { ...rest, ...splitStatusFilter(status) }
   const [response, allPeriods, programs] = await Promise.all([
     api.getAppRequests(filters, { page, perPage: pagesize }),
     api.getPeriodList(),

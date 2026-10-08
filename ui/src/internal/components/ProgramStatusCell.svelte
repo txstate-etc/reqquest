@@ -11,6 +11,7 @@
   import { FloatingPortal, Tag } from 'carbon-components-svelte'
   import { onDestroy } from 'svelte'
   import { randomid } from 'txstate-utils'
+  import { enumAppRequestPhase } from '$lib'
   import { getApplicationStatusTags } from '../status-utils.js'
 
   export let row: ProgramStatusRow
@@ -30,6 +31,7 @@
     tags: getApplicationStatusTags(a.status, row.phase, row.closedAt, a.rescindedStatus)
   }))
   $: collapsed = rollup && programs.length > maxInline
+  $: closed = row.closedAt != null && row.phase !== enumAppRequestPhase.STARTED
   $: void col
 
   const tooltipId = randomid()
@@ -61,6 +63,7 @@
     on:mouseenter={show} on:mouseleave={hideSoon} on:focus={show} on:blur={hideNow} on:keydown={onKeydown}>
     <Tag size="sm" type="gray">{programs.length} programs</Tag>
   </span>
+  {#if closed}<TagSet small tags={[{ label: 'Closed', type: 'yellow' }]} class="program-closed" />{/if}
   <FloatingPortal anchor={triggerRef} open={tooltipOpen} direction="bottom" intrinsicWidth intrinsicAlign="start" gapBottom={4}>
     <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div id={tooltipId} role="tooltip" class="program-rollup__tooltip" on:mouseenter={show} on:mouseleave={hideSoon}>
@@ -79,6 +82,7 @@
         <TagSet small tags={program.tags} />
       </div>
     {/each}
+    {#if closed}<TagSet small tags={[{ label: 'Closed', type: 'yellow' }]} class="program-closed" />{/if}
   </div>
 {/if}
 
@@ -93,6 +97,13 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0.25rem 0.5rem;
+  }
+  :global(.program-closed) {
+    display: inline-flex;
+    margin-left: 0.25rem;
+  }
+  .program-list :global(.program-closed) {
+    margin-left: 0;
   }
   .program-rollup__trigger {
     display: inline-block;

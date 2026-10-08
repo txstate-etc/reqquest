@@ -14,6 +14,7 @@
   export let data: PageData
 
   $: ({ appRequests, appRequestIndexes: indexes, allPeriods, openPeriods, access, filters, programs } = data)
+  const statusFilterItems = getReviewerStatusFilterOptions({ includeClosed: true })
   $: requests = appRequests.map(r => ({ ...r, indexByCat: keyby(r.indexCategories, 'category') }))
   $: indexColumns = sortby(indexes.filter(idx => idx.appRequestListPriority), 'appRequestListPriority').map(idx => ({
     id: idx.category,
@@ -84,7 +85,7 @@
         label="Choose one or more"
         hideLabel={false}
         json
-        items={getReviewerStatusFilterOptions()}
+        items={statusFilterItems}
       />
       <FieldNestedMultiselect
         path="applicationStatuses"
@@ -98,18 +99,23 @@
         hideLabel={false}
         items={programs.map(p => ({ value: p.key, label: p.title }))}
       />
-      {#each filterIndexes as filterIdx, i (filterIdx.category)}
-        {#if i < 2}
-          <FieldMultiselect path="indexes.{filterIdx.category}"
-            label={filterIdx.categoryLabel}
-            placeholder={filterIdx.categoryLabel}
-            items={filterIdx.listable ? filterIdx.values : unlistableIndexItems[filterIdx.category] ?? []}
-            filterable={!filterIdx.listable}
-            on:input={!filterIdx.listable ? searchIndexItems(filterIdx.category) : () => {}}
-          />
-        {/if}
-      {/each}
     </svelte:fragment>
+    <FieldMultiselect
+      path="periodIds"
+      label="Periods"
+      placeholder="Select Periods"
+      items={allPeriods.map(p => ({ value: p.id, label: p.name }))}
+      filterable
+    />
+    {#each filterIndexes as filterIdx (filterIdx.category)}
+      <FieldMultiselect path="indexes.{filterIdx.category}"
+        label={filterIdx.categoryLabel}
+        placeholder={filterIdx.categoryLabel}
+        items={filterIdx.listable ? filterIdx.values : unlistableIndexItems[filterIdx.category] ?? []}
+        filterable={!filterIdx.listable}
+        on:input={!filterIdx.listable ? searchIndexItems(filterIdx.category) : () => {}}
+      />
+    {/each}
     <FieldDate
       path="createdAfter"
       labelText="Created After"
@@ -160,24 +166,6 @@
         endOfDay
       />
     </Panel>
-    <FieldMultiselect
-      path="periodIds"
-      label="Periods"
-      placeholder="Select Periods"
-      items={allPeriods.map(p => ({ value: p.id, label: p.name }))}
-      filterable
-    />
-    {#each filterIndexes as filterIdx, i (filterIdx.category)}
-      {#if i >= 2}
-        <FieldMultiselect path="indexes.{filterIdx.category}"
-          label={filterIdx.categoryLabel}
-          placeholder={filterIdx.categoryLabel}
-          items={filterIdx.listable ? filterIdx.values : unlistableIndexItems[filterIdx.category] ?? []}
-          filterable={!filterIdx.listable}
-          on:input={!filterIdx.listable ? searchIndexItems(filterIdx.category) : () => {}}
-        />
-      {/if}
-    {/each}
   </FilterUI>
   </div>
   <IntroPanel title="All Applications" subtitle="This is where you can see all applications submitted to the business app. Browse them all or use the filters above to narrow down applications." />

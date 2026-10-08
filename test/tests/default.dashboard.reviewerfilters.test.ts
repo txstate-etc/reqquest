@@ -1,5 +1,6 @@
 import { DateTime } from 'luxon'
 import { expect, test } from './fixtures.js'
+import { createSubmittedClosedRequest } from './default.submitclose.js'
 
 /**
  * The reviewer dashboard filters by review stage through three status-based tabs: Review Pending
@@ -202,5 +203,38 @@ test.describe.serial('Reviewer dashboard tabs and list', { tag: '@default' }, ()
     // ActionSet renders actions as menuitems with the label as the icon description
     await expect(reviewerPage.getByRole('menuitem', { name: 'Download selected' })).toBeVisible()
     await reviewerPage.setViewportSize(original)
+  })
+
+  let closedRequestId = ''
+
+  test('Applicant2 - submit a request, Reviewer - close it', async ({ applicant2Request, reviewerRequest }) => {
+    closedRequestId = await createSubmittedClosedRequest(applicant2Request, reviewerRequest, 'applicant2', periodId)
+  })
+
+  test('Reviewer - the filter pop-out has Program status, Program and Period; closed requests show only when filtered for', async ({ reviewerPage }) => {
+    await reviewerPage.goto(`/dashboards/reviewer?f.periodIds.0=${periodId}`)
+    const closedTag = reviewerPage.locator('[role="listitem"].bx--tag', { hasText: new RegExp(`^\\s*${closedRequestId}\\s*$`) })
+    // open-only by default
+    await expect(reviewerPage.locator('.column-list-row').first()).toBeVisible()
+    await expect(closedTag).toHaveCount(0)
+
+    await reviewerPage.getByRole('button', { name: /^Filter / }).click()
+    const dialog = reviewerPage.locator('dialog[open]')
+    for (const label of [/^Program status$/, /^Program$/, /^Periods$/]) await expect(dialog.locator('.bx--label', { hasText: label })).toHaveCount(1)
+    // Period trails Program directly; every other filter follows
+    const labels = (await dialog.locator('.bx--label').allInnerTexts()).map(t => t.trim()).filter(Boolean)
+    expect(labels.indexOf('Periods')).toEqual(labels.indexOf('Program') + 1)
+    expect(labels.indexOf('Program')).toEqual(labels.indexOf('Program status') + 1)
+    // the first filter is Program status, the dates come after Period
+    expect(labels[0]).toEqual('Program status')
+    expect(labels.indexOf('Submitted After')).toBeGreaterThan(labels.indexOf('Periods'))
+    await dialog.getByText('Closed or Cancelled only', { exact: true }).click()
+    await dialog.getByRole('button', { name: 'Submit' }).click()
+    await expect(reviewerPage).toHaveURL(/f\.closed=true/)
+
+    // now listed, with the request-level Closed tag in its Programs section
+    await expect(closedTag).toBeVisible()
+    const row = reviewerPage.locator('.column-list-row').filter({ has: closedTag })
+    await expect(row.locator('.column-list-col.program [role="listitem"].bx--tag', { hasText: /^\s*Closed\s*$/ })).toHaveCount(1)
   })
 })

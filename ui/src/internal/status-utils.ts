@@ -237,23 +237,26 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, { description: str
   }
 }
 
-// Reviewer status tag, plus a 'Closed' tag when the request was closed after submission
-export interface StatusFilterOption { value: AppRequestStatus[], label: string }
+export const CLOSED_STATUS_FILTER = 'CLOSED'
+export interface StatusFilterOption { value: (AppRequestStatus | typeof CLOSED_STATUS_FILTER)[], label: string }
 
-export function getReviewerStatusFilterOptions (): StatusFilterOption[] {
+export function getReviewerStatusFilterOptions ({ includeClosed = false }: { includeClosed?: boolean } = {}): StatusFilterOption[] {
   const byLabel = new Map<string, AppRequestStatus[]>()
   for (const [status, config] of Object.entries(REVIEWER_STATUS_CONFIG) as [AppRequestStatus, { label: string }][]) {
     const group = byLabel.get(config.label)
     if (group) group.push(status)
     else byLabel.set(config.label, [status])
   }
-  return Array.from(byLabel, ([label, value]) => ({ value, label }))
+  const options: StatusFilterOption[] = Array.from(byLabel, ([label, value]) => ({ value, label }))
+  if (includeClosed) options.push({ value: [CLOSED_STATUS_FILTER], label: 'Closed' })
+  return options
 }
 
-export function flattenStatusFilter (status: unknown): AppRequestStatus[] | undefined {
-  if (!Array.isArray(status)) return undefined
-  const flat = Array.from(new Set(status.flat(2).filter((s): s is AppRequestStatus => typeof s === 'string')))
-  return flat.length ? flat : undefined
+export function splitStatusFilter (status: unknown): { status?: AppRequestStatus[], closed?: true } {
+  if (!Array.isArray(status)) return {}
+  const flat = Array.from(new Set(status.flat(2).filter((s): s is string => typeof s === 'string')))
+  const statuses = flat.filter(s => s !== CLOSED_STATUS_FILTER) as AppRequestStatus[]
+  return { status: statuses.length ? statuses : undefined, closed: flat.includes(CLOSED_STATUS_FILTER) ? true : undefined }
 }
 
 export function getReviewerStatusTags (status: AppRequestStatus, phase: AppRequestPhase | undefined, closedAt: string | null | undefined): TagItem[] {
