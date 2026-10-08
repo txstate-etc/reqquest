@@ -10,6 +10,7 @@ const overrideGpaWarningWorkflow: WorkflowStage = {
 
 const operations_infrastructure: ProgramDefinition = {
   title: 'Operations & Infrastructure',
+  eligibilityDescription: 'Requires operation infrastructure knowledge',
   requirementKeys: [
     'operations_infrastructure_opt_out_req',
     'step1_prequal_req',

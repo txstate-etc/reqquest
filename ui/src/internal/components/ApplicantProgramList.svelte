@@ -108,7 +108,7 @@
   {#each applications as application (application.id)}
     {@const programStatus = programButtonStatus[application.id]}
     {@const programFirstPrompt = programFirstPromptId[application.id]}
-    {@const programDescriptions = isIneligiblePreSubmission(application) ? [application.applicantDescription, application.eligibilityDescription].filter(isNotBlank) : []}
+    {@const programDescriptions = isIneligiblePreSubmission(application) && !optedOutPrograms[application.id] ? [application.applicantDescription, application.eligibilityDescription].filter(isNotBlank) : []}
     <div class="program column [ flex-col ]" style='align-items: start;'>
       <span>{application.title}</span>
       {#if !viewMode}
@@ -133,7 +133,7 @@
           {:else}
             <CheckmarkFilled size={24} class="status-icon-complete" />
           {/if}
-          <ApplicantProgramListTooltip {application} />
+          <ApplicantProgramListTooltip {optedOutPrograms} {application} />
         </div>
         {#if optedOutPrograms[application.id]}
           <p>Opted out</p>
@@ -149,7 +149,7 @@
         {:else}
           <Close size={32} class="status-icon-ineligible" />
         {/if}
-        <ApplicantProgramListTooltip {application} />
+        <ApplicantProgramListTooltip {optedOutPrograms} {application} />
       {/if}
     </div>
     {#if application.warningReasons.length || application.ineligibleReasons.length || programDescriptions.length}
