@@ -114,7 +114,7 @@
       {#if !viewMode}
         {#if optedOutPrograms[application.id]}
           <Button on:click={() => openOptOutModal(application.id, true)} kind='ghost' style='padding: 0; min-height: 0;' class='[ p-0 justify-start ]'>Opt In</Button>
-        {:else if optOutPrograms[application.id]}
+        {:else if optOutPrograms[application.id] && application.completionStatus !== enumApplicationStatus.INELIGIBLE}
           <Button on:click={() => openOptOutModal(application.id)} kind='ghost' style='padding: 0; min-height: 0;' class='[ p-0 justify-start ]'>Opt out</Button>
         {/if} 
       {/if}
