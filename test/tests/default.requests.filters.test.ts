@@ -137,21 +137,47 @@ test.describe.serial('All Applications filters and list', { tag: '@default' }, (
     await expect(reviewerPage).toHaveURL(/q\.applicationStatuses\.1\.status=PENDING/)
     await expect(requestTag).toBeVisible()
 
-    // a nested option carries the rescind state alongside its parent status
-    await dialog.getByText('Rescinded', { exact: true }).nth(1).click()
-    await expect(reviewerPage).toHaveURL(/q\.applicationStatuses\.2\.status=ELIGIBLE/)
-    await expect(reviewerPage).toHaveURL(/q\.applicationStatuses\.2\.rescindedStatus=RESCINDED/)
+    // checking a child auto-checks its parent and narrows it: the bare ELIGIBLE entry is replaced by the rescinded one
+    const approved = dialog.getByRole('checkbox', { name: 'Approved', exact: true })
+    const offerAccepted = dialog.getByRole('checkbox', { name: 'Offer accepted', exact: true })
+    const approvedRescinded = dialog.getByText('Rescinded', { exact: true }).nth(1)
+    await approvedRescinded.click()
+    await expect(approved).toBeChecked()
+    await expect(reviewerPage).toHaveURL(/q\.applicationStatuses\.0\.status=PENDING/)
+    await expect(reviewerPage).toHaveURL(/q\.applicationStatuses\.1\.status=ELIGIBLE&q\.applicationStatuses\.1\.rescindedStatus=RESCINDED|q\.applicationStatuses\.1\.rescindedStatus=RESCINDED&q\.applicationStatuses\.1\.status=ELIGIBLE/)
+    await expect(reviewerPage).not.toHaveURL(/q\.applicationStatuses\.2\./)
     await expect(requestTag).toBeVisible()
 
-    // Escape closes the portal and returns focus to the trigger, which now shows the selection count
+    // unchecking the last child leaves the parent selected on its own
+    await approvedRescinded.click()
+    await expect(approved).toBeChecked()
+    await expect(reviewerPage).toHaveURL(/q\.applicationStatuses\.1\.status=ELIGIBLE/)
+    // the filter URL updates after a debounce, so poll rather than read it once
+    await expect(reviewerPage).not.toHaveURL(/rescindedStatus/)
+
+    // re-narrow, then unchecking the parent clears it and its child together
+    await approvedRescinded.click()
+    await expect(reviewerPage).toHaveURL(/rescindedStatus=RESCINDED/)
+    await dialog.getByText('Approved', { exact: true }).click()
+    await expect(approved).not.toBeChecked()
+    await expect(reviewerPage).not.toHaveURL(/ELIGIBLE/)
+
+    // a child picked on its own checks its parent too; only the child is sent
+    await dialog.getByText('Restored', { exact: true }).nth(0).click()
+    await expect(offerAccepted).toBeChecked()
+    await expect(reviewerPage).toHaveURL(/status=ACCEPTED/)
+    await expect(reviewerPage).toHaveURL(/rescindedStatus=RESTORED/)
+    await expect(requestTag).toBeVisible()
+
+    // Escape closes the portal and returns focus to the trigger, which counts the stored entries (Pending, Offer accepted > Restored)
     await reviewerPage.keyboard.press('Escape')
     await expect(dialog).toHaveCount(0)
     await expect(trigger).toBeFocused()
-    await expect(trigger.locator('.bx--tag')).toHaveText('3')
+    await expect(trigger.locator('.bx--tag')).toHaveText('2')
 
     // the selection lives in the URL, so a reload restores it
     await reviewerPage.reload()
-    await expect(reviewerPage.locator('.quickfilters-form button[aria-haspopup="dialog"] .bx--tag')).toHaveText('3')
+    await expect(reviewerPage.locator('.quickfilters-form button[aria-haspopup="dialog"] .bx--tag')).toHaveText('2')
     await expect(requestTag).toBeVisible()
   })
 

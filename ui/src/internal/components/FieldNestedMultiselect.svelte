@@ -35,8 +35,14 @@
   export let placeholder = 'Choose one or more'
 
   /**
-   * Top-level options. Each may carry `children`, rendered indented beneath it. A parent and its
-   * children are independent selections - checking a child does not check the parent.
+   * Top-level options. Each may carry `children`, rendered indented beneath it. Children narrow their
+   * parent: the stored value holds only what should be matched, so
+   * - checking a child also shows its parent checked, and replaces the parent's own value with the child's
+   *   (Approved + Rescinded matches rescinded approvals only);
+   * - unchecking a parent's last checked child puts the parent's own value back, so the parent stays selected;
+   * - unchecking a parent removes it and all of its children;
+   * - a parent with no checked children stores, and matches, its own value.
+   * Items without children are plain checkboxes.
    * @type {NestedMultiselectItem[]}
    */
   export let items: NestedMultiselectItem[] = []
@@ -74,11 +80,43 @@
     return (rawValue ?? []).some(v => equal(v, value))
   }
 
-  function toggle (value: any, rawValue: any[] | undefined, setVal: (v: any[]) => void) {
-    return (e: CustomEvent<boolean>) => {
+  // a parent reads as checked when its own value is stored or any of its children's values is
+  function isParentChecked (item: NestedMultiselectItem, rawValue: any[] | undefined) {
+    return isSelected(item.value, rawValue) || (item.children ?? []).some(c => isSelected(c.value, rawValue))
+  }
+
+  function without (list: any[], ...values: any[]) {
+    return list.filter(v => !values.some(x => equal(v, x)))
+  }
+
+  // These listen to the native change event, not carbon's `check` event: Checkbox also fires `check` when its
+  // `checked` prop changes from outside, which happens to a parent whenever a child is (un)checked, and that
+  // would be misread as the user clicking the parent.
+  function isChecked (e: Event) {
+    return (e.target as HTMLInputElement).checked
+  }
+
+  function toggleParent (item: NestedMultiselectItem, rawValue: any[] | undefined, setVal: (v: any[]) => void) {
+    return (e: Event) => {
       const current = rawValue ?? []
-      const next = e.detail ? [...current.filter(v => !equal(v, value)), value] : current.filter(v => !equal(v, value))
-      setVal(next)
+      const childValues = (item.children ?? []).map(c => c.value)
+      // checking adds the parent's own value; unchecking clears the parent and every child under it
+      setVal(isChecked(e) ? [...without(current, item.value), item.value] : without(current, item.value, ...childValues))
+    }
+  }
+
+  function toggleChild (item: NestedMultiselectItem, child: NestedMultiselectChild, rawValue: any[] | undefined, setVal: (v: any[]) => void) {
+    return (e: Event) => {
+      const current = rawValue ?? []
+      if (isChecked(e)) {
+        // the child narrows the parent, so the parent's broader value is dropped
+        setVal([...without(current, item.value, child.value), child.value])
+        return
+      }
+      const next = without(current, child.value)
+      const siblingsLeft = (item.children ?? []).some(c => isSelected(c.value, next))
+      // unchecking the last child leaves the parent selected on its own
+      setVal(siblingsLeft ? next : [...next, item.value])
     }
   }
 
@@ -178,11 +216,11 @@
     <div id={panelId} role="dialog" aria-label={labelText} tabindex="-1" class="nested-multiselect__panel" on:keydown={onKeydown} on:focusout={onPanelFocusout}>
       {#each items as item (jsonSerialize(item.value))}
         <div class="nested-multiselect__item">
-          <Checkbox labelText={item.label} checked={isSelected(item.value, rawValue)} on:check={toggle(item.value, rawValue, setVal)} />
+          <Checkbox labelText={item.label} checked={isParentChecked(item, rawValue)} on:change={toggleParent(item, rawValue, setVal)} />
         </div>
         {#each item.children ?? [] as child (jsonSerialize(child.value))}
           <div class="nested-multiselect__item nested-multiselect__item--child">
-            <Checkbox labelText={child.label} checked={isSelected(child.value, rawValue)} on:check={toggle(child.value, rawValue, setVal)} />
+            <Checkbox labelText={child.label} checked={isSelected(child.value, rawValue)} on:change={toggleChild(item, child, rawValue, setVal)} />
           </div>
         {/each}
       {/each}
