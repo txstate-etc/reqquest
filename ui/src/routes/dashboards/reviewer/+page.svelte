@@ -40,7 +40,7 @@
 
 </script>
 
-<div class='[ px-8 ]'>
+<div class='intro-wide [ px-8 ]'>
   <div class="review-header [ flex justify-between items-end flex-wrap gap-4 mb-4 ]">
     <div class="review-tabs">
       <FilterUI tabs={tabs.map(t => ({ label: t.label, value: t.value }))} tabsAriaLabel="Review stage" />
@@ -128,6 +128,9 @@
 </div>
 
 <style>
+  .intro-wide :global(.intro-panel .content-start) {
+    max-width: none;
+  }
   /* the header row owns the spacing below the tabs; FilterUI's own bottom margin would double it */
   .review-tabs :global(.filter-ui-container) {
     margin-bottom: 0;

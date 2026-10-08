@@ -107,6 +107,14 @@ test.describe.serial('Reviewer dashboard tabs and list', { tag: '@default' }, ()
     await expect(reviewerPage.locator('.nested-multiselect')).toHaveCount(0)
     await expect(reviewerPage.getByRole('button', { name: /(More|Add) filters/i })).toHaveCount(0)
     await expect(reviewerPage.getByRole('heading', { name: 'Review not started' })).toBeVisible()
+    // the intro subtitle uses the panel's full width instead of wrapping at the library's 28rem cap
+    const subtitleBox = (await reviewerPage.locator('.intro-subtitle').boundingBox())!
+    expect(subtitleBox.height).toBeLessThan(24)
+    // the list toolbar shares the intro panel's background and sits flush beneath it, reading as one block
+    const [panelBg, headerBg] = await Promise.all(['.intro-panel', '.column-list-header'].map(async sel => await reviewerPage.locator(sel).evaluate(el => getComputedStyle(el).backgroundColor)))
+    expect(headerBg).toEqual(panelBg)
+    const [panelBox, headerBox] = await Promise.all([reviewerPage.locator('.intro-panel').boundingBox(), reviewerPage.locator('.column-list-header').boundingBox()])
+    expect(Math.abs(headerBox!.y - (panelBox!.y + panelBox!.height))).toBeLessThan(1.5)
 
     // stat tiles: applicant counts always; average review time only for users who may view metrics (the demo reviewer may not)
     await expect(reviewerPage.locator('.stat-tile', { hasText: 'First time application' })).toContainText(/\d+ applications?/)

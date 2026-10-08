@@ -77,6 +77,14 @@ test.describe.serial('All Applications filters and list', { tag: '@default' }, (
       reviewerPage.locator('.quickfilters-form').getByRole('combobox').first().boundingBox()
     ].map(async b => { const box = (await b)!; return box.y + box.height }))
     expect(Math.max(...bottoms) - Math.min(...bottoms)).toBeLessThan(6)
+    // the intro subtitle uses the panel's full width instead of wrapping at the library's 28rem cap
+    const subtitleBox = (await reviewerPage.locator('.intro-subtitle').boundingBox())!
+    expect(subtitleBox.height).toBeLessThan(24)
+    // the list toolbar shares the intro panel's background and sits flush beneath it, reading as one block
+    const [panelBg, headerBg] = await Promise.all(['.intro-panel', '.column-list-header'].map(async sel => await reviewerPage.locator(sel).evaluate(el => getComputedStyle(el).backgroundColor)))
+    expect(headerBg).toEqual(panelBg)
+    const [panelBox, headerBox] = await Promise.all([reviewerPage.locator('.intro-panel').boundingBox(), reviewerPage.locator('.column-list-header').boundingBox()])
+    expect(Math.abs(headerBox!.y - (panelBox!.y + panelBox!.height))).toBeLessThan(1.5)
 
     // PREAPPROVAL and APPROVAL share the "Review pending" label, so they appear as one option that filters both
     const statusSelect = reviewerPage.locator('.bx--multi-select__wrapper').filter({ has: reviewerPage.locator('.bx--label', { hasText: /^Application status$/ }) })

@@ -74,7 +74,7 @@
     location.href = `${api.baseUrl}/csv/${ticket}/requests/requests${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv?${query}`
   }
 </script>
-<div class='[ px-[20px] ]'>
+<div class='intro-wide [ px-[20px] ]'>
   <div class="requests-filters">
   <FilterUI search>
     <svelte:fragment slot="quickfilters">
@@ -243,6 +243,9 @@
 </PanelFormDialog>
 
 <style>
+  .intro-wide :global(.intro-panel .content-start) {
+    max-width: none;
+  }
   /* the quick-filter fields carry labels above them; bottom-align the row so the search box and
      More filters button sit level with the fields rather than with the labels */
   .requests-filters :global(.filter-ui-container) {
