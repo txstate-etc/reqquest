@@ -1,6 +1,7 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { ApplicationPhase, ApplicationRequirement, AppRequestPhase, AppRequestStatusDB, InvalidatedResponse, PeriodConfigurationRow, PeriodPrompt, PeriodPromptFilters, promptRegistry, PromptVisibility, RequirementPrompt, RequirementPromptFilter, RequirementType } from '../internal.js'
+import { groupby } from 'txstate-utils'
+import { ApplicationPhase, ApplicationRequirement, AppRequestPhase, AppRequestStatusDB, bulkUpdateById, InvalidatedResponse, PeriodConfigurationRow, PeriodPrompt, PeriodPromptFilters, promptRegistry, PromptVisibility, RequirementPrompt, RequirementPromptFilter, RequirementType } from '../internal.js'
 
 export interface PromptRow {
   id: number
@@ -65,7 +66,7 @@ export async function getRequirementPrompts (filter: RequirementPromptFilter, td
     INNER JOIN applications a ON a.id=r.applicationId
     INNER JOIN app_requests ar ON ar.id=p.appRequestId
     WHERE (${where.join(') AND (')})
-    ORDER BY evaluationOrder
+    ORDER BY a.evaluationOrder, r.evaluationOrder, p.evaluationOrder
   `, binds)
   return rows.map(row => new RequirementPrompt(row))
 }
@@ -85,34 +86,56 @@ export async function setRequirementPromptsValid (promptKeys: string[], tdb: Que
   await tdb.update(`UPDATE requirement_prompts SET invalidated = 0, invalidatedReason = NULL WHERE promptKey IN (${tdb.in([], promptKeys)})`, promptKeys)
 }
 
-export async function syncPromptRecords (requirement: ApplicationRequirement, db: Queryable) {
-  const existingPrompts = await db.getall<PromptRow>('SELECT * FROM requirement_prompts WHERE requirementId = ?', [requirement.internalId])
-  const existingPromptKeys = new Set(existingPrompts.map(row => row.promptKey))
-  const definitionPromptKeys = requirement.definition.promptKeySet
-  const promptsToInsert = requirement.definition.allPromptKeys.filter(promptKey => !existingPromptKeys.has(promptKey))
-  const promptsToDelete = existingPrompts.filter(row => !definitionPromptKeys.has(row.promptKey))
-  if (promptsToInsert?.length) {
+/**
+ * Reconcile the requirement_prompts rows of every requirement on an appRequest with the
+ * definitions in one pass: one read, one insert, one delete, one update, one reload regardless of how many requirements the request has.
+ */
+export async function syncPromptRecords (appRequestId: number, requirements: ApplicationRequirement[], db: Queryable) {
+  const existing = await db.getall<{ id: number, requirementId: number, promptKey: string, evaluationOrder: number }>(
+    'SELECT id, requirementId, promptKey, evaluationOrder FROM requirement_prompts WHERE appRequestId = ?', [appRequestId])
+  const existingByRequirement = groupby(existing, 'requirementId')
+  const toInsert: any[][] = []
+  const toDelete: number[] = []
+  const toUpdate: { id: number, evaluationOrder: number }[] = []
+  for (const requirement of requirements) {
+    const rows = existingByRequirement[requirement.internalId] ?? []
+    const rowsByKey = new Map(rows.map(row => [row.promptKey, row]))
+    const promptKeys = requirement.definition.allPromptKeys
+    for (let i = 0; i < promptKeys.length; i++) {
+      const row = rowsByKey.get(promptKeys[i])
+      if (!row) toInsert.push([appRequestId, requirement.applicationInternalId, requirement.internalId, promptKeys[i], i])
+      else if (row.evaluationOrder !== i) toUpdate.push({ id: row.id, evaluationOrder: i })
+    }
+    for (const row of rows) if (!requirement.definition.promptKeySet.has(row.promptKey)) toDelete.push(row.id)
+  }
+  if (toInsert.length) {
     const binds: any[] = []
-    await db.query(`
-      INSERT INTO requirement_prompts (appRequestId, applicationId, requirementId, promptKey)
-      VALUES ${db.in(binds, promptsToInsert.map(promptKey => [requirement.appRequestId, requirement.applicationId, requirement.internalId, promptKey]))}
+    await db.insert(`
+      INSERT INTO requirement_prompts (appRequestId, applicationId, requirementId, promptKey, evaluationOrder)
+      VALUES ${db.in(binds, toInsert)}
     `, binds)
   }
-  if (promptsToDelete.length) {
+  if (toDelete.length) {
     const binds: any[] = []
-    await db.query(`DELETE FROM requirement_prompts WHERE id IN (${db.in(binds, promptsToDelete.map(row => row.id))})`, binds)
+    await db.delete(`DELETE FROM requirement_prompts WHERE id IN (${db.in(binds, toDelete)})`, binds)
   }
-  for (let i = 0; i < requirement.definition.allPromptKeys.length; i++) {
-    const promptKey = requirement.definition.allPromptKeys[i]
-    await db.update('UPDATE requirement_prompts SET evaluationOrder = ? WHERE requirementId = ? AND promptKey = ?', [i, requirement.internalId, promptKey])
+  await bulkUpdateById(db, 'requirement_prompts', ['evaluationOrder'], toUpdate)
+  return await getRequirementPrompts({ appRequestIds: [String(appRequestId)] }, db)
+}
+
+// The computed columns the evaluation writes back, shaped for `bulkUpdateById` and for change detection.
+export function promptComputedRow (prompt: RequirementPrompt) {
+  return {
+    id: prompt.internalId,
+    visibility: prompt.visibility,
+    answered: prompt.answered ? 1 : 0,
+    moot: prompt.moot ? 1 : 0,
+    locked: prompt.locked ? 1 : 0
   }
-  return await getRequirementPrompts({ requirementIds: [requirement.id] }, db)
 }
 
 export async function updatePromptComputed (prompts: RequirementPrompt[], db: Queryable) {
-  for (const prompt of prompts) {
-    await db.update('UPDATE requirement_prompts SET visibility = ?, answered = ?, moot = ?, locked = ? WHERE id = ?', [prompt.visibility, prompt.answered, prompt.moot, prompt.locked, prompt.internalId])
-  }
+  await bulkUpdateById(db, 'requirement_prompts', ['visibility', 'answered', 'moot', 'locked'], prompts.map(promptComputedRow))
 }
 
 function processPeriodPromptFilters (filter: PeriodPromptFilters) {

@@ -2,10 +2,10 @@ import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
 import { findIndex, groupby, isNotBlank, keyby } from 'txstate-utils'
 import {
-  Application, ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestPhase, appRequestPhaseReached,
+  Application, applicationComputedRow, ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestPhase, appRequestPhaseReached,
   AppRequestStatus, AppRequestStatusDB, appRequestTransaction, deriveApplicationStatus, getAppRequestData, getAppRequests,
-  getPeriodWorkflowStages, IneligiblePhases, PeriodWorkflowStage, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt,
-  RequirementStatus, RequirementType, syncApplications, syncPromptRecords, syncRequirementRecords, updateAppRequestComputed,
+  getPeriodWorkflowStages, IneligiblePhases, PeriodWorkflowStage, programRegistry, promptComputedRow, promptRegistry, PromptVisibility, RequirementPrompt,
+  requirementComputedRow, RequirementStatus, RequirementType, syncApplications, syncPromptRecords, syncRequirementRecords, updateAppRequestComputed,
   updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData
 } from '../internal.js'
 
@@ -40,6 +40,15 @@ interface EvaluationContext {
    * applicant requirement and a reviewer requirement, and data the applicant provided can't read as review progress.
    */
   applicantPromptKeys: Set<string>
+  /**
+   * the computed columns as they were loaded, serialized per row, so persistEvaluation can write
+   * back only the rows the evaluation actually changed
+   */
+  baseline: {
+    applications: Map<number, string>
+    requirements: Map<number, string>
+    prompts: Map<number, string>
+  }
 }
 
 /** The requirements of one application, split by type and workflow role, plus the cumulative sets each phase consults. */
@@ -117,18 +126,9 @@ export async function ensureAppRequestRecords (appRequest: AppRequest, db: Query
     }
   }
   const applications = await syncApplications(appRequest.internalId, new Set(programs.map(p => p.key)), db)
-  const allRequirements: ApplicationRequirement[] = []
-  const allPrompts: RequirementPrompt[] = []
-  for (const application of applications) {
-    const enabledKeys = reqKeyLookup[application.programKey] ?? new Set()
-    const requirements = await syncRequirementRecords(application, enabledKeys, db)
-    allRequirements.push(...requirements)
-    for (const requirement of requirements) {
-      const prompts = await syncPromptRecords(requirement, db)
-      allPrompts.push(...prompts)
-    }
-  }
-  return { applications, requirements: allRequirements, prompts: allPrompts }
+  const requirements = await syncRequirementRecords(appRequest.internalId, applications, reqKeyLookup, db)
+  const prompts = await syncPromptRecords(appRequest.internalId, requirements, db)
+  return { applications, requirements, prompts }
 }
 
 export async function tagAppRequest (appRequestInternalId: number, data: AppRequestData, prompts: RequirementPrompt[], tdb: Queryable = db) {
@@ -230,8 +230,23 @@ async function loadEvaluationContext (appRequestInternalId: number, db: Queryabl
     workflowStages,
     workflowStageLookup: keyby(workflowStages, 'key'),
     configLookup,
-    applicantPromptKeys: new Set(prompts.filter(p => applicantRequirementTypes.has(p.requirementType)).map(p => p.key))
+    applicantPromptKeys: new Set(prompts.filter(p => applicantRequirementTypes.has(p.requirementType)).map(p => p.key)),
+    baseline: {
+      applications: snapshotComputed(applications, applicationComputedRow),
+      requirements: snapshotComputed(requirements, requirementComputedRow),
+      prompts: snapshotComputed(prompts, promptComputedRow)
+    }
   }
+}
+
+/** Serialize each row's computed columns, keyed by internal id. Must run before anything mutates the models. */
+function snapshotComputed<T extends { internalId: number }> (models: T[], toRow: (model: T) => object) {
+  return new Map(models.map(m => [m.internalId, JSON.stringify(toRow(m))]))
+}
+
+/** The models whose computed columns differ from the snapshot taken at load. */
+function changedSinceLoad<T extends { internalId: number }> (models: T[], toRow: (model: T) => object, baseline: Map<number, string>) {
+  return models.filter(m => baseline.get(m.internalId) !== JSON.stringify(toRow(m)))
 }
 
 /** Must run before anything mutates the applications. */
@@ -245,6 +260,17 @@ function snapshotApplicationPhases (applications: Application[]) {
  */
 async function markPromptsAnswered (ctx: EvaluationContext, db: Queryable) {
   const { data, configLookup } = ctx
+  // a prompt shared by several requirements validates identically everywhere, so validate each key once
+  const validByKey = new Map<string, boolean>()
+  const validates = (prompt: RequirementPrompt) => {
+    let valid = validByKey.get(prompt.key)
+    if (valid == null) {
+      const validationMessages = prompt.definition.validate?.(data[prompt.key] ?? {}, configLookup[prompt.key] ?? {}, data, configLookup, db) ?? []
+      valid = !validationMessages.some(m => m.type === 'error')
+      validByKey.set(prompt.key, valid)
+    }
+    return valid
+  }
   for (const prompt of ctx.prompts) {
     if (
       /**
@@ -268,8 +294,7 @@ async function markPromptsAnswered (ctx: EvaluationContext, db: Queryable) {
     ) {
       prompt.answered = false
     } else {
-      const validationMessages = prompt.definition.validate?.(data[prompt.key] ?? {}, configLookup[prompt.key] ?? {}, data, configLookup, db) ?? []
-      prompt.answered = !validationMessages.some(m => m.type === 'error')
+      prompt.answered = validates(prompt)
     }
   }
 }
@@ -668,10 +693,10 @@ function liveApplicationsStatus (ctx: EvaluationContext, acc: RequestAccumulator
   return AppRequestStatus.STARTED
 }
 
-/** save the results of the evaluation to the database */
+/** save the results of the evaluation to the database, writing only the rows whose computed columns changed */
 async function persistEvaluation (ctx: EvaluationContext, db: Queryable) {
   await updateAppRequestComputed(ctx.appRequest, db)
-  await updateApplicationsComputed(ctx.applications, db)
-  await updateRequirementComputed(ctx.requirements, db)
-  await updatePromptComputed(ctx.prompts, db)
+  await updateApplicationsComputed(changedSinceLoad(ctx.applications, applicationComputedRow, ctx.baseline.applications), db)
+  await updateRequirementComputed(changedSinceLoad(ctx.requirements, requirementComputedRow, ctx.baseline.requirements), db)
+  await updatePromptComputed(changedSinceLoad(ctx.prompts, promptComputedRow, ctx.baseline.prompts), db)
 }
