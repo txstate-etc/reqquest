@@ -64,6 +64,8 @@ export interface AccessControlGroup {
 export interface AccessGrantTag {
     category: Scalars['String']
     categoryLabel: Scalars['String']
+    /** Extra context for the tag, such as the other titles a program has gone by in different periods. */
+    description: (Scalars['String'] | null)
     label: Scalars['String']
     tag: Scalars['String']
     __typename: 'AccessGrantTag'
@@ -139,6 +141,8 @@ export interface AccessRoleValidatedResponse {
 }
 
 export interface AccessTag {
+    /** Extra context for the tag, such as the other titles a program has gone by in different periods. */
+    description: (Scalars['String'] | null)
     label: Scalars['String']
     value: Scalars['String']
     __typename: 'AccessTag'
@@ -355,6 +359,8 @@ export interface Application {
     awaitingCorrection: Scalars['Boolean']
     /** A prose summary of the applicant-side requirements of the program this application is for. Intended to be shown alongside statusReason when the application becomes ineligible before submission, since an applicant disqualified early may never have seen the program's prompts and the statusReason alone lacks context. */
     eligibilityDescription: (Scalars['String'] | null)
+    /** True when the program sets showIneligiblePreSubmit: false and this application is hidden by it: ineligible because of an applicant requirement, and that ineligibility arose before submission (the request is unsubmitted, or the application was already ineligible when it was submitted). Only the applicant ever receives a hidden application, so they can still change the answers that disqualified them; UIs should leave it out of program lists. */
+    hiddenIneligiblePreSubmit: Scalars['Boolean']
     id: Scalars['ID']
     /** The phase in which this application became ineligible for benefits. Useful for reporting / filtering. Null if the application is not (yet) ineligible. */
     ineligiblePhase: (IneligiblePhases | null)
@@ -527,7 +533,7 @@ export interface Configuration {
     actions: ConfigurationAccess
     data: Scalars['JsonData']
     fetchedData: (Scalars['JsonData'] | null)
-    /** The key being configured. Could be a requirement or prompt key. */
+    /** The key being configured. Could be a requirement, prompt, or program key. A program's configuration holds its per-period title and navTitle overrides. */
     key: Scalars['String']
     __typename: 'Configuration'
 }
@@ -724,6 +730,8 @@ export interface PeriodProgram {
     actions: PeriodProgramActions
     /** A brief description of the program, written for applicants. */
     applicantDescription: (Scalars['String'] | null)
+    /** The configuration for this program in the period, which holds its title and navTitle overrides. */
+    configuration: Configuration
     /** A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts. */
     eligibilityDescription: (Scalars['String'] | null)
     /** Whether the program is enabled in this period. This is set by the system administrator. */
@@ -995,6 +1003,8 @@ export interface AccessControlGroupGenqlSelection{
 export interface AccessGrantTagGenqlSelection{
     category?: boolean | number
     categoryLabel?: boolean | number
+    /** Extra context for the tag, such as the other titles a program has gone by in different periods. */
+    description?: boolean | number
     label?: boolean | number
     tag?: boolean | number
     __typename?: boolean | number
@@ -1099,6 +1109,8 @@ export interface AccessRoleValidatedResponseGenqlSelection{
 }
 
 export interface AccessTagGenqlSelection{
+    /** Extra context for the tag, such as the other titles a program has gone by in different periods. */
+    description?: boolean | number
     label?: boolean | number
     value?: boolean | number
     __typename?: boolean | number
@@ -1430,6 +1442,8 @@ export interface ApplicationGenqlSelection{
     awaitingCorrection?: boolean | number
     /** A prose summary of the applicant-side requirements of the program this application is for. Intended to be shown alongside statusReason when the application becomes ineligible before submission, since an applicant disqualified early may never have seen the program's prompts and the statusReason alone lacks context. */
     eligibilityDescription?: boolean | number
+    /** True when the program sets showIneligiblePreSubmit: false and this application is hidden by it: ineligible because of an applicant requirement, and that ineligibility arose before submission (the request is unsubmitted, or the application was already ineligible when it was submitted). Only the applicant ever receives a hidden application, so they can still change the answers that disqualified them; UIs should leave it out of program lists. */
+    hiddenIneligiblePreSubmit?: boolean | number
     id?: boolean | number
     /** The phase in which this application became ineligible for benefits. Useful for reporting / filtering. Null if the application is not (yet) ineligible. */
     ineligiblePhase?: boolean | number
@@ -1588,7 +1602,7 @@ export interface ConfigurationGenqlSelection{
     actions?: ConfigurationAccessGenqlSelection
     data?: boolean | number
     fetchedData?: boolean | number
-    /** The key being configured. Could be a requirement or prompt key. */
+    /** The key being configured. Could be a requirement, prompt, or program key. A program's configuration holds its per-period title and navTitle overrides. */
     key?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
@@ -1873,6 +1887,8 @@ export interface PeriodProgramGenqlSelection{
     actions?: PeriodProgramActionsGenqlSelection
     /** A brief description of the program, written for applicants. */
     applicantDescription?: boolean | number
+    /** The configuration for this program in the period, which holds its title and navTitle overrides. */
+    configuration?: ConfigurationGenqlSelection
     /** A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts. */
     eligibilityDescription?: boolean | number
     /** Whether the program is enabled in this period. This is set by the system administrator. */

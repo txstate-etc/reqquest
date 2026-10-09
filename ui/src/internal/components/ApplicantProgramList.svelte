@@ -4,8 +4,8 @@
   import { Close, InProgress, CheckmarkFilled, Information, SubtractAlt } from 'carbon-icons-svelte'
   import { isNotBlank } from 'txstate-utils'
   import { type ApplicationForDetails, type AppRequestForDetails, enumApplicationStatus, enumIneligiblePhases, enumPromptVisibility, enumRequirementStatus, enumRequirementType, type OptOutApplication } from '$lib'
-  import { getApplicationStatusTags } from '../status-utils.js'
-  import { isIneligiblePreSubmission } from '../appreq-utils.js'
+  import { getApplicationStatusInfo } from '../status-utils.js'
+  import { isIneligibleByApplicantRequirement } from '../appreq-utils.js'
   import ApplicantProgramListTooltip from './ApplicantProgramListTooltip.svelte'
   import WarningIconYellow from './WarningIconYellow.svelte'
   import { api, type PromptForEditing } from '$internal/api.js'
@@ -108,7 +108,7 @@
   {#each applications as application (application.id)}
     {@const programStatus = programButtonStatus[application.id]}
     {@const programFirstPrompt = programFirstPromptId[application.id]}
-    {@const programDescriptions = isIneligiblePreSubmission(application) ? [application.applicantDescription, application.eligibilityDescription].filter(isNotBlank) : []}
+    {@const programDescriptions = isIneligibleByApplicantRequirement(application) ? [application.applicantDescription, application.eligibilityDescription].filter(isNotBlank) : []}
     <div class="program column [ flex-col ]" style='align-items: start;'>
       <span>{application.title}</span>
       {#if !viewMode}

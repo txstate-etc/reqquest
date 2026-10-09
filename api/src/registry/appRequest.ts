@@ -168,6 +168,12 @@ export interface AppDefinition {
      * triggering automations or email notifications, especially workflow notifications.
      *
      * This hook will not fire on app request creation, use `appRequestStatus` instead.
+     *
+     * To name the program in a notification, load the application rather than the definition:
+     * `(await ctx.svc(ApplicationService).findByAppRequest(appRequest)).find(a => a.programKey === programKey)?.title`.
+     * Administrators may rename a program for a period, and `programRegistry.get(programKey).title`
+     * is only the default from the code, so it can name the program differently from every screen
+     * the applicant sees.
      */
     applicationPhase?: (ctx: RQContext, appRequest: AppRequest, programKey: ProgramKey, oldPhase: ApplicationPhase) => void | Promise<void>
     /**

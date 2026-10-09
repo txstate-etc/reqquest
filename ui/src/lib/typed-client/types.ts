@@ -102,6 +102,9 @@ export default {
             "categoryLabel": [
                 91
             ],
+            "description": [
+                89
+            ],
             "label": [
                 91
             ],
@@ -286,6 +289,9 @@ export default {
             ]
         },
         "AccessTag": {
+            "description": [
+                89
+            ],
             "label": [
                 91
             ],
@@ -843,6 +849,9 @@ export default {
             ],
             "eligibilityDescription": [
                 91
+            ],
+            "hiddenIneligiblePreSubmit": [
+                45
             ],
             "id": [
                 55
@@ -1928,6 +1937,9 @@ export default {
             ],
             "applicantDescription": [
                 91
+            ],
+            "configuration": [
+                48
             ],
             "eligibilityDescription": [
                 91

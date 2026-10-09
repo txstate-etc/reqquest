@@ -78,6 +78,11 @@ type AccessControlGroup {
 type AccessGrantTag {
   category: String!
   categoryLabel: String!
+
+  """
+  Extra context for the tag, such as the other titles a program has gone by in different periods.
+  """
+  description: String
   label: String!
   tag: String!
 }
@@ -195,6 +200,10 @@ type AccessRoleValidatedResponse {
 }
 
 type AccessTag {
+  """
+  Extra context for the tag, such as the other titles a program has gone by in different periods.
+  """
+  description: String
   label: String!
   value: String!
 }
@@ -889,6 +898,11 @@ type Application {
   A prose summary of the applicant-side requirements of the program this application is for. Intended to be shown alongside statusReason when the application becomes ineligible before submission, since an applicant disqualified early may never have seen the program's prompts and the statusReason alone lacks context.
   """
   eligibilityDescription: String
+
+  """
+  True when the program sets showIneligiblePreSubmit: false and this application is hidden by it: ineligible because of an applicant requirement, and that ineligibility arose before submission (the request is unsubmitted, or the application was already ineligible when it was submitted). Only the applicant ever receives a hidden application, so they can still change the answers that disqualified them; UIs should leave it out of program lists.
+  """
+  hiddenIneligiblePreSubmit: Boolean!
   id: ID!
 
   """
@@ -1231,7 +1245,9 @@ type Configuration {
   data: JsonData!
   fetchedData: JsonData
 
-  """The key being configured. Could be a requirement or prompt key."""
+  """
+  The key being configured. Could be a requirement, prompt, or program key. A program's configuration holds its per-period title and navTitle overrides.
+  """
   key: String!
 }
 
@@ -1310,22 +1326,26 @@ type IndexValue {
 }
 
 enum IneligiblePhases {
-  """The application became ineligible in the acceptance phase."""
+  """The application was disqualified by an ACCEPTANCE requirement."""
   ACCEPTANCE
 
-  """The application became ineligible in the approval phase."""
+  """The application was disqualified by an APPROVAL requirement."""
   APPROVAL
 
-  """The application became ineligible in the pre-approval phase."""
+  """The application was disqualified by a PREAPPROVAL requirement."""
   PREAPPROVAL
 
-  """The application became ineligible in the pre-qualification phase."""
+  """
+  The application was disqualified by a PREQUAL requirement. Names the type of requirement that failed, not when it failed - a reviewer changing an applicant answer after submission can also produce this.
+  """
   PREQUAL
 
-  """The application became ineligible in the qualification phase."""
+  """
+  The application was disqualified by a QUALIFICATION or POSTQUAL requirement. Names the type of requirement that failed, not when it failed - a reviewer changing an applicant answer after submission can also produce this.
+  """
   QUALIFICATION
 
-  """The application became ineligible during blocking workflow."""
+  """The application was disqualified by a blocking workflow requirement."""
   WORKFLOW
 }
 
@@ -1719,6 +1739,11 @@ type PeriodProgram {
 
   """A brief description of the program, written for applicants."""
   applicantDescription: String
+
+  """
+  The configuration for this program in the period, which holds its title and navTitle overrides.
+  """
+  configuration: Configuration!
 
   """
   A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts.

@@ -550,6 +550,7 @@ class API extends APIBase {
           status: true,
           rescindedStatus: true,
           ineligiblePhase: true,
+          hiddenIneligiblePreSubmit: true,
           statusReason: true,
           title: true,
           navTitle: true,
@@ -1267,7 +1268,14 @@ class API extends APIBase {
         programs: {
           key: true,
           title: true,
+          navTitle: true,
           enabled: true,
+          configuration: {
+            data: true,
+            actions: {
+              update: true
+            }
+          },
           requirements: {
             key: true,
             title: true,
@@ -1375,7 +1383,8 @@ class API extends APIBase {
             category: true,
             categoryLabel: true,
             tag: true,
-            label: true
+            label: true,
+            description: true
           },
           actions: {
             update: true,
@@ -1411,7 +1420,8 @@ class API extends APIBase {
           listable: true,
           tags: {
             value: true,
-            label: true
+            label: true,
+            description: true
           }
         },
         controls: {

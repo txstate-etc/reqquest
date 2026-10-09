@@ -259,6 +259,7 @@ export function splitStatusFilter (status: unknown): { status?: AppRequestStatus
   return { status: statuses.length ? statuses : undefined, closed: flat.includes(CLOSED_STATUS_FILTER) ? true : undefined }
 }
 
+// Reviewer status tag, plus a 'Closed' tag when the request was closed after submission
 export function getReviewerStatusTags (status: AppRequestStatus, phase: AppRequestPhase | undefined, closedAt: string | null | undefined): TagItem[] {
   const config = REVIEWER_STATUS_CONFIG[status]
   const tags: TagItem[] = [{ label: config.label, type: config.color }]
@@ -352,6 +353,38 @@ export const APPLICATION_STATUS_CONFIG: Record<string, ApplicationStatusTagInfo>
  * plus a 'Restored' tag noting that it had been rescinded. Every other case returns a single tag.
  */
 export function getApplicationStatusInfo (status: string, appRequestPhase: string, closedAt: string | null | undefined, rescindedStatus?: string | null): ApplicationStatusTagInfo[] {
+  const statusMap: Record<string, ApplicationStatusTagInfo> = {
+    ACCEPTED: {
+      label: 'Offer accepted',
+      description: 'Offer accepted and all requirements met.',
+      color: 'green'
+    },
+    ELIGIBLE: {
+      label: 'Approved',
+      description: 'All requirements met, acceptance pending.',
+      color: 'green'
+    },
+    INELIGIBLE: {
+      label: 'Ineligible',
+      description: 'One or more requirements not met.',
+      color: 'red'
+    },
+    PENDING: {
+      label: 'Pending',
+      description: 'Awaiting further information.',
+      color: 'purple'
+    },
+    REJECTED: {
+      label: 'Offer declined',
+      description: 'Offer rejected or requirements not met.',
+      color: 'red'
+    },
+    RESCINDED: {
+      label: 'Rescinded',
+      description: 'Previously approved and has since been rescinded.',
+      color: 'red'
+    }
+  }
   // closing before submission is a cancellation; after submission closing leaves the status as it was
   if (appRequestPhase === enumAppRequestPhase.STARTED && closedAt != null) {
     return [{

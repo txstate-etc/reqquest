@@ -6,12 +6,13 @@
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
   import { setContext } from 'svelte'
-  import { groupby, pick, ucfirst } from 'txstate-utils'
+  import { pick, ucfirst } from 'txstate-utils'
   import { invalidate } from '$app/navigation'
   import { api, IntroPanel } from '$internal'
   import type { AccessRoleGrantCreate, AccessRoleGrantUpdate, AccessTagInput } from '$lib'
   import type { PageData } from './$types'
   import ControlWithTooltip from './ControlWithTooltip.svelte'
+  import TagsWithTooltip from './TagsWithTooltip.svelte'
 
   export let data: PageData
   $: ({ role, controlGroups, controlGroupLookup } = data)
@@ -20,31 +21,12 @@
   $: exceptions = role.grants.filter(g => !g.allow)
 
   setContext('controlGroupLookup', () => controlGroupLookup)
-  function tagsRender (tags: { categoryLabel: string, label: string }[]) {
-    const THRESHOLD = 5
-    if (!tags.length) return ''
-    const categories = groupby(tags, 'categoryLabel')
 
-    if (tags.length > THRESHOLD) {
-    // UL style for lots of tags
-      return Object.entries(categories)
-        .map(([categoryLabel, ts]) => `
-        <div>
-          <strong>${categoryLabel}</strong>
-          <ul>
-            ${ts.map(t => `<li>${t.label}</li>`).join('')}
-          </ul>
-        </div>
-      `)
-        .join('<br />')
-    }
-
-  // Inline style for small sets
-    return Object.entries(categories)
-      .map(([categoryLabel, ts]) => `<strong>${categoryLabel}</strong>: ${ts.map(t => t.label).join(', ')}`)
-      .join('<br />')
+  // the multiselect only renders option text, so a tag's description (e.g. a program's other titles)
+  // goes on a second line of the label, styled as helper text below - and the filter matches it too
+  function tagItems (tags: { value: string, label: string, description?: string | null }[]) {
+    return tags.map(t => ({ value: t.value, label: t.description ? `${t.label}\n${t.description}` : t.label }))
   }
-
   type AccessRoleGrantCreateForm = Omit<AccessRoleGrantCreate, 'tags'> & { tags: Record<string, string[]> }
   type AccessRoleGrantUpdateForm = Omit<AccessRoleGrantUpdate, 'tags'> & { tags: Record<string, string[]> }
   function transformFromAPI (data: PageData['role']['grants'][number]): AccessRoleGrantUpdateForm {
@@ -180,7 +162,7 @@
     columns={[
       { id: 'controlGroup', label: 'Grants', render: grant => grant.controlGroup.title },
       { id: 'controls', label: 'Controls', component: ControlWithTooltip },
-      { id: 'tags', label: 'Restrictions', render: grant => tagsRender(grant.tags) }
+      { id: 'tags', label: 'Restrictions', component: TagsWithTooltip }
     ]}
     rows={grants}
     actions={row => [
@@ -206,7 +188,7 @@
     columns={[
       { id: 'controlGroup', label: 'Exceptions', render: grant => grant.controlGroup.title },
       { id: 'controls', label: 'Controls', render: grant => grant.controls.join(', ') },
-      { id: 'tags', label: 'Restrictions', render: grant => grant.tags.map(t => t.label).join(', ') }
+      { id: 'tags', label: 'Restrictions', component: TagsWithTooltip }
     ]}
     noItemsKind='info'
     noItemsTitle=''
@@ -261,13 +243,15 @@
       </svelte:fragment>
     </FieldCheckboxList>
     {#each controlGroup.tags as category (category.category)}
-      <FieldMultiselect
-        path="tags.{category.category}"
-        titleText={category.label}
-        helperText={category.description}
-        label="Restrict to {category.label}"
-        items={category.tags}
-      />
+      <div class="tag-multiselect">
+        <FieldMultiselect
+          path="tags.{category.category}"
+          titleText={category.label}
+          helperText={category.description}
+          label="Restrict to {category.label}"
+          items={tagItems(category.tags)}
+        />
+      </div>
     {/each}
   </PanelFormDialog>
 {:else if showGrantCreate}
@@ -299,15 +283,16 @@
       </FieldCheckboxList>
 
       {#each controlGroup.tags as category (category.category)}
-      cg tags
-        <FieldMultiselect
-          path="tags.{category.category}"
-          titleText={category.label}
-          helperText={category.description}
-          label="Restrict to {category.label}"
-          items={category.tags}
-          filterable
-        />
+        <div class="tag-multiselect">
+          <FieldMultiselect
+            path="tags.{category.category}"
+            titleText={category.label}
+            helperText={category.description}
+            label="Restrict to {category.label}"
+            items={tagItems(category.tags)}
+            filterable
+          />
+        </div>
       {/each}
     {/if}
   </PanelFormDialog>
@@ -332,5 +317,19 @@
 <style>
   .role-list :global(.column-list-head) {
     background: var(--cds-ui-03);
+  }
+  /* options carrying a description are two lines - the title, then the description as helper text.
+     carbon-svelte's multiselect already lets unvirtualized options grow, but sets white-space: normal on
+     the label with a five-class selector, so these need a sixth to keep the line break */
+  .tag-multiselect :global(.bx--list-box .bx--list-box__menu-item .bx--list-box__menu-item__option .bx--checkbox-label-text) {
+    white-space: pre-line;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    color: var(--cds-text-secondary);
+  }
+  .tag-multiselect :global(.bx--list-box .bx--list-box__menu-item .bx--list-box__menu-item__option .bx--checkbox-label-text::first-line) {
+    font-size: 0.875rem;
+    line-height: 1.125rem;
+    color: var(--cds-text-primary);
   }
 </style>

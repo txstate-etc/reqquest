@@ -1,7 +1,7 @@
 <script lang="ts">
   import { BadgeNumber, FieldTextArea, PanelDialog, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
-  import { ReviewerQuestions, AppRequestActions } from '$internal/components'
+  import { ReviewerQuestions, AppRequestActions, SystemDeterminationNotice } from '$internal/components'
   import { Button, InlineNotification, Select, SelectItem } from 'carbon-components-svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import Pen from 'carbon-icons-svelte/lib/Pen.svelte'
@@ -23,6 +23,8 @@
   export let data: PageData
   $: ({ basicRequestData, appRequest, programKey, requestId } = data)
   $: application = appRequest.applications.find(a => a.programKey === programKey)!
+  // mirrors the API's "no trailing work" rule
+  $: nothingToReview = !application.requirements.some(r => r.workflowStage || r.type === enumRequirementType.PREAPPROVAL || r.type === enumRequirementType.APPROVAL || r.type === enumRequirementType.ACCEPTANCE)
   $: notes = appRequest?.notes ?? []
   $: latestNote = notes[0]
 
@@ -230,6 +232,9 @@
   }
 </script>
 
+{#if nothingToReview}
+  <SystemDeterminationNotice programTitle={application.title} />
+{/if}
 <ApproveLayout {basicRequestData} {appRequest}>
   <svelte:fragment slot="sidebar">
     <InfoCard title={application.title} tags={applicationStatusTags} tagsInBody />
