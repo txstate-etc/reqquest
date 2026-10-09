@@ -131,9 +131,9 @@ export async function advanceWorkflow (applicationId: string, tdb: Queryable = d
     SELECT DISTINCT w.* FROM period_workflow_stages w
     INNER JOIN application_requirements r ON r.workflowStage = w.stageKey
     INNER JOIN applications a ON a.id = r.applicationId AND a.programKey = w.programKey
-    WHERE w.programKey=? AND w.periodId=?
+    WHERE a.id=? AND w.programKey=? AND w.periodId=?
     ORDER BY w.evaluationOrder
-  `, [application.programKey, application.periodId])
+  `, [applicationId, application.programKey, application.periodId])
   const blocking = stages.filter(stage => !!stage.blocking)
   const nonblocking = stages.filter(stage => !stage.blocking)
   const current = stages.find(stage => stage.stageKey === application.workflowStageKey)
@@ -173,9 +173,9 @@ export async function reverseWorkflow (applicationId: string, tdb: Queryable = d
     SELECT DISTINCT w.* FROM period_workflow_stages w
     INNER JOIN application_requirements r ON r.workflowStage = w.stageKey
     INNER JOIN applications a ON a.id = r.applicationId AND a.programKey = w.programKey
-    WHERE w.programKey=? AND w.periodId=?
+    WHERE a.id=? AND w.programKey=? AND w.periodId=?
     ORDER BY w.evaluationOrder
-  `, [application.programKey, application.periodId])
+  `, [applicationId, application.programKey, application.periodId])
   // Non-blocking workflow stages are excluded from the reverse (return) order — reversal only steps back
   // through the blocking workflow. The stage definition (registry) is authoritative for nonBlocking
   const blocking = stages.filter(stage => !!stage.blocking && !programRegistry.getWorkflowStageByKey(stage.stageKey)?.nonBlocking)

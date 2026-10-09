@@ -9,7 +9,7 @@ export type Graphql = <T = any>(query: string, variables?: Record<string, any>) 
 export type Prompt = { id: number, key: string, answered: boolean, visibility: string }
 export type Requirement = { key: string, type: string, status: string, prompts: Prompt[] }
 export type Actions = { rescindApplication: boolean, restoreApplication: boolean }
-export type Application = { id: string, programKey: string, phase: string, status: string, ineligiblePhase: string | null, rescindedStatus: string | null, rescindedReason: string | null, restoredReason: string | null, actions: Actions, requirements: Requirement[] }
+export type Application = { id: string, programKey: string, phase: string, status: string, ineligiblePhase: string | null, workflowStage: { key: string } | null, rescindedStatus: string | null, rescindedReason: string | null, restoredReason: string | null, actions: Actions, requirements: Requirement[] }
 export type State = { phase: string, status: string, actions: { completeRequest: boolean }, applications: Application[] }
 
 export const stateQuery = `
@@ -17,7 +17,7 @@ export const stateQuery = `
     appRequests(filter: { ids: $ids }) {
       phase status actions { completeRequest }
       applications {
-        id programKey phase status ineligiblePhase rescindedStatus rescindedReason restoredReason
+        id programKey phase status ineligiblePhase workflowStage { key } rescindedStatus rescindedReason restoredReason
         actions { rescindApplication restoreApplication }
         requirements { key type status prompts { id key answered visibility } }
       }

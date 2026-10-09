@@ -9,6 +9,7 @@ export { default as MissingDefinitionNotification } from './MissingDefinitionNot
 export { default as PeriodPanel } from './PeriodPanel.svelte'
 export { default as RenderDisplayComponent } from './RenderDisplayComponent.svelte'
 export { default as ReviewerQuestions } from './ReviewerQuestions.svelte'
+export { default as SystemDeterminationNotice } from './SystemDeterminationNotice.svelte'
 export { default as AppRequestActions } from './ReviewerActions.svelte'
 export { default as TabLinks } from './TabLinks.svelte'
 export type { TabLinkItem } from './TabLinks.svelte'
