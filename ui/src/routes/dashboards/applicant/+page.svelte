@@ -3,12 +3,12 @@
   import { resolve } from '$app/paths'
   import type { ApplicationForDetails, AppRequestForDetails, Scalars } from '$lib'
   import {
-    api, ApplicationDetailsView, AppRequestCard, IntroPanel, type AppRequestForExportResponse, type DashboardAppRequest,
+    AnnouncementBanner, api, ApplicationDetailsView, AppRequestCard, IntroPanel, type AppRequestForExportResponse, type DashboardAppRequest,
     getPeriodDisplayInfo, getPeriodStatus, getStatusActionType, getSubmitButtonText
   } from '$internal'
   import { CardGrid, FieldMultiselect, FilterUI, Panel, PanelDialog, Toasts } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
-  import { Button, Dropdown, InlineNotification, Modal, NotificationActionButton, Tooltip } from 'carbon-components-svelte'
+  import { Button, Dropdown, InlineNotification, Modal, Tooltip } from 'carbon-components-svelte'
   import Close from 'carbon-icons-svelte/lib/Close.svelte'
   import Reset from 'carbon-icons-svelte/lib/Reset.svelte'
   import DocumentExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
@@ -311,20 +311,7 @@
 
   <!-- Time sensitive banner -->
   {#if announcement}
-    <InlineNotification
-      kind="warning"
-      title={announcement.subject}
-      subtitle={announcement.body}
-      lowContrast
-      hideCloseButton
-      class="time-sensitive-banner"
-    >
-      <svelte:fragment slot="actions">
-        {#if announcement.link}
-        <NotificationActionButton href={announcement.link}>{announcement.linkText}</NotificationActionButton>
-        {/if}
-      </svelte:fragment>
-    </InlineNotification>
+    <AnnouncementBanner subject={announcement.subject} body={announcement.body} link={announcement.link} linkText={announcement.linkText} />
   {/if}
 
   {#if showIntroPanel}
@@ -503,18 +490,5 @@
   }
   .applicant-dashboard.past-tab :global(.quickfilters-form) {
     min-height: 2.5rem;
-  }
-  :global(div.time-sensitive-banner.bx--inline-notification) {
-    min-width: unset;
-    max-width: fit-content;
-    flex-wrap: wrap;
-    width: auto;
-    align-items: center;
-  }
-  .time-sensitive-banner :global(.bx--inline-notification__details) {
-    flex-grow: unset;
-  }
-  .time-sensitive-banner :global(.bx--inline-notification__text-wrapper) {
-    display: block;
   }
 </style>
