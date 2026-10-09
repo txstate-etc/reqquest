@@ -9,9 +9,7 @@
   import Time from 'carbon-icons-svelte/lib/Time.svelte'
   import type { LayoutData } from './$types.js'
   import { uiRegistry } from '../local/index.js'
-  import { navigating } from '$app/stores';
   import { invalidateAll } from '$app/navigation'
-  import { Loading } from "carbon-components-svelte";
   import '../app.css'
 
   api.recordNavigations()
@@ -20,9 +18,7 @@
   $: ({ access, layoutError, canImpersonate } = data)
   const userProfileName = [access?.user?.fullname.slice(0, access?.user?.fullname.indexOf(' ')), access?.user?.fullname.slice(access?.user?.fullname.indexOf(' ') + 1)]
 </script>
-{#if $navigating}
-	<Loading />
-{/if}
+
 <UIShell appName={uiRegistry.config.appName} reverseWeights={!!PUBLIC_ENVIRONMENT} companyName={PUBLIC_ENVIRONMENT || 'TXST'} overlayText={PUBLIC_ENVIRONMENT} navRoot={{
   title: uiRegistry.config.appName,
   hideFromSideNav: true,
