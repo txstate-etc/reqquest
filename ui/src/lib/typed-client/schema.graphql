@@ -78,6 +78,11 @@ type AccessControlGroup {
 type AccessGrantTag {
   category: String!
   categoryLabel: String!
+
+  """
+  Extra context for the tag, such as the other titles a program has gone by in different periods.
+  """
+  description: String
   label: String!
   tag: String!
 }
@@ -195,6 +200,10 @@ type AccessRoleValidatedResponse {
 }
 
 type AccessTag {
+  """
+  Extra context for the tag, such as the other titles a program has gone by in different periods.
+  """
+  description: String
   label: String!
   value: String!
 }
@@ -1200,7 +1209,9 @@ type Configuration {
   data: JsonData!
   fetchedData: JsonData
 
-  """The key being configured. Could be a requirement or prompt key."""
+  """
+  The key being configured. Could be a requirement, prompt, or program key. A program's configuration holds its per-period title and navTitle overrides.
+  """
   key: String!
 }
 
@@ -1692,6 +1703,11 @@ type PeriodProgram {
 
   """A brief description of the program, written for applicants."""
   applicantDescription: String
+
+  """
+  The configuration for this program in the period, which holds its title and navTitle overrides.
+  """
+  configuration: Configuration!
 
   """
   A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts.

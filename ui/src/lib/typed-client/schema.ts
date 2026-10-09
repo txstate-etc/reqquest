@@ -64,6 +64,8 @@ export interface AccessControlGroup {
 export interface AccessGrantTag {
     category: Scalars['String']
     categoryLabel: Scalars['String']
+    /** Extra context for the tag, such as the other titles a program has gone by in different periods. */
+    description: (Scalars['String'] | null)
     label: Scalars['String']
     tag: Scalars['String']
     __typename: 'AccessGrantTag'
@@ -139,6 +141,8 @@ export interface AccessRoleValidatedResponse {
 }
 
 export interface AccessTag {
+    /** Extra context for the tag, such as the other titles a program has gone by in different periods. */
+    description: (Scalars['String'] | null)
     label: Scalars['String']
     value: Scalars['String']
     __typename: 'AccessTag'
@@ -519,7 +523,7 @@ export interface Configuration {
     actions: ConfigurationAccess
     data: Scalars['JsonData']
     fetchedData: (Scalars['JsonData'] | null)
-    /** The key being configured. Could be a requirement or prompt key. */
+    /** The key being configured. Could be a requirement, prompt, or program key. A program's configuration holds its per-period title and navTitle overrides. */
     key: Scalars['String']
     __typename: 'Configuration'
 }
@@ -716,6 +720,8 @@ export interface PeriodProgram {
     actions: PeriodProgramActions
     /** A brief description of the program, written for applicants. */
     applicantDescription: (Scalars['String'] | null)
+    /** The configuration for this program in the period, which holds its title and navTitle overrides. */
+    configuration: Configuration
     /** A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts. */
     eligibilityDescription: (Scalars['String'] | null)
     /** Whether the program is enabled in this period. This is set by the system administrator. */
@@ -985,6 +991,8 @@ export interface AccessControlGroupGenqlSelection{
 export interface AccessGrantTagGenqlSelection{
     category?: boolean | number
     categoryLabel?: boolean | number
+    /** Extra context for the tag, such as the other titles a program has gone by in different periods. */
+    description?: boolean | number
     label?: boolean | number
     tag?: boolean | number
     __typename?: boolean | number
@@ -1089,6 +1097,8 @@ export interface AccessRoleValidatedResponseGenqlSelection{
 }
 
 export interface AccessTagGenqlSelection{
+    /** Extra context for the tag, such as the other titles a program has gone by in different periods. */
+    description?: boolean | number
     label?: boolean | number
     value?: boolean | number
     __typename?: boolean | number
@@ -1559,7 +1569,7 @@ export interface ConfigurationGenqlSelection{
     actions?: ConfigurationAccessGenqlSelection
     data?: boolean | number
     fetchedData?: boolean | number
-    /** The key being configured. Could be a requirement or prompt key. */
+    /** The key being configured. Could be a requirement, prompt, or program key. A program's configuration holds its per-period title and navTitle overrides. */
     key?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
@@ -1844,6 +1854,8 @@ export interface PeriodProgramGenqlSelection{
     actions?: PeriodProgramActionsGenqlSelection
     /** A brief description of the program, written for applicants. */
     applicantDescription?: boolean | number
+    /** The configuration for this program in the period, which holds its title and navTitle overrides. */
+    configuration?: ConfigurationGenqlSelection
     /** A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts. */
     eligibilityDescription?: boolean | number
     /** Whether the program is enabled in this period. This is set by the system administrator. */

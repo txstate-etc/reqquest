@@ -102,6 +102,9 @@ export default {
             "categoryLabel": [
                 89
             ],
+            "description": [
+                89
+            ],
             "label": [
                 89
             ],
@@ -286,6 +289,9 @@ export default {
             ]
         },
         "AccessTag": {
+            "description": [
+                89
+            ],
             "label": [
                 89
             ],
@@ -1903,6 +1909,9 @@ export default {
             ],
             "applicantDescription": [
                 89
+            ],
+            "configuration": [
+                48
             ],
             "eligibilityDescription": [
                 89
