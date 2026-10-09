@@ -6,8 +6,8 @@ import db from 'mysql2-async/db'
 import { clone, isNotBlank, omit, stringify } from 'txstate-utils'
 import {
   ApplicationPhase, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter,
-  AppRequestPhase, AppRequestStatus, evaluateAppRequest, getApplications, getPeriodWorkflowStages, Pagination, PaginationInfoWithTotalItems, promptRegistry,
-  RQContext, type AppRequestData
+  AppRequestPhase, AppRequestStatus, clearIneligiblePreSubmit, evaluateAppRequest, getApplications, getPeriodWorkflowStages, Pagination, PaginationInfoWithTotalItems, promptRegistry,
+  RQContext, snapshotIneligiblePreSubmit, type AppRequestData
 } from '../internal.js'
 
 /**
@@ -254,6 +254,7 @@ export async function updateAppRequestData (appRequestId: number, data: AppReque
 export async function submitAppRequest (appRequestId: number) {
   await db.update('UPDATE app_requests SET phase = ?, submittedData = data, submittedAt=NOW() WHERE id = ?', [AppRequestPhase.SUBMITTED, appRequestId])
   await evaluateAppRequest(appRequestId)
+  await snapshotIneligiblePreSubmit(appRequestId)
 }
 
 export async function appRequestReturnToApplicant (appRequestId: number, dataVersion?: number) {
@@ -263,6 +264,7 @@ export async function appRequestReturnToApplicant (appRequestId: number, dataVer
     if (dataVersion != null) binds.push(dataVersion)
     const updated = await db.update('UPDATE app_requests SET phase = ?, submittedAt = NULL WHERE id = ?' + where, binds)
     if (!updated) throw new Error('Someone else is working on the same request and made changes since you loaded. Reload the page to try again.')
+    await clearIneligiblePreSubmit(appRequestId, db)
     await evaluateAppRequest(appRequestId, db)
   })
 }
@@ -283,6 +285,7 @@ export async function appRequestComplete (appRequestId: number, tdb: Queryable =
 export async function restoreAppRequest (appRequestId: number) {
   await db.update('UPDATE app_requests SET phase = ?, data = submittedData WHERE id = ?', [AppRequestPhase.SUBMITTED, appRequestId])
   await evaluateAppRequest(appRequestId)
+  await snapshotIneligiblePreSubmit(appRequestId)
 }
 
 export async function closeAppRequest (appRequestId: number) {

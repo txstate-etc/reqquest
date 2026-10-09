@@ -55,6 +55,7 @@ export interface ApplicationForDetails {
   applicantDescription?: string | null
   eligibilityDescription?: string | null
   ineligiblePhase: IneligiblePhases | null
+  hiddenIneligiblePreSubmit?: boolean | null
   status: ApplicationStatus
   rescindedStatus?: ApplicationRescindedStatus | null
   statusReason?: string | null

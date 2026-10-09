@@ -70,6 +70,7 @@ export class ApplicationService extends AuthService<Application> {
 
   async findByAppRequest (appRequest: AppRequest) {
     return this.removeUnauthorized(await this.raw.findByAppRequest(appRequest))
+      .filter(a => !a.hiddenIneligiblePreSubmit || this.isOwn(a))
   }
 
   async getNextWorkflowStage (application: Application) {
