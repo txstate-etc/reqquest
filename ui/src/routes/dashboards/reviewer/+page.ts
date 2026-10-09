@@ -1,36 +1,41 @@
 import { error, redirect } from '@sveltejs/kit'
 import { extractMergedFilters, extractPaginationParams } from '@txstate-mws/carbon-svelte'
-import { DateTime } from 'luxon'
-import { sortby, toQuery } from 'txstate-utils'
-import { api } from '$internal'
+import { toQuery } from 'txstate-utils'
+import { api, splitStatusFilter } from '$internal'
 import { enumAppRequestStatus, type AppRequestFilter } from '$lib'
 import type { PageLoad } from './$types'
 
-export const _reviewerDashboardInReviewStatuses = [enumAppRequestStatus.PREAPPROVAL, enumAppRequestStatus.APPROVAL, enumAppRequestStatus.REVIEW_IN_PROGRESS, enumAppRequestStatus.ACCEPTANCE, enumAppRequestStatus.READY_TO_ACCEPT, enumAppRequestStatus.REVIEW_COMPLETE]
-export const _defaultReviewerDashboardFilters = { t: { complete: false, reviewStarted: false, status: _reviewerDashboardInReviewStatuses } }
+export const _reviewPendingStatuses = [enumAppRequestStatus.PREAPPROVAL, enumAppRequestStatus.APPROVAL]
+export const _inReviewStatuses = [enumAppRequestStatus.REVIEW_IN_PROGRESS]
+export const _reviewCompleteStatuses = [enumAppRequestStatus.REVIEW_COMPLETE, enumAppRequestStatus.ACCEPTANCE, enumAppRequestStatus.READY_TO_ACCEPT, enumAppRequestStatus.ACCEPTED, enumAppRequestStatus.NOT_ACCEPTED, enumAppRequestStatus.APPROVED, enumAppRequestStatus.NOT_APPROVED]
+/** Everything the dashboard can show: the union of the three tabs. */
+export const _reviewerDashboardStatuses = [..._reviewPendingStatuses, ..._inReviewStatuses, ..._reviewCompleteStatuses]
+export const _defaultReviewerDashboardFilters = { t: { status: _reviewPendingStatuses } }
 
 export const load: PageLoad = async ({ url, parent }) => {
   const { access } = await parent()
   if (!access.viewReviewerInterface) throw error(403)
   if (!url.search) redirect(302, '?' + toQuery(_defaultReviewerDashboardFilters))
   const { page, pagesize } = extractPaginationParams(url)
-  const merged: AppRequestFilter = { ...extractMergedFilters(url), closed: false }
-  if (merged.complete == null) redirect(302, '?' + toQuery(_defaultReviewerDashboardFilters))
-  const now = DateTime.now()
+  const { status, closed: closedOnly, ...rest } = extractMergedFilters(url)
+  // open requests by default; closed ones only when the Filter pop-out's "Closed or Cancelled only" is checked
+  const closed = closedOnly === true
+  const merged: AppRequestFilter = { ...rest, status: splitStatusFilter(status).status, closed }
 
-  const [{ appRequests, pageInfo, appRequestIndexes }, appCount, periods] = await Promise.all([
+  const [{ appRequests, pageInfo, appRequestIndexes }, pending, inReview, complete, applicantCounts, avgDecisionSeconds, programs, periods] = await Promise.all([
     api.getReviewerDashboardRequests(merged, {
       page,
       perPage: pagesize ?? 25
     }),
-    api.getApplicationCount({ closed: false, status: _reviewerDashboardInReviewStatuses }),
-    api.getPeriodList({ opensAfter: now.minus({ years: 2 }).toISO() })
+    // counts and tiles follow the same open/closed choice as the list, so they describe what it can show
+    api.getApplicationCount({ closed, status: _reviewPendingStatuses }),
+    api.getApplicationCount({ closed, status: _inReviewStatuses }),
+    api.getApplicationCount({ closed, status: _reviewCompleteStatuses }),
+    api.getAppRequestApplicantCounts({ closed, status: _reviewerDashboardStatuses }),
+    access.viewMetrics ? api.getReviewDecisionTiming() : Promise.resolve(null),
+    api.getPrograms(),
+    api.getPeriodList()
   ])
 
-  const openPeriods = sortby(periods.filter(p => DateTime.fromISO(p.openDate) <= now && (p.closeDate == null || DateTime.fromISO(p.closeDate) >= now)), 'openDate', true)
-  const futurePeriods = sortby(periods.filter(p => DateTime.fromISO(p.openDate) > now), 'openDate', false)
-  const pastPeriods = sortby(periods.filter(p => p.closeDate != null && DateTime.fromISO(p.closeDate) < now), 'closeDate', true)
-  const period = openPeriods.at(0) ?? futurePeriods.at(0) ?? pastPeriods.at(0)
-
-  return { appRequests, totalItems: pageInfo.appRequests!.totalItems ?? appRequests.length, period, filters: merged, appCount, appRequestIndexes }
+  return { appRequests, totalItems: pageInfo.appRequests!.totalItems ?? appRequests.length, filters: merged, appRequestIndexes, tabCounts: { pending, inReview, complete }, applicantCounts, avgDecisionSeconds, programs, periods }
 }

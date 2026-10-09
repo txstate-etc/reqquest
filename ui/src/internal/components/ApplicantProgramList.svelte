@@ -142,8 +142,7 @@
         {/if}
       {:else}
         {#if ['start', 'continue', 'complete', 'revisitPending'].includes(programStatus) && !optedOutPrograms[application.id]}
-          {@const statusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt, application.rescindedStatus)}
-          <TagSet tags={statusInfo.map(info => ({ type: info.color, label: info.label }))} />
+          <TagSet tags={getApplicationStatusTags(application.status, appRequest.phase, appRequest.closedAt, application.rescindedStatus)} />
         {:else if optedOutPrograms[application.id]}
           <SubtractAlt size={24} fill='#dd3b46'/><p>Opted out</p>
         {:else}

@@ -1,98 +1,90 @@
 <script lang="ts">
-  import { ColumnList, FieldDate, FilterUI, Pagination, IntroPanel } from '@txstate-mws/carbon-svelte'
+  import { ColumnList, FieldCheckbox, FieldDate, FieldMultiselect, FilterUI, Pagination, IntroPanel } from '@txstate-mws/carbon-svelte'
   import { Tile } from 'carbon-components-svelte'
   import DocExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
   import View from 'carbon-icons-svelte/lib/View.svelte'
-  import { DateTime } from 'luxon'
-  import { onMount, tick } from 'svelte'
-  import { toQuery } from 'txstate-utils'
+  import { DateTime, Duration } from 'luxon'
+  import { tick } from 'svelte'
+  import { pluralize, toQuery } from 'txstate-utils'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { api, getReviewerStatusTags } from '$internal'
+  import { api, FieldNestedMultiselect, getProgramStatusFilterItems, getReviewerStatusTags, ProgramStatusCell, twoLineDateHtml } from '$internal'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../local/index.js'
-  import { _reviewerDashboardInReviewStatuses, _defaultReviewerDashboardFilters } from './+page.js'
+  import { _inReviewStatuses, _reviewCompleteStatuses, _reviewPendingStatuses } from './+page.js'
 
   export let data: PageData
-  $: ({ appRequests, totalItems, period, filters, appCount, appRequestIndexes } = data)
-  $: periodStart = period?.openDate ? DateTime.fromISO(period.openDate) : undefined
-  $: periodClose = period?.closeDate ? DateTime.fromISO(period.closeDate) : undefined
-  $: periodArchive = period?.archiveDate ? DateTime.fromISO(period.archiveDate) : undefined
-  let now = DateTime.now()
+  $: ({ appRequests, totalItems, appRequestIndexes, filters, tabCounts, applicantCounts, avgDecisionSeconds, programs, periods } = data)
 
-  async function downloadCSV () {
-    const ticket = await api.getDownloadTicket()
-    location.href = `${api.baseUrl}/csv/${ticket}/requests/reviewerdashboard${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv${location.search || ('?' + toQuery({ reviewStarted: false, ..._defaultReviewerDashboardFilters }))}`
+  // tab labels carry the count of open requests in that stage
+  $: tabs = [
+    { label: `Review Pending (${tabCounts.pending})`, value: { status: _reviewPendingStatuses }, title: 'Review not started', subtitle: 'These are applications waiting to be started by the review team.' },
+    { label: `In Review (${tabCounts.inReview})`, value: { status: _inReviewStatuses }, title: 'Review in progress', subtitle: 'These are applications currently being reviewed.' },
+    { label: `Review Complete (${tabCounts.complete})`, value: { status: _reviewCompleteStatuses }, title: 'Review complete', subtitle: 'These applications have finished review, including results already released to the applicant.' }
+  ]
+  // the active tab is whichever one's statuses the current filter carries; default to the first
+  $: activeTab = tabs.find(t => t.value.status.some(s => filters.status?.includes(s))) ?? tabs[0]
+
+  function formatDuration (seconds: number) {
+    const d = Duration.fromObject({ seconds: Math.round(seconds) }).shiftTo('days', 'hours', 'minutes').toObject()
+    const parts = (['days', 'hours', 'minutes'] as const).filter(unit => (d[unit] ?? 0) >= 1).map(unit => pluralize(unit.slice(0, -1), Math.floor(d[unit]!), true))
+    return parts.length ? parts.join(', ') : 'under a minute'
   }
 
-  onMount(() => {
-    const interval = setInterval(() => {
-      now = DateTime.now()
-    }, 60000)
-    return () => clearInterval(interval)
-  })
+  // export only those requests selected, otherwise export whatever the current filters show.
+  async function downloadCSV (ids?: string[]) {
+    const ticket = await api.getDownloadTicket()
+    const query = '?' + toQuery({ f: ids?.length ? { ids } : filters } as unknown as Parameters<typeof toQuery>[0])
+    location.href = `${api.baseUrl}/csv/${ticket}/requests/reviewerdashboard${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv${query}`
+  }
+
 </script>
 
-<div class='[ px-8 ]'>
-  <div class="[ flex justify-between flex-wrap mb-4 ]">
+<div class='intro-wide [ px-8 ]'>
+  <div class="review-header [ flex justify-between items-start flex-wrap-reverse gap-4 mb-4 ]">
+    <div class="review-tabs">
+      <FilterUI tabs={tabs.map(t => ({ label: t.label, value: t.value }))} tabsAriaLabel="Review stage" />
+    </div>
     <div class="[ flex gap-2 flex-wrap ]">
-      {#if periodStart != null}
-        <Tile class='[ flex flex-col gap-4 ]'>
-          <span class='[ text-lg ]'>
-            {uiRegistry.getWord('period')} Open{#if periodStart > now}s{:else}ed{/if}
-          </span>
-          <span>{periodStart.toFormat('f')}</span>
-        </Tile>
-      {/if}
-      {#if periodClose != null}
-        <Tile class='[ flex flex-col gap-4 ]'>
-          <span class='[ text-lg ]'>
-            {uiRegistry.getWord('period')} Close{#if periodClose < now}d{:else}s{/if}
-          </span>
-          <span>{periodClose.toFormat('f')}</span>
-        </Tile>
-      {/if}
-      {#if periodArchive != null}
-        <Tile class='[ flex flex-col gap-4 ]'>
-          <span class='[ text-lg ]'>
-            {uiRegistry.getWord('period')} Archive{#if periodArchive < now}d{:else}s{/if}
-          </span>
-          <span>{periodArchive.toFormat('f')}</span>
+      <Tile class="stat-tile [ flex flex-col gap-4 ]">
+        <span class='[ text-lg ]'>First time application</span>
+        <span>{pluralize('application', applicantCounts.firstTime, true)}</span>
+      </Tile>
+      <Tile class="stat-tile [ flex flex-col gap-4 ]">
+        <span class='[ text-lg ]'>Returning application</span>
+        <span>{pluralize('application', applicantCounts.returning, true)}</span>
+      </Tile>
+      {#if avgDecisionSeconds != null}
+        <Tile class="stat-tile [ flex flex-col gap-4 ]">
+          <span class='[ text-lg ]'>Avg. time to finish review</span>
+          <span>{formatDuration(avgDecisionSeconds)}</span>
         </Tile>
       {/if}
     </div>
-    <Tile class='[ flex flex-col gap-4 ]'>
-      <span class='[ text-lg ]'>
-        {appCount}
-      </span>
-      <span>{appCount > 1 ? uiRegistry.getPlural('appRequest') : uiRegistry.getWord('appRequest')} to review</span>
-    </Tile>
   </div>
 
-  <FilterUI tabs={[
-    { label: 'Awaiting Review', value: { reviewStarted: false, complete: false, status: _reviewerDashboardInReviewStatuses } },
-    { label: 'Review in Progress', value: { reviewStarted: true, complete: false, status: _reviewerDashboardInReviewStatuses } },
-    { label: 'Completed Review', value: { complete: true } }
-  ]}>
-  </FilterUI>
-
-  <IntroPanel title={filters.reviewStarted ? 'Review in progress' : filters.complete ? 'Completed review' : 'Review not started'} subtitle={filters.reviewStarted ? 'These are applications that are in progress, if you are looking for reviews you have participated in, filter by your name.' : filters.complete ? 'These applications have been completely reviewed.' : 'These are applications waiting to be reviewed.'} />
+  <IntroPanel title={activeTab.title} subtitle={activeTab.subtitle} />
 
   <ColumnList
     autoHideColumns
     searchable
-    filterTitle='Request Filters'
+    showExpandAll
+    filterTitle="Request Filters"
     listActions={[
-      { label: 'Download', icon: DocExport, onClick: downloadCSV }
+      { label: 'Export', icon: DocExport, onClick: () => downloadCSV() }
+    ]}
+    selectedActions={rows => [
+      { label: 'Download selected', icon: DocExport, onClick: () => downloadCSV(rows.map(r => r.id)) }
     ]}
     columns={[
       { id: 'request', label: 'Request #', fixed: '90px', minWidth: 90, tags: row => [{ label: String(row.id) }] },
       { id: 'period', label: uiRegistry.getWord('period'), render: r => r.period.name },
       { id: 'login', label: uiRegistry.getWord('login'), minWidth: 100, tags: r => [{ label: r.applicant.login, type: 'green' }] },
       { id: 'name', label: 'Name', get: 'applicant.fullname' },
-      { id: 'dateSubmitted', label: 'Date Submitted', minWidth: 150, render: r => DateTime.fromISO(r.createdAt).toFormat('f') },
-      { id: 'status', label: 'Status', minWidth: 150, tags: r => getReviewerStatusTags(r.status, r.phase, r.closedAt) },
-      { id: 'lastUpdated', label: 'Last Updated', minWidth: 150, render: r => DateTime.fromISO(r.updatedAt).toFormat('f') },
+      { id: 'dateSubmitted', label: 'Date Submitted', minWidth: 120, render: r => twoLineDateHtml(r.createdAt) },
+      { id: 'program', label: 'Program', minWidth: 220, component: ProgramStatusCell },
+      { id: 'status', label: 'Application status', minWidth: 150, tags: r => getReviewerStatusTags(r.status, r.phase, r.closedAt) },
+      { id: 'lastUpdated', label: 'Last Updated', minWidth: 120, render: r => twoLineDateHtml(r.updatedAt) },
       ...appRequestIndexes.map(index => ({
         id: 'cat_' + index.category,
         label: index.categoryLabel,
@@ -119,8 +111,17 @@
     ]}
   >
     <svelte:fragment slot="filters">
-      <FieldDate path='submittedAfter' labelText='Submitted After' beginningOfDay />
-      <FieldDate path='submittedBefore' labelText='Submitted Before' endOfDay />
+      <FieldNestedMultiselect path="applicationStatuses" labelText="Program status" items={getProgramStatusFilterItems()} />
+      <FieldMultiselect path="programKeys" labelText="Program" label="Choose one or more" items={programs.map(p => ({ value: p.key, label: p.title }))} />
+      <FieldMultiselect path="periodIds" labelText={uiRegistry.getPlural('period')} label="Choose one or more" items={periods.map(p => ({ value: p.id, label: p.name }))} filterable />
+      <FieldDate path="submittedAfter" labelText="Submitted After" placeholder="Select a date" beginningOfDay />
+      <FieldDate path="submittedBefore" labelText="Submitted Before" placeholder="Select a date" endOfDay />
+      <!-- the dashboard lists open requests; closed ones appear only when asked for here -->
+      <FieldCheckbox path="closed" labelText="Closed or Cancelled only" />
+    </svelte:fragment>
+    <svelte:fragment let:row>
+      <div class="[ mb-2 ]"><strong>Programs</strong></div>
+      <ProgramStatusCell {row} rollup={false} />
     </svelte:fragment>
   </ColumnList>
 
@@ -130,3 +131,13 @@
     chooseSize
   />
 </div>
+
+<style>
+  .intro-wide :global(.intro-panel .content-start) {
+    max-width: none;
+  }
+  /* the header row owns the spacing below the tabs; FilterUI's own bottom margin would double it */
+  .review-tabs :global(.filter-ui-container) {
+    margin-bottom: 0;
+  }
+</style>

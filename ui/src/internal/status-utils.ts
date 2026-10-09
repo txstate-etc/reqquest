@@ -186,17 +186,17 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, { description: str
     color: 'blue'
   },
   ACCEPTANCE: {
-    label: 'Offer pending',
+    label: 'Awaiting acceptance',
     description: 'Waiting for you to respond to the offer.',
     color: 'purple'
   },
-  ACCEPTED: { 
-    label: 'Offer accepted',
+  ACCEPTED: {
+    label: 'Accepted',
     description: 'You have accepted an offer.',
     color: 'green'
   },
   READY_TO_ACCEPT: {
-    label: 'Almost accepted',
+    label: 'Ready to accept',
     description: 'You have been offered and can now accept.',
     color: 'purple'
   },
@@ -211,12 +211,12 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, { description: str
     color: 'green'
   },
   NOT_APPROVED: {
-    label: 'Ineligible',
+    label: 'Not approved',
     description: `Your ${uiRegistry.getWord('appRequest').toLowerCase()} was not approved.`,
     color: 'red'
   },
-  NOT_ACCEPTED: { 
-    label: 'Offer declined',
+  NOT_ACCEPTED: {
+    label: 'Declined',
     description: 'The offer was not accepted.',
     color: 'gray'
   },
@@ -235,6 +235,28 @@ export const REVIEWER_STATUS_CONFIG: Record<AppRequestStatus, { description: str
     description: `All ${uiRegistry.getPlural('appRequest').toLowerCase()} have been disqualified.`,
     color: 'red'
   }
+}
+
+export const CLOSED_STATUS_FILTER = 'CLOSED'
+export interface StatusFilterOption { value: (AppRequestStatus | typeof CLOSED_STATUS_FILTER)[], label: string }
+
+export function getReviewerStatusFilterOptions ({ includeClosed = false }: { includeClosed?: boolean } = {}): StatusFilterOption[] {
+  const byLabel = new Map<string, AppRequestStatus[]>()
+  for (const [status, config] of Object.entries(REVIEWER_STATUS_CONFIG) as [AppRequestStatus, { label: string }][]) {
+    const group = byLabel.get(config.label)
+    if (group) group.push(status)
+    else byLabel.set(config.label, [status])
+  }
+  const options: StatusFilterOption[] = Array.from(byLabel, ([label, value]) => ({ value, label }))
+  if (includeClosed) options.push({ value: [CLOSED_STATUS_FILTER], label: 'Closed' })
+  return options
+}
+
+export function splitStatusFilter (status: unknown): { status?: AppRequestStatus[], closed?: true } {
+  if (!Array.isArray(status)) return {}
+  const flat = Array.from(new Set(status.flat(2).filter((s): s is string => typeof s === 'string')))
+  const statuses = flat.filter(s => s !== CLOSED_STATUS_FILTER) as AppRequestStatus[]
+  return { status: statuses.length ? statuses : undefined, closed: flat.includes(CLOSED_STATUS_FILTER) ? true : undefined }
 }
 
 // Reviewer status tag, plus a 'Closed' tag when the request was closed after submission
@@ -290,6 +312,40 @@ export function getStatusActionType (status: AppRequestStatus): 'navigate' | 'do
 // === Application Status ===
 // ========================================
 
+/** Display labels for the per-program ApplicationStatus values. Shared by status tags and the reviewer dashboard's Program status filter. */
+export const APPLICATION_STATUS_CONFIG: Record<string, ApplicationStatusTagInfo> = {
+  ACCEPTED: {
+    label: 'Offer accepted',
+    description: 'Offer accepted and all requirements met.',
+    color: 'green'
+  },
+  ELIGIBLE: {
+    label: 'Approved',
+    description: 'All requirements met, acceptance pending.',
+    color: 'green'
+  },
+  INELIGIBLE: {
+    label: 'Ineligible',
+    description: 'One or more requirements not met.',
+    color: 'red'
+  },
+  PENDING: {
+    label: 'Pending',
+    description: 'Awaiting further information.',
+    color: 'purple'
+  },
+  REJECTED: {
+    label: 'Offer declined',
+    description: 'Offer rejected or requirements not met.',
+    color: 'red'
+  },
+  RESCINDED: {
+    label: 'Rescinded',
+    description: 'Previously approved and has since been rescinded.',
+    color: 'red'
+  }
+}
+
 /**
  * Map ApplicationStatus enum to display info.
  *
@@ -341,7 +397,7 @@ export function getApplicationStatusInfo (status: string, appRequestPhase: strin
   if (appRequestPhase === enumAppRequestPhase.STARTED && status === enumApplicationStatus.ELIGIBLE) {
     return [{ label: 'Pending', description: 'Awaiting submission.', color: 'purple' }]
   }
-  const tags = [statusMap[status] ?? { label: status, description: 'Unknown status.', color: 'gray' as const }]
+  const tags = [APPLICATION_STATUS_CONFIG[status] ?? { label: status, description: 'Unknown status.', color: 'gray' as const }]
   if (rescindedStatus === enumApplicationRescindedStatus.RESTORED) {
     tags.push({
       label: 'Restored',
@@ -350,6 +406,33 @@ export function getApplicationStatusInfo (status: string, appRequestPhase: strin
     })
   }
   return tags
+}
+
+export interface ProgramStatusFilterItem {
+  value: { status: string, rescindedStatus?: string }
+  label: string
+  children?: { value: { status: string, rescindedStatus?: string }, label: string }[]
+}
+
+export function getProgramStatusFilterItems (): ProgramStatusFilterItem[] {
+  const rescindable = new Set<string>([enumApplicationStatus.ELIGIBLE, enumApplicationStatus.ACCEPTED])
+  return Object.entries(APPLICATION_STATUS_CONFIG)
+    .filter(([status]) => status !== enumApplicationStatus.RESCINDED)
+    .map(([status, config]) => ({
+      value: { status },
+      label: config.label,
+      children: rescindable.has(status)
+        ? [
+            { value: { status, rescindedStatus: enumApplicationRescindedStatus.RESCINDED }, label: 'Rescinded' },
+            { value: { status, rescindedStatus: enumApplicationRescindedStatus.RESTORED }, label: 'Restored' }
+          ]
+        : undefined
+    }))
+}
+
+/** `getApplicationStatusInfo` as TagSet items. Shared by the applicant program list and the reviewer dashboard's Program column. */
+export function getApplicationStatusTags (status: string, appRequestPhase: string, closedAt: string | null | undefined, rescindedStatus?: string | null): TagItem[] {
+  return getApplicationStatusInfo(status, appRequestPhase, closedAt, rescindedStatus).map(info => ({ label: info.label, type: info.color }))
 }
 
 export const applicantStatuses = new Set<AppRequestStatus>([
