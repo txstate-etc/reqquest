@@ -6,7 +6,7 @@
   import { htmlEncode, isBlank, isNotBlank, keyby, sortby, toQuery } from 'txstate-utils'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { api, REVIEWER_STATUS_CONFIG } from '$internal'
+  import { api, getReviewerStatusTags, REVIEWER_STATUS_CONFIG } from '$internal'
   import { enumApplicationRescindedStatus } from '$lib'
   import { uiRegistry } from '../../local/index.js'
   import type { PageData } from './$types.js'
@@ -183,7 +183,7 @@
       { id: 'period', label: uiRegistry.getWord('period'), minWidth: 150, render: r => htmlEncode(r.period.name) },
       { id: 'name', label: 'Name', render: r => r.applicant.fullname, grow: 2 },
       { id: 'dateSubmitted', label: 'Submitted', minWidth: 150, render: r => DateTime.fromISO(r.createdAt).toFormat('f') },
-      { id: 'status', label: 'Status', minWidth: 150, tags: r => [{ label: REVIEWER_STATUS_CONFIG[r.status].label, type: REVIEWER_STATUS_CONFIG[r.status].color }] },
+      { id: 'status', label: 'Status', minWidth: 150, tags: r => getReviewerStatusTags(r.status, r.phase, r.closedAt) },
       ...indexColumns,
       { id: 'lastUpdated', label: 'Last Updated', minWidth: 150, render: r => DateTime.fromISO(r.updatedAt).toFormat('f') }
     ]}

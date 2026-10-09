@@ -6,12 +6,15 @@
   import { afterNavigate } from '$app/navigation'
   import type { PageData } from './$types'
   import ProgressNavContainer from '../ProgressNavContainer.svelte'
-  import { ApplicantProgramList, isIneligiblePreSubmission } from '$internal'
+  import { ApplicantProgramList, DEFAULT_APPLICANT_NO_PROGRAMS_MESSAGE, isHiddenFromApplicant, isIneligibleByApplicantRequirement } from '$internal'
   import { uiRegistry } from '../../../../../local/index.js'
   import { enumApplicationStatus } from '$lib'
 
   export let data: PageData
   $: ({ applicationsForNav, appRequestForExport } = data)
+  $: eligibleApplicationsForNav = applicationsForNav.filter(a => a.ineligiblePhase == null)
+  $: ineligibleApplicationsForNav = applicationsForNav.filter(a => isIneligibleByApplicantRequirement(a) && !isHiddenFromApplicant(a))
+  $: noProgramsToList = !eligibleApplicationsForNav.length && !ineligibleApplicationsForNav.length && applicationsForNav.some(isHiddenFromApplicant)
 
   let prevHref: string | undefined
   let nextHref: string | undefined
@@ -27,8 +30,7 @@
   })
 </script>
 
-<ProgressNavContainer title="Your potential benefits" subtitle='Based on your responses so far, you may be eligible for the benefits listed below.  If you believe you qualify for additional benefits, you may need to review your answers, complete additional questions, or provides supporting documentation before eligibility can be confirmed.'>
-  {@const eligibleApplicationsForNav = applicationsForNav.filter(a => a.ineligiblePhase == null)}
+<ProgressNavContainer title="Your potential benefits" subtitle={noProgramsToList ? (uiRegistry.config.applicantNoProgramsMessage ?? DEFAULT_APPLICANT_NO_PROGRAMS_MESSAGE) : 'Based on your responses so far, you may be eligible for the benefits listed below.  If you believe you qualify for additional benefits, you may need to review your answers, complete additional questions, or provides supporting documentation before eligibility can be confirmed.'}>
   <div class="max-w-screen-md mx-auto">    
     {#if eligibleApplicationsForNav.length > 0} 
       <ApplicantProgramList applications={eligibleApplicationsForNav} appRequest={appRequestForExport} />
@@ -39,7 +41,6 @@
       </div>
     {/if}
   </div>
-  {@const ineligibleApplicationsForNav = applicationsForNav.filter(isIneligiblePreSubmission)}
   {#if ineligibleApplicationsForNav.length > 0}  
     <div class="max-w-screen-md mx-auto">    
       <Panel title="Ineligible benefits" expandable={true} expanded={true}>

@@ -864,6 +864,11 @@ type Application {
   A prose summary of the applicant-side requirements of the program this application is for. Intended to be shown alongside statusReason when the application becomes ineligible before submission, since an applicant disqualified early may never have seen the program's prompts and the statusReason alone lacks context.
   """
   eligibilityDescription: String
+
+  """
+  True when the program sets showIneligiblePreSubmit: false and this application is hidden by it: ineligible because of an applicant requirement, and that ineligibility arose before submission (the request is unsubmitted, or the application was already ineligible when it was submitted). Only the applicant ever receives a hidden application, so they can still change the answers that disqualified them; UIs should leave it out of program lists.
+  """
+  hiddenIneligiblePreSubmit: Boolean!
   id: ID!
 
   """
@@ -1128,7 +1133,7 @@ enum ApplicationStatus {
   ACCEPTED
 
   """
-  All application requirements up to and including WORKFLOW_BLOCKING requirements are resolving as MET (or NOT_APPLICABLE or WARNING). If there is an acceptance phase, the acceptance is still pending.
+  Every requirement the current phase evaluates is resolving as MET (or NOT_APPLICABLE or WARNING). Before submission that is only the applicant requirements (PREQUAL, QUALIFICATION, POSTQUAL), so ELIGIBLE means nothing so far disqualifies - not that the program has been approved. After submission it covers all requirements up to and including WORKFLOW_BLOCKING. If there is an acceptance phase, the acceptance is still pending.
   """
   ELIGIBLE
 
@@ -1274,22 +1279,26 @@ type IndexValue {
 }
 
 enum IneligiblePhases {
-  """The application became ineligible in the acceptance phase."""
+  """The application was disqualified by an ACCEPTANCE requirement."""
   ACCEPTANCE
 
-  """The application became ineligible in the approval phase."""
+  """The application was disqualified by an APPROVAL requirement."""
   APPROVAL
 
-  """The application became ineligible in the pre-approval phase."""
+  """The application was disqualified by a PREAPPROVAL requirement."""
   PREAPPROVAL
 
-  """The application became ineligible in the pre-qualification phase."""
+  """
+  The application was disqualified by a PREQUAL requirement. Names the type of requirement that failed, not when it failed - a reviewer changing an applicant answer after submission can also produce this.
+  """
   PREQUAL
 
-  """The application became ineligible in the qualification phase."""
+  """
+  The application was disqualified by a QUALIFICATION or POSTQUAL requirement. Names the type of requirement that failed, not when it failed - a reviewer changing an applicant answer after submission can also produce this.
+  """
   QUALIFICATION
 
-  """The application became ineligible during blocking workflow."""
+  """The application was disqualified by a blocking workflow requirement."""
   WORKFLOW
 }
 
