@@ -551,7 +551,7 @@ const applicantRequirementIneligiblePhases: IneligiblePhases[] = [IneligiblePhas
 
 /** ruled out before submission (PREQUAL or QUALIFICATION), so a reviewer has nothing to decide for it */
 export function isPresubmissionIneligible (application: Application) {
-  return !!application.ineligiblePhase && presubmissionIneligiblePhases.includes(application.ineligiblePhase)
+  return !!application.ineligiblePhase && applicantRequirementIneligiblePhases.includes(application.ineligiblePhase)
 }
 
 function computeApplicationPhase (

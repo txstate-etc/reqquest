@@ -211,7 +211,9 @@ test.describe.serial('All Applications filters and list', { tag: '@default' }, (
     await expect(detail).toContainText('Adopt a Dog')
     await expect(detail).toContainText('Adopt a Cat')
     await row.getByRole('button', { name: 'Collapse Row' }).click()
-    await expect(detail).toHaveCount(0)
+    // ColumnList keeps an empty detail cell in every expandable row and only drops its contents on collapse
+    await expect(row.getByRole('button', { name: 'Expand Row' })).toBeVisible()
+    await expect(detail).not.toContainText('Programs')
 
     await row.locator('.column-list-col.checkbox label').click()
     await expect(row.getByLabel('select row')).toBeChecked()
