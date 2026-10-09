@@ -29,10 +29,11 @@ export const load: PageLoad = async ({ url, depends, parent }) => {
   const recentCutoffIso = cutoff.toISOString()
 
   const pastStatuses = new Set(getPastStatuses())
-  // an app is "past" only if it's both older than the cutoff AND in a terminal status;
-  // apps with active statuses (e.g. APPROVAL) always stay on the recent tab regardless of age
+  // an app is "past" only if it's both older than the cutoff AND finished - in a terminal status
+  // or closed (closing leaves the status where it was, e.g. APPROVAL); other apps with active
+  // statuses always stay on the recent tab regardless of age
   function isPastApp (r: DashboardAppRequest) {
-    return r.updatedAt < recentCutoffIso && pastStatuses.has(r.status)
+    return r.updatedAt < recentCutoffIso && (r.closedAt != null || pastStatuses.has(r.status))
   }
 
 
@@ -51,13 +52,15 @@ export const load: PageLoad = async ({ url, depends, parent }) => {
 
     let displayRequests: typeof allPastRequests
     if (hasActiveFilters) {
-      displayRequests = await api.getApplicantRequests({
+      // "past" is terminal status OR closed, which the API filter cannot express, so narrow on
+      // the server by the user's filters and apply isPastApp here
+      displayRequests = (await api.getApplicantRequests({
         own: true,
         updatedBefore: recentCutoffIso,
-        status: filters.status?.length > 0 ? statusLabelsToEnums(filters.status) : getPastStatuses(),
+        ...(filters.status?.length > 0 && { status: statusLabelsToEnums(filters.status) }),
         ...(filters.search && { search: filters.search }),
         ...(filters.periodIds?.length > 0 && { periodIds: filters.periodIds })
-      })
+      })).filter(isPastApp)
     } else {
       displayRequests = allPastRequests
     }

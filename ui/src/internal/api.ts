@@ -783,6 +783,7 @@ class API extends APIBase {
       appRequests: {
         __args: { filter: processedFilter, paged },
         id: true,
+        phase: true,
         createdAt: true,
         closedAt: true,
         updatedAt: true,

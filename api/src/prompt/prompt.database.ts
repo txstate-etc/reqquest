@@ -72,18 +72,19 @@ export async function getRequirementPrompts (filter: RequirementPromptFilter, td
 }
 
 export async function setRequirementPromptValid (prompt: RequirementPrompt, tdb: Queryable = db) {
-  await tdb.update('UPDATE requirement_prompts SET invalidated = 0, invalidatedReason = NULL WHERE promptKey = ?', [prompt.key])
+  await tdb.update('UPDATE requirement_prompts SET invalidated = 0, invalidatedReason = NULL WHERE appRequestId = ? AND promptKey = ?', [prompt.appRequestInternalId, prompt.key])
 }
 
-export async function setRequirementPromptsInvalid (invalidateResponses: InvalidatedResponse[], tdb: Queryable = db) {
+export async function setRequirementPromptsInvalid (appRequestInternalId: number, invalidateResponses: InvalidatedResponse[], tdb: Queryable = db) {
   for (const r of invalidateResponses) {
-    await tdb.update('UPDATE requirement_prompts SET invalidated = 1, invalidatedReason = ? WHERE promptKey = ? AND answered = 1', [r.reason, r.promptKey])
+    await tdb.update('UPDATE requirement_prompts SET invalidated = 1, invalidatedReason = ? WHERE appRequestId = ? AND promptKey = ? AND answered = 1', [r.reason, appRequestInternalId, r.promptKey])
   }
 }
 
-export async function setRequirementPromptsValid (promptKeys: string[], tdb: Queryable = db) {
+export async function setRequirementPromptsValid (appRequestInternalId: number, promptKeys: string[], tdb: Queryable = db) {
   if (promptKeys.length === 0) return
-  await tdb.update(`UPDATE requirement_prompts SET invalidated = 0, invalidatedReason = NULL WHERE promptKey IN (${tdb.in([], promptKeys)})`, promptKeys)
+  const binds: any[] = [appRequestInternalId]
+  await tdb.update(`UPDATE requirement_prompts SET invalidated = 0, invalidatedReason = NULL WHERE appRequestId = ? AND promptKey IN (${tdb.in(binds, promptKeys)})`, binds)
 }
 
 /**
