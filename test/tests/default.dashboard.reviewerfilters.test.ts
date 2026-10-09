@@ -123,14 +123,14 @@ test.describe.serial('Reviewer dashboard tabs and list', { tag: '@default' }, ()
     await expect(reviewerPage.locator('.stat-tile', { hasText: 'First time application' })).toContainText(/\d+ applications?/)
     await expect(reviewerPage.locator('.stat-tile', { hasText: 'Returning application' })).toContainText(/\d+ applications?/)
     await expect(reviewerPage.locator('.periods-open')).toHaveCount(0)
-    // reviewers may read metrics; the tile shows whenever an average exists
+    // reviewers may read metrics; the tile shows for metrics viewers, and with no decided applications it says so
     const token = (await reviewerPage.evaluate(() => sessionStorage.getItem('token')))!
     const metrics = await reviewerPage.request.post('http://api/graphql', { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, data: JSON.stringify({ query: '{ access { viewMetrics } applicationMetrics { toDecision { avg } } }' }) })
     const { data } = await metrics.json() as { data: { access: { viewMetrics: boolean }, applicationMetrics: { toDecision: { avg: number | null } } } }
     expect(data.access.viewMetrics).toEqual(true)
     const avgTile = reviewerPage.locator('.stat-tile', { hasText: 'Avg. time to finish review' })
     if (data.applicationMetrics.toDecision.avg != null) await expect(avgTile).toContainText(/(\d+ (day|hour|minute)s?|under a minute)/)
-    else await expect(avgTile).toHaveCount(0)
+    else await expect(avgTile).toContainText('--:--')
     // the tabs sit at the bottom of the tile row
     const [tabBox, tileBox] = await Promise.all([pendingTab.boundingBox(), reviewerPage.locator('.stat-tile', { hasText: 'First time application' }).boundingBox()])
     expect(Math.abs((tabBox!.y + tabBox!.height) - (tileBox!.y + tileBox!.height))).toBeLessThan(6)

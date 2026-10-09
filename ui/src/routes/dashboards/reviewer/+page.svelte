@@ -14,7 +14,7 @@
   import { _inReviewStatuses, _reviewCompleteStatuses, _reviewPendingStatuses } from './+page.js'
 
   export let data: PageData
-  $: ({ appRequests, totalItems, appRequestIndexes, filters, tabCounts, applicantCounts, avgDecisionSeconds, programs, periods } = data)
+  $: ({ appRequests, totalItems, appRequestIndexes, filters, tabCounts, applicantCounts, avgDecisionSeconds, viewMetrics, programs, periods } = data)
 
   // tab labels carry the count of open requests in that stage
   $: tabs = [
@@ -54,10 +54,10 @@
         <span class='[ text-lg ]'>Returning application</span>
         <span>{pluralize('application', applicantCounts.returning, true)}</span>
       </Tile>
-      {#if avgDecisionSeconds != null}
+      {#if viewMetrics}
         <Tile class="stat-tile [ flex flex-col gap-4 ]">
           <span class='[ text-lg ]'>Avg. time to finish review</span>
-          <span>{formatDuration(avgDecisionSeconds)}</span>
+          <span>{avgDecisionSeconds != null ? formatDuration(avgDecisionSeconds) : '--:--'}</span>
         </Tile>
       {/if}
     </div>

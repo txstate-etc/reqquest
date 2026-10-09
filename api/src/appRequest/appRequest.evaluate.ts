@@ -482,7 +482,7 @@ function resolveRequirement (ctx: EvaluationContext, requirement: ApplicationReq
 
   function gateRegularPrompts () {
     for (const prompt of regularPrompts) {
-      prompt.moot = promptsAreMoot
+      prompt.moot = promptsAreMoot && !promptRegistry.get(prompt.key).optOut
       if ((hasUnanswered || resolveInfo.status !== RequirementStatus.PENDING) && !promptRegistry.get(prompt.key).optOut) prompt.visibility = PromptVisibility.UNREACHABLE
       else {
         if (seen.application.has(prompt.key)) prompt.visibility = PromptVisibility.APPLICATION_DUPE

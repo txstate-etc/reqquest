@@ -5,7 +5,7 @@
   const wasOptedIn = !wasOptedOut
 </script>
 {#if wasOptedOut}
-  <p>By opting back in, you will be eligible for this program.</p>
+  <p>By opting back in, you may become eligible for this program if all other requirements are met.</p>
 {:else}
   <p>By opting-out, you will not be eligible for this program unless you opt back in before submitting your request.</p>
 {/if}

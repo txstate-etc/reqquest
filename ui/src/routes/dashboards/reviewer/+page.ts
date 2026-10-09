@@ -37,5 +37,5 @@ export const load: PageLoad = async ({ url, parent }) => {
     api.getPeriodList()
   ])
 
-  return { appRequests, totalItems: pageInfo.appRequests!.totalItems ?? appRequests.length, filters: merged, appRequestIndexes, tabCounts: { pending, inReview, complete }, applicantCounts, avgDecisionSeconds, programs, periods }
+  return { appRequests, totalItems: pageInfo.appRequests!.totalItems ?? appRequests.length, filters: merged, appRequestIndexes, tabCounts: { pending, inReview, complete }, applicantCounts, avgDecisionSeconds, viewMetrics: !!access?.viewMetrics, programs, periods }
 }
