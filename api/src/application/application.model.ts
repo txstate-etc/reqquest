@@ -80,12 +80,12 @@ export enum IneligiblePhases {
 registerEnumType(IneligiblePhases, {
   name: 'IneligiblePhases',
   valuesConfig: {
-    PREQUAL: { description: 'The application became ineligible in the pre-qualification phase.' },
-    QUALIFICATION: { description: 'The application became ineligible in the qualification phase.' },
-    PREAPPROVAL: { description: 'The application became ineligible in the pre-approval phase.' },
-    APPROVAL: { description: 'The application became ineligible in the approval phase.' },
-    WORKFLOW: { description: 'The application became ineligible during blocking workflow.' },
-    ACCEPTANCE: { description: 'The application became ineligible in the acceptance phase.' }
+    PREQUAL: { description: 'The application was disqualified by a PREQUAL requirement. Names the type of requirement that failed, not when it failed - a reviewer changing an applicant answer after submission can also produce this.' },
+    QUALIFICATION: { description: 'The application was disqualified by a QUALIFICATION or POSTQUAL requirement. Names the type of requirement that failed, not when it failed - a reviewer changing an applicant answer after submission can also produce this.' },
+    PREAPPROVAL: { description: 'The application was disqualified by a PREAPPROVAL requirement.' },
+    APPROVAL: { description: 'The application was disqualified by an APPROVAL requirement.' },
+    WORKFLOW: { description: 'The application was disqualified by a blocking workflow requirement.' },
+    ACCEPTANCE: { description: 'The application was disqualified by an ACCEPTANCE requirement.' }
   }
 })
 
@@ -134,6 +134,7 @@ export class Application {
     this.status = deriveApplicationStatus(this.computedStatus, this.rescindedStatus)
     this.statusReason = row.computedStatusReason
     this.awaitingCorrection = !!row.computedAwaitingCorrection
+    this.ineligiblePreSubmit = !!row.ineligiblePreSubmit
     const { title, navTitle } = resolveProgramLabels(this.program, parseProgramLabels(row.programLabels))
     this.title = title
     this.navTitle = navTitle
@@ -166,6 +167,13 @@ export class Application {
   @Field({ description: 'True when at least one reachable prompt on this application has been invalidated and must be re-answered. Status is still computed from the answers on file, so pair status displays with this flag to indicate that a correction is outstanding.' })
   awaitingCorrection: boolean
 
+  @Field(type => Boolean, { description: 'True when the program sets showIneligiblePreSubmit: false and this application is hidden by it: ineligible because of an applicant requirement, and that ineligibility arose before submission (the request is unsubmitted, or the application was already ineligible when it was submitted). Only the applicant ever receives a hidden application, so they can still change the answers that disqualified them; UIs should leave it out of program lists.' })
+  get hiddenIneligiblePreSubmit (): boolean {
+    if (this.program.showIneligiblePreSubmit !== false) return false
+    if (this.ineligiblePhase !== IneligiblePhases.PREQUAL && this.ineligiblePhase !== IneligiblePhases.QUALIFICATION) return false
+    return this.appRequestPhase === AppRequestPhase.STARTED || this.ineligiblePreSubmit
+  }
+
   @Field({ description: 'The title of the program this application is for.' })
   title: string
 
@@ -192,6 +200,7 @@ export class Application {
 
   internalId: number
   computedStatus: ApplicationStatus
+  ineligiblePreSubmit: boolean
   appRequestInternalId: number
   appRequestId: string
   appRequestTags?: Record<string, string[]>

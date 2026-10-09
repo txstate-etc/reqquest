@@ -64,6 +64,28 @@ export interface ProgramDefinition {
    */
   eligibilityDescription?: string
   /**
+   * Set to false to hide this program wherever an applicant was screened out of it before submitting.
+   * Useful when there are many programs and most applicants qualify for only a few: reviewers are not
+   * shown dozens of programs nobody needs to look at. Defaults to true.
+   *
+   * An application is hidden while all of these hold:
+   * - it is ineligible because of an applicant requirement (PREQUAL, QUALIFICATION or POSTQUAL)
+   * - that ineligibility is pre-submission: the request has not been submitted yet, or the application
+   *   was already ineligible at the moment it was submitted
+   *
+   * An application disqualified by a reviewer after submission (for instance by editing an applicant's
+   * answer) is never hidden, so the reviewer can still see and undo it. An application that becomes
+   * eligible again is shown again immediately.
+   *
+   * Hiding is read-path only - evaluation and the app request's status are unaffected. Reviewers and other
+   * non-owners never receive hidden applications from the API. The applicant does, flagged with
+   * `hiddenIneligiblePreSubmit`, because their prompt navigation is built from every application and they
+   * must still be able to change the answer that disqualified them. The UI leaves the program out of the
+   * applicant's program lists, except a program the applicant opted out of, which stays listed since that is
+   * the only place they can opt back in.
+   */
+  showIneligiblePreSubmit?: boolean
+  /**
    * The list of requirements for this program, carefully ordered so that
    * the users are presented them in a logical order.
    *
@@ -190,6 +212,7 @@ export class ProgramRegistry {
     assertNoKeyCollisions()
     for (const program of this.programList) {
       program.navTitle ??= program.title
+      program.showIneligiblePreSubmit ??= true
       for (const stage of program.workflowStages ?? []) {
         this.workflowStagesByKey[stage.key] = stage
         for (const requirementKey of stage.requirementKeys) {

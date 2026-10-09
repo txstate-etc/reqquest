@@ -1,5 +1,5 @@
 import db from 'mysql2-async/db'
-import { Application, ApplicationFilter, ApplicationPhase, ApplicationRescindedStatus, ApplicationStatus, AppRequestPhase, AppRequestStatus, AppRequestStatusDB, IneligiblePhases, PeriodWorkflowRow, programRegistry } from '../internal.js'
+import { Application, ApplicationFilter, ApplicationPhase, ApplicationRescindedStatus, ApplicationStatus, AppRequestPhase, AppRequestStatus, AppRequestStatusDB, bulkUpdateById, IneligiblePhases, PeriodWorkflowRow, programRegistry } from '../internal.js'
 import { Queryable } from 'mysql2-async'
 import { DateTime } from 'luxon'
 
@@ -14,6 +14,7 @@ export interface ApplicationRow {
   computedPhase: ApplicationPhase
   computedIneligiblePhase?: IneligiblePhases
   computedAwaitingCorrection: 0 | 1
+  ineligiblePreSubmit: 0 | 1
   workflowStage: string
   appRequestStatus: AppRequestStatusDB
   appRequestComputedStatus: AppRequestStatus
@@ -36,12 +37,20 @@ function processFilters (filter: ApplicationFilter) {
   return { where, binds }
 }
 
+export async function snapshotIneligiblePreSubmit (appRequestId: number, tdb: Queryable = db) {
+  await tdb.update('UPDATE applications SET ineligiblePreSubmit = (computedStatus = ?) WHERE appRequestId = ?', [ApplicationStatus.INELIGIBLE, appRequestId])
+}
+
+export async function clearIneligiblePreSubmit (appRequestId: number, tdb: Queryable = db) {
+  await tdb.update('UPDATE applications SET ineligiblePreSubmit = 0 WHERE appRequestId = ?', [appRequestId])
+}
+
 export async function getApplications (filter: ApplicationFilter, tdb: Queryable = db) {
   const { where, binds } = processFilters(filter)
   const whereClause = where.length > 0 ? `WHERE (${where.join(') AND (')})` : ''
   const rows = await tdb.getall<ApplicationRow>(`
     SELECT a.id, a.appRequestId, ar.periodId, a.programKey, ar.userId, a.computedStatus, a.computedStatusReason, a.computedPhase,
-      a.computedIneligiblePhase, a.computedAwaitingCorrection, a.workflowStage,
+      a.computedIneligiblePhase, a.computedAwaitingCorrection, a.ineligiblePreSubmit, a.workflowStage,
       a.rescindedStatus, a.rescindedReason, a.restoredReason,
       ar.status AS appRequestStatus, ar.phase AS appRequestPhase, ar.computedStatus AS appRequestComputedStatus,
       pc.data AS programLabels
@@ -56,32 +65,45 @@ export async function getApplications (filter: ApplicationFilter, tdb: Queryable
 
 export async function syncApplications (appRequestId: number, activeProgramKeySet: Set<string>, db: Queryable) {
   const activePrograms = programRegistry.list().filter(program => activeProgramKeySet.has(program.key))
-  const existingApplications = await db.getall<ApplicationRow>('SELECT * FROM applications WHERE appRequestId = ?', [appRequestId])
-  const existingProgramKeys = new Set(existingApplications.map(row => row.programKey))
-  const programsToInsert = activePrograms.filter(program => !existingProgramKeys.has(program.key))
+  const existingApplications = await db.getall<{ id: number, programKey: string, evaluationOrder: number }>('SELECT id, programKey, evaluationOrder FROM applications WHERE appRequestId = ?', [appRequestId])
+  const existingByProgramKey = new Map(existingApplications.map(row => [row.programKey, row]))
+  const toInsert: any[][] = []
+  const toReorder: { id: number, evaluationOrder: number }[] = []
+  for (let i = 0; i < activePrograms.length; i++) {
+    const existing = existingByProgramKey.get(activePrograms[i].key)
+    if (!existing) toInsert.push([appRequestId, activePrograms[i].key, i])
+    else if (existing.evaluationOrder !== i) toReorder.push({ id: existing.id, evaluationOrder: i })
+  }
   const programsToDelete = existingApplications.filter(row => !activeProgramKeySet.has(row.programKey))
-  if (programsToInsert.length) {
+  if (toInsert.length) {
     const binds: any[] = []
     await db.insert(`
-      INSERT INTO applications (appRequestId, programKey)
-      VALUES ${db.in(binds, programsToInsert.map(program => [appRequestId, program.key]))}
+      INSERT INTO applications (appRequestId, programKey, evaluationOrder)
+      VALUES ${db.in(binds, toInsert)}
     `, binds)
   }
   if (programsToDelete.length) {
     const binds: any[] = []
     await db.delete(`DELETE FROM applications WHERE id IN (${db.in(binds, programsToDelete.map(row => row.id))})`, binds)
   }
-  for (let i = 0; i < activePrograms.length; i++) {
-    const program = activePrograms[i]
-    await db.update('UPDATE applications SET evaluationOrder = ? WHERE appRequestId = ? AND programKey = ?', [i, appRequestId, program.key])
-  }
+  await bulkUpdateById(db, 'applications', ['evaluationOrder'], toReorder)
   return await getApplications({ appRequestIds: [String(appRequestId)] }, db)
 }
 
-export async function updateApplicationsComputed (applications: Application[], db: Queryable) {
-  for (const application of applications) {
-    await db.update('UPDATE applications SET computedStatus = ?, computedStatusReason = ?, computedPhase = ?, computedIneligiblePhase = ?, computedAwaitingCorrection = ? WHERE id = ?', [application.computedStatus, application.statusReason, application.phase, application.ineligiblePhase, application.awaitingCorrection ? 1 : 0, application.internalId])
+/** The computed columns the evaluation writes back, shaped for `bulkUpdateById` and for change detection. */
+export function applicationComputedRow (application: Application) {
+  return {
+    id: application.internalId,
+    computedStatus: application.computedStatus,
+    computedStatusReason: application.statusReason ?? null,
+    computedPhase: application.phase,
+    computedIneligiblePhase: application.ineligiblePhase ?? null,
+    computedAwaitingCorrection: application.awaitingCorrection ? 1 : 0
   }
+}
+
+export async function updateApplicationsComputed (applications: Application[], db: Queryable) {
+  await bulkUpdateById(db, 'applications', ['computedStatus', 'computedStatusReason', 'computedPhase', 'computedIneligiblePhase', 'computedAwaitingCorrection'], applications.map(applicationComputedRow))
 }
 
 export async function rescindApplication (applicationId: string, reason: string, tdb: Queryable = db) {
@@ -112,9 +134,9 @@ export async function advanceWorkflow (applicationId: string, tdb: Queryable = d
     SELECT DISTINCT w.* FROM period_workflow_stages w
     INNER JOIN application_requirements r ON r.workflowStage = w.stageKey
     INNER JOIN applications a ON a.id = r.applicationId AND a.programKey = w.programKey
-    WHERE w.programKey=? AND w.periodId=?
+    WHERE a.id=? AND w.programKey=? AND w.periodId=?
     ORDER BY w.evaluationOrder
-  `, [application.programKey, application.periodId])
+  `, [applicationId, application.programKey, application.periodId])
   const blocking = stages.filter(stage => !!stage.blocking)
   const nonblocking = stages.filter(stage => !stage.blocking)
   const current = stages.find(stage => stage.stageKey === application.workflowStageKey)
@@ -154,9 +176,9 @@ export async function reverseWorkflow (applicationId: string, tdb: Queryable = d
     SELECT DISTINCT w.* FROM period_workflow_stages w
     INNER JOIN application_requirements r ON r.workflowStage = w.stageKey
     INNER JOIN applications a ON a.id = r.applicationId AND a.programKey = w.programKey
-    WHERE w.programKey=? AND w.periodId=?
+    WHERE a.id=? AND w.programKey=? AND w.periodId=?
     ORDER BY w.evaluationOrder
-  `, [application.programKey, application.periodId])
+  `, [applicationId, application.programKey, application.periodId])
   // Non-blocking workflow stages are excluded from the reverse (return) order — reversal only steps back
   // through the blocking workflow. The stage definition (registry) is authoritative for nonBlocking
   const blocking = stages.filter(stage => !!stage.blocking && !programRegistry.getWorkflowStageByKey(stage.stageKey)?.nonBlocking)

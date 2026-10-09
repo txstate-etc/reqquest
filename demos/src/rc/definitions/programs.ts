@@ -76,6 +76,9 @@ const software_development: ProgramDefinition = {
 }
 const project_management: ProgramDefinition = {
   title: 'Project Management',
+  // demonstrates hiding a program from applicants and reviewers when the applicant was screened out of it
+  // before submitting - see the low-GPA path in step1_prequal_req
+  showIneligiblePreSubmit: false,
   requirementKeys: [
     'project_management_opt_out_req',
     'step1_prequal_req',
@@ -110,6 +113,16 @@ const application_management_support: ProgramDefinition = {
     overrideGpaWarningWorkflow
   ]
 }
+// no review, acceptance, or workflow requirements, so its application completes as soon as the request is submitted
+const help_desk_associate: ProgramDefinition = {
+  title: 'Help Desk Associate',
+  requirementKeys: [
+    'help_desk_opt_out_req',
+    'step1_prequal_req',
+    'help_desk_weekend_availability_req',
+    'help_desk_customer_service_req'
+  ]
+}
 
 /**
  * Declared order is preserved and is meaningful. Do not convert this to `import * as` - a module
@@ -119,5 +132,6 @@ export const rcPrograms = {
   operations_infrastructure,
   software_development,
   project_management,
-  application_management_support
+  application_management_support,
+  help_desk_associate
 }

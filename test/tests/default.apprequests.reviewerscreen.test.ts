@@ -110,6 +110,9 @@ test.describe.serial('Reviewer screen panels follow the program\'s reviewSection
     const reviewerPanel = panels.filter({ has: reviewerPage.locator('.panel-header', { hasText: 'Reviewer Questions' }) })
     await expect(reviewerPanel.locator('dt', { hasText: 'Assess Applicant\'s Niceness' })).toBeVisible()
     await expect(customPanel.locator('dt', { hasText: 'Assess Applicant\'s Niceness' })).toHaveCount(0)
+
+    // the cat program has reviewer work, so there is no "nothing to review" notice
+    await expect(reviewerPage.locator('.system-determination-notice')).toHaveCount(0)
   })
 
   test('Reviewer - a program without a layout renders the type-based panels only', async ({ reviewerPage }) => {
@@ -120,6 +123,11 @@ test.describe.serial('Reviewer screen panels follow the program\'s reviewSection
     expect(titles).toEqual(['General Questions', 'Adopt a Dog'])
     // a panel with nothing to display is not rendered at all, not shown as an empty header
     await expect(panels.filter({ hasNot: reviewerPage.locator('dt') })).toHaveCount(0)
+    // the dog program has no reviewer, workflow or acceptance requirements: the system decided it at submission
+    const notice = reviewerPage.locator('.system-determination-notice')
+    await expect(notice).toBeVisible()
+    await expect(notice).toContainText('Nothing to review for Adopt a Dog')
+    await expect(notice).toContainText('There are no remaining questions to answer for this program.')
   })
 })
 

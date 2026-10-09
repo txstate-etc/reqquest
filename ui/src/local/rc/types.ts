@@ -109,3 +109,11 @@ export interface ReccomendationLetter {
 export interface AssessReccomendationLetter {
   score: string
 }
+
+export interface HelpDeskWeekendAvailability {
+  weekendAvailable: boolean
+}
+
+export interface HelpDeskCustomerService {
+  describeCustomerService: string
+}

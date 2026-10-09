@@ -2,15 +2,15 @@
   import { resolve } from '$app/paths'
   import { page } from '$app/stores'
   import type { LayoutData } from './$types.js'
-  import { IntroPanel, TabLinks, applicantStatuses, REVIEWER_STATUS_CONFIG, longNumericTime } from '$internal'
+  import { IntroPanel, TabLinks, applicantStatuses, getReviewerStatusTags, longNumericTime } from '$internal'
   import { uiRegistry } from '../../../../local/index.js'
   import { enumAppRequestPhase } from '$lib'
-  import { isIneligiblePreSubmission } from '$internal'
+  import { isIneligibleByApplicantRequirement } from '$internal'
 
   export let data: LayoutData
   $: ({ basicRequestData, requestId } = data)
-  $: eligibleApplications = basicRequestData.applications.filter(a => !isIneligiblePreSubmission(a))
-  $: ineligibleApplications = basicRequestData.applications.filter(a => isIneligiblePreSubmission(a))
+  $: eligibleApplications = basicRequestData.applications.filter(a => !isIneligibleByApplicantRequirement(a))
+  $: ineligibleApplications = basicRequestData.applications.filter(a => isIneligibleByApplicantRequirement(a))
   $: activeIneligible = ineligibleApplications.find(a => resolve(`/requests/${requestId}/approve/${a.programKey}`) === $page.url.pathname)
   $: navTabs = [
     ...(eligibleApplications.map(a => ({
@@ -34,7 +34,7 @@
 <IntroPanel
   title={basicRequestData.period.name + (basicRequestData.period.code ? ` (${basicRequestData.period.code})` : '')}
   subtitle={`Review and complete the ${uiRegistry.getWord('appRequest').toLowerCase()} below or advance it in the workflow.`}
-  tags={[{ label: REVIEWER_STATUS_CONFIG[basicRequestData.status].label, type: REVIEWER_STATUS_CONFIG[basicRequestData.status].color }]}
+  tags={getReviewerStatusTags(basicRequestData.status, basicRequestData.phase, basicRequestData.closedAt)}
 >
   <div class="block-end flex items-center" slot="block-end">
     <section class="text-base text-center flex-col gap-2 mr-[12px]">

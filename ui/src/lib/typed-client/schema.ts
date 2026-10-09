@@ -349,6 +349,8 @@ export interface Application {
     awaitingCorrection: Scalars['Boolean']
     /** A prose summary of the applicant-side requirements of the program this application is for. Intended to be shown alongside statusReason when the application becomes ineligible before submission, since an applicant disqualified early may never have seen the program's prompts and the statusReason alone lacks context. */
     eligibilityDescription: (Scalars['String'] | null)
+    /** True when the program sets showIneligiblePreSubmit: false and this application is hidden by it: ineligible because of an applicant requirement, and that ineligibility arose before submission (the request is unsubmitted, or the application was already ineligible when it was submitted). Only the applicant ever receives a hidden application, so they can still change the answers that disqualified them; UIs should leave it out of program lists. */
+    hiddenIneligiblePreSubmit: Scalars['Boolean']
     id: Scalars['ID']
     /** The phase in which this application became ineligible for benefits. Useful for reporting / filtering. Null if the application is not (yet) ineligible. */
     ineligiblePhase: (IneligiblePhases | null)
@@ -1413,6 +1415,8 @@ export interface ApplicationGenqlSelection{
     awaitingCorrection?: boolean | number
     /** A prose summary of the applicant-side requirements of the program this application is for. Intended to be shown alongside statusReason when the application becomes ineligible before submission, since an applicant disqualified early may never have seen the program's prompts and the statusReason alone lacks context. */
     eligibilityDescription?: boolean | number
+    /** True when the program sets showIneligiblePreSubmit: false and this application is hidden by it: ineligible because of an applicant requirement, and that ineligibility arose before submission (the request is unsubmitted, or the application was already ineligible when it was submitted). Only the applicant ever receives a hidden application, so they can still change the answers that disqualified them; UIs should leave it out of program lists. */
+    hiddenIneligiblePreSubmit?: boolean | number
     id?: boolean | number
     /** The phase in which this application became ineligible for benefits. Useful for reporting / filtering. Null if the application is not (yet) ineligible. */
     ineligiblePhase?: boolean | number
