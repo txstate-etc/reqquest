@@ -8,7 +8,7 @@
   import { toQuery } from 'txstate-utils'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { api, REVIEWER_STATUS_CONFIG } from '$internal'
+  import { api, getReviewerStatusTags } from '$internal'
   import type { PageData } from './$types'
   import { uiRegistry } from '../../../local/index.js'
   import { _reviewerDashboardInReviewStatuses, _defaultReviewerDashboardFilters } from './+page.js'
@@ -91,7 +91,7 @@
       { id: 'login', label: uiRegistry.getWord('login'), minWidth: 100, tags: r => [{ label: r.applicant.login, type: 'green' }] },
       { id: 'name', label: 'Name', get: 'applicant.fullname' },
       { id: 'dateSubmitted', label: 'Date Submitted', minWidth: 150, render: r => DateTime.fromISO(r.createdAt).toFormat('f') },
-      { id: 'status', label: 'Status', minWidth: 150, tags: r => [{ label: REVIEWER_STATUS_CONFIG[r.status].label, type: REVIEWER_STATUS_CONFIG[r.status].color }] },
+      { id: 'status', label: 'Status', minWidth: 150, tags: r => getReviewerStatusTags(r.status, r.phase, r.closedAt) },
       { id: 'lastUpdated', label: 'Last Updated', minWidth: 150, render: r => DateTime.fromISO(r.updatedAt).toFormat('f') },
       ...appRequestIndexes.map(index => ({
         id: 'cat_' + index.category,
