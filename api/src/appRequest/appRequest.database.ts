@@ -303,7 +303,7 @@ export async function submitAppRequest (appRequestId: number) {
   return await appRequestTransaction(appRequestId, async db => {
     await db.update('UPDATE app_requests SET phase = ?, submittedData = data, submittedAt=NOW() WHERE id = ?', [AppRequestPhase.SUBMITTED, appRequestId])
     await evaluateAppRequest(appRequestId, db)
-    await snapshotIneligiblePreSubmit(appRequestId)
+    await snapshotIneligiblePreSubmit(appRequestId, db)
     return await autoAdvanceAfterSubmit(appRequestId, db)
   })
 }
