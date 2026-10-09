@@ -7,7 +7,7 @@ import {
   requirementRegistry, AppRequestStatusDB, AppRequest, updateAppRequestData, getAppRequests,
   getAppRequestData, appRequestTransaction, recordAppRequestActivity, appConfig, AppRequestData,
   AppRequestStatus, ApplicationPhase, ApplicationService, setRequirementPromptsInvalid,
-  AppRequestServiceInternal, AppRequestPhase, appRequestPhaseReached, RequirementType, periodConfigCache, programRegistry,
+  AppRequestServiceInternal, AppRequestPhase, appRequestPhaseReached, RequirementType, periodConfigCache, programRegistry, resolveProgramLabels,
   statusVisibleToApplicant, applicantRequirementTypes, setRequirementPromptsValid,
   RQContext,
   RequirementPromptFilter,
@@ -334,12 +334,13 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
         savedData = appRequestData[prompt.key]
         appRequestData[prompt.key] = processedData
         const promptsToInvalidate = promptRegistry.getInvalidatedPrompts(prompt.key, appRequestData, allConfigData)
-        await setRequirementPromptsInvalid(promptsToInvalidate, db)
+        await setRequirementPromptsInvalid(appRequest.internalId, promptsToInvalidate, db)
         const promptsToRevalidate = promptRegistry.getRevalidatedPrompts(prompt.key, appRequestData, allConfigData)
         if (prompt.invalidated && overrideInvalidated) promptsToRevalidate.push(prompt.key) // used as a positive confirmation that this previously invalidated prompt requires no changes to be valid again
-        await setRequirementPromptsValid(promptsToRevalidate.concat([prompt.key]), db)
+        await setRequirementPromptsValid(appRequest.internalId, promptsToRevalidate.concat([prompt.key]), db)
         previousAppPhases = (await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion, db))!
-        recordAppRequestActivity(appRequest.internalId, this.user!.internalId, `${programRegistry.get(prompt.programKey)?.navTitle ?? 'Prompt'} Updated`, { data, description: prompt.title, impersonatedBy: this.impersonationUser?.internalId }, db)
+        const programDef = programRegistry.get(prompt.programKey)
+        recordAppRequestActivity(appRequest.internalId, this.user!.internalId, `${programDef ? resolveProgramLabels(programDef, allConfigData[prompt.programKey]).navTitle : 'Prompt'} Updated`, { data, description: prompt.title, impersonatedBy: this.impersonationUser?.internalId }, db)
       }
     })
     this.loaders.clear()

@@ -2,10 +2,10 @@ import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
 import { findIndex, groupby, isNotBlank, keyby } from 'txstate-utils'
 import {
-  Application, ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestPhase, appRequestPhaseReached,
+  Application, applicationComputedRow, ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestPhase, appRequestPhaseReached,
   AppRequestStatus, AppRequestStatusDB, appRequestTransaction, deriveApplicationStatus, getAppRequestData, getAppRequests,
-  getPeriodWorkflowStages, IneligiblePhases, PeriodWorkflowStage, programRegistry, promptRegistry, PromptVisibility, RequirementPrompt,
-  RequirementStatus, RequirementType, syncApplications, syncPromptRecords, syncRequirementRecords, updateAppRequestComputed,
+  getPeriodWorkflowStages, IneligiblePhases, PeriodWorkflowStage, programRegistry, promptComputedRow, promptRegistry, PromptVisibility, RequirementPrompt,
+  requirementComputedRow, RequirementStatus, RequirementType, syncApplications, syncPromptRecords, syncRequirementRecords, updateAppRequestComputed,
   updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData
 } from '../internal.js'
 
@@ -40,6 +40,15 @@ interface EvaluationContext {
    * applicant requirement and a reviewer requirement, and data the applicant provided can't read as review progress.
    */
   applicantPromptKeys: Set<string>
+  /**
+   * the computed columns as they were loaded, serialized per row, so persistEvaluation can write
+   * back only the rows the evaluation actually changed
+   */
+  baseline: {
+    applications: Map<number, string>
+    requirements: Map<number, string>
+    prompts: Map<number, string>
+  }
 }
 
 /** The requirements of one application, split by type and workflow role, plus the cumulative sets each phase consults. */
@@ -100,7 +109,7 @@ export const applicantRequirementTypes = new Set<RequirementType>([
 export async function ensureAppRequestRecords (appRequest: AppRequest, db: Queryable) {
   const disabledPrograms = new Set(await db.getvals<string>('SELECT programKey FROM period_programs WHERE periodId = ? AND disabled = 1', [appRequest.periodId]))
   const disabledRequirements = await db.getall<{ programKey: string, requirementKey: string }>('SELECT programKey, requirementKey FROM period_program_requirements WHERE periodId = ? AND disabled = 1', [appRequest.periodId])
-  const disabledRequirementLookup = disabledRequirements.reduce((acc, { programKey, requirementKey }) => ({ ...acc, [programKey]: { [requirementKey]: true } }), {} as Record<string, Record<string, boolean>>)
+  const disabledRequirementLookup = disabledRequirements.reduce((acc, { programKey, requirementKey }) => ({ ...acc, [programKey]: { ...acc[programKey], [requirementKey]: true } }), {} as Record<string, Record<string, boolean>>)
   const programs = programRegistry.list().filter(program => !disabledPrograms.has(program.key))
   const reqKeyLookup: Record<string, Set<string>> = {}
   for (const program of programs) {
@@ -117,18 +126,9 @@ export async function ensureAppRequestRecords (appRequest: AppRequest, db: Query
     }
   }
   const applications = await syncApplications(appRequest.internalId, new Set(programs.map(p => p.key)), db)
-  const allRequirements: ApplicationRequirement[] = []
-  const allPrompts: RequirementPrompt[] = []
-  for (const application of applications) {
-    const enabledKeys = reqKeyLookup[application.programKey] ?? new Set()
-    const requirements = await syncRequirementRecords(application, enabledKeys, db)
-    allRequirements.push(...requirements)
-    for (const requirement of requirements) {
-      const prompts = await syncPromptRecords(requirement, db)
-      allPrompts.push(...prompts)
-    }
-  }
-  return { applications, requirements: allRequirements, prompts: allPrompts }
+  const requirements = await syncRequirementRecords(appRequest.internalId, applications, reqKeyLookup, db)
+  const prompts = await syncPromptRecords(appRequest.internalId, requirements, db)
+  return { applications, requirements, prompts }
 }
 
 export async function tagAppRequest (appRequestInternalId: number, data: AppRequestData, prompts: RequirementPrompt[], tdb: Queryable = db) {
@@ -230,8 +230,23 @@ async function loadEvaluationContext (appRequestInternalId: number, db: Queryabl
     workflowStages,
     workflowStageLookup: keyby(workflowStages, 'key'),
     configLookup,
-    applicantPromptKeys: new Set(prompts.filter(p => applicantRequirementTypes.has(p.requirementType)).map(p => p.key))
+    applicantPromptKeys: new Set(prompts.filter(p => applicantRequirementTypes.has(p.requirementType)).map(p => p.key)),
+    baseline: {
+      applications: snapshotComputed(applications, applicationComputedRow),
+      requirements: snapshotComputed(requirements, requirementComputedRow),
+      prompts: snapshotComputed(prompts, promptComputedRow)
+    }
   }
+}
+
+/** Serialize each row's computed columns, keyed by internal id. Must run before anything mutates the models. */
+function snapshotComputed<T extends { internalId: number }> (models: T[], toRow: (model: T) => object) {
+  return new Map(models.map(m => [m.internalId, JSON.stringify(toRow(m))]))
+}
+
+/** The models whose computed columns differ from the snapshot taken at load. */
+function changedSinceLoad<T extends { internalId: number }> (models: T[], toRow: (model: T) => object, baseline: Map<number, string>) {
+  return models.filter(m => baseline.get(m.internalId) !== JSON.stringify(toRow(m)))
 }
 
 /** Must run before anything mutates the applications. */
@@ -245,6 +260,17 @@ function snapshotApplicationPhases (applications: Application[]) {
  */
 async function markPromptsAnswered (ctx: EvaluationContext, db: Queryable) {
   const { data, configLookup } = ctx
+  // a prompt shared by several requirements validates identically everywhere, so validate each key once
+  const validByKey = new Map<string, boolean>()
+  const validates = (prompt: RequirementPrompt) => {
+    let valid = validByKey.get(prompt.key)
+    if (valid == null) {
+      const validationMessages = prompt.definition.validate?.(data[prompt.key] ?? {}, configLookup[prompt.key] ?? {}, data, configLookup, db) ?? []
+      valid = !validationMessages.some(m => m.type === 'error')
+      validByKey.set(prompt.key, valid)
+    }
+    return valid
+  }
   for (const prompt of ctx.prompts) {
     if (
       /**
@@ -268,8 +294,7 @@ async function markPromptsAnswered (ctx: EvaluationContext, db: Queryable) {
     ) {
       prompt.answered = false
     } else {
-      const validationMessages = prompt.definition.validate?.(data[prompt.key] ?? {}, configLookup[prompt.key] ?? {}, data, configLookup, db) ?? []
-      prompt.answered = !validationMessages.some(m => m.type === 'error')
+      prompt.answered = validates(prompt)
     }
   }
 }
@@ -308,8 +333,11 @@ function evaluateApplication (ctx: EvaluationContext, application: Application, 
   // must still read as in review rather than awaiting a reviewer.
   if (phase === 'review' && reviewInProgress) acc.reviewStartedApplicationIds.add(application.id)
 
+  // a program with nothing after submission - no reviewer, workflow or acceptance requirements - needs no one to act on it once submitted
+  const noTrailingWork = !buckets.preapproval.length && !buckets.approval.length && !buckets.acceptance.length && !buckets.blockingWorkflow.length && !buckets.nonblockingWorkflow.length
+
   // phase reads the ineligiblePhase from the previous evaluation, so it is computed before ineligiblePhase is refreshed
-  application.phase = computeApplicationPhase(phase, application, summary, firstAwaitingCorrectionRequirement, reviewInProgress, buckets.nonblockingWorkflow.length > 0)
+  application.phase = computeApplicationPhase(phase, application, summary, firstAwaitingCorrectionRequirement, reviewInProgress, buckets.nonblockingWorkflow.length > 0, noTrailingWork)
   application.ineligiblePhase = computeIneligiblePhase(phase, summary, application.ineligiblePhase)
 
   for (const requirement of requirementsToLock(phase, application, buckets)) {
@@ -318,8 +346,9 @@ function evaluateApplication (ctx: EvaluationContext, application: Application, 
 }
 
 function classifyEvaluationPhase (appRequest: AppRequest, application: Application, activeWorkflowStage: PeriodWorkflowStage | undefined): EvaluationPhase {
-  if (application.phase === ApplicationPhase.COMPLETE || application.phase === ApplicationPhase.READY_TO_COMPLETE) return 'complete'
+  // checked before 'complete': an application auto-completed at submission must be re-evaluated when the request is returned to the applicant
   if (appRequest.phase === AppRequestPhase.STARTED) return 'applicant'
+  if (application.phase === ApplicationPhase.COMPLETE || application.phase === ApplicationPhase.READY_TO_COMPLETE) return 'complete'
   if (appRequest.phase === AppRequestPhase.ACCEPTANCE) return 'acceptance'
   if (application.workflowStageKey) return activeWorkflowStage?.blocking ? 'blocking' : 'nonblocking'
   if (appRequest.phase === AppRequestPhase.WORKFLOW_NONBLOCKING) return 'nonblocking'
@@ -518,7 +547,12 @@ function detectReviewInProgress (ctx: EvaluationContext, approvalRequirements: A
     .some(p => !ctx.applicantPromptKeys.has(p.key) && p.answered && ctx.data[p.key] != null))
 }
 
-const presubmissionIneligiblePhases: IneligiblePhases[] = [IneligiblePhases.PREQUAL, IneligiblePhases.QUALIFICATION]
+const applicantRequirementIneligiblePhases: IneligiblePhases[] = [IneligiblePhases.PREQUAL, IneligiblePhases.QUALIFICATION]
+
+/** ruled out before submission (PREQUAL or QUALIFICATION), so a reviewer has nothing to decide for it */
+export function isPresubmissionIneligible (application: Application) {
+  return !!application.ineligiblePhase && presubmissionIneligiblePhases.includes(application.ineligiblePhase)
+}
 
 function computeApplicationPhase (
   phase: EvaluationPhase,
@@ -526,7 +560,8 @@ function computeApplicationPhase (
   summary: ResolutionSummary,
   firstAwaitingCorrectionRequirement: ApplicationRequirement | undefined,
   reviewInProgress: boolean,
-  hasNonblockingWorkflowRequirements: boolean
+  hasNonblockingWorkflowRequirements: boolean,
+  noTrailingWork: boolean
 ): ApplicationPhase {
   const settled = summary.resolution !== 'pending' && !application.awaitingCorrection
   const attentionRequirement = summary.nonPassing ?? firstAwaitingCorrectionRequirement
@@ -536,7 +571,7 @@ function computeApplicationPhase (
   case 'complete':
     return ApplicationPhase.COMPLETE
   case 'nonblocking':
-    if (application.ineligiblePhase && presubmissionIneligiblePhases.includes(application.ineligiblePhase)) return ApplicationPhase.READY_TO_COMPLETE
+    if (isPresubmissionIneligible(application)) return ApplicationPhase.READY_TO_COMPLETE
     // not `settled`: that reads the aggregate resolution, where a fail outranks a pending, and here a failed requirement must never hide a pending one
     if (summary.firstPending != null || application.awaitingCorrection) return ApplicationPhase.WORKFLOW_NONBLOCKING
     return hasNonblockingWorkflowRequirements ? ApplicationPhase.READY_FOR_WORKFLOW : ApplicationPhase.READY_TO_COMPLETE
@@ -546,6 +581,8 @@ function computeApplicationPhase (
     if (settled) return ApplicationPhase.READY_TO_SUBMIT
     return attentionRequirement?.type === RequirementType.PREQUAL ? ApplicationPhase.PREQUAL : ApplicationPhase.QUALIFICATION
   case 'review':
+    // eligible or not, there is nothing left for anyone to do on this application
+    if (settled && noTrailingWork) return ApplicationPhase.COMPLETE
     if (settled) return reviewDonePhase
     if (attentionRequirement?.type === RequirementType.PREAPPROVAL) return ApplicationPhase.PREAPPROVAL
     return reviewInProgress ? ApplicationPhase.REVIEW_IN_PROGRESS : ApplicationPhase.APPROVAL
@@ -628,13 +665,25 @@ function singleProgramReviewFinished (ctx: EvaluationContext) {
   return applications.length === 1 && !workflowStages.filter(s => s.blocking).length && (applications[0].phase === ApplicationPhase.READY_FOR_WORKFLOW || applications[0].phase === ApplicationPhase.REVIEW_COMPLETE)
 }
 
+export function allApplicationsAutoCompleted (applications: Application[]) {
+  return applications.length > 0 && applications.every(a => a.phase === ApplicationPhase.COMPLETE)
+}
+
+function autoCompletedReviewFinished (ctx: EvaluationContext) {
+  const { appRequest, applications } = ctx
+  return appRequest.phase === AppRequestPhase.SUBMITTED && !appRequest.awaitingCorrection
+    && applications.some(a => a.phase === ApplicationPhase.COMPLETE)
+    && applications.every(a => a.phase === ApplicationPhase.COMPLETE || a.phase === ApplicationPhase.REVIEW_COMPLETE || isPresubmissionIneligible(a))
+}
+
 /** Request status when every application is INELIGIBLE, REJECTED or RESCINDED. */
 function deadApplicationsStatus (ctx: EvaluationContext, acc: RequestAccumulators): AppRequestStatus {
   const { appRequest, applications } = ctx
   if (appRequest.phase === AppRequestPhase.SUBMITTED) {
     if (appRequest.awaitingCorrection) return AppRequestStatus.APPROVAL
     if (singleProgramReviewFinished(ctx)) return AppRequestStatus.REVIEW_COMPLETE
-    if (applications.every(a => a.phase === ApplicationPhase.REVIEW_COMPLETE || (a.ineligiblePhase && presubmissionIneligiblePhases.includes(a.ineligiblePhase)))) return AppRequestStatus.REVIEW_COMPLETE
+    if (autoCompletedReviewFinished(ctx)) return AppRequestStatus.REVIEW_COMPLETE
+    if (applications.every(a => a.phase === ApplicationPhase.REVIEW_COMPLETE || isPresubmissionIneligible(a))) return AppRequestStatus.REVIEW_COMPLETE
     return acc.reviewStartedApplicationIds.size ? AppRequestStatus.REVIEW_IN_PROGRESS : AppRequestStatus.APPROVAL
   }
   if (applications.some(a => a.ineligiblePhase === IneligiblePhases.ACCEPTANCE)) return AppRequestStatus.NOT_ACCEPTED
@@ -651,6 +700,7 @@ function liveApplicationsStatus (ctx: EvaluationContext, acc: RequestAccumulator
   const anyPending = applications.some(a => a.status === ApplicationStatus.PENDING)
   if (applications.some(a => a.phase === ApplicationPhase.READY_TO_SUBMIT) && !anyPending && !appRequest.awaitingCorrection) return AppRequestStatus.READY_TO_SUBMIT
   if (appRequest.phase === AppRequestPhase.SUBMITTED && singleProgramReviewFinished(ctx) && !appRequest.awaitingCorrection) return AppRequestStatus.REVIEW_COMPLETE
+  if (autoCompletedReviewFinished(ctx)) return AppRequestStatus.REVIEW_COMPLETE
   // once a reviewer has begun their work on any application, the whole request reads as in-progress so this trumps review-phase statuses
   if (applications.some(a => a.phase === ApplicationPhase.REVIEW_IN_PROGRESS)) return AppRequestStatus.REVIEW_IN_PROGRESS
   // exclude prequal and qual ineligible applications from affecting AppRequestStatus, since they never require approval to the next step and we don't want them blocking the appRequest from moving forward
@@ -668,10 +718,10 @@ function liveApplicationsStatus (ctx: EvaluationContext, acc: RequestAccumulator
   return AppRequestStatus.STARTED
 }
 
-/** save the results of the evaluation to the database */
+/** save the results of the evaluation to the database, writing only the rows whose computed columns changed */
 async function persistEvaluation (ctx: EvaluationContext, db: Queryable) {
   await updateAppRequestComputed(ctx.appRequest, db)
-  await updateApplicationsComputed(ctx.applications, db)
-  await updateRequirementComputed(ctx.requirements, db)
-  await updatePromptComputed(ctx.prompts, db)
+  await updateApplicationsComputed(changedSinceLoad(ctx.applications, applicationComputedRow, ctx.baseline.applications), db)
+  await updateRequirementComputed(changedSinceLoad(ctx.requirements, requirementComputedRow, ctx.baseline.requirements), db)
+  await updatePromptComputed(changedSinceLoad(ctx.prompts, promptComputedRow, ctx.baseline.prompts), db)
 }

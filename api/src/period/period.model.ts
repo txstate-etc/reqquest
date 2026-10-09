@@ -1,7 +1,7 @@
 import { ValidatedResponse } from '@txstate-mws/graphql-server'
 import { DateTime } from 'luxon'
 import { Field, ID, InputType, ObjectType } from 'type-graphql'
-import { PeriodConfigurationRow, PeriodRow, PeriodWorkflowRow, Prompt, promptRegistry, Requirement, requirementRegistry } from '../internal.js'
+import { PeriodConfigurationRow, PeriodRow, PeriodWorkflowRow, Program, programRegistry, Prompt, promptRegistry, Requirement, requirementRegistry } from '../internal.js'
 
 @ObjectType()
 export class Period {
@@ -102,13 +102,13 @@ export class ValidatedPeriodResponse extends ValidatedResponse {
 
 @ObjectType()
 export class Configuration {
-  @Field({ description: 'The key being configured. Could be a requirement or prompt key.' })
+  @Field({ description: 'The key being configured. Could be a requirement, prompt, or program key. A program\'s configuration holds its per-period title and navTitle overrides.' })
   key: string
 
   periodInternalId: number
   periodId: string
-  configuredObject: Requirement | Prompt
-  type: 'Requirement' | 'Prompt'
+  configuredObject: Requirement | Prompt | Program
+  type: 'Requirement' | 'Prompt' | 'Program'
 
   constructor (row: PeriodConfigurationRow) {
     this.periodInternalId = row.periodId
@@ -117,10 +117,13 @@ export class Configuration {
     let obj: any
     if (obj = requirementRegistry.get(row.definitionKey)) this.configuredObject = new Requirement(obj)
     else if (obj = promptRegistry.get(row.definitionKey)) this.configuredObject = new Prompt(obj)
+    else if (obj = programRegistry.get(row.definitionKey)) this.configuredObject = new Program(obj)
     else throw new Error(`Configuration for key ${row.definitionKey} not found in registries.`)
     this.type = this.configuredObject instanceof Requirement
       ? 'Requirement'
-      : 'Prompt'
+      : this.configuredObject instanceof Program
+        ? 'Program'
+        : 'Prompt'
   }
 }
 

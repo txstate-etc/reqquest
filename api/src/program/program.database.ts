@@ -21,7 +21,9 @@ function processFilters (filters?: PeriodProgramFilters) {
 export async function getPeriodPrograms (filters?: PeriodProgramFilters) {
   const { where, binds } = processFilters(filters)
   return (await db.getall<PeriodProgramRow>(`
-    SELECT pp.* FROM period_programs pp
+    SELECT pp.*, pc.data AS programLabels
+    FROM period_programs pp
+    LEFT JOIN period_configurations pc ON pc.periodId = pp.periodId AND pc.definitionKey = pp.programKey
     ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
   `, binds)).map(row => new PeriodProgram(row))
 }

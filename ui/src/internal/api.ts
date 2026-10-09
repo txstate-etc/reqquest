@@ -55,7 +55,8 @@ class API extends APIBase {
         createAppRequestSelf: true,
         createAppRequestOther: true,
         viewAnnouncementManagement: true,
-        manageAnnouncements: true
+        manageAnnouncements: true,
+        viewMetrics: true
       }
     })
     return response.access
@@ -217,7 +218,9 @@ class API extends APIBase {
         applications: {
           id: true,
           title: true,
-          status: true
+          programKey: true,
+          status: true,
+          rescindedStatus: true
         },
         actions: {
           review: true
@@ -231,6 +234,43 @@ class API extends APIBase {
     })
 
     return response
+  }
+
+  /** First-time vs returning applicant counts (an applicant's first request in a period is first-time). */
+  async getAppRequestApplicantCounts (filter: AppRequestFilter = {}) {
+    const response = await this.client.query({
+      __name: 'GetAppRequestApplicantCounts',
+      countAppRequestApplicants: {
+        __args: { filter },
+        firstTime: true,
+        returning: true
+      }
+    })
+    return response.countAppRequestApplicants
+  }
+
+  /** Average seconds from submission to decision across applications, from the Metrics API. Requires access.viewMetrics. */
+  async getReviewDecisionTiming () {
+    const response = await this.client.query({
+      __name: 'GetReviewDecisionTiming',
+      applicationMetrics: {
+        toDecision: {
+          avg: true
+        }
+      }
+    })
+    return response.applicationMetrics.toDecision.avg ?? null
+  }
+
+  async getPrograms () {
+    const response = await this.client.query({
+      __name: 'GetPrograms',
+      programs: {
+        key: true,
+        title: true
+      }
+    })
+    return response.programs
   }
 
   async getApplicationCount (filter: AppRequestFilter = {}) {
@@ -510,6 +550,7 @@ class API extends APIBase {
           status: true,
           rescindedStatus: true,
           ineligiblePhase: true,
+          hiddenIneligiblePreSubmit: true,
           statusReason: true,
           title: true,
           navTitle: true,
@@ -782,11 +823,15 @@ class API extends APIBase {
       appRequests: {
         __args: { filter: processedFilter, paged },
         id: true,
+        phase: true,
         createdAt: true,
         closedAt: true,
         updatedAt: true,
         applications: {
-          title: true
+          title: true,
+          programKey: true,
+          status: true,
+          rescindedStatus: true
         },
         applicant: {
           login: true,
@@ -1223,7 +1268,14 @@ class API extends APIBase {
         programs: {
           key: true,
           title: true,
+          navTitle: true,
           enabled: true,
+          configuration: {
+            data: true,
+            actions: {
+              update: true
+            }
+          },
           requirements: {
             key: true,
             title: true,
@@ -1331,7 +1383,8 @@ class API extends APIBase {
             category: true,
             categoryLabel: true,
             tag: true,
-            label: true
+            label: true,
+            description: true
           },
           actions: {
             update: true,
@@ -1367,7 +1420,8 @@ class API extends APIBase {
           listable: true,
           tags: {
             value: true,
-            label: true
+            label: true,
+            description: true
           }
         },
         controls: {

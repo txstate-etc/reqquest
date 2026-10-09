@@ -37,6 +37,10 @@ export const rqAccessSeed: AccessRoleGrantDefinition = {
     description: 'This role is for reviewers who are responsible for reviewing applications.',
     groups: [process.env.RQ_REVIEWER_GROUP ?? 'reviewers'],
     grants: [
+      { 
+        controlGroup: 'Metrics',
+        controls: ['view'],
+        allow: true },
       {
         controlGroup: 'AppRequest',
         controls: ['review', 'return', 'reopen', 'close', 'offer'],

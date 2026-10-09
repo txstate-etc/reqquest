@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { api } from "$internal"
+  import { api, AnnouncementBanner } from "$internal"
   import type { FormStore } from '@txstate-mws/svelte-forms'
   import IntroPanel from "$internal/components/IntroPanel.svelte"
   import { FieldCheckbox, FieldDateTime, FieldRadio, FieldTextArea, FieldTextInput, FieldToggle, Form, TagSet } from "@txstate-mws/carbon-svelte"
   import type { PageData } from "../announcement/$types"
-  import { Button, InlineNotification, NotificationActionButton } from 'carbon-components-svelte'
+  import { Button } from 'carbon-components-svelte'
   import { invalidateAll } from "$app/navigation"
   import { toasts } from "@txstate-mws/svelte-components"
   import TextClearFormat from "carbon-icons-svelte/lib/TextClearFormat.svelte";
@@ -114,20 +114,7 @@
 
     {#if data.subject && data.body}
       <div class='w-full'>
-        <InlineNotification
-          kind="warning"
-          title={data.subject}
-          subtitle={data.body}
-          lowContrast
-          hideCloseButton
-          class="time-sensitive-banner"
-        >
-          <svelte:fragment slot="actions">
-            {#if data.link}
-            <NotificationActionButton href={data.link}>{data.linkText}</NotificationActionButton>
-            {/if}
-          </svelte:fragment>
-        </InlineNotification>
+        <AnnouncementBanner subject={data.subject} body={data.body} link={data.link} linkText={data.linkText} />
       </div>
     {:else}
       <div class="bg-[var(--cds-ui-01)] p-4 gap-8 md:w-[645px]">
@@ -168,19 +155,6 @@
     width: 100%;
   }
 
-  :global(div.time-sensitive-banner.bx--inline-notification) {
-    min-width: unset;
-    max-width: fit-content;
-    flex-wrap: wrap;
-    width: auto;
-    align-items: center;
-  }
-  .time-sensitive-banner :global(.bx--inline-notification__details) {
-    flex-grow: unset;
-  }
-  .time-sensitive-banner :global(.bx--inline-notification__text-wrapper) {
-    display: block;
-  }
   :global(.bx--text-area.textarea) {
     resize: none;
   }

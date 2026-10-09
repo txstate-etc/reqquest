@@ -222,9 +222,10 @@ export class AccessTagCategory {
 
 @ObjectType()
 export class AccessTag {
-  constructor (value: string, label?: string) {
+  constructor (value: string, label?: string, description?: string) {
     this.value = value
     this.label = label ?? value
+    this.description = description
   }
 
   @Field()
@@ -232,6 +233,9 @@ export class AccessTag {
 
   @Field()
   label: string
+
+  @Field({ nullable: true, description: 'Extra context for the tag, such as the other titles a program has gone by in different periods.' })
+  description?: string
 }
 
 @ObjectType()

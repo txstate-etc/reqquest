@@ -1,5 +1,5 @@
 import { keyby } from 'txstate-utils'
-import { programRegistry, promptRegistry, requirementRegistry, RequirementType } from '../internal.js'
+import { getProgramAliasNote, programRegistry, promptRegistry, requirementRegistry, RequirementType } from '../internal.js'
 
 export interface TagDefinition {
   /**
@@ -12,6 +12,12 @@ export interface TagDefinition {
    * not need to be stable, but should be unique within the controlGroup.
    */
   label?: string
+  /**
+   * Extra context shown alongside the tag, such as the other titles a program has gone by in
+   * different periods (`aka Canine Companions`). Shown as a tooltip or a second line under the
+   * option, never used for matching grants.
+   */
+  description?: string
 }
 
 export interface TagLabels {
@@ -64,6 +70,13 @@ export interface TagCategoryDefinition {
    * used to get the label.
    */
   getLabel?: (value: string) => string | Promise<string>
+
+  /**
+   * Return the description (see `TagDefinition.description`) for a tag on a saved grant. Unlike
+   * getLabel, there is no default built from getTags, because that lookup is cached once at startup
+   * and descriptions may change at runtime.
+   */
+  getDescription?: (value: string) => string | undefined | Promise<string | undefined>
 }
 
 export interface ControlDefinition {
@@ -108,30 +121,33 @@ export async function initAccess () {
     category: 'program',
     label: 'Program',
     description: description ?? 'Limit this grant to specific programs.',
-    getTags: () => programRegistry.list().map(program => ({ value: program.key, label: program.title }))
+    getTags: async () => await Promise.all(programRegistry.list().map(async program => ({ value: program.key, label: program.title, description: await getProgramAliasNote(program.key) }))),
+    getDescription: getProgramAliasNote
   })
   const requirementTags = (description?: string) => ({
     category: 'requirement',
     label: 'Requirement',
     description: description ?? 'Limit this grant to specific requirements or the requirements associated with a program.',
-    getTags: () => [
+    getTags: async () => [
       ...Object.values(RequirementType).map(type => ({ value: type, label: 'Phase: ' + type })),
-      ...programRegistry.list().map(program => ({ value: program.key, label: 'Program: ' + program.title })),
+      ...await Promise.all(programRegistry.list().map(async program => ({ value: program.key, label: 'Program: ' + program.title, description: await getProgramAliasNote(program.key) }))),
       ...programRegistry.list().flatMap(program => program.workflowStages?.map(stage => ({ value: stage.key, label: program.title + ': ' + stage.title })) ?? []),
       ...requirementRegistry.list().map(requirement => ({ value: requirement.key, label: 'Requirement: ' + requirement.title }))
-    ]
+    ],
+    getDescription: getProgramAliasNote
   })
   const promptTags = (description?: string) => ({
     category: 'prompt',
     label: 'Prompt',
     description: description ?? 'Limit this grant to specific prompts or the prompts associated with a requirement or program.',
-    getTags: () => [
+    getTags: async () => [
       ...Object.values(RequirementType).map(type => ({ value: type, label: 'Phase: ' + type })),
-      ...programRegistry.list().map(program => ({ value: program.key, label: program.title + ': Review' })),
+      ...await Promise.all(programRegistry.list().map(async program => ({ value: program.key, label: program.title + ': Review', description: await getProgramAliasNote(program.key) }))),
       ...programRegistry.list().flatMap(program => program.workflowStages?.map(stage => ({ value: stage.key, label: program.title + ': ' + stage.title })) ?? []),
       ...requirementRegistry.list().map(requirement => ({ value: requirement.key, label: 'Requirement: ' + requirement.title })),
       ...promptRegistry.list().map(prompt => ({ value: prompt.key, label: 'Prompt: ' + prompt.title }))
-    ]
+    ],
+    getDescription: getProgramAliasNote
   })
   controlGroups.Application = {
     title: 'Reviewer - View Applications',

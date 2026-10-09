@@ -1,6 +1,6 @@
 import db from 'mysql2-async/db'
 import type { Queryable } from 'mysql2-async'
-import { Configuration, ConfigurationFilters, ensureAppRequestRecords, getAppRequests, Period, PeriodFilters, PeriodUpdate, programRegistry, promptRegistry, requirementRegistry, RequirementType } from '../internal.js'
+import { Configuration, ConfigurationFilters, ensureAppRequestRecords, getAppRequests, normalizeProgramName, Period, parseProgramLabels, PeriodFilters, PeriodUpdate, programRegistry, promptRegistry, requirementRegistry, RequirementType } from '../internal.js'
 import { Cache, keyby, stringify } from 'txstate-utils'
 
 export interface PeriodRow {
@@ -15,7 +15,7 @@ export interface PeriodRow {
 
 export interface PeriodConfigurationRow {
   periodId: number
-  /* might be a requirement or prompt key */
+  /* might be a requirement, prompt, or program key */
   definitionKey: string
   createdAt: Date
   updatedAt: Date
@@ -25,6 +25,8 @@ export interface PeriodProgramRow {
   periodId: number
   programKey: string
   disabled: 0 | 1
+  /** `period_configurations.data` for the program key, joined in so labels need no extra query */
+  programLabels?: string | null
 }
 
 export interface PeriodProgramRequirementRow {
@@ -146,7 +148,8 @@ export async function copyConfigurations (fromPeriodId: number | string | undefi
     db.delete('DELETE FROM period_program_requirements WHERE periodId = ?', [toPeriodId]),
     db.delete('DELETE FROM period_workflow_stages WHERE periodId = ?', [toPeriodId])
   ])
-  const reachableConfigKeys = [...promptRegistry.reachable.map(p => p.key), ...requirementRegistry.reachable.map(r => r.key)]
+  // program keys carry the period's label overrides, so a copied period keeps the program names
+  const reachableConfigKeys = [...promptRegistry.reachable.map(p => p.key), ...requirementRegistry.reachable.map(r => r.key), ...programRegistry.reachable.map(p => p.key)]
   const configBinds: any[] = [toPeriodId, fromPeriodId]
   await db.insert(`
     INSERT INTO period_configurations (periodId, definitionKey, data)
@@ -283,9 +286,9 @@ export async function getConfigurationData (ids: { periodId: string, definitionK
   return rows.map(row => ({ periodId: String(row.periodId), definitionKey: row.definitionKey, data: JSON.parse(row.data || '{}') }))
 }
 
-export async function upsertConfiguration (periodId: string, key: string, data: any) {
+export async function upsertConfiguration (periodId: string, key: string, data: any, tdb: Queryable = db) {
   const dataStr = stringify(data)
-  await db.update(`
+  await tdb.update(`
     INSERT INTO period_configurations (periodId, definitionKey, data)
     VALUES (?, ?, ?)
     ON DUPLICATE KEY UPDATE data = VALUES(data)
@@ -308,12 +311,14 @@ export async function ensureConfigurationRecords (periodIds?: number[], tdb?: Qu
     }
     const prompts = promptRegistry.reachable
     const requirements = requirementRegistry.reachable
-    const promptAndReqKeys = [...prompts.map(p => p.key), ...requirements.map(r => r.key)]
-    const promptAndReqKeysSet = new Set(promptAndReqKeys)
+    const programs = programRegistry.reachable
+    const configKeysSet = new Set([...prompts.map(p => p.key), ...requirements.map(r => r.key), ...programs.map(p => p.key)])
     const promptConfigurationsToInsert = futurePeriodIds.flatMap(periodId => prompts.filter(p => !configMap?.[periodId]?.has(p.key)).map(p => ({ periodId: periodId, key: p.key, data: stringify(p.configuration?.default ?? {}) })))
     const requirementConfigurationsToInsert = futurePeriodIds.flatMap(periodId => requirements.filter(r => !configMap?.[periodId]?.has(r.key)).map(r => ({ periodId: periodId, key: r.key, data: stringify(r.configuration?.default ?? {}) })))
-    const configurationsToInsert = promptConfigurationsToInsert.concat(requirementConfigurationsToInsert)
-    const configurationsToDelete = futurePeriodIds.flatMap(periodId => Array.from(configMap?.[periodId] ?? []).filter(key => !promptAndReqKeysSet.has(key)).map(key => ({ periodId: periodId, key })))
+    // a program's configuration is its label overrides, empty means use the titles from the code
+    const programConfigurationsToInsert = futurePeriodIds.flatMap(periodId => programs.filter(p => !configMap?.[periodId]?.has(p.key)).map(p => ({ periodId: periodId, key: p.key, data: stringify({}) })))
+    const configurationsToInsert = [...promptConfigurationsToInsert, ...requirementConfigurationsToInsert, ...programConfigurationsToInsert]
+    const configurationsToDelete = futurePeriodIds.flatMap(periodId => Array.from(configMap?.[periodId] ?? []).filter(key => !configKeysSet.has(key)).map(key => ({ periodId: periodId, key })))
     if (configurationsToInsert.length) {
       const binds: any[] = []
       await db.insert(`
@@ -447,3 +452,98 @@ export const periodConfigCache = new Cache(async (periodId: string) => {
   }
   return result
 }, { freshseconds: 30 * 1000 }) // cache for 30 seconds
+
+export const programAliasCache = new Cache(async () => {
+  const keys = programRegistry.keys()
+  const aliases: Record<string, string[]> = {}
+  if (!keys.length) return aliases
+  const binds: any[] = []
+  const rows = await db.getall<{ definitionKey: string, data: string | null }>(`
+    SELECT pc.definitionKey, pc.data
+    FROM period_configurations pc
+    INNER JOIN periods p ON p.id = pc.periodId
+    WHERE pc.definitionKey IN (${db.in(binds, keys)})
+    ORDER BY p.openDate DESC
+  `, binds)
+  for (const row of rows) {
+    const definition = programRegistry.get(row.definitionKey)
+    const labels = parseProgramLabels(row.data)
+    const title = labels?.title
+    if (!title || title === definition.title) continue
+    aliases[row.definitionKey] ??= []
+    if (!aliases[row.definitionKey].includes(title)) aliases[row.definitionKey].push(title)
+  }
+  return aliases
+}, { freshseconds: 60 }) // short, so API instances that did not save the label catch up quickly
+
+export async function getProgramAliasNote (key: string) {
+  const seen = new Set([normalizeProgramName(programRegistry.get(key).title)])
+  const aliases = (await programAliasCache.get())[key]?.filter(alias => {
+    const normalized = normalizeProgramName(alias)
+    if (seen.has(normalized)) return false
+    seen.add(normalized)
+    return true
+  })
+  return aliases?.length ? `aka ${aliases.join(', ')}` : undefined
+}
+
+export interface ProgramNameConflict {
+  /** the name as the caller passed it */
+  name: string
+  /** the program that holds it */
+  otherKey: string
+  /**
+   * code: it is the other program's title or navTitle in its definition
+   * locked: a period that has app requests uses it - configuration there can no longer change, so it never frees up
+   * unlocked: a period that can still be configured uses it right now - it frees up once removed there
+   */
+  source: 'code' | 'locked' | 'unlocked'
+  periodName?: string
+}
+
+/**
+ * Which of `names` belong to a program other than `programKey`, so that a name only ever means one
+ * program. A name is held by another program when it is
+ * - that program's title or navTitle in code,
+ * - its label in a locked period (one with app requests) - permanently, as that history is frozen, or
+ * - its label in an unlocked period, but only while it is still there. Every unlocked period counts,
+ *   not just the one being edited, otherwise two periods could each give the name to a different
+ *   program and keep it once both lock.
+ *
+ * Reads the database directly rather than `programAliasCache`, so a save cannot slip past a name
+ * another instance stored moments ago.
+ */
+export async function findProgramNameConflicts (programKey: string, names: (string | undefined)[], tdb: Queryable = db) {
+  const wanted = new Map<string, string>()
+  for (const name of names) if (name) wanted.set(normalizeProgramName(name), name)
+  const conflicts: ProgramNameConflict[] = []
+  if (!wanted.size) return conflicts
+  const claim = (otherKey: string, otherName: string | undefined, source: ProgramNameConflict['source'], periodName?: string) => {
+    if (!otherName || otherKey === programKey) return
+    const name = wanted.get(normalizeProgramName(otherName))
+    if (name && !conflicts.some(c => c.name === name && c.otherKey === otherKey && c.source === source && c.periodName === periodName)) conflicts.push({ name, otherKey, source, periodName })
+  }
+  for (const program of programRegistry.list()) {
+    claim(program.key, program.title, 'code')
+    claim(program.key, program.navTitle, 'code')
+  }
+  const otherKeys = programRegistry.keys().filter(key => key !== programKey)
+  if (otherKeys.length) {
+    const binds: any[] = []
+    const rows = await tdb.getall<{ definitionKey: string, data: string | null, periodName: string, locked: 0 | 1 }>(`
+      SELECT pc.definitionKey, pc.data, p.name AS periodName,
+        EXISTS (SELECT 1 FROM app_requests ar WHERE ar.periodId = p.id) AS locked
+      FROM period_configurations pc
+      INNER JOIN periods p ON p.id = pc.periodId
+      WHERE pc.definitionKey IN (${db.in(binds, otherKeys)})
+      ORDER BY p.openDate DESC
+    `, binds)
+    for (const row of rows) {
+      const labels = parseProgramLabels(row.data)
+      const source = row.locked ? 'locked' : 'unlocked'
+      claim(row.definitionKey, labels?.title, source, row.periodName)
+      claim(row.definitionKey, labels?.navTitle, source, row.periodName)
+    }
+  }
+  return conflicts
+}

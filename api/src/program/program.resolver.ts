@@ -1,5 +1,5 @@
 import { Arg, Ctx, FieldResolver, Query, Resolver, Root } from 'type-graphql'
-import { Program, PeriodProgramActions, ProgramService, RQContext, Period, PeriodProgram, PeriodService, ProgramFilters, PeriodProgramRequirement, PeriodRequirementService } from '../internal.js'
+import { Configuration, ConfigurationService, Program, PeriodProgramActions, ProgramService, RQContext, Period, PeriodProgram, PeriodService, ProgramFilters, PeriodProgramRequirement, PeriodRequirementService } from '../internal.js'
 
 @Resolver(of => PeriodProgram)
 export class PeriodProgramResolver {
@@ -16,6 +16,11 @@ export class PeriodProgramResolver {
   @FieldResolver(returns => [PeriodProgramRequirement])
   async requirements (@Ctx() ctx: RQContext, @Root() program: PeriodProgram) {
     return ctx.svc(PeriodRequirementService).findByPeriodIdAndProgramKey(program.periodId, program.key)
+  }
+
+  @FieldResolver(type => Configuration, { description: 'The configuration for this program in the period, which holds its title and navTitle overrides.' })
+  async configuration (@Ctx() ctx: RQContext, @Root() program: PeriodProgram) {
+    return ctx.svc(ConfigurationService).findByPeriodIdAndKey(program.periodId, program.key)
   }
 
   @FieldResolver(returns => PeriodProgramActions)
