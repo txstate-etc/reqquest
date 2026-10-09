@@ -79,6 +79,8 @@ test.describe.serial('Applicant program list - hidden, opted-out and auto-comple
     await expect(applicantPage.getByText('Project Management')).toHaveCount(0)
     // ApplicantProgramList always renders its (css-hidden) .tooltip-text-row when it has descriptions to show
     await expect(applicantPage.locator('.tooltip-text-item', { hasText: opsDescription })).toHaveCount(1)
+    // opting out of a program the applicant is already ineligible for means nothing, so none offer it
+    await expect(applicantPage.getByRole('button', { name: 'Opt out', exact: true })).toHaveCount(0)
     await applicantPage.goto(`/requests/${lowGpaId}/export`)
     await expect(applicantPage.getByText(opsDescription).first()).toBeAttached()
   })
@@ -118,6 +120,9 @@ test.describe.serial('Applicant program list - hidden, opted-out and auto-comple
     await expect(applicant2Page.getByText('Operations & Infrastructure').first()).toBeVisible()
     await expect(applicant2Page.getByText('Opted out').first()).toBeVisible()
     await expect(applicant2Page.locator('.tooltip-text-item', { hasText: opsDescription })).toHaveCount(0)
+    // the four opted-out programs offer to opt back in; help desk, still eligible, can still be opted out of
+    await expect(applicant2Page.getByRole('button', { name: 'Opt In', exact: true })).toHaveCount(4)
+    await expect(applicant2Page.getByRole('button', { name: 'Opt out', exact: true })).toHaveCount(1)
   })
 
   test('Applicant 2 - submit from the review page; help desk completes at submission', async ({ applicant2Page, applicant2Request }) => {
