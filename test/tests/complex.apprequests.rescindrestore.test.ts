@@ -114,7 +114,7 @@ test.describe.serial('Rescind and restore an approved benefit, notifying the app
       expect(email.to.value[0].address).toEqual('reqquest-next@qual.txstate.edu')
       expect(email.text).toContain(dogTitle)
     }
-    expect(rescinded.text).toContain('has been rescinded and is no longer approved')
-    expect(restored.text).toContain('has been restored and is approved again')
+    expect(rescinded.text).toContain(`Your previously granted approval for ${dogTitle} has been rescinded.`)
+    expect(restored.text).toContain(`Your ${dogTitle} has been restored and is now approved.`)
   })
 })

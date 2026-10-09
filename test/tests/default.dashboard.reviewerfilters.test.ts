@@ -104,7 +104,9 @@ test.describe.serial('Reviewer dashboard tabs and list', { tag: '@default' }, ()
     await expect(reviewerPage.getByRole('radio', { name: 'Awaiting Review' })).toHaveCount(0)
     // no search box or quick filters in the filter bar, and no dialog button there either (the list header owns those)
     await expect(reviewerPage.locator('.quickfilters-form')).toHaveCount(0)
-    await expect(reviewerPage.getByRole('combobox')).toHaveCount(0)
+    // scoped to the filter bar: the list's Pagination renders two selects (comboboxes) once the queue has rows
+    await expect(reviewerPage.locator('.filter-ui-container')).toHaveCount(1)
+    await expect(reviewerPage.locator('.filter-ui-container').getByRole('combobox')).toHaveCount(0)
     await expect(reviewerPage.locator('.nested-multiselect')).toHaveCount(0)
     await expect(reviewerPage.getByRole('button', { name: /(More|Add) filters/i })).toHaveCount(0)
     await expect(reviewerPage.getByRole('heading', { name: 'Review not started' })).toBeVisible()
@@ -193,7 +195,9 @@ test.describe.serial('Reviewer dashboard tabs and list', { tag: '@default' }, ()
     await expect(detail).toContainText('Adopt a Dog')
     await expect(detail).toContainText('Adopt a Cat')
     await row.getByRole('button', { name: 'Collapse Row' }).click()
-    await expect(detail).toHaveCount(0)
+    // ColumnList keeps an empty detail cell in every expandable row and only drops its contents on collapse
+    await expect(row.getByRole('button', { name: 'Expand Row' })).toBeVisible()
+    await expect(detail).not.toContainText('Programs')
 
     // selecting a row reveals the bulk download action
     // carbon hides the input behind its label, so click the label and confirm the input toggled
@@ -229,7 +233,7 @@ test.describe.serial('Reviewer dashboard tabs and list', { tag: '@default' }, ()
     expect(labels[0]).toEqual('Program status')
     expect(labels.indexOf('Submitted After')).toBeGreaterThan(labels.indexOf('Periods'))
     await dialog.getByText('Closed or Cancelled only', { exact: true }).click()
-    await dialog.getByRole('button', { name: 'Submit' }).click()
+    await dialog.getByRole('button', { name: 'Apply' }).click()
     await expect(reviewerPage).toHaveURL(/f\.closed=true/)
 
     // now listed, with the request-level Closed tag in its Programs section

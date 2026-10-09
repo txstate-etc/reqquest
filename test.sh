@@ -34,15 +34,12 @@ DEMO_INSTANCE="complex" TEST_TAGS="@all|@complex" docker compose -p "$(basename 
 COMPLEX_EXITCODE=$?
 docker compose -p "$(basename $PWD)-test" -f docker-compose.test.yml $override down -v
 
-exit $COMPLEX_EXITCODE
+if [ "$COMPLEX_EXITCODE" -eq 1 ]; then
+  exit $COMPLEX_EXITCODE
+fi
 
-# RC TODO
-#if [ "$COMPLEX_EXITCODE" -eq 1 ]; then
-#  exit $COMPLEX_EXITCODE
-#fi
+DEMO_INSTANCE="rc" TEST_TAGS="@all|@rc" docker compose -p "$(basename $PWD)-test" -f docker-compose.test.yml $override up --build --exit-code-from testing-container
+RC_EXITCODE=$?
+docker compose -p "$(basename $PWD)-test" -f docker-compose.test.yml $override down -v
 
-#DEMO_INSTANCE="rc" TEST_TAGS="@all|@rc" docker compose -p "$(basename $PWD)-test" -f docker-compose.test.yml $override up --build --exit-code-from testing-container
-#RC_EXITCODE=$?
-#docker compose -p "$(basename $PWD)-test" -f docker-compose.test.yml $override down -v
-
-#exit $RC_EXITCODE
+exit $RC_EXITCODE

@@ -120,7 +120,7 @@ test.describe.serial('Per-period program labels', { tag: '@default' }, () => {
     for (const validateOnly of [true, false]) {
       const resp = await save('adopt_a_cat_program', { title: '  canine   COMPANIONS ' }, validateOnly)
       const message = resp.messages.find(m => m.arg === 'title' && m.type === 'error')?.message
-      expect(message).toContain('is currently used by the program Adopt a Dog in multiple periods')
+      expect(message).toContain('is currently used by Adopt a Dog in multiple periods')
     }
     // another program's override navTitle
     const navResp = await save('adopt_a_cat_program', { navTitle: 'dogs' })
@@ -195,5 +195,13 @@ test.describe.serial('Per-period program labels', { tag: '@default' }, () => {
     for (const program of programs) expect(program.configuration.actions.update).toEqual(false)
     const resp = await adminRequest.graphql<{ errors?: any[] }>(updateQuery, { periodId: lockedPeriodId, key: programs[0].key, data: { title: 'Too late' }, validateOnly: false })
     expect(resp.errors?.length).toBeGreaterThan(0)
+  })
+
+  // createPeriod copies the configurations of the most recent period, labels included, so leaving the dog renamed
+  // would carry "Canine Companions" into whatever period the next spec creates
+  test.afterAll(async ({ adminRequest }) => {
+    for (const id of [periodId, copyPeriodId].filter(Boolean)) {
+      await adminRequest.graphql(updateQuery, { periodId: id, key: programKey, data: {}, validateOnly: false })
+    }
   })
 })
