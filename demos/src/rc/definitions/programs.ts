@@ -76,6 +76,9 @@ const software_development: ProgramDefinition = {
 }
 const project_management: ProgramDefinition = {
   title: 'Project Management',
+  // demonstrates hiding a program from applicants and reviewers when the applicant was screened out of it
+  // before submitting - see the low-GPA path in step1_prequal_req
+  showIneligiblePreSubmit: false,
   requirementKeys: [
     'project_management_opt_out_req',
     'step1_prequal_req',

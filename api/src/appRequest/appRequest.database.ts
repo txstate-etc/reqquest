@@ -7,7 +7,7 @@ import { clone, isNotBlank, omit, stringify } from 'txstate-utils'
 import {
   ApplicationPhase, ApplicationStatus, AppRequest, AppRequestActivity, AppRequestActivityFilters, AppRequestFilter,
   AppRequestPhase, AppRequestStatus, evaluateAppRequest, getApplications, getPeriodWorkflowStages, Pagination, PaginationInfoWithTotalItems, promptRegistry,
-  RQContext, type AppRequestData, advanceWorkflow, RequirementType
+  RQContext, type AppRequestData, advanceWorkflow, RequirementType, clearIneligiblePreSubmit, snapshotIneligiblePreSubmit
 } from '../internal.js'
 
 /**
@@ -255,6 +255,7 @@ export async function submitAppRequest (appRequestId: number) {
   return await appRequestTransaction(appRequestId, async db => {
     await db.update('UPDATE app_requests SET phase = ?, submittedData = data, submittedAt=NOW() WHERE id = ?', [AppRequestPhase.SUBMITTED, appRequestId])
     await evaluateAppRequest(appRequestId, db)
+    await snapshotIneligiblePreSubmit(appRequestId)
     return await autoAdvanceAfterSubmit(appRequestId, db)
   })
 }
@@ -289,6 +290,7 @@ export async function appRequestReturnToApplicant (appRequestId: number, dataVer
     if (dataVersion != null) binds.push(dataVersion)
     const updated = await db.update('UPDATE app_requests SET phase = ?, submittedAt = NULL WHERE id = ?' + where, binds)
     if (!updated) throw new Error('Someone else is working on the same request and made changes since you loaded. Reload the page to try again.')
+    await clearIneligiblePreSubmit(appRequestId, db)
     await evaluateAppRequest(appRequestId, db)
   })
 }
@@ -312,6 +314,7 @@ export async function appRequestComplete (appRequestId: number, tdb: Queryable =
 export async function restoreAppRequest (appRequestId: number) {
   await db.update('UPDATE app_requests SET phase = ?, data = submittedData WHERE id = ?', [AppRequestPhase.SUBMITTED, appRequestId])
   await evaluateAppRequest(appRequestId)
+  await snapshotIneligiblePreSubmit(appRequestId)
 }
 
 export async function closeAppRequest (appRequestId: number) {
@@ -319,17 +322,10 @@ export async function closeAppRequest (appRequestId: number) {
     SET
       closedAt = NOW(),
       status = CASE WHEN phase=? THEN ? ELSE ? END,
-      computedStatus = CASE
-        WHEN phase=? THEN ?
-        WHEN phase=? THEN ?
-        WHEN phase=? THEN ?
-        ELSE computedStatus
-      END
+      computedStatus = CASE WHEN phase=? THEN ? ELSE computedStatus END
     WHERE id = ?`, [
     AppRequestPhase.STARTED, AppRequestStatusDB.CANCELLED, AppRequestStatusDB.CLOSED,
     AppRequestPhase.STARTED, AppRequestStatus.CANCELLED,
-    AppRequestPhase.SUBMITTED, AppRequestStatus.NOT_APPROVED,
-    AppRequestPhase.ACCEPTANCE, AppRequestStatus.NOT_ACCEPTED,
     appRequestId
   ])
 }

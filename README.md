@@ -233,6 +233,27 @@ example, if the Program represents an "In-State Tuition Grant" program, the Appl
 represents the information Jennifer gave us to prove she's eligible for the grant, and the
 status of her request.
 
+### Hiding programs the applicant was screened out of
+With many programs, an applicant may be screened out of most of them by applicant requirements (PREQUAL,
+QUALIFICATION, POSTQUAL) before they ever submit, and reviewers then wade through programs nobody needs
+to look at. Set `showIneligiblePreSubmit: false` on a program definition to hide it in that case. It
+defaults to true.
+
+An application is hidden while it is ineligible because of an applicant requirement *and* that
+ineligibility arose before submission: either the request has not been submitted yet, or the application
+was already ineligible at the moment it was submitted (recorded in `applications.ineligiblePreSubmit`).
+The distinction matters because `ineligiblePhase` names the type of the failing requirement, not when it
+failed. A reviewer who changes an applicant answer after submission and disqualifies the program does
+not hide it, so they can still see and undo the change. An application that becomes eligible again is
+shown again immediately.
+
+- Reviewers and other non-owners never receive a hidden application from the API.
+- The applicant still receives it, flagged `hiddenIneligiblePreSubmit`, and the UI leaves it out of their
+  program lists. Its prompts stay in the applicant's navigation so they can change the answer that
+  disqualified them. A program they opted out of stays listed, since that is the only place to opt back in.
+- When nothing is left to list, the applicant sees `UIConfig.applicantNoProgramsMessage` (or a default).
+- Hiding is presentation only: evaluation and the app request's status are unaffected.
+
 ### Application Status
 Application status represents the current state of the eligibility of the application. This status
 changes back and forth from PENDING several times throughout the process. For instance, when the applicant

@@ -1,3 +1,4 @@
+export { default as AnnouncementBanner } from './AnnouncementBanner.svelte'
 export { default as ApplicantProgramList } from './ApplicantProgramList.svelte'
 export { default as ApplicantPromptPage } from './ApplicantPromptPage.svelte'
 export { default as ApplicationDetailsView } from './ApplicationDetailsView.svelte'
