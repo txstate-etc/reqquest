@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getAppRequestStatusInfo, getApplicationStatusInfo, applicantRequirementTypes, reviewRequirementTypes } from '../status-utils.js'
-  import { isIneligiblePreSubmission } from '../appreq-utils.js'
+  import { DEFAULT_APPLICANT_NO_PROGRAMS_MESSAGE, isHiddenFromApplicant, isIneligibleByApplicantRequirement } from '../appreq-utils.js'
   import { Panel, TagSet } from '@txstate-mws/carbon-svelte'
   import { Button, InlineNotification, Tooltip } from 'carbon-components-svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
@@ -32,7 +32,8 @@
 
   $: canMakeCorrections = CORRECTABLE_STATUSES.includes(appRequest.status)
   $: eligibleApplications = applications.filter(a => a.ineligiblePhase == null)
-  $: ineligibleApplications = applications.filter(isIneligiblePreSubmission)
+  $: ineligibleApplications = applications.filter(a => isIneligibleByApplicantRequirement(a) && !isHiddenFromApplicant(a))
+  $: noProgramsToList = !eligibleApplications.length && !ineligibleApplications.length && applications.some(isHiddenFromApplicant)
 
   // Group prompts by sections, with reviewer prompts nested within application sections
   $: sections = (() => {
@@ -118,6 +119,9 @@
               <ApplicantProgramList applications={ineligibleApplications} {appRequest} viewMode={statusDisplay === 'tags'} {showTooltipsAsText} />
             </Panel>
          {/if}
+        {#if noProgramsToList}
+          <p class="text-center">{uiRegistry.config.applicantNoProgramsMessage ?? DEFAULT_APPLICANT_NO_PROGRAMS_MESSAGE}</p>
+        {/if}
       </div>
     </section>
 
