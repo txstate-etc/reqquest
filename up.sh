@@ -18,5 +18,6 @@ shift $((OPTIND -1))
 if [ $# -ge 1 ]; then
   DEMO_INSTANCE=${DEMO_INSTANCE} docker compose up --build -d $@
 else
-  DEMO_INSTANCE=${DEMO_INSTANCE} docker compose up --build
+  DEMO_INSTANCE=${DEMO_INSTANCE} docker compose up --build -d
 fi
+docker compose logs -f
