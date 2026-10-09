@@ -186,15 +186,22 @@ export function rqContextMixin (Ctx: typeof Context): RQContextClass {
       const auth = await useTicket(ticket)
       if (!auth) return
       this.auth = auth
-      this.authInfo = await authCache.get(this.login, this)
-      this.authInfo.impersonationUser = this.auth?.impersonatedBy ? await userCache.get(this.auth.impersonatedBy, this) : undefined
+      await this.loadAuthInfo()
     }
 
     async waitForAuth () {
       await super.waitForAuth()
       if (!this.login) return
-      this.authInfo = await authCache.get(this.login, this)
-      this.authInfo.impersonationUser = this.auth?.impersonatedBy ? await userCache.get(this.auth.impersonatedBy, this) : undefined
+      await this.loadAuthInfo()
+    }
+
+    protected async loadAuthInfo () {
+      const [authInfo, impersonationUser] = await Promise.all([
+        authCache.get(this.login, this),
+        this.auth?.impersonatedBy ? userCache.get(this.auth.impersonatedBy, this) : undefined
+      ])
+      // authInfo is shared by every request for this login, so impersonation must go on a per-request copy
+      this.authInfo = { ...authInfo, impersonationUser }
     }
 
     // Pagination

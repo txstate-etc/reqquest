@@ -6,7 +6,7 @@
   import { htmlEncode, isBlank, isNotBlank, keyby, sortby, toQuery } from 'txstate-utils'
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { api, REVIEWER_STATUS_CONFIG } from '$internal'
+  import { api, FieldNestedMultiselect, getProgramStatusFilterItems, getReviewerStatusFilterOptions, getReviewerStatusTags, ProgramStatusCell, twoLineDateHtml, REVIEWER_STATUS_CONFIG } from '$internal'
   import { enumApplicationRescindedStatus } from '$lib'
   import { uiRegistry } from '../../local/index.js'
   import type { PageData } from './$types.js'
@@ -14,7 +14,8 @@
 
   export let data: PageData
 
-  $: ({ appRequests, appRequestIndexes: indexes, allPeriods, openPeriods, access, filters } = data)
+  $: ({ appRequests, appRequestIndexes: indexes, allPeriods, openPeriods, access, filters, programs } = data)
+  const statusFilterItems = getReviewerStatusFilterOptions({ includeClosed: true })
   $: requests = appRequests.map(r => ({ ...r, indexByCat: keyby(r.indexCategories, 'category') }))
   $: indexColumns = sortby(indexes.filter(idx => idx.appRequestListPriority), 'appRequestListPriority').map(idx => ({
     id: idx.category,
@@ -69,41 +70,53 @@
   }
   let showDateFilters = isNotBlank(filters?.closedAfter) || isNotBlank(filters?.closedBefore) || isNotBlank(filters?.updatedAfter) || isNotBlank(filters?.updatedBefore) || isNotBlank(filters?.submittedAfter) || isNotBlank(filters?.submittedBefore)
 
-  async function downloadCSV () {
+  async function downloadCSV (ids?: string[]) {
     const ticket = await api.getDownloadTicket()
-    location.href = `${api.baseUrl}/csv/${ticket}/requests/requests${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv${location.search || ('?' + toQuery({ ..._defaultRequestListFilters }))}`
+    const query = toQuery({ f: ids?.length ? { ids } : (filters ?? _defaultRequestListFilters) } as unknown as Parameters<typeof toQuery>[0])
+    location.href = `${api.baseUrl}/csv/${ticket}/requests/requests${DateTime.now().toFormat('yyyyLLddHHmmss')}.csv?${query}`
   }
 </script>
-<div class='[ px-[20px] ]'>
+<div class='intro-wide [ px-[20px] ]'>
+  <div class="requests-filters">
   <FilterUI search>
     <svelte:fragment slot="quickfilters">
       <FieldMultiselect
         path="status"
-        label="Status"
-        placeholder="Status"
-        items={Object.entries(REVIEWER_STATUS_CONFIG).map(([value, config]) => ({ value, label: config.label }))}
+        labelText="Application status"
+        label="Choose one or more"
+        hideLabel={false}
+        json
+        items={statusFilterItems}
+      />
+      <FieldNestedMultiselect
+        path="applicationStatuses"
+        labelText="Program status"
+        items={getProgramStatusFilterItems()}
       />
       <FieldMultiselect
-        path="rescindedStatus"
-        label="Rescind status"
-        placeholder="Rescind status"
-        items={[
-          { value: enumApplicationRescindedStatus.RESCINDED, label: 'Rescinded' },
-          { value: enumApplicationRescindedStatus.RESTORED, label: 'Restored' }
-        ]}
+        path="programKeys"
+        labelText="Program"
+        label="Choose one or more"
+        hideLabel={false}
+        items={programs.map(p => ({ value: p.key, label: p.title }))}
       />
-      {#each filterIndexes as filterIdx, i (filterIdx.category)}
-        {#if i < 2}
-          <FieldMultiselect path="indexes.{filterIdx.category}"
-            label={filterIdx.categoryLabel}
-            placeholder={filterIdx.categoryLabel}
-            items={filterIdx.listable ? filterIdx.values : unlistableIndexItems[filterIdx.category] ?? []}
-            filterable={!filterIdx.listable}
-            on:input={!filterIdx.listable ? searchIndexItems(filterIdx.category) : () => {}}
-          />
-        {/if}
-      {/each}
     </svelte:fragment>
+    <FieldMultiselect
+      path="periodIds"
+      label="Periods"
+      placeholder="Select Periods"
+      items={allPeriods.map(p => ({ value: p.id, label: p.name }))}
+      filterable
+    />
+    {#each filterIndexes as filterIdx (filterIdx.category)}
+      <FieldMultiselect path="indexes.{filterIdx.category}"
+        label={filterIdx.categoryLabel}
+        placeholder={filterIdx.categoryLabel}
+        items={filterIdx.listable ? filterIdx.values : unlistableIndexItems[filterIdx.category] ?? []}
+        filterable={!filterIdx.listable}
+        on:input={!filterIdx.listable ? searchIndexItems(filterIdx.category) : () => {}}
+      />
+    {/each}
     <FieldDate
       path="createdAfter"
       labelText="Created After"
@@ -154,25 +167,8 @@
         endOfDay
       />
     </Panel>
-    <FieldMultiselect
-      path="periodIds"
-      label="Periods"
-      placeholder="Select Periods"
-      items={allPeriods.map(p => ({ value: p.id, label: p.name }))}
-      filterable
-    />
-    {#each filterIndexes as filterIdx, i (filterIdx.category)}
-      {#if i >= 2}
-        <FieldMultiselect path="indexes.{filterIdx.category}"
-          label={filterIdx.categoryLabel}
-          placeholder={filterIdx.categoryLabel}
-          items={filterIdx.listable ? filterIdx.values : unlistableIndexItems[filterIdx.category] ?? []}
-          filterable={!filterIdx.listable}
-          on:input={!filterIdx.listable ? searchIndexItems(filterIdx.category) : () => {}}
-        />
-      {/if}
-    {/each}
   </FilterUI>
+  </div>
   <IntroPanel title="All Applications" subtitle="This is where you can see all applications submitted to the business app. Browse them all or use the filters above to narrow down applications." />
   <ColumnList
     autoHideColumns
@@ -182,10 +178,14 @@
       { id: 'login', label: uiRegistry.getWord('login'), minWidth: 100, tags: r => [{ label: r.applicant.login, type: 'green' }] },
       { id: 'period', label: uiRegistry.getWord('period'), minWidth: 150, render: r => htmlEncode(r.period.name) },
       { id: 'name', label: 'Name', render: r => r.applicant.fullname, grow: 2 },
-      { id: 'dateSubmitted', label: 'Submitted', minWidth: 150, render: r => DateTime.fromISO(r.createdAt).toFormat('f') },
-      { id: 'status', label: 'Status', minWidth: 150, tags: r => [{ label: REVIEWER_STATUS_CONFIG[r.status].label, type: REVIEWER_STATUS_CONFIG[r.status].color }] },
+      { id: 'dateSubmitted', label: 'Submitted', minWidth: 120, render: r => twoLineDateHtml(r.createdAt) },
+      { id: 'program', label: 'Program', minWidth: 220, component: ProgramStatusCell },
+      { id: 'status', label: 'Application status', minWidth: 150, tags: r => getReviewerStatusTags(r.status, r.phase, r.closedAt) },
       ...indexColumns,
-      { id: 'lastUpdated', label: 'Last Updated', minWidth: 150, render: r => DateTime.fromISO(r.updatedAt).toFormat('f') }
+      { id: 'lastUpdated', label: 'Last Updated', minWidth: 120, render: r => twoLineDateHtml(r.updatedAt) }
+    ]}
+    selectedActions={rows => [
+      { label: 'Download selected', icon: DocExport, onClick: () => downloadCSV(rows.map(r => r.id)) }
     ]}
     listActions={[
       ...(access.createAppRequestOther
@@ -200,7 +200,12 @@
       { icon: View, label: 'View', onClick: () => { goto(`/requests/${row.id}/approve`) } }
     ]}
     rows={requests}
-  />
+  >
+    <svelte:fragment let:row>
+      <div class="[ mb-2 ]"><strong>Programs</strong></div>
+      <ProgramStatusCell {row} rollup={false} />
+    </svelte:fragment>
+  </ColumnList>
   <Pagination
     totalItems={data.pageInfo.appRequests?.totalItems}
     page={data.pageInfo.appRequests?.currentPage}
@@ -227,6 +232,14 @@
 </PanelFormDialog>
 
 <style>
+  .intro-wide :global(.intro-panel .content-start) {
+    max-width: none;
+  }
+  /* the quick-filter fields carry labels above them; bottom-align the row so the search box and
+     More filters button sit level with the fields rather than with the labels */
+  .requests-filters :global(.filter-ui-container) {
+    align-items: flex-end;
+  }
   .app-requests-intro {
     background-color: var(--cds-layer);
   }

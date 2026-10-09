@@ -183,6 +183,10 @@ import RCAuditSoftwareDevelopmentRegular2 from './rc/AuditSoftwareDevelopmentReg
 import RCAuditSoftwareDevelopmentRegularDisplay2 from './rc/AuditSoftwareDevelopmentRegularDisplay2.svelte'
 import RCOverrideGPAWarning from './rc/OverrideGPAWarning.svelte'
 import RCOverrideGPAWarningDisplay from './rc/OverrideGPAWarningDisplay.svelte'
+import RCHelpDeskWeekendAvailability from './rc/HelpDeskWeekendAvailability.svelte'
+import RCHelpDeskWeekendAvailabilityDisplay from './rc/HelpDeskWeekendAvailabilityDisplay.svelte'
+import RCHelpDeskCustomerService from './rc/HelpDeskCustomerService.svelte'
+import RCHelpDeskCustomerServiceDisplay from './rc/HelpDeskCustomerServiceDisplay.svelte'
 
 import { api } from '$internal/api'
 import ApplicantPromptSkeleton from '$internal/components/ApplicantPromptSkeleton.svelte'
@@ -456,6 +460,8 @@ function configureDemoInstanceParams (): AnyUIConfig {
             }
           ]
         },
+        // no layout, so it shows the default type-based panels
+        help_desk_associate: { icon: DogWalker },
       },
       requirements: {
         step1_prequal_req: {},
@@ -482,6 +488,9 @@ function configureDemoInstanceParams (): AnyUIConfig {
         audit_software_development_non_blocking_show_regular_req2: {},
         reviewer_software_development_second_eyes_req: {},
         reviewer_override_gpa_warning_req: {},
+        help_desk_opt_out_req: {},
+        help_desk_weekend_availability_req: {},
+        help_desk_customer_service_req: {},
       },
       prompts: {
         pre_qual_prompt: { formComponent: PreQualPrompt, displayComponent: PreQualDisplay, displayMode: 'large' },
@@ -519,6 +528,9 @@ function configureDemoInstanceParams (): AnyUIConfig {
         audit_software_development_non_blocking_show_regular_prompt2: { formComponent: RCAuditSoftwareDevelopmentRegular2, displayComponent: RCAuditSoftwareDevelopmentRegularDisplay2 },
         reviewer_software_development_second_eyes_prompt: { formComponent: RCReviewerSoftwareDevelopmentSecondEyes, displayComponent: RCReviewerSoftwareDevelopmentSecondEyesDisplay },
         reviewer_override_gpa_warning_prompt: { formComponent: RCOverrideGPAWarning, displayComponent: RCOverrideGPAWarningDisplay },
+        help_desk_opt_out_prompt: { formComponent: OptOut, displayComponent: OptOutDisplay },
+        help_desk_weekend_availability_prompt: { formComponent: RCHelpDeskWeekendAvailability, displayComponent: RCHelpDeskWeekendAvailabilityDisplay },
+        help_desk_customer_service_prompt: { formComponent: RCHelpDeskCustomerService, displayComponent: RCHelpDeskCustomerServiceDisplay },
       }
     } satisfies UIConfig<RcPromptKey, RcRequirementKey, RcProgramKey>
   }

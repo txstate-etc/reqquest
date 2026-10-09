@@ -1,6 +1,6 @@
 import { sortby } from 'txstate-utils'
 import { Arg, Ctx, FieldResolver, ID, Int, Mutation, Query, Resolver, Root } from 'type-graphql'
-import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse, AppRequestIndexCategory, IndexValue, AppRequestIndexDestination, IndexCategory, RequirementPrompt, AccessUser, AccessUserService, AppRequestActivity, AppRequestActivityFilters, Pagination, PaginationInfoWithTotalItems, Note, NoteService, AppRequestNoteFilters, countAppRequests } from '../internal.js'
+import { AppRequest, Application, AppRequestService, JsonData, RQContext, ApplicationService, AppRequestFilter, promptRegistry, AppRequestActions, Period, PeriodService, RequirementPromptService, ValidatedAppRequestResponse, AppRequestIndexCategory, IndexValue, AppRequestIndexDestination, IndexCategory, RequirementPrompt, AccessUser, AccessUserService, AppRequestActivity, AppRequestActivityFilters, Pagination, PaginationInfoWithTotalItems, Note, NoteService, AppRequestNoteFilters, countAppRequests, AppRequestApplicantCounts } from '../internal.js'
 
 @Resolver(of => AppRequest)
 export class AppRequestResolver {
@@ -14,6 +14,11 @@ export class AppRequestResolver {
   @Query(returns => Int)
   async countAppRequests (@Ctx() ctx: RQContext, @Arg('filter', { nullable: true }) filter?: AppRequestFilter) {
     return await ctx.svc(AppRequestService).count(filter)
+  }
+
+  @Query(returns => AppRequestApplicantCounts, { description: 'First-time vs returning applicant counts for the matching appRequests (see AppRequestApplicantCounts).' })
+  async countAppRequestApplicants (@Ctx() ctx: RQContext, @Arg('filter', { nullable: true }) filter?: AppRequestFilter) {
+    return await ctx.svc(AppRequestService).countApplicants(filter)
   }
 
   @FieldResolver(type => AccessUser)
@@ -88,7 +93,7 @@ export class AppRequestResolver {
     return await ctx.svc(AppRequestService).create(periodId, login, validateOnly)
   }
 
-  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Submit the app request.' })
+  @Mutation(returns => ValidatedAppRequestResponse, { description: 'Submit the app request. Applications whose program has no reviewer questions (no PREAPPROVAL or APPROVAL requirements) advance on their own into their first blocking workflow stage or to REVIEW_COMPLETE; when nothing is left to review, the review is completed automatically as well. Applications ruled out before submission (PREQUAL or QUALIFICATION) do not hold that back.' })
   async submitAppRequest (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string) {
     const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
     if (!appRequest) throw new Error('App request not found.')

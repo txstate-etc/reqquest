@@ -4,6 +4,7 @@ export * from './scalar/index.js'
 /** Utils */
 export * from './util/auth.js'
 export * from './util/filters.js'
+export * from './util/bulkUpdate.js'
 export * from './util/mail.js'
 export * from './util/scheduler.js'
 export * from './util/periodClosingReminder.js'

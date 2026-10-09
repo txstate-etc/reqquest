@@ -54,3 +54,44 @@ export function assertNoKeyCollisions () {
     `${collisions.length} key collision${collisions.length === 1 ? '' : 's'}. Prompt, requirement, program and workflow stage keys all become tag values in the same authorization namespace, and prompt/requirement configuration shares one row per key, so every key must be distinct:\n\n${detail}\n`
   )
 }
+
+/**
+ * The form a program name is compared in: trimmed, inner whitespace collapsed, case-insensitive. Two
+ * names that differ only in those ways read as the same program to an applicant or an admin.
+ */
+export function normalizeProgramName (name: string) {
+  return name.trim().replace(/\s+/g, ' ').toLocaleLowerCase()
+}
+
+/**
+ * Fails startup when two program definitions share a title or navTitle, `pastPrograms` included.
+ *
+ * Grants are issued against programs by name, and per-period renames are checked against these same
+ * names (see `findProgramNameConflicts`), so a name must only ever belong to one program. A program
+ * may of course use the same name for its own title and navTitle. Workflow stage titles are not
+ * program names and are not checked.
+ *
+ * Call after `navTitle ??= title` has been applied, so a defaulted navTitle is compared too.
+ */
+export function assertNoProgramTitleCollisions () {
+  const owners = new Map<string, { names: Set<string>, programs: { key: string, title: string }[] }>()
+  for (const program of programRegistry.list()) {
+    for (const name of new Set([program.title, program.navTitle].filter(Boolean) as string[])) {
+      const normalized = normalizeProgramName(name)
+      const entry = owners.get(normalized) ?? { names: new Set<string>(), programs: [] }
+      entry.names.add(name)
+      if (!entry.programs.some(p => p.key === program.key)) entry.programs.push({ key: program.key, title: program.title })
+      owners.set(normalized, entry)
+    }
+  }
+
+  const collisions = [...owners.values()].filter(entry => entry.programs.length > 1)
+  if (collisions.length === 0) return
+
+  const detail = collisions
+    .map(({ names, programs }) => `  '${[...names].join("' / '")}'\n${programs.map(p => `      program ${p.key}: ${p.title}`).join('\n')}`)
+    .join('\n')
+  throw new Error(
+    `${collisions.length} program name collision${collisions.length === 1 ? '' : 's'}. A program's title and navTitle must not match another program's, compared ignoring case and extra spaces, so that a name only ever means one program:\n\n${detail}\n`
+  )
+}

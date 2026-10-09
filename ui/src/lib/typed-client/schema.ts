@@ -64,6 +64,8 @@ export interface AccessControlGroup {
 export interface AccessGrantTag {
     category: Scalars['String']
     categoryLabel: Scalars['String']
+    /** Extra context for the tag, such as the other titles a program has gone by in different periods. */
+    description: (Scalars['String'] | null)
     label: Scalars['String']
     tag: Scalars['String']
     __typename: 'AccessGrantTag'
@@ -139,6 +141,8 @@ export interface AccessRoleValidatedResponse {
 }
 
 export interface AccessTag {
+    /** Extra context for the tag, such as the other titles a program has gone by in different periods. */
+    description: (Scalars['String'] | null)
     label: Scalars['String']
     value: Scalars['String']
     __typename: 'AccessTag'
@@ -298,6 +302,16 @@ export interface AppRequestActivity {
 }
 
 
+/** Applicant counts for a set of appRequests. A request is a returning application when its applicant also submitted a request in an earlier period (by open date); otherwise it is a first-time application. Unsubmitted drafts in earlier periods do not count. */
+export interface AppRequestApplicantCounts {
+    /** Matching appRequests whose applicant submitted nothing in any earlier period. */
+    firstTime: Scalars['Int']
+    /** Matching appRequests whose applicant also submitted a request in an earlier period. */
+    returning: Scalars['Int']
+    __typename: 'AppRequestApplicantCounts'
+}
+
+
 /** This represents an index category attached to an app request. Its tagStrings property contains the tag values that have been extracted from the app request data. */
 export interface AppRequestIndexCategory {
     /** If this is > 0, the index values should be shown on the main app request list page, sorted by this priority in descending order. */
@@ -345,6 +359,8 @@ export interface Application {
     awaitingCorrection: Scalars['Boolean']
     /** A prose summary of the applicant-side requirements of the program this application is for. Intended to be shown alongside statusReason when the application becomes ineligible before submission, since an applicant disqualified early may never have seen the program's prompts and the statusReason alone lacks context. */
     eligibilityDescription: (Scalars['String'] | null)
+    /** True when the program sets showIneligiblePreSubmit: false and this application is hidden by it: ineligible because of an applicant requirement, and that ineligibility arose before submission (the request is unsubmitted, or the application was already ineligible when it was submitted). Only the applicant ever receives a hidden application, so they can still change the answers that disqualified them; UIs should leave it out of program lists. */
+    hiddenIneligiblePreSubmit: Scalars['Boolean']
     id: Scalars['ID']
     /** The phase in which this application became ineligible for benefits. Useful for reporting / filtering. Null if the application is not (yet) ineligible. */
     ineligiblePhase: (IneligiblePhases | null)
@@ -517,7 +533,7 @@ export interface Configuration {
     actions: ConfigurationAccess
     data: Scalars['JsonData']
     fetchedData: (Scalars['JsonData'] | null)
-    /** The key being configured. Could be a requirement or prompt key. */
+    /** The key being configured. Could be a requirement, prompt, or program key. A program's configuration holds its per-period title and navTitle overrides. */
     key: Scalars['String']
     __typename: 'Configuration'
 }
@@ -714,6 +730,8 @@ export interface PeriodProgram {
     actions: PeriodProgramActions
     /** A brief description of the program, written for applicants. */
     applicantDescription: (Scalars['String'] | null)
+    /** The configuration for this program in the period, which holds its title and navTitle overrides. */
+    configuration: Configuration
     /** A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts. */
     eligibilityDescription: (Scalars['String'] | null)
     /** Whether the program is enabled in this period. This is set by the system administrator. */
@@ -808,6 +826,8 @@ export interface Query {
     applicationMetrics: ApplicationMetric
     /** This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant. */
     controlGroups: AccessControlGroup[]
+    /** First-time vs returning applicant counts for the matching appRequests (see AppRequestApplicantCounts). */
+    countAppRequestApplicants: AppRequestApplicantCounts
     countAppRequests: Scalars['Int']
     pageInfo: PaginationResponse
     periods: Period[]
@@ -983,6 +1003,8 @@ export interface AccessControlGroupGenqlSelection{
 export interface AccessGrantTagGenqlSelection{
     category?: boolean | number
     categoryLabel?: boolean | number
+    /** Extra context for the tag, such as the other titles a program has gone by in different periods. */
+    description?: boolean | number
     label?: boolean | number
     tag?: boolean | number
     __typename?: boolean | number
@@ -1087,6 +1109,8 @@ export interface AccessRoleValidatedResponseGenqlSelection{
 }
 
 export interface AccessTagGenqlSelection{
+    /** Extra context for the tag, such as the other titles a program has gone by in different periods. */
+    description?: boolean | number
     label?: boolean | number
     value?: boolean | number
     __typename?: boolean | number
@@ -1327,7 +1351,20 @@ search?: (Scalars['String'] | null),
 /** Return activities that were performed by one of the given logins. Also returns activities that were performed while one of the given logins was impersonating someone else. */
 users?: (Scalars['ID'][] | null)}
 
+
+/** Applicant counts for a set of appRequests. A request is a returning application when its applicant also submitted a request in an earlier period (by open date); otherwise it is a first-time application. Unsubmitted drafts in earlier periods do not count. */
+export interface AppRequestApplicantCountsGenqlSelection{
+    /** Matching appRequests whose applicant submitted nothing in any earlier period. */
+    firstTime?: boolean | number
+    /** Matching appRequests whose applicant also submitted a request in an earlier period. */
+    returning?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
 export interface AppRequestFilter {
+/** Only return appRequests with at least one application matching one of the given entries (OR). When programKeys is also given, the same application must match both. */
+applicationStatuses?: (ApplicationStatusFilter[] | null),
 /** true -> only return appRequests that are closed. false -> only return appRequests that are open. null -> return all appRequests. */
 closed?: (Scalars['Boolean'] | null),
 /** Only return appRequests that were closed after this date. Open appRequests will be filtered out. */
@@ -1346,6 +1383,8 @@ indexes?: (AppRequestIndexFilter[] | null),
 logins?: (Scalars['ID'][] | null),
 /** Only return appRequests that are owned by the current user. */
 own?: (Scalars['Boolean'] | null),periodIds?: (Scalars['ID'][] | null),
+/** Only return appRequests that have an application for one of the given programs. When applicationStatuses is also given, the same application must match both. */
+programKeys?: (Scalars['ID'][] | null),
 /** Only return appRequests where at least one application is in one of the given rescinded states. Rescinding is per-application, so this is independent of the appRequest status. */
 rescindedStatus?: (ApplicationRescindedStatus[] | null),
 /** Only return appRequests that have had their review started. true -> return review started, false -> return not started. Note that this is NOT mutually exclusive with complete or closed, it very simply means that a non-applicant has taken an action on it. */
@@ -1403,6 +1442,8 @@ export interface ApplicationGenqlSelection{
     awaitingCorrection?: boolean | number
     /** A prose summary of the applicant-side requirements of the program this application is for. Intended to be shown alongside statusReason when the application becomes ineligible before submission, since an applicant disqualified early may never have seen the program's prompts and the statusReason alone lacks context. */
     eligibilityDescription?: boolean | number
+    /** True when the program sets showIneligiblePreSubmit: false and this application is hidden by it: ineligible because of an applicant requirement, and that ineligibility arose before submission (the request is unsubmitted, or the application was already ineligible when it was submitted). Only the applicant ever receives a hidden application, so they can still change the answers that disqualified them; UIs should leave it out of program lists. */
+    hiddenIneligiblePreSubmit?: boolean | number
     id?: boolean | number
     /** The phase in which this application became ineligible for benefits. Useful for reporting / filtering. Null if the application is not (yet) ineligible. */
     ineligiblePhase?: boolean | number
@@ -1527,6 +1568,12 @@ export interface ApplicationRequirementGenqlSelection{
     __scalar?: boolean | number
 }
 
+
+/** Matches an application by its stored status and, optionally, its rescind state. Status is the stored computedStatus, so RESCINDED is not a valid value here - express it as status ELIGIBLE or ACCEPTED with rescindedStatus RESCINDED. */
+export interface ApplicationStatusFilter {
+/** When omitted, matches applications currently in the given status (not rescinded). When given, matches only applications in exactly that rescind state. */
+rescindedStatus?: (ApplicationRescindedStatus | null),status: ApplicationStatus}
+
 export interface CategoryGenqlSelection{
     /** This is indexed name of the category. Categories are indexed to allow for quick filtering of a list of items. e.g. institutionalRoles */
     category?: boolean | number
@@ -1555,7 +1602,7 @@ export interface ConfigurationGenqlSelection{
     actions?: ConfigurationAccessGenqlSelection
     data?: boolean | number
     fetchedData?: boolean | number
-    /** The key being configured. Could be a requirement or prompt key. */
+    /** The key being configured. Could be a requirement, prompt, or program key. A program's configuration holds its per-period title and navTitle overrides. */
     key?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
@@ -1840,6 +1887,8 @@ export interface PeriodProgramGenqlSelection{
     actions?: PeriodProgramActionsGenqlSelection
     /** A brief description of the program, written for applicants. */
     applicantDescription?: boolean | number
+    /** The configuration for this program in the period, which holds its title and navTitle overrides. */
+    configuration?: ConfigurationGenqlSelection
     /** A prose summary of the applicant-side requirements of the program. Intended to be shown to applicants who become ineligible before submission, since they may never have seen the program's prompts. */
     eligibilityDescription?: boolean | number
     /** Whether the program is enabled in this period. This is set by the system administrator. */
@@ -1944,6 +1993,8 @@ export interface QueryGenqlSelection{
     applicationMetrics?: (ApplicationMetricGenqlSelection & { __args?: {filter?: (MetricApplicationFilters | null)} })
     /** This is where you get information about the authorization system. Each grant will be associated with one of these controlGroups, one or more controls in the group, and an optional set of tags. The tags are used to limit the scope of the grant. */
     controlGroups?: AccessControlGroupGenqlSelection
+    /** First-time vs returning applicant counts for the matching appRequests (see AppRequestApplicantCounts). */
+    countAppRequestApplicants?: (AppRequestApplicantCountsGenqlSelection & { __args?: {filter?: (AppRequestFilter | null)} })
     countAppRequests?: { __args: {filter?: (AppRequestFilter | null)} } | boolean | number
     pageInfo?: PaginationResponseGenqlSelection
     periods?: (PeriodGenqlSelection & { __args?: {filter?: (PeriodFilters | null)} })
@@ -2228,6 +2279,14 @@ export interface ValidatedResponseGenqlSelection{
     export const isAppRequestActivity = (obj?: { __typename?: any } | null): obj is AppRequestActivity => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isAppRequestActivity"')
       return AppRequestActivity_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const AppRequestApplicantCounts_possibleTypes: string[] = ['AppRequestApplicantCounts']
+    export const isAppRequestApplicantCounts = (obj?: { __typename?: any } | null): obj is AppRequestApplicantCounts => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isAppRequestApplicantCounts"')
+      return AppRequestApplicantCounts_possibleTypes.includes(obj.__typename)
     }
     
 

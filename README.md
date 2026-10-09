@@ -146,6 +146,17 @@ application can be marked (by a reviewer) as REVIEW_COMPLETE. Once all applicati
 REVIEW_COMPLETE, the App Request as a whole will be marked as REVIEW_COMPLETE. A reviewer is now able
 to publish the results to the applicant.
 
+  A program with nothing to do after submission - no PREAPPROVAL, APPROVAL, ACCEPTANCE or workflow requirements
+  enabled for the period - skips all of this: its application moves straight to COMPLETE when the request is submitted,
+  eligible or not, and sits out any acceptance or non-blocking workflow phase the request later enters. When that is
+  true of every program in the request, submission completes the whole request with no reviewer involved.
+
+  A program with trailing work but no reviewer questions (no PREAPPROVAL or APPROVAL requirements enabled) has no
+  immediate review either: at submission its application is advanced on its own into its first blocking workflow
+  stage, or to REVIEW_COMPLETE when there is none, eligible or not - exactly as if a reviewer had advanced it. When
+  every application is then REVIEW_COMPLETE (or COMPLETE), the review is completed automatically as well and the
+  request moves into acceptance, non-blocking workflow or completion with no reviewer involved.
+
 ## Acceptance (optional, performed by the applicant)
 
 8. ACCEPTANCE (optional) - In some projects, there may be an acceptance step where the approval
@@ -221,6 +232,27 @@ Within the context of a single App Request, each program has an Application. For
 example, if the Program represents an "In-State Tuition Grant" program, the Application
 represents the information Jennifer gave us to prove she's eligible for the grant, and the
 status of her request.
+
+### Hiding programs the applicant was screened out of
+With many programs, an applicant may be screened out of most of them by applicant requirements (PREQUAL,
+QUALIFICATION, POSTQUAL) before they ever submit, and reviewers then wade through programs nobody needs
+to look at. Set `showIneligiblePreSubmit: false` on a program definition to hide it in that case. It
+defaults to true.
+
+An application is hidden while it is ineligible because of an applicant requirement *and* that
+ineligibility arose before submission: either the request has not been submitted yet, or the application
+was already ineligible at the moment it was submitted (recorded in `applications.ineligiblePreSubmit`).
+The distinction matters because `ineligiblePhase` names the type of the failing requirement, not when it
+failed. A reviewer who changes an applicant answer after submission and disqualifies the program does
+not hide it, so they can still see and undo the change. An application that becomes eligible again is
+shown again immediately.
+
+- Reviewers and other non-owners never receive a hidden application from the API.
+- The applicant still receives it, flagged `hiddenIneligiblePreSubmit`, and the UI leaves it out of their
+  program lists. Its prompts stay in the applicant's navigation so they can change the answer that
+  disqualified them. A program they opted out of stays listed, since that is the only place to opt back in.
+- When nothing is left to list, the applicant sees `UIConfig.applicantNoProgramsMessage` (or a default).
+- Hiding is presentation only: evaluation and the app request's status are unaffected.
 
 ### Application Status
 Application status represents the current state of the eligibility of the application. This status
@@ -312,7 +344,8 @@ rather than leaving it PENDING, or the request will never complete.
 * COMPLETE
 
   There is nothing left to do on this application. Other applications may still be working through their own
-  non-blocking workflow stages.
+  non-blocking workflow stages. An application whose program has nothing to do after submission reaches this phase
+  as soon as the request is submitted.
 
 ## Requirements
 Requirements are business rules that govern whether an applicant will be eligible for

@@ -5,7 +5,7 @@
   import { isNotBlank } from 'txstate-utils'
   import { type ApplicationForDetails, type AppRequestForDetails, enumApplicationStatus, enumIneligiblePhases, enumPromptVisibility, enumRequirementStatus, enumRequirementType, type OptOutApplication } from '$lib'
   import { getApplicationStatusInfo } from '../status-utils.js'
-  import { isIneligiblePreSubmission } from '../appreq-utils.js'
+  import { isIneligibleByApplicantRequirement } from '../appreq-utils.js'
   import ApplicantProgramListTooltip from './ApplicantProgramListTooltip.svelte'
   import WarningIconYellow from './WarningIconYellow.svelte'
   import { api, type PromptForEditing } from '$internal/api.js'
@@ -108,7 +108,7 @@
   {#each applications as application (application.id)}
     {@const programStatus = programButtonStatus[application.id]}
     {@const programFirstPrompt = programFirstPromptId[application.id]}
-    {@const programDescriptions = isIneligiblePreSubmission(application) && !optedOutPrograms[application.id] ? [application.applicantDescription, application.eligibilityDescription].filter(isNotBlank) : []}
+    {@const programDescriptions = isIneligibleByApplicantRequirement(application) && !optedOutPrograms[application.id] ? [application.applicantDescription, application.eligibilityDescription].filter(isNotBlank) : []}
     <div class="program column [ flex-col ]" style='align-items: start;'>
       <span>{application.title}</span>
       {#if !viewMode}
@@ -142,8 +142,7 @@
         {/if}
       {:else}
         {#if ['start', 'continue', 'complete', 'revisitPending'].includes(programStatus) && !optedOutPrograms[application.id]}
-          {@const statusInfo = getApplicationStatusInfo(application.status, appRequest.phase, appRequest.closedAt, application.rescindedStatus)}
-          <TagSet tags={statusInfo.map(info => ({ type: info.color, label: info.label }))} />
+          <TagSet tags={getApplicationStatusTags(application.status, appRequest.phase, appRequest.closedAt, application.rescindedStatus)} />
         {:else if optedOutPrograms[application.id]}
           <SubtractAlt size={24} fill='#dd3b46'/><p>Opted out</p>
         {:else}

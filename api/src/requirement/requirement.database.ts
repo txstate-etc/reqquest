@@ -1,6 +1,7 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { Application, ApplicationRequirement, ApplicationRequirementFilter, PeriodProgramRequirementFilters, PeriodProgramRequirementRow, PeriodProgramRequirement, RequirementStatus, requirementRegistry, RequirementType, ApplicationPhase, AppRequestPhase } from '../internal.js'
+import { groupby } from 'txstate-utils'
+import { Application, ApplicationRequirement, ApplicationRequirementFilter, bulkUpdateById, PeriodProgramRequirementFilters, PeriodProgramRequirementRow, PeriodProgramRequirement, RequirementStatus, requirementRegistry, RequirementType, ApplicationPhase, AppRequestPhase } from '../internal.js'
 
 export interface ApplicationRequirementRow {
   id: number
@@ -52,45 +53,72 @@ export async function getApplicationRequirements (filter: ApplicationRequirement
   return rows.map(row => new ApplicationRequirement(row))
 }
 
-export async function syncRequirementRecords (application: Application, enabledKeys: Set<string>, db: Queryable) {
-  const existingRequirements = await db.getall<ApplicationRequirementRow>('SELECT * FROM application_requirements WHERE applicationId = ?', [application.internalId])
-  const existingRequirementKeys = new Set(existingRequirements.map(row => row.requirementKey))
-  const activeRequirementKeys = application.program.requirementKeys.filter(requirementKey => enabledKeys.has(requirementKey))
-  const workflowRequirementKeyStage = new Map<string, string>()
-  for (let i = 0; i < (application.program.workflowStages?.length ?? 0); i++) {
-    const stage = application.program.workflowStages![i]
-    for (const requirementKey of stage.requirementKeys) {
-      if (enabledKeys.has(requirementKey)) {
-        activeRequirementKeys.push(requirementKey)
-        workflowRequirementKeyStage.set(requirementKey, stage.key)
-      }
-    }
+// The requirements a program should have on an application this period, in evaluation order, with the workflow stage 
+function desiredRequirements (application: Application, enabledKeys: Set<string>) {
+  const desired: { key: string, type: RequirementType, workflowStage: string | null }[] = []
+  const seen = new Set<string>()
+  const add = (key: string, workflowStage: string | null) => {
+    if (!enabledKeys.has(key) || seen.has(key)) return
+    seen.add(key)
+    desired.push({ key, type: requirementRegistry.get(key)?.type ?? RequirementType.QUALIFICATION, workflowStage })
   }
-  const activeRequirementKeysSet = new Set(activeRequirementKeys)
-  const requirementsToInsert = activeRequirementKeys.filter(requirementKey => !existingRequirementKeys.has(requirementKey))
-  const requirementsToDelete = existingRequirements.filter(row => !activeRequirementKeysSet.has(row.requirementKey))
-  if (requirementsToInsert.length) {
+  for (const key of application.program.requirementKeys) add(key, null)
+  for (const stage of application.program.workflowStages ?? []) {
+    for (const key of stage.requirementKeys) add(key, stage.key)
+  }
+  return desired
+}
+
+
+// Reconcile the application_requirements rows of every application on an appRequest with the
+// definitions in one pass: one read, one insert, one delete, one update, one reload regardless of program count.
+export async function syncRequirementRecords (appRequestId: number, applications: Application[], enabledKeysByProgram: Record<string, Set<string>>, db: Queryable) {
+  const existing = await db.getall<{ id: number, applicationId: number, requirementKey: string, type: RequirementType, workflowStage: string | null, evaluationOrder: number }>(
+    'SELECT id, applicationId, requirementKey, type, workflowStage, evaluationOrder FROM application_requirements WHERE appRequestId = ?', [appRequestId])
+  const existingByApplication = groupby(existing, 'applicationId')
+  const toInsert: any[][] = []
+  const toDelete: number[] = []
+  const toUpdate: { id: number, type: RequirementType, workflowStage: string | null, evaluationOrder: number }[] = []
+  for (const application of applications) {
+    const desired = desiredRequirements(application, enabledKeysByProgram[application.programKey] ?? new Set())
+    const desiredKeys = new Set(desired.map(d => d.key))
+    const rows = existingByApplication[application.internalId] ?? []
+    const rowsByKey = new Map(rows.map(row => [row.requirementKey, row]))
+    for (let i = 0; i < desired.length; i++) {
+      const { key, type, workflowStage } = desired[i]
+      const row = rowsByKey.get(key)
+      if (!row) toInsert.push([type, application.internalId, appRequestId, key, workflowStage, i])
+      else if (row.type !== type || (row.workflowStage ?? null) !== workflowStage || row.evaluationOrder !== i) toUpdate.push({ id: row.id, type, workflowStage, evaluationOrder: i })
+    }
+    for (const row of rows) if (!desiredKeys.has(row.requirementKey)) toDelete.push(row.id)
+  }
+  if (toInsert.length) {
     const binds: any[] = []
     await db.insert(`
-      INSERT INTO application_requirements (type, applicationId, appRequestId, requirementKey, workflowStage)
-      VALUES ${db.in(binds, requirementsToInsert.map(requirementKey => [requirementRegistry.get(requirementKey)?.type ?? RequirementType.QUALIFICATION, application.internalId, application.appRequestId, requirementKey, workflowRequirementKeyStage.get(requirementKey)]))}
+      INSERT INTO application_requirements (type, applicationId, appRequestId, requirementKey, workflowStage, evaluationOrder)
+      VALUES ${db.in(binds, toInsert)}
     `, binds)
   }
-  if (requirementsToDelete.length) {
+  if (toDelete.length) {
     const binds: any[] = []
-    await db.query(`DELETE FROM application_requirements WHERE id IN (${db.in(binds, requirementsToDelete.map(row => row.id))})`, binds)
+    await db.delete(`DELETE FROM application_requirements WHERE id IN (${db.in(binds, toDelete)})`, binds)
   }
-  for (let i = 0; i < activeRequirementKeys.length; i++) {
-    const requirementKey = activeRequirementKeys[i]
-    await db.update('UPDATE application_requirements SET type = ?, workflowStage = ?, evaluationOrder = ? WHERE applicationId = ? AND requirementKey = ?', [requirementRegistry.get(requirementKey)?.type ?? RequirementType.QUALIFICATION, workflowRequirementKeyStage.get(requirementKey) ?? null, i, application.internalId, requirementKey])
+  await bulkUpdateById(db, 'application_requirements', ['type', 'workflowStage', 'evaluationOrder'], toUpdate)
+  return await getApplicationRequirements({ appRequestIds: [String(appRequestId)] }, db)
+}
+
+/** The computed columns the evaluation writes back, shaped for `bulkUpdateById` and for change detection. */
+export function requirementComputedRow (requirement: ApplicationRequirement) {
+  return {
+    id: requirement.internalId,
+    status: requirement.status,
+    statusReason: requirement.statusReason ?? null,
+    blame: requirement.blame?.length ? JSON.stringify(requirement.blame) : null
   }
-  return await getApplicationRequirements({ applicationIds: [application.id] }, db)
 }
 
 export async function updateRequirementComputed (requirements: ApplicationRequirement[], db: Queryable) {
-  for (const requirement of requirements) {
-    await db.update('UPDATE application_requirements SET status = ?, statusReason = ?, blame = ? WHERE id = ?', [requirement.status, requirement.statusReason ?? null, requirement.blame?.length ? JSON.stringify(requirement.blame) : null, requirement.internalId])
-  }
+  await bulkUpdateById(db, 'application_requirements', ['status', 'statusReason', 'blame'], requirements.map(requirementComputedRow))
 }
 
 export async function getPeriodProgramRequirements (filter: PeriodProgramRequirementFilters) {

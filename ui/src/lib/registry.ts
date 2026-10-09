@@ -330,6 +330,12 @@ export interface UIConfig<PK extends string = PromptKey, RK extends string = Req
     subTitle?: string
   }
   /**
+   * Shown to the applicant on the program review and submission review screens when there is no program
+   * left to list: none they are eligible for, and every ineligible one belongs to a program that sets
+   * `showIneligiblePreSubmit: false`. Defaults to a generic "you don't currently qualify" message.
+   */
+  applicantNoProgramsMessage?: string
+  /**
    * Whether to constrain the applicant review/submission page to a medium
    * screen-width container. Defaults to true.
    */

@@ -220,6 +220,13 @@ export class AccessGrantTagResolver {
     const category = controlGroup.tagCategoryLookup[tag.category] as TagCategoryDefinition
     return await category.getLabel?.(tag.tag) ?? tag.tag
   }
+
+  @FieldResolver(returns => String, { nullable: true, description: 'Extra context for the tag, such as the other titles a program has gone by in different periods.' })
+  async description (@Ctx() ctx: Context, @Root() tag: AccessGrantTag) {
+    const controlGroup = controlGroups[tag.controlGroup] as ControlGroupDefinitionProcessed
+    const category = controlGroup.tagCategoryLookup[tag.category] as TagCategoryDefinition
+    return await category.getDescription?.(tag.tag)
+  }
 }
 
 @Resolver(of => RoleActions)
@@ -278,6 +285,6 @@ export class AccessControlGroupResolver {
 export class AccessTagCategoryResolver {
   @FieldResolver(returns => [AccessTag], { description: 'A list of all possible tags for this category. Use this to populate the tag dropdown when creating a grant.' })
   async tags (@Ctx() ctx: Context, @Root() tagCategory: AccessTagCategory) {
-    return (await tagCategory.def.getTags?.())?.map(tag => new AccessTag(tag.value, tag.label)) ?? []
+    return (await tagCategory.def.getTags?.())?.map(tag => new AccessTag(tag.value, tag.label, tag.description)) ?? []
   }
 }

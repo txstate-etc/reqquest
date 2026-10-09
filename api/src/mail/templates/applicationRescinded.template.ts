@@ -2,7 +2,7 @@ const subject = 'Update Regarding Your {{appName}} Request'
 
 const body = `Hello,
 
-A status change has occurred regarding your request for {{appName}}. Your {{programName}} benefit has been rescinded and is no longer approved.
+A status change has occurred regarding your request for {{appName}}. Your previously granted approval for {{programName}} has been rescinded.
 
 The following rationale has been provided:
 
