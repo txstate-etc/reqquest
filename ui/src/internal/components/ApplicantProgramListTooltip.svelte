@@ -5,11 +5,12 @@
   import { isIneligibleByApplicantRequirement } from '../appreq-utils.js'
 
   export let application: ApplicationForDetails
+  export let optedOutPrograms: Record<string, boolean>
 
   // Programs that died before submission get extra context above the failing reason: what the
   // program is and a summary of what it would have required. An applicant disqualified early may
   // never have seen the program's prompts, so the statusReason alone lacks context.
-  $: programDescriptions = isIneligibleByApplicantRequirement(application)
+  $: programDescriptions = isIneligibleByApplicantRequirement(application) && !optedOutPrograms[application.id]
     ? [application.applicantDescription, application.eligibilityDescription].filter(isNotBlank)
     : []
 </script>
