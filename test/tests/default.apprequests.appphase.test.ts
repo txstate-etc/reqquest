@@ -629,6 +629,8 @@ test.describe('App Request - App Phase - workflows', { tag: '@default' }, () => 
     const variables = { appRequestId: appRequest2Id }
     const response = await reviewerRequest.graphql<{ closeAppRequest: { success: boolean, appRequest: { status: string, statusReason: string, closedAt: string } } }>(query, variables)
     expect(response.closeAppRequest.success).toEqual(true)
+    expect(response.closeAppRequest.appRequest.status).toEqual(lastAppRequestStatus) // closing does not change status
+    expect(response.closeAppRequest.appRequest.closedAt).toBeTruthy()
   })
   test('Reviewer - Reopen valid submitted app request that is currently under reviewer purview', async ({ reviewerRequest }) => {
     const query = `
