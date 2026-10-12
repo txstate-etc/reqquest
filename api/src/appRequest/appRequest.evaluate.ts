@@ -50,15 +50,18 @@ interface EvaluationContext {
     prompts: Map<number, string>
   }
   /**
-   * `resolve` results from earlier in this evaluation, keyed by requirement key plus the prompt keys
-   * whose data was in hand. A requirement shared by several programs sees identical input in each,
-   * so the first program to reach a given input does the work and the rest reuse it, unless the
-   * requirement read program context - then only programs with the same values for what it read reuse it.
+   * `resolve` results from earlier in this evaluation for requirements shared by several programs,
+   * keyed by requirement key, then by how many prompts' data was in hand, then matched on exactly
+   * which prompts those were. A shared requirement sees identical input in each program, so the
+   * first program to reach a given input does the work and the rest reuse it, unless the requirement
+   * read program context - then only programs with the same values for what it read reuse it.
    */
-  resolveCache: Map<string, ResolveCacheEntry>
+  resolveCache: Map<string, ResolveCacheEntry[][]>
 }
 
 interface ResolveCacheEntry {
+  /** the prompt keys in `requiredData` when this entry was stored, in insertion order */
+  promptKeys: string[]
   /** the result when the requirement never asked for program context */
   pure?: ResolveResult
   /** results that depended on program context, with the properties read and their values at the time */
@@ -536,52 +539,88 @@ function resolveRequirement (ctx: EvaluationContext, application: Application, r
 /**
  * Call the requirement's `resolve`, reusing an earlier result from this evaluation when nothing the
  * requirement could observe differs.
-*/
+ *
+ * This runs for every prompt gate of every requirement, so a cache hit must cost less than the
+ * `resolve` it saves - which, for most requirements, is a few property checks. No string key is
+ * built: entries hang off the requirement key (a short, already-hashed string), then the number of
+ * prompts in hand, and a candidate matches only if its prompt keys equal `requiredData`'s
+ * one-for-one. `data` is fixed for the whole evaluation, so the same prompt keys mean the same input.
+ * Prompts arrive in `evaluationOrder`, so every program adds them in the same order; a different
+ * order would only cost a miss, never a wrong result.
+ */
 function resolveWithCache (ctx: EvaluationContext, application: Application, requirement: ApplicationRequirement, priorStatuses: Record<string, RequirementStatus>, requiredData: AppRequestData): ResolveResult {
-  const cacheKey = `${requirement.key}|${Object.keys(requiredData).sort().join(',')}`
-  let entry = ctx.resolveCache.get(cacheKey)
+  const { definition } = requirement
+  const config = ctx.configLookup[definition.key] ?? {}
+  if (!programRegistry.sharedRequirementKeys.has(requirement.key)) {
+    return definition.resolve(requiredData, config, ctx.configLookup, programSelector(application, requirement, priorStatuses))
+  }
+
+  let promptCount = 0
+  for (const _ in requiredData) promptCount++
+  let byPromptCount = ctx.resolveCache.get(requirement.key)
+  if (!byPromptCount) ctx.resolveCache.set(requirement.key, byPromptCount = [])
+  const candidates = byPromptCount[promptCount] ??= []
+  let entry = candidates.find(candidate => samePromptKeys(candidate.promptKeys, requiredData))
   if (entry?.pure) return entry.pure
 
-  let context: ProgramContext | undefined
-  const getContext = () => {
-    context ??= {
-      key: application.programKey,
-      title: application.title,
-      navTitle: application.navTitle,
-      requirementIndex: requirement.evaluationOrder,
-      priorStatuses: { ...priorStatuses }
-    }
-    return context
-  }
-  const valueKeyFor = (props: (keyof ProgramContext)[]) => JSON.stringify(props.map(prop => getContext()[prop]))
-
-  if (entry) {
+  if (entry?.contextual.length) {
+    const context = programContext(application, requirement, priorStatuses)
     for (const cached of entry.contextual) {
-      if (valueKeyFor(cached.props) === cached.valueKey) return cached.result
+      if (contextValueKey(context, cached.props) === cached.valueKey) return cached.result
     }
   }
 
   const propsRead = new Set<keyof ProgramContext>()
-  const program: ProgramSelector = select => {
-    const picked = {} as Pick<ProgramContext, keyof ProgramContext>
-    for (const prop of Object.keys(select) as (keyof ProgramContext)[]) {
-      if (!(select as Record<string, boolean>)[prop]) continue
-      propsRead.add(prop)
-      ;(picked as any)[prop] = getContext()[prop]
-    }
-    return picked
-  }
+  const result = definition.resolve(requiredData, config, ctx.configLookup, programSelector(application, requirement, priorStatuses, propsRead))
 
-  const result = requirement.definition.resolve(requiredData, ctx.configLookup[requirement.definition.key] ?? {}, ctx.configLookup, program)
-
-  entry ??= { contextual: [] }
+  if (!entry) candidates.push(entry = { promptKeys: Object.keys(requiredData), contextual: [] })
   if (propsRead.size === 0) entry.pure = result
   else {
     const props = [...propsRead].sort()
-    entry.contextual.push({ props, valueKey: valueKeyFor(props), result })
+    entry.contextual.push({ props, valueKey: contextValueKey(programContext(application, requirement, priorStatuses), props), result })
   }
-  ctx.resolveCache.set(cacheKey, entry)
   return result
+}
+
+function samePromptKeys (promptKeys: string[], requiredData: AppRequestData) {
+  let i = 0
+  for (const key in requiredData) {
+    if (promptKeys[i] !== key) return false
+    i++
+  }
+  return i === promptKeys.length
+}
+
+function programContext (application: Application, requirement: ApplicationRequirement, priorStatuses: Record<string, RequirementStatus>): ProgramContext {
+  return {
+    key: application.programKey,
+    title: application.title,
+    navTitle: application.navTitle,
+    requirementIndex: requirement.evaluationOrder,
+    priorStatuses: { ...priorStatuses }
+  }
+}
+
+/** Serializes the context values a requirement read. `priorStatuses` keys are sorted so equal statuses always match. */
+function contextValueKey (context: ProgramContext, props: (keyof ProgramContext)[]) {
+  return JSON.stringify(props.map(prop => prop === 'priorStatuses'
+    ? Object.keys(context.priorStatuses).sort().map(key => [key, context.priorStatuses[key]])
+    : context[prop]))
+}
+
+/** The `program` argument handed to `resolve`. The context is built only if the requirement asks for it. */
+function programSelector (application: Application, requirement: ApplicationRequirement, priorStatuses: Record<string, RequirementStatus>, propsRead?: Set<keyof ProgramContext>): ProgramSelector {
+  let context: ProgramContext | undefined
+  return select => {
+    context ??= programContext(application, requirement, priorStatuses)
+    const picked = {} as Pick<ProgramContext, keyof ProgramContext>
+    for (const prop of Object.keys(select) as (keyof ProgramContext)[]) {
+      if (!(select as Record<string, boolean>)[prop]) continue
+      propsRead?.add(prop)
+      ;(picked as any)[prop] = context[prop]
+    }
+    return picked
+  }
 }
 
 function summarizeResolution (sortedRequirements: ApplicationRequirement[]): ResolutionSummary {
