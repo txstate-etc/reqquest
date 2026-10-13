@@ -3,7 +3,7 @@ import db from 'mysql2-async/db'
 import { findIndex, groupby, keyby } from 'txstate-utils'
 import {
   Application, applicationComputedRow, ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestPhase, appRequestPhaseReached,
-  AppRequestStatus, AppRequestStatusDB, appRequestTransaction, deriveApplicationStatus, getAppRequestData, getAppRequests,
+  AppRequestStatus, AppRequestStatusDB, appRequestTransaction, deriveApplicationStatus, getAppRequestForEvaluation, appRequestComputedRow,
   getPeriodWorkflowStages, IneligiblePhases, PeriodWorkflowStage, programRegistry, promptComputedRow, promptRegistry, PromptVisibility, RequirementPrompt,
   requirementComputedRow, RequirementStatus, RequirementType, syncApplications, syncPromptRecords, syncRequirementRecords, updateAppRequestComputed,
   updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData, type ProgramContext, type ProgramSelector, type ResolveResult
@@ -45,6 +45,7 @@ interface EvaluationContext {
    * back only the rows the evaluation actually changed
    */
   baseline: {
+    appRequest: string
     applications: Map<number, string>
     requirements: Map<number, string>
     prompts: Map<number, string>
@@ -154,7 +155,7 @@ export async function ensureAppRequestRecords (appRequest: AppRequest, db: Query
   return { applications, requirements, prompts }
 }
 
-export async function tagAppRequest (appRequestInternalId: number, data: AppRequestData, prompts: RequirementPrompt[], tdb: Queryable = db) {
+export async function tagAppRequest (appRequestInternalId: number, data: AppRequestData, prompts: RequirementPrompt[], tdb: Queryable = db, existingTags?: Record<string, string[]>) {
   const tagRows = []
   const seenPrompts = new Set<string>()
   for (const prompt of prompts) {
@@ -169,9 +170,11 @@ export async function tagAppRequest (appRequestInternalId: number, data: AppRequ
   }
 
   const tagKey = (category: string, tag: unknown) => `${category}\0${String(tag)}`
-  const existingTags = new Set((await tdb.getall<{ category: string, tag: string }>('SELECT category, tag FROM app_request_tags WHERE appRequestId = ?', [appRequestInternalId])).map(r => tagKey(r.category, r.tag)))
+  const existingTagKeys = new Set(existingTags
+    ? Object.entries(existingTags).flatMap(([category, tags]) => tags.map(tag => tagKey(category, tag)))
+    : (await tdb.getall<{ category: string, tag: string }>('SELECT category, tag FROM app_request_tags WHERE appRequestId = ?', [appRequestInternalId])).map(r => tagKey(r.category, r.tag)))
   const desiredTags = new Set(tagRows.map(r => tagKey(r.category, r.tag)))
-  if (existingTags.size === desiredTags.size && [...desiredTags].every(key => existingTags.has(key))) return
+  if (existingTagKeys.size === desiredTags.size && [...desiredTags].every(key => existingTagKeys.has(key))) return
 
   if (tagRows.length > 0) {
     const ibinds: any[] = []
@@ -205,7 +208,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
 
     const previousApplicationPhases = snapshotApplicationPhases(ctx.applications)
 
-    await tagAppRequest(ctx.appRequest.internalId, ctx.data, ctx.prompts, db)
+    await tagAppRequest(ctx.appRequest.internalId, ctx.data, ctx.prompts, db, ctx.appRequest.tags)
     await markPromptsAnswered(ctx, db)
 
     const acc: RequestAccumulators = {
@@ -232,11 +235,10 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
  * application can be RESCINDED or restored after completion and the request-level status has to follow it.
  */
 async function loadEvaluationContext (appRequestInternalId: number, db: Queryable): Promise<EvaluationContext | undefined> {
-  const appRequest = (await getAppRequests({ internalIds: [appRequestInternalId] }, db))[0]
-  if (!appRequest) throw new Error(`AppRequest ${appRequestInternalId} not found`)
+  const loaded = await getAppRequestForEvaluation(appRequestInternalId, db)
+  if (!loaded) throw new Error(`AppRequest ${appRequestInternalId} not found`)
+  const { appRequest, data } = loaded
   if (appRequest.dbStatus !== AppRequestStatusDB.OPEN) return undefined
-
-  const data = (await getAppRequestData([appRequest.internalId], db))[0].data
 
   // all of the objects returned here are considered mutable - the evaluation updates them and
   // persistEvaluation saves them back to the database at the end
@@ -261,6 +263,7 @@ async function loadEvaluationContext (appRequestInternalId: number, db: Queryabl
     configLookup,
     applicantPromptKeys: new Set(prompts.filter(p => applicantRequirementTypes.has(p.requirementType)).map(p => p.key)),
     baseline: {
+      appRequest: JSON.stringify(appRequestComputedRow(appRequest)),
       applications: snapshotComputed(applications, applicationComputedRow),
       requirements: snapshotComputed(requirements, requirementComputedRow),
       prompts: snapshotComputed(prompts, promptComputedRow)
@@ -844,7 +847,7 @@ function liveApplicationsStatus (ctx: EvaluationContext, acc: RequestAccumulator
 
 /** save the results of the evaluation to the database, writing only the rows whose computed columns changed */
 async function persistEvaluation (ctx: EvaluationContext, db: Queryable) {
-  await updateAppRequestComputed(ctx.appRequest, db)
+  if (JSON.stringify(appRequestComputedRow(ctx.appRequest)) !== ctx.baseline.appRequest) await updateAppRequestComputed(ctx.appRequest, db)
   await updateApplicationsComputed(changedSinceLoad(ctx.applications, applicationComputedRow, ctx.baseline.applications), db)
   await updateRequirementComputed(changedSinceLoad(ctx.requirements, requirementComputedRow, ctx.baseline.requirements), db)
   await updatePromptComputed(changedSinceLoad(ctx.prompts, promptComputedRow, ctx.baseline.prompts), db)

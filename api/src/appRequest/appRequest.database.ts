@@ -65,7 +65,11 @@ export interface AppRequestActivityRow {
 
 export async function getAppRequestData (ids: number[], tdb: Queryable = db): Promise<{ id: number, data: AppRequestData }[]> {
   const rows = await tdb.getall<AppRequestRowData>(`SELECT id, data FROM app_requests WHERE id = ${db.in([], ids)}`, ids)
-  return await Promise.all(rows.map(async row => ({ ...row, data: row.data ? await migrateAppRequestData(JSON.parse(row.data) as AppRequestData) : {} as AppRequestData })))
+  return await Promise.all(rows.map(async row => ({ ...row, data: await parseAppRequestData(row.data) })))
+}
+
+async function parseAppRequestData (data: string | undefined) {
+  return data ? await migrateAppRequestData(JSON.parse(data) as AppRequestData) : {} as AppRequestData
 }
 
 async function migrateAppRequestData (appRequestData: AppRequestData, toSchemaVersion: string = promptRegistry.latestMigration()) {
@@ -196,12 +200,26 @@ function processFilters (filter?: AppRequestFilter) {
   return { joins, where, binds }
 }
 
+const appRequestColumns = `ar.id, ar.periodId, ar.userId, ar.reviewStarted, ar.status, ar.phase, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt, ar.dataVersion, ar.computedReadyToComplete, ar.computedAwaitingCorrection,
+      p.code AS periodCode, p.closeDate AS periodClosesAt, p.archiveDate AS periodArchivesAt, p.openDate AS periodOpensAt`
+
+export async function getAppRequestForEvaluation (internalId: number, tdb: Queryable) {
+  const row = await tdb.getrow<AppRequestRow & AppRequestRowData>(`
+    SELECT ${appRequestColumns}, ar.data
+    FROM app_requests ar
+    INNER JOIN periods p ON p.id = ar.periodId
+    WHERE ar.id = ?
+  `, [internalId])
+  if (!row) return undefined
+  const tagLookup = await getAppRequestTags([String(row.id)], tdb)
+  return { appRequest: new AppRequest(row, tagLookup[row.id]), data: await parseAppRequestData(row.data) }
+}
+
 export async function getAppRequests (filter?: AppRequestFilter & Pagination, tdb: Queryable = db) {
   const { joins, where, binds } = processFilters(filter)
   const limit = filter?.perPage ? `LIMIT ${filter.perPage} OFFSET ${((filter.page ?? 1) - 1) * filter.perPage}` : ''
   const rows = await tdb.getall<AppRequestRow>(`
-    SELECT DISTINCT ar.id, ar.periodId, ar.userId, ar.reviewStarted, ar.status, ar.phase, ar.computedStatus, ar.createdAt, ar.updatedAt, ar.closedAt, ar.dataVersion, ar.computedReadyToComplete, ar.computedAwaitingCorrection,
-      p.code AS periodCode, p.closeDate AS periodClosesAt, p.archiveDate AS periodArchivesAt, p.openDate AS periodOpensAt
+    SELECT DISTINCT ${appRequestColumns}
     FROM app_requests ar
     INNER JOIN periods p ON p.id = ar.periodId
     ${Array.from(joins.values()).join('\n')}
@@ -280,8 +298,18 @@ export async function getIndexesInUse (category: string) {
   `, [category])
 }
 
+// Change detection, the computed columns the evaluation writes back
+export function appRequestComputedRow (appRequest: AppRequest) {
+  return {
+    computedStatus: appRequest.status,
+    computedReadyToComplete: appRequest.readyToComplete ? 1 : 0,
+    computedAwaitingCorrection: appRequest.awaitingCorrection ? 1 : 0
+  }
+}
+
 export async function updateAppRequestComputed (appRequest: AppRequest, db: Queryable) {
-  await db.execute('UPDATE app_requests SET computedStatus = ?, computedReadyToComplete = ?, computedAwaitingCorrection = ? WHERE id = ?', [appRequest.status, appRequest.readyToComplete ? 1 : 0, appRequest.awaitingCorrection ? 1 : 0, appRequest.internalId])
+  const { computedStatus, computedReadyToComplete, computedAwaitingCorrection } = appRequestComputedRow(appRequest)
+  await db.execute('UPDATE app_requests SET computedStatus = ?, computedReadyToComplete = ?, computedAwaitingCorrection = ? WHERE id = ?', [computedStatus, computedReadyToComplete, computedAwaitingCorrection, appRequest.internalId])
 }
 
 export async function createAppRequest (periodId: number, userId: number) {
