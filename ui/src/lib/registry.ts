@@ -469,7 +469,7 @@ export class UIRegistry {
     for (const program of Object.values(this.programMap)) this.validateReviewSections(program)
     this.userLookup = config.userLookup 
     this.lang = {
-      appRequest: config.terminology?.appRequest ?? (Object.keys(this.programMap).length > 1 ? 'App Request' : 'Application'),
+      appRequest: config.terminology?.appRequest ?? 'Application',
       login: config.terminology?.login ?? 'Login',
       period: config.terminology?.period ?? 'Period'
     }
