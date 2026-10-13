@@ -16,6 +16,7 @@ export interface PromptRow {
   programKey: string
   userId: number
   promptKey: string
+  evaluationOrder: number
   answered: 0 | 1
   moot: 0 | 1
   locked: 0 | 1
@@ -56,9 +57,9 @@ function processFilters (filter: RequirementPromptFilter) {
   return { where, binds }
 }
 
-export async function getRequirementPrompts (filter: RequirementPromptFilter, tdb: Queryable = db) {
+async function getRequirementPromptRows (filter: RequirementPromptFilter, tdb: Queryable) {
   const { where, binds } = processFilters(filter)
-  const rows = await tdb.getall<PromptRow>(`
+  return await tdb.getall<PromptRow>(`
     SELECT p.*, ar.userId, ar.periodId, r.requirementKey, a.programKey, ar.status AS appRequestDbStatus, ar.phase AS appRequestDbPhase,
       r.workflowStage, a.workflowStage AS applicationWorkflowStage, a.computedPhase AS applicationPhase, r.type AS requirementType
     FROM requirement_prompts p
@@ -68,6 +69,10 @@ export async function getRequirementPrompts (filter: RequirementPromptFilter, td
     WHERE (${where.join(') AND (')})
     ORDER BY a.evaluationOrder, r.evaluationOrder, p.evaluationOrder
   `, binds)
+}
+
+export async function getRequirementPrompts (filter: RequirementPromptFilter, tdb: Queryable = db) {
+  const rows = await getRequirementPromptRows(filter, tdb)
   return rows.map(row => new RequirementPrompt(row))
 }
 
@@ -89,11 +94,11 @@ export async function setRequirementPromptsValid (appRequestInternalId: number, 
 
 /**
  * Reconcile the requirement_prompts rows of every requirement on an appRequest with the
- * definitions in one pass: one read, one insert, one delete, one update, one reload regardless of how many requirements the request has.
+ * definitions in one pass: one read, one insert, one delete, one update regardless of how many requirements the request has.
  */
 export async function syncPromptRecords (appRequestId: number, requirements: ApplicationRequirement[], db: Queryable) {
-  const existing = await db.getall<{ id: number, requirementId: number, promptKey: string, evaluationOrder: number }>(
-    'SELECT id, requirementId, promptKey, evaluationOrder FROM requirement_prompts WHERE appRequestId = ?', [appRequestId])
+  const filter = { appRequestIds: [String(appRequestId)] }
+  const existing = await getRequirementPromptRows(filter, db)
   const existingByRequirement = groupby(existing, 'requirementId')
   const toInsert: any[][] = []
   const toDelete: number[] = []
@@ -109,6 +114,7 @@ export async function syncPromptRecords (appRequestId: number, requirements: App
     }
     for (const row of rows) if (!requirement.definition.promptKeySet.has(row.promptKey)) toDelete.push(row.id)
   }
+  if (!toInsert.length && !toDelete.length && !toUpdate.length) return existing.map(row => new RequirementPrompt(row))
   if (toInsert.length) {
     const binds: any[] = []
     await db.insert(`
@@ -121,7 +127,7 @@ export async function syncPromptRecords (appRequestId: number, requirements: App
     await db.delete(`DELETE FROM requirement_prompts WHERE id IN (${db.in(binds, toDelete)})`, binds)
   }
   await bulkUpdateById(db, 'requirement_prompts', ['evaluationOrder'], toUpdate)
-  return await getRequirementPrompts({ appRequestIds: [String(appRequestId)] }, db)
+  return await getRequirementPrompts(filter, db)
 }
 
 // The computed columns the evaluation writes back, shaped for `bulkUpdateById` and for change detection.

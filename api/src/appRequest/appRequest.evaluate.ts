@@ -124,8 +124,14 @@ export const applicantRequirementTypes = new Set<RequirementType>([
  * added a requirement since the last evaluation.
  */
 export async function ensureAppRequestRecords (appRequest: AppRequest, db: Queryable) {
-  const disabledPrograms = new Set(await db.getvals<string>('SELECT programKey FROM period_programs WHERE periodId = ? AND disabled = 1', [appRequest.periodId]))
-  const disabledRequirements = await db.getall<{ programKey: string, requirementKey: string }>('SELECT programKey, requirementKey FROM period_program_requirements WHERE periodId = ? AND disabled = 1', [appRequest.periodId])
+  // one round trip for both: a null requirementKey marks a disabled program
+  const disabledRows = await db.getall<{ programKey: string, requirementKey: string | null }>(`
+    SELECT programKey, NULL AS requirementKey FROM period_programs WHERE periodId = ? AND disabled = 1
+    UNION ALL
+    SELECT programKey, requirementKey FROM period_program_requirements WHERE periodId = ? AND disabled = 1
+  `, [appRequest.periodId, appRequest.periodId])
+  const disabledPrograms = new Set(disabledRows.filter(row => row.requirementKey == null).map(row => row.programKey))
+  const disabledRequirements = disabledRows.filter((row): row is { programKey: string, requirementKey: string } => row.requirementKey != null)
   const disabledRequirementLookup = disabledRequirements.reduce((acc, { programKey, requirementKey }) => ({ ...acc, [programKey]: { ...acc[programKey], [requirementKey]: true } }), {} as Record<string, Record<string, boolean>>)
   const programs = programRegistry.list().filter(program => !disabledPrograms.has(program.key))
   const reqKeyLookup: Record<string, Set<string>> = {}
@@ -161,6 +167,11 @@ export async function tagAppRequest (appRequestInternalId: number, data: AppRequ
       for (const idx of index.extract(data)) tagRows.push({ category: index.category, tag: idx, indexOnly: 1 })
     }
   }
+
+  const tagKey = (category: string, tag: unknown) => `${category}\0${String(tag)}`
+  const existingTags = new Set((await tdb.getall<{ category: string, tag: string }>('SELECT category, tag FROM app_request_tags WHERE appRequestId = ?', [appRequestInternalId])).map(r => tagKey(r.category, r.tag)))
+  const desiredTags = new Set(tagRows.map(r => tagKey(r.category, r.tag)))
+  if (existingTags.size === desiredTags.size && [...desiredTags].every(key => existingTags.has(key))) return
 
   if (tagRows.length > 0) {
     const ibinds: any[] = []
@@ -545,8 +556,9 @@ function resolveRequirement (ctx: EvaluationContext, application: Application, r
  * built: entries hang off the requirement key (a short, already-hashed string), then the number of
  * prompts in hand, and a candidate matches only if its prompt keys equal `requiredData`'s
  * one-for-one. `data` is fixed for the whole evaluation, so the same prompt keys mean the same input.
- * Prompts arrive in `evaluationOrder`, so every program adds them in the same order; a different
- * order would only cost a miss, never a wrong result.
+ * Prompts arrive in `evaluationOrder` (guaranteed by `syncPromptRecords`, including its no-reload
+ * path), so every program adds them in the same order; a different order would only cost a miss,
+ * never a wrong result.
  */
 function resolveWithCache (ctx: EvaluationContext, application: Application, requirement: ApplicationRequirement, priorStatuses: Record<string, RequirementStatus>, requiredData: AppRequestData): ResolveResult {
   const { definition } = requirement

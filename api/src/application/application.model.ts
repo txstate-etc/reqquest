@@ -126,6 +126,7 @@ export class Application {
     this.userInternalId = row.userId
     this.periodId = String(row.periodId)
     this.programKey = row.programKey
+    this.evaluationOrder = row.evaluationOrder
     this.phase = row.computedPhase
     this.ineligiblePhase = row.computedIneligiblePhase
     this.workflowStageKey = row.workflowStage
@@ -199,6 +200,7 @@ export class Application {
   restoredReason?: string
 
   internalId: number
+  evaluationOrder: number
   computedStatus: ApplicationStatus
   ineligiblePreSubmit: boolean
   appRequestInternalId: number

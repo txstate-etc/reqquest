@@ -40,9 +40,9 @@ async function processFilters (filter: ApplicationRequirementFilter) {
   return { where, binds }
 }
 
-export async function getApplicationRequirements (filter: ApplicationRequirementFilter, tdb: Queryable = db) {
+async function getApplicationRequirementRows (filter: ApplicationRequirementFilter, tdb: Queryable) {
   const { where, binds } = await processFilters(filter)
-  const rows = await tdb.getall<ApplicationRequirementRow>(`
+  return await tdb.getall<ApplicationRequirementRow>(`
     SELECT r.*, a.periodId, app.programKey, a.userId, app.computedPhase as applicationPhase, a.phase as appRequestPhase
     FROM application_requirements r
     INNER JOIN applications app ON app.id=r.applicationId
@@ -50,6 +50,10 @@ export async function getApplicationRequirements (filter: ApplicationRequirement
     WHERE (${where.join(') AND (')})
     ORDER BY app.evaluationOrder, r.evaluationOrder
   `, binds)
+}
+
+export async function getApplicationRequirements (filter: ApplicationRequirementFilter, tdb: Queryable = db) {
+  const rows = await getApplicationRequirementRows(filter, tdb)
   return rows.map(row => new ApplicationRequirement(row))
 }
 
@@ -71,10 +75,10 @@ function desiredRequirements (application: Application, enabledKeys: Set<string>
 
 
 // Reconcile the application_requirements rows of every application on an appRequest with the
-// definitions in one pass: one read, one insert, one delete, one update, one reload regardless of program count.
+// definitions in one pass: one read, one insert, one delete, one update regardless of program count.
 export async function syncRequirementRecords (appRequestId: number, applications: Application[], enabledKeysByProgram: Record<string, Set<string>>, db: Queryable) {
-  const existing = await db.getall<{ id: number, applicationId: number, requirementKey: string, type: RequirementType, workflowStage: string | null, evaluationOrder: number }>(
-    'SELECT id, applicationId, requirementKey, type, workflowStage, evaluationOrder FROM application_requirements WHERE appRequestId = ?', [appRequestId])
+  const filter = { appRequestIds: [String(appRequestId)] }
+  const existing = await getApplicationRequirementRows(filter, db)
   const existingByApplication = groupby(existing, 'applicationId')
   const toInsert: any[][] = []
   const toDelete: number[] = []
@@ -92,6 +96,7 @@ export async function syncRequirementRecords (appRequestId: number, applications
     }
     for (const row of rows) if (!desiredKeys.has(row.requirementKey)) toDelete.push(row.id)
   }
+  if (!toInsert.length && !toDelete.length && !toUpdate.length) return existing.map(row => new ApplicationRequirement(row))
   if (toInsert.length) {
     const binds: any[] = []
     await db.insert(`
@@ -104,7 +109,7 @@ export async function syncRequirementRecords (appRequestId: number, applications
     await db.delete(`DELETE FROM application_requirements WHERE id IN (${db.in(binds, toDelete)})`, binds)
   }
   await bulkUpdateById(db, 'application_requirements', ['type', 'workflowStage', 'evaluationOrder'], toUpdate)
-  return await getApplicationRequirements({ appRequestIds: [String(appRequestId)] }, db)
+  return await getApplicationRequirements(filter, db)
 }
 
 /** The computed columns the evaluation writes back, shaped for `bulkUpdateById` and for change detection. */
