@@ -150,7 +150,7 @@ export async function ensureAppRequestRecords (appRequest: AppRequest, db: Query
   }
   const applications = await syncApplications(appRequest.internalId, new Set(programs.map(p => p.key)), db)
   const requirements = await syncRequirementRecords(appRequest.internalId, applications, reqKeyLookup, db)
-  const prompts = await syncPromptRecords(appRequest.internalId, requirements, db)
+  const prompts = await syncPromptRecords(appRequest.internalId, requirements, applications, db)
   return { applications, requirements, prompts }
 }
 
