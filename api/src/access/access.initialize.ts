@@ -104,7 +104,7 @@ export const accessMigrations: DatabaseMigration[] = [{
 }, {
   id: '20260629000000',
   execute: async db => {
-    const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_NAME = 'accessUsers' AND COLUMN_NAME = 'email'")
+    const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'accessUsers' AND COLUMN_NAME = 'email'")
     if (!exists) await db.execute('ALTER TABLE accessUsers ADD COLUMN email VARCHAR(255)')
   }
 }]
