@@ -8,6 +8,8 @@ export const _defaultRequestListFilters = {}
 
 export const load: PageLoad = async ({ url, parent }) => {
   const { access } = await parent()
+  // access is missing only when the layout failed; it renders layoutError in place of the page, so don't mask it
+  if (!access) return {} as never
   if (!access.viewAppRequestList) throw error(403)
   const { page, pagesize } = extractPaginationParams(url)
   const { status, ...rest } = extractMergedFilters(url)
