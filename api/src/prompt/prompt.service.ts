@@ -340,7 +340,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
         await setRequirementPromptsValid(appRequest.internalId, promptsToRevalidate.concat([prompt.key]), db)
         previousAppPhases = (await updateAppRequestData(appRequest.internalId, appRequestData, dataVersion, db))!
         const programDef = programRegistry.get(prompt.programKey)
-        recordAppRequestActivity(appRequest.internalId, this.user!.internalId, `${programDef ? resolveProgramLabels(programDef, allConfigData[prompt.programKey]).navTitle : 'Prompt'} Updated`, { data, description: prompt.title, impersonatedBy: this.impersonationUser?.internalId }, db)
+        recordAppRequestActivity(appRequest.internalId, this.user!.internalId, 'Updated', { data, description: programDef ? resolveProgramLabels(programDef, allConfigData[prompt.programKey]).navTitle : prompt.title, impersonatedBy: this.impersonationUser?.internalId }, db)
       }
     })
     this.loaders.clear()

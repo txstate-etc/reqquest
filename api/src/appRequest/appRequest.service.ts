@@ -21,6 +21,11 @@ const phaseNames = {
   [AppRequestPhase.COMPLETE]: 'completion'
 }
 
+interface ActivityEntry {
+  action: string
+  description?: string
+}
+
 const appReqByIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: string[]) => {
     return await getAppRequests({ ids })
@@ -436,7 +441,7 @@ export class AppRequestService extends AuthService<AppRequest> {
     return response
   }
 
-  async phaseChange (appRequest: AppRequest, check: (response: ValidatedAppRequestResponse) => Promise<void>, action: (response: ValidatedAppRequestResponse) => Promise<void>, activity: string | (() => string | string[])) {
+  async phaseChange (appRequest: AppRequest, check: (response: ValidatedAppRequestResponse) => Promise<void>, action: (response: ValidatedAppRequestResponse) => Promise<void>, activity: ActivityEntry | ActivityEntry[]) {
     const response = new ValidatedAppRequestResponse()
     await check(response)
     if (response.hasErrors()) return response
@@ -444,8 +449,7 @@ export class AppRequestService extends AuthService<AppRequest> {
     const beforeAppsByProgramKey = keyby(beforeApps, app => app.programKey)
     await action(response)
     if (response.hasErrors()) return response
-    const activities = typeof activity === 'function' ? activity() : activity
-    for (const entry of Array.isArray(activities) ? activities : [activities]) await this.recordActivity(appRequest.internalId, entry)
+    for (const entry of Array.isArray(activity) ? activity : [activity]) await this.recordActivity(appRequest.internalId, entry.action, { description: entry.description })
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
     try {
@@ -473,7 +477,7 @@ export class AppRequestService extends AuthService<AppRequest> {
   }
 
   async submit (appRequest: AppRequest) {
-    const activity: string[] = ['Submitted request for review.']
+    const activity: ActivityEntry[] = [{ action: 'Submitted', description: 'Request for review' }]
     return await this.phaseChange(appRequest,
       async () => {
         if (!this.maySubmit(appRequest)) throw new Error('You may not submit this app request.')
@@ -483,14 +487,14 @@ export class AppRequestService extends AuthService<AppRequest> {
         const advanced = await submitAppRequest(appRequest.internalId)
         for (const app of advanced) {
           const stageTitle = programRegistry.getWorkflowStageByKey(app.workflowStageKey)?.title
-          activity.push(`Advanced ${app.navTitle} to ${stageTitle ?? 'review complete'} automatically: no reviewer questions.`)
+          activity.push({ action: 'Advanced', description: `${app.navTitle} to ${stageTitle ?? 'review complete'} automatically: no reviewer questions` })
         }
         const applications = await getApplications({ appRequestIds: [String(appRequest.internalId)] })
         if (allApplicationsAutoCompleted(applications)) {
           // when no program has anything left after submission, there is nothing for a reviewer to do, so the request completes now
           // regardless of whether the period has acceptance or non-blocking workflow, since no application takes part in either
           await appRequestComplete(appRequest.internalId)
-          activity.push('No review required, completed automatically.')
+          activity.push({ action: 'Completed', description: 'Request automatically: no review required' })
         } else if (applications.every(a => a.phase === ApplicationPhase.REVIEW_COMPLETE || a.phase === ApplicationPhase.COMPLETE || isPresubmissionIneligible(a))) {
           // nothing had reviewer questions, so there is no review for anyone to complete by hand: the same step as Complete Review.
           // an application ruled out before submission is skipped past review, so its reviewer questions do not hold the request
@@ -498,11 +502,11 @@ export class AppRequestService extends AuthService<AppRequest> {
           if (submitted?.status === AppRequestStatus.REVIEW_COMPLETE) {
             const nextPhase = this.reviewCompleteNextPhase(appRequest.periodId)
             await appRequestMakeOffer(appRequest.internalId, nextPhase)
-            activity.push(`Completed Review automatically, advanced to ${phaseNames[nextPhase]}.`)
+            activity.push({ action: 'Completed', description: `Review automatically, advanced to ${phaseNames[nextPhase]}` })
           }
         }
       },
-      () => activity
+      activity
     )
   }
 
@@ -515,7 +519,7 @@ export class AppRequestService extends AuthService<AppRequest> {
       async () => {
         await appRequestMakeOffer(appRequest.internalId, nextPhase)
       },
-      `Completed Review, advanced to ${phaseNames[nextPhase]}.`
+      { action: 'Completed', description: `Review, advanced to ${phaseNames[nextPhase]}` }
     )
   }
 
@@ -527,7 +531,7 @@ export class AppRequestService extends AuthService<AppRequest> {
       async () => {
         await appRequestReturnToReview(appRequest.internalId)
       },
-      'Returned entire request to review phase.'
+      { action: 'Returned', description: 'Entire request to review phase' }
     )
   }
 
@@ -539,7 +543,7 @@ export class AppRequestService extends AuthService<AppRequest> {
       async () => {
         await appRequestReturnToOffer(appRequest.internalId)
       },
-      'Returned request to applicant\'s offer acceptance phase.'
+      { action: 'Returned', description: 'Request to applicant\'s offer acceptance phase' }
     )
   }
 
@@ -551,7 +555,7 @@ export class AppRequestService extends AuthService<AppRequest> {
       async () => {
         await appRequestReturnToApplicant(appRequest.internalId, dataVersion)
       },
-      'Returned to applicant'
+      { action: 'Returned', description: 'Request to applicant' }
     )
   }
 
@@ -567,7 +571,7 @@ export class AppRequestService extends AuthService<AppRequest> {
       async () => {
         await acceptOffer(appRequest.internalId, nextPhase, dataVersion)
       },
-      'Accepted'
+      { action: 'Accepted', description: 'Offer' }
     )
   }
 
@@ -579,7 +583,7 @@ export class AppRequestService extends AuthService<AppRequest> {
       async () => {
         await appRequestComplete(appRequest.internalId)
       },
-      'Completed Request.'
+      { action: 'Completed', description: 'Request' }
     )
   }
 
@@ -591,7 +595,7 @@ export class AppRequestService extends AuthService<AppRequest> {
       async () => {
         await appRequestReturnToNonBlocking(appRequest.internalId)
       },
-      'Returned to non-blocking workflow phase.'
+      { action: 'Returned', description: 'Request to non-blocking workflow phase' }
     )
   }
 
@@ -600,7 +604,7 @@ export class AppRequestService extends AuthService<AppRequest> {
     const response = new ValidatedAppRequestResponse()
     if (response.hasErrors()) return response
     await closeAppRequest(appRequest.internalId)
-    await this.recordActivity(appRequest.internalId, 'Closed')
+    await this.recordActivity(appRequest.internalId, 'Closed', { description: 'Request' })
     this.loaders.clear()
     response.appRequest = (await this.findById(appRequest.id))!
     try {
@@ -620,7 +624,7 @@ export class AppRequestService extends AuthService<AppRequest> {
       async () => {
         await cancelAppRequest(appRequest.internalId, dataVersion)
       },
-      withdrawn ? 'Withdrew' : 'Cancelled'
+      { action: withdrawn ? 'Withdrew' : 'Cancelled', description: 'Request' }
     )
   }
 
@@ -632,7 +636,7 @@ export class AppRequestService extends AuthService<AppRequest> {
       async () => {
         await reopenAppRequest(appRequest.internalId)
       },
-      'Reopened'
+      { action: 'Reopened', description: 'Request' }
     )
   }
 }

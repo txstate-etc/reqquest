@@ -461,6 +461,7 @@ export async function appRequestReturnToNonBlocking (appRequestId: number) {
   })
 }
 
+/** action is a bare verb ("Added", "Completed", ...) so the activity log can be filtered by it; what was acted on and any details go in info.description */
 export async function recordAppRequestActivity (appRequestId: number | string, userId: number, action: string, info?: { description?: string, data?: any, impersonatedBy?: number }, tdb: Queryable = db) {
   await tdb.insert(`
     INSERT INTO app_request_activity (appRequestId, userId, impersonatedBy, action, description, data)
