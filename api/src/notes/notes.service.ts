@@ -1,6 +1,6 @@
 import { MutationMessageType, UnimplementedError } from '@txstate-mws/graphql-server'
 import { isBlank } from 'txstate-utils'
-import { AccessUserService, addAppRequestNote, AppRequest, AppRequestNoteFilters, AppRequestService, AuthService, cleanHTML, deleteAppRequestNote, getAppRequestNotes, Note, RQContext, toggleNotePersistence, updateAppRequestNote, validateHTML, ValidatedAppRequestResponse, ValidatedNoteResponse } from '../internal.js'
+import { AccessUserService, addAppRequestNote, AppRequest, AppRequestNoteFilters, AppRequestService, AuthService, deleteAppRequestNote, getAppRequestNotes, Note, RQContext, toggleNotePersistence, updateAppRequestNote, validateHTML, ValidatedAppRequestResponse, ValidatedNoteResponse } from '../internal.js'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 
 const notesById = new PrimaryKeyLoader({
@@ -120,7 +120,7 @@ export class NoteService extends AuthService<Note> {
     if (isBlank(content)) response.addMessage('Message is required.', 'content', MutationMessageType.error)
     if (response.hasErrors() || validateOnly) return response
     const noteId = await addAppRequestNote(appRequest.internalId, this.user!.internalId, content, persistent)
-    await this.svc(AppRequestService).recordActivity(appRequest.internalId, 'Added Note', { description: content })
+    await this.svc(AppRequestService).recordActivity(appRequest.internalId, 'Added', { description: `Note: ${content}` })
     this.loaders.clear()
     response.note = (await this.findByInternalId(noteId))!
     return response
@@ -137,7 +137,7 @@ export class NoteService extends AuthService<Note> {
     if (response.hasErrors()) return response
     const authorLogin = (await this.svc(AccessUserService).findByInternalId(note.authorId))?.login
     await updateAppRequestNote(noteId, content)
-    await this.svc(AppRequestService).recordActivity(note.appRequestId, 'Updated Note', { data: { id: note.id, author: authorLogin, createdAt: note.createdAt.toISO() }, description: content })
+    await this.svc(AppRequestService).recordActivity(note.appRequestId, 'Updated', { data: { id: note.id, author: authorLogin, createdAt: note.createdAt.toISO() }, description: `Note: ${content}` })
     this.loaders.clear()
     response.note = (await this.findById(note.id))!
     return response
@@ -150,7 +150,7 @@ export class NoteService extends AuthService<Note> {
     const response = new ValidatedNoteResponse()
     const authorLogin = (await this.svc(AccessUserService).findByInternalId(note.authorId))?.login
     const newPersistence = await toggleNotePersistence(note.id)
-    await this.svc(AppRequestService).recordActivity(note.appRequestId, 'Note Persistence', { data: { id: note.id, author: authorLogin, createdAt: note.createdAt }, description: newPersistence ? 'Made note persistent.' : 'Removed note persistence.' })
+    await this.svc(AppRequestService).recordActivity(note.appRequestId, newPersistence ? 'Persisted' : 'Unpersisted', { data: { id: note.id, author: authorLogin, createdAt: note.createdAt }, description: 'Note:' })
     this.loaders.clear()
     response.note = (await this.findById(note.id))!
     return response
@@ -162,7 +162,7 @@ export class NoteService extends AuthService<Note> {
     if (!this.mayDelete(note)) throw new Error('You may not delete this note.')
     const authorLogin = (await this.svc(AccessUserService).findByInternalId(note.authorId))?.login
     await deleteAppRequestNote(noteId)
-    await this.svc(AppRequestService).recordActivity(note.appRequestId, 'Deleted Note', { description: cleanHTML(note.content), data: { id: note.id, author: authorLogin, createdAt: note.createdAt.toISO() } })
+    await this.svc(AppRequestService).recordActivity(note.appRequestId, 'Deleted', { description: `Note: ${note.content}`, data: { id: note.id, author: authorLogin, createdAt: note.createdAt.toISO() } })
     this.loaders.clear()
     return true
   }

@@ -102,7 +102,7 @@ const NOTE_ACTIVITY_MARKER_ALPHA = 'noteACTIVITYalpha'
 const NOTE_ACTIVITY_MARKER_BETA = 'noteACTIVITYbeta'
 const NOTE_ACTIVITY_MARKER_ABSENT = 'noteACTIVITYabsent'
 
-// Adding a note records an 'Added Note' activity whose description is the note content,
+// Adding a note records an 'Added' activity whose description is 'Note: ' plus the note content,
 // so we can test if note changes are searchable by text in the activity log from the API.
 const ACTIVITY_QUERY = `
   query AppRequestActivity($id: String!, $filters: AppRequestActivityFilters, $paged: Pagination) {
@@ -604,7 +604,7 @@ test.describe.serial('Notes - XSS sanitization', { tag: '@default' }, () => {
     const resp = await reviewerRequest.graphql<ActivityResponse>(ACTIVITY_QUERY, { id: String(appRequestId), filters: { search: NOTE_ACTIVITY_SEARCH_MARKER } })
     expect(resp.appRequestActivity.length).toBeGreaterThan(0)
     expect(resp.appRequestActivity.every(a => a.description?.includes(NOTE_ACTIVITY_SEARCH_MARKER))).toEqual(true)
-    expect(resp.appRequestActivity.some(a => a.action === 'Added Note')).toEqual(true)
+    expect(resp.appRequestActivity.some(a => a.action === 'Added')).toEqual(true)
     // the totals query must apply the same search predicate as the rows query
     expect(resp.pageInfo.appRequestsActivity?.totalItems).toEqual(resp.appRequestActivity.length)
   })
@@ -640,11 +640,11 @@ test.describe.serial('Notes - XSS sanitization', { tag: '@default' }, () => {
   })
 
   test('Reviewer - activity search combines with the actions filter', async ({ reviewerRequest }) => {
-    const matching = await reviewerRequest.graphql<ActivityResponse>(ACTIVITY_QUERY, { id: String(appRequestId), filters: { search: NOTE_ACTIVITY_SEARCH_MARKER, actions: ['Added Note'] } })
+    const matching = await reviewerRequest.graphql<ActivityResponse>(ACTIVITY_QUERY, { id: String(appRequestId), filters: { search: NOTE_ACTIVITY_SEARCH_MARKER, actions: ['Added'] } })
     expect(matching.appRequestActivity.length).toBeGreaterThan(0)
-    expect(matching.appRequestActivity.every(a => a.action === 'Added Note')).toEqual(true)
+    expect(matching.appRequestActivity.every(a => a.action === 'Added')).toEqual(true)
 
-    const conflicting = await reviewerRequest.graphql<ActivityResponse>(ACTIVITY_QUERY, { id: String(appRequestId), filters: { search: NOTE_ACTIVITY_SEARCH_MARKER, actions: ['Deleted Note'] } })
+    const conflicting = await reviewerRequest.graphql<ActivityResponse>(ACTIVITY_QUERY, { id: String(appRequestId), filters: { search: NOTE_ACTIVITY_SEARCH_MARKER, actions: ['Deleted'] } })
     expect(conflicting.appRequestActivity).toEqual([])
   })
 
