@@ -174,6 +174,13 @@ export class ProgramRegistry {
   public workflowStagesByKey: Record<string, WorkflowStage> = {}
   public allRequirementKeys: Record<string, Set<string>> = {}
   public workflowStageByProgramAndRequirementKey: Record<string, Record<string, WorkflowStage | undefined>> = {}
+  /**
+   * Requirement keys that more than one program uses, set by `finalize`. Only these can reuse a
+   * `resolve` result across programs, so evaluation skips the resolve cache for everything else.
+   * Built from the definitions, so a requirement shared here may be used by a single program in a
+   * period that disables the others; it still goes through the cache, which is correct, just a miss.
+   */
+  public sharedRequirementKeys = new Set<string>()
 
   /**
    * `registeredName` is the name the definition was handed over under - its property name in the
@@ -219,6 +226,13 @@ export class ProgramRegistry {
           this.workflowStageByProgramAndRequirementKey[program.key] ??= {}
           this.workflowStageByProgramAndRequirementKey[program.key][requirementKey] = stage
         }
+      }
+    }
+    const seenRequirementKeys = new Set<string>()
+    for (const requirementKeys of Object.values(this.allRequirementKeys)) {
+      for (const requirementKey of requirementKeys) {
+        if (seenRequirementKeys.has(requirementKey)) this.sharedRequirementKeys.add(requirementKey)
+        else seenRequirementKeys.add(requirementKey)
       }
     }
     assertNoProgramTitleCollisions()

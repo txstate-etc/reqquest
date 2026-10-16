@@ -124,7 +124,7 @@ export const schedulerMigration: DatabaseMigration[] = [{
 {
   id: '20260629180000',
   async execute (db: Queryable) {
-    const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_NAME = 'tasks' AND COLUMN_NAME = 'inProgress'")
+    const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tasks' AND COLUMN_NAME = 'inProgress'")
     if (!exists) await db.execute('ALTER TABLE tasks ADD COLUMN inProgress TINYINT(1) UNSIGNED NOT NULL DEFAULT 0')
   }
 }]

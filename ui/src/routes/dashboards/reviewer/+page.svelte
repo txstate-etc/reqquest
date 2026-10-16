@@ -18,8 +18,8 @@
 
   // tab labels carry the count of open requests in that stage
   $: tabs = [
-    { label: `Review Pending (${tabCounts.pending})`, value: { status: _reviewPendingStatuses }, title: 'Review not started', subtitle: 'These are applications waiting to be started by the review team.' },
-    { label: `In Review (${tabCounts.inReview})`, value: { status: _inReviewStatuses }, title: 'Review in progress', subtitle: 'These are applications currently being reviewed.' },
+    { label: `Review Pending (${tabCounts.pending})`, value: { status: _reviewPendingStatuses }, title: 'Review pending', subtitle: 'These are applications waiting to be started by the review team.' },
+    { label: `In Review (${tabCounts.inReview})`, value: { status: _inReviewStatuses }, title: 'In review', subtitle: 'These are applications currently being reviewed.' },
     { label: `Review Complete (${tabCounts.complete})`, value: { status: _reviewCompleteStatuses }, title: 'Review complete', subtitle: 'These applications have finished review, including results already released to the applicant.' }
   ]
   // the active tab is whichever one's statuses the current filter carries; default to the first

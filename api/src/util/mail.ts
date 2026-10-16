@@ -3,7 +3,7 @@ import { type AnyNode, isTag, isText } from 'domhandler'
 import { createTransport, Transporter } from 'nodemailer'
 import Handlebars from 'handlebars'
 import SMTPPool from 'nodemailer/lib/smtp-pool'
-import { getMailTemplate, getPendingMail, updateMailOutbox } from '../internal.js'
+import { appConfig, getMailTemplate, getPendingMail, updateMailOutbox } from '../internal.js'
 import { DateTime } from 'luxon'
 
 if (!process.env.PUBLISHED_BASE_URL || !process.env.SMTP_SERVER) throw new Error('Environment variables PUBLISHED_BASE_URL & SMTP_SERVER needed for mail')
@@ -24,9 +24,10 @@ class Mail {
   async sendsingle ({ replyTo, to, subject, body, extra }: { replyTo?: string, to: string, subject: any, body: any, extra?: Record<string, any> }) {
     const compiledSubject = subject({ to, replyTo, link_base: process.env.PUBLISHED_BASE_URL, ...extra })
     const compiledBody = body({ to, replyTo, link_base: process.env.PUBLISHED_BASE_URL, ...extra }).trim().replace(/\r?\n/g, '<br>').replace(/(<br>){3,}/ig, '<br><br>')
+    const { from } = appConfig.emailConfig
     await this.transporter.sendMail({
-      from: 'Reqquest <reqquest@txstate.edu>',
-      replyTo: replyTo ?? 'Reqquest <reqquest@txstate.edu>',
+      from,
+      replyTo: replyTo ?? from,
       to,
       subject: compiledSubject.trim(),
       html: compiledBody,

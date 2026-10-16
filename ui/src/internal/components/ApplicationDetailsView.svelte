@@ -27,6 +27,8 @@
   export let showAppRequestStatus = true
   export let statusDisplay: 'tags' | 'icons' = 'tags'
   export let showTooltipsAsText = false
+  /** Apply print-export styles: hide app chrome and paginate by prompt row rather than by panel. */
+  export let printMode = false
 
   const CORRECTABLE_STATUSES = ['STARTED', 'READY_TO_SUBMIT', 'DISQUALIFIED']
 
@@ -92,7 +94,7 @@
 </script>
 
 {#if appRequest}
-  <div class="[ my-6 ] application-details flow">
+  <div class="[ my-6 ] application-details flow" class:print-mode={printMode}>
     <!-- Application Status Panel -->
     <header class="[ mb-12 ] app-view-intro text-center">
       <h2 class="[ text-2xl mb-3 font-bold ]">{title}</h2>
@@ -276,7 +278,7 @@
 
   .prompt-list {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: var(--prompt-list-columns, 1fr 1fr);
     align-items: stretch;
     row-gap: 0.5rem;
     background-color: #F2F2F2;
@@ -314,7 +316,7 @@
     padding: 0;
     border-bottom: none;
     --prompt-display-subgrid: subgrid;
-    --prompt-display-columns: 1fr 1fr;
+    --prompt-display-columns: var(--prompt-list-columns, 1fr 1fr);
     --prompt-display-row-padding: 0.5rem 10px;
     --prompt-display-challenge-padding-left: 10px;
     --prompt-display-row-gap: 0.5rem;
@@ -340,5 +342,28 @@
     float: right;
     margin-top: -0.5rem;
     --cds-icon-01: var(--cds-link-01);
+  }
+
+  @media print {
+    :global(body:has(.application-details.print-mode) .bx--header),
+    :global(body:has(.application-details.print-mode) .breadcrumbs) {
+      display: none !important;
+    }
+
+    /* Never mark the whole view or a whole panel break-inside: avoid — when either is
+       taller than the space left on a page, the browser pushes it to the next page and
+       leaves the first page nearly blank. Keep only small units together instead. */
+    .print-mode :global(.panel) {
+      margin-bottom: 1rem !important;
+    }
+
+    .print-mode :global(.panel-header) {
+      break-after: avoid;
+    }
+
+    .print-mode .prompt-term,
+    .print-mode .prompt-answer:not(.large) {
+      break-inside: avoid;
+    }
   }
 </style>
