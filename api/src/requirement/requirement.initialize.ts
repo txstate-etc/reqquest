@@ -28,7 +28,7 @@ export const requirementMigrations: DatabaseMigration[] = [
   {
     id: '20260824000000',
     async execute (db: Queryable) {
-      const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_NAME = 'application_requirements' AND COLUMN_NAME = 'blame'")
+      const exists = await db.getval("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'application_requirements' AND COLUMN_NAME = 'blame'")
       if (!exists) await db.execute('ALTER TABLE application_requirements ADD COLUMN blame TEXT NULL AFTER statusReason')
     }
   }
