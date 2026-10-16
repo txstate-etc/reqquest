@@ -551,6 +551,14 @@ export async function getAppRequestActivity (filter: AppRequestActivityFilters, 
   return rows.map(row => new AppRequestActivity(row))
 }
 
+export async function getAppRequestActivityActions (appRequestInternalId: number) {
+  // The distinct action verbs present in one app request's activity log.
+  return await db.getvals<string>(
+    'SELECT DISTINCT action FROM app_request_activity WHERE appRequestId = ? ORDER BY action',
+    [appRequestInternalId]
+  )
+}
+
 export async function logMutation (queryTime: number, operationName: string, query: string, auth: FastifyTxStateAuthInfo, variables: any, data: any, errors: GraphQLError[] | undefined, context: Context) {
   try {
     // only log mutations, and only if they were successful

@@ -621,7 +621,7 @@ export interface Mutation {
     roleDeleteGrant: AccessRoleValidatedResponse
     roleUpdate: AccessRoleValidatedResponse
     roleUpdateGrant: AccessRoleValidatedResponse
-    /** Submit the app request. */
+    /** Submit the app request. Applications whose program has no reviewer questions (no PREAPPROVAL or APPROVAL requirements) advance on their own into their first blocking workflow stage or to REVIEW_COMPLETE; when nothing is left to review, the review is completed automatically as well. Applications ruled out before submission (PREQUAL or QUALIFICATION) do not hold that back. */
     submitAppRequest: ValidatedAppRequestResponse
     /** Toggle an existing note's persistent status. */
     togglePersistence: ValidatedNoteResponse
@@ -821,6 +821,8 @@ export interface Query {
     announcements: Announcement[]
     /** The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order. */
     appRequestActivity: AppRequestActivity[]
+    /** The distinct action verbs that appear in this app request's activity log, sorted alphabetically. Intended for building the activity type filter: it reports every verb the log contains, independent of any filters currently applied. */
+    appRequestActivityActions: Scalars['String'][]
     appRequestIndexes: IndexCategory[]
     appRequests: AppRequest[]
     applicationMetrics: ApplicationMetric
@@ -1744,7 +1746,7 @@ export interface MutationGenqlSelection{
     roleDeleteGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grantId: Scalars['ID']} })
     roleUpdate?: (AccessRoleValidatedResponseGenqlSelection & { __args: {role: AccessRoleInput, roleId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     roleUpdateGrant?: (AccessRoleValidatedResponseGenqlSelection & { __args: {grant: AccessRoleGrantUpdate, grantId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
-    /** Submit the app request. */
+    /** Submit the app request. Applications whose program has no reviewer questions (no PREAPPROVAL or APPROVAL requirements) advance on their own into their first blocking workflow stage or to REVIEW_COMPLETE; when nothing is left to review, the review is completed automatically as well. Applications ruled out before submission (PREQUAL or QUALIFICATION) do not hold that back. */
     submitAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Toggle an existing note's persistent status. */
     togglePersistence?: (ValidatedNoteResponseGenqlSelection & { __args: {noteId: Scalars['ID']} })
@@ -1986,6 +1988,8 @@ export interface QueryGenqlSelection{
     appRequestActivity?: (AppRequestActivityGenqlSelection & { __args: {
     /** Filters to apply to the activity log. This can be used to filter by action type, date range, etc. */
     filters?: (AppRequestActivityFilters | null), id: Scalars['String'], paged?: (Pagination | null)} })
+    /** The distinct action verbs that appear in this app request's activity log, sorted alphabetically. Intended for building the activity type filter: it reports every verb the log contains, independent of any filters currently applied. */
+    appRequestActivityActions?: { __args: {id: Scalars['String']} }
     appRequestIndexes?: (IndexCategoryGenqlSelection & { __args?: {categories?: (Scalars['String'][] | null), 
     /** Returns indexes that are flagged to appear in this destination. Also sorts for this destination. */
     for?: (AppRequestIndexDestination | null)} })

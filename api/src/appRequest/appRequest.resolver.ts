@@ -297,6 +297,11 @@ export class AppRequestActivityResolver {
     })
   }
 
+  @Query(type => [String], { description: 'The distinct action verbs that appear in the activity log for the associated app request, sorted alphabetically.' })
+  async appRequestActivityActions (@Ctx() ctx: RQContext, @Arg('id') id: string) {
+    return await ctx.svc(AppRequestService).getActivityActionsForAppRequest(id)
+  }
+
   @FieldResolver(type => AccessUser, { description: 'The user that performed the activity.' })
   async user (@Ctx() ctx: RQContext, @Root() activity: AppRequestActivity) {
     const user = await ctx.svc(AccessUserService).findByInternalId(activity.userInternalId)

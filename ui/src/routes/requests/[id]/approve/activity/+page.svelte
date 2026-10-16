@@ -8,8 +8,8 @@
   import DocExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
 
   export let data: PageData
-  $: ({ activity, basicRequestData } = data)
-  $: activityActions = sortby(unique(activity.map(a => ({ value: a.action })), 'value'), 'value')
+  $: ({ activity, actions, basicRequestData } = data)
+  $: activityActions = actions.map(value => ({ value }))
   $: activityPeople = sortby(unique(activity.map(a => ({ value: a.user.login, label: `${a.user.fullname} (${a.user.login})` })), 'value'), 'label')
 
   function formatCSVData (d: any[]) {

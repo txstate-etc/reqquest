@@ -6,7 +6,7 @@ import {
   AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData,
   submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse,
   AppRequestStatus, appRequestMakeOffer, getAppRequestTags, ApplicationRequirementService,
-  recordAppRequestActivity, closeAppRequest, getAppRequestActivity, AppRequestActivityFilters, PeriodService,
+  recordAppRequestActivity, closeAppRequest, getAppRequestActivity, getAppRequestActivityActions, AppRequestActivityFilters, PeriodService,
   createAppRequest, Period, appConfig, AccessUser, ReqquestUser, AccessDatabase, cancelAppRequest,
   reopenAppRequest, appRequestReturnToApplicant, acceptOffer, ApplicationService, RequirementPromptService,
   AppRequestPhase, appRequestReturnToOffer, appRequestReturnToReview, promptRegistry,
@@ -101,6 +101,10 @@ export class AppRequestServiceInternal extends BaseService<AppRequest> {
     return await this.loaders.get(activityByAppReqLoader, { ...filters, pageInfo, paged }).load(appRequestInternalId)
   }
 
+  async getActivityActionsForAppRequest (appRequestInternalId: number) {
+    return await getAppRequestActivityActions(appRequestInternalId)
+  }
+
   async updateData (appRequest: AppRequest, data: AppRequestData) {
     await updateAppRequestData(appRequest.internalId, data)
   }
@@ -193,6 +197,12 @@ export class AppRequestService extends AuthService<AppRequest> {
     const appRequest = await this.findById(appRequestId)
     if (!appRequest || !this.mayViewAsReviewer(appRequest)) return []
     return await this.svc(AppRequestServiceInternal).getActivityForAppRequest(appRequest.internalId, pageInfo, filters, paged)
+  }
+
+  async getActivityActionsForAppRequest (appRequestId: string) {
+    const appRequest = await this.findById(appRequestId)
+    if (!appRequest || !this.mayViewAsReviewer(appRequest)) return []
+    return await this.svc(AppRequestServiceInternal).getActivityActionsForAppRequest(appRequest.internalId)
   }
 
   isOwn (appRequest: AppRequest) {

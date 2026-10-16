@@ -1526,7 +1526,9 @@ type Mutation {
   roleUpdate(role: AccessRoleInput!, roleId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!
   roleUpdateGrant(grant: AccessRoleGrantUpdate!, grantId: ID!, validateOnly: Boolean): AccessRoleValidatedResponse!
 
-  """Submit the app request."""
+  """
+  Submit the app request. Applications whose program has no reviewer questions (no PREAPPROVAL or APPROVAL requirements) advance on their own into their first blocking workflow stage or to REVIEW_COMPLETE; when nothing is left to review, the review is completed automatically as well. Applications ruled out before submission (PREQUAL or QUALIFICATION) do not hold that back.
+  """
   submitAppRequest(appRequestId: ID!): ValidatedAppRequestResponse!
 
   """Toggle an existing note's persistent status."""
@@ -1913,6 +1915,11 @@ type Query {
     id: String!
     paged: Pagination
   ): [AppRequestActivity!]!
+
+  """
+  The distinct action verbs that appear in this app request's activity log, sorted alphabetically. Intended for building the activity type filter: it reports every verb the log contains, independent of any filters currently applied.
+  """
+  appRequestActivityActions(id: String!): [String!]!
   appRequestIndexes(
     categories: [String!]
 

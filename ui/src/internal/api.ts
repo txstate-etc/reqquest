@@ -1083,6 +1083,9 @@ class API extends APIBase {
         data: true,
         createdAt: true
       },
+      appRequestActivityActions: {
+        __args: { id: appRequestId }
+      },
       pageInfo: {
         appRequestsActivity: {
           currentPage: true,
@@ -1094,6 +1097,7 @@ class API extends APIBase {
     })
     return {
       activity: response.appRequestActivity,
+      actions: response.appRequestActivityActions,
       pageInfo: response.pageInfo.appRequestsActivity
     }
   }
