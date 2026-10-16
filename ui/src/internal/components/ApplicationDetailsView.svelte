@@ -278,7 +278,7 @@
 
   .prompt-list {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: var(--prompt-list-columns, 1fr 1fr);
     align-items: stretch;
     row-gap: 0.5rem;
     background-color: #F2F2F2;
@@ -316,7 +316,7 @@
     padding: 0;
     border-bottom: none;
     --prompt-display-subgrid: subgrid;
-    --prompt-display-columns: 1fr 1fr;
+    --prompt-display-columns: var(--prompt-list-columns, 1fr 1fr);
     --prompt-display-row-padding: 0.5rem 10px;
     --prompt-display-challenge-padding-left: 10px;
     --prompt-display-row-gap: 0.5rem;

@@ -1,12 +1,12 @@
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import { findIndex, groupby, isNotBlank, keyby } from 'txstate-utils'
+import { findIndex, groupby, keyby } from 'txstate-utils'
 import {
   Application, applicationComputedRow, ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestPhase, appRequestPhaseReached,
-  AppRequestStatus, AppRequestStatusDB, appRequestTransaction, deriveApplicationStatus, getAppRequestData, getAppRequests,
+  AppRequestStatus, AppRequestStatusDB, appRequestTransaction, deriveApplicationStatus, getAppRequestForEvaluation, appRequestComputedRow,
   getPeriodWorkflowStages, IneligiblePhases, PeriodWorkflowStage, programRegistry, promptComputedRow, promptRegistry, PromptVisibility, RequirementPrompt,
   requirementComputedRow, RequirementStatus, RequirementType, syncApplications, syncPromptRecords, syncRequirementRecords, updateAppRequestComputed,
-  updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData
+  updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData, type ProgramContext, type ProgramSelector, type ResolveResult
 } from '../internal.js'
 
 /**
@@ -45,10 +45,28 @@ interface EvaluationContext {
    * back only the rows the evaluation actually changed
    */
   baseline: {
+    appRequest: string
     applications: Map<number, string>
     requirements: Map<number, string>
     prompts: Map<number, string>
   }
+  /**
+   * `resolve` results from earlier in this evaluation for requirements shared by several programs,
+   * keyed by requirement key, then by how many prompts' data was in hand, then matched on exactly
+   * which prompts those were. A shared requirement sees identical input in each program, so the
+   * first program to reach a given input does the work and the rest reuse it, unless the requirement
+   * read program context - then only programs with the same values for what it read reuse it.
+   */
+  resolveCache: Map<string, ResolveCacheEntry[][]>
+}
+
+interface ResolveCacheEntry {
+  /** the prompt keys in `requiredData` when this entry was stored, in insertion order */
+  promptKeys: string[]
+  /** the result when the requirement never asked for program context */
+  pure?: ResolveResult
+  /** results that depended on program context, with the properties read and their values at the time */
+  contextual: { props: (keyof ProgramContext)[], valueKey: string, result: ResolveResult }[]
 }
 
 /** The requirements of one application, split by type and workflow role, plus the cumulative sets each phase consults. */
@@ -107,8 +125,14 @@ export const applicantRequirementTypes = new Set<RequirementType>([
  * added a requirement since the last evaluation.
  */
 export async function ensureAppRequestRecords (appRequest: AppRequest, db: Queryable) {
-  const disabledPrograms = new Set(await db.getvals<string>('SELECT programKey FROM period_programs WHERE periodId = ? AND disabled = 1', [appRequest.periodId]))
-  const disabledRequirements = await db.getall<{ programKey: string, requirementKey: string }>('SELECT programKey, requirementKey FROM period_program_requirements WHERE periodId = ? AND disabled = 1', [appRequest.periodId])
+  // one round trip for both: a null requirementKey marks a disabled program
+  const disabledRows = await db.getall<{ programKey: string, requirementKey: string | null }>(`
+    SELECT programKey, NULL AS requirementKey FROM period_programs WHERE periodId = ? AND disabled = 1
+    UNION ALL
+    SELECT programKey, requirementKey FROM period_program_requirements WHERE periodId = ? AND disabled = 1
+  `, [appRequest.periodId, appRequest.periodId])
+  const disabledPrograms = new Set(disabledRows.filter(row => row.requirementKey == null).map(row => row.programKey))
+  const disabledRequirements = disabledRows.filter((row): row is { programKey: string, requirementKey: string } => row.requirementKey != null)
   const disabledRequirementLookup = disabledRequirements.reduce((acc, { programKey, requirementKey }) => ({ ...acc, [programKey]: { ...acc[programKey], [requirementKey]: true } }), {} as Record<string, Record<string, boolean>>)
   const programs = programRegistry.list().filter(program => !disabledPrograms.has(program.key))
   const reqKeyLookup: Record<string, Set<string>> = {}
@@ -127,11 +151,11 @@ export async function ensureAppRequestRecords (appRequest: AppRequest, db: Query
   }
   const applications = await syncApplications(appRequest.internalId, new Set(programs.map(p => p.key)), db)
   const requirements = await syncRequirementRecords(appRequest.internalId, applications, reqKeyLookup, db)
-  const prompts = await syncPromptRecords(appRequest.internalId, requirements, db)
+  const prompts = await syncPromptRecords(appRequest.internalId, requirements, applications, db)
   return { applications, requirements, prompts }
 }
 
-export async function tagAppRequest (appRequestInternalId: number, data: AppRequestData, prompts: RequirementPrompt[], tdb: Queryable = db) {
+export async function tagAppRequest (appRequestInternalId: number, data: AppRequestData, prompts: RequirementPrompt[], tdb: Queryable = db, existingTags?: Record<string, string[]>) {
   const tagRows = []
   const seenPrompts = new Set<string>()
   for (const prompt of prompts) {
@@ -144,6 +168,13 @@ export async function tagAppRequest (appRequestInternalId: number, data: AppRequ
       for (const idx of index.extract(data)) tagRows.push({ category: index.category, tag: idx, indexOnly: 1 })
     }
   }
+
+  const tagKey = (category: string, tag: unknown) => `${category}\0${String(tag)}`
+  const existingTagKeys = new Set(existingTags
+    ? Object.entries(existingTags).flatMap(([category, tags]) => tags.map(tag => tagKey(category, tag)))
+    : (await tdb.getall<{ category: string, tag: string }>('SELECT category, tag FROM app_request_tags WHERE appRequestId = ?', [appRequestInternalId])).map(r => tagKey(r.category, r.tag)))
+  const desiredTags = new Set(tagRows.map(r => tagKey(r.category, r.tag)))
+  if (existingTagKeys.size === desiredTags.size && [...desiredTags].every(key => existingTagKeys.has(key))) return
 
   if (tagRows.length > 0) {
     const ibinds: any[] = []
@@ -177,7 +208,7 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
 
     const previousApplicationPhases = snapshotApplicationPhases(ctx.applications)
 
-    await tagAppRequest(ctx.appRequest.internalId, ctx.data, ctx.prompts, db)
+    await tagAppRequest(ctx.appRequest.internalId, ctx.data, ctx.prompts, db, ctx.appRequest.tags)
     await markPromptsAnswered(ctx, db)
 
     const acc: RequestAccumulators = {
@@ -204,11 +235,10 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
  * application can be RESCINDED or restored after completion and the request-level status has to follow it.
  */
 async function loadEvaluationContext (appRequestInternalId: number, db: Queryable): Promise<EvaluationContext | undefined> {
-  const appRequest = (await getAppRequests({ internalIds: [appRequestInternalId] }, db))[0]
-  if (!appRequest) throw new Error(`AppRequest ${appRequestInternalId} not found`)
+  const loaded = await getAppRequestForEvaluation(appRequestInternalId, db)
+  if (!loaded) throw new Error(`AppRequest ${appRequestInternalId} not found`)
+  const { appRequest, data } = loaded
   if (appRequest.dbStatus !== AppRequestStatusDB.OPEN) return undefined
-
-  const data = (await getAppRequestData([appRequest.internalId], db))[0].data
 
   // all of the objects returned here are considered mutable - the evaluation updates them and
   // persistEvaluation saves them back to the database at the end
@@ -217,7 +247,8 @@ async function loadEvaluationContext (appRequestInternalId: number, db: Queryabl
   const workflowStages = await getPeriodWorkflowStages({ periodIds: [appRequest.periodId] }, db)
 
   const configurations = await db.getall<{ definitionKey: string, data: string }>('SELECT definitionKey, data FROM period_configurations WHERE periodId = ?', [appRequest.periodId])
-  const configLookup: Record<string, any> = configurations.map(c => ({ ...c, data: JSON.parse(c.data ?? '{}') })).reduce((acc, c) => ({ ...acc, [c.definitionKey]: c.data }), {})
+  const configLookup: Record<string, any> = {}
+  for (const c of configurations) configLookup[c.definitionKey] = JSON.parse(c.data ?? '{}')
 
   return {
     appRequest,
@@ -232,10 +263,12 @@ async function loadEvaluationContext (appRequestInternalId: number, db: Queryabl
     configLookup,
     applicantPromptKeys: new Set(prompts.filter(p => applicantRequirementTypes.has(p.requirementType)).map(p => p.key)),
     baseline: {
+      appRequest: JSON.stringify(appRequestComputedRow(appRequest)),
       applications: snapshotComputed(applications, applicationComputedRow),
       requirements: snapshotComputed(requirements, requirementComputedRow),
       prompts: snapshotComputed(prompts, promptComputedRow)
-    }
+    },
+    resolveCache: new Map()
   }
 }
 
@@ -251,7 +284,9 @@ function changedSinceLoad<T extends { internalId: number }> (models: T[], toRow:
 
 /** Must run before anything mutates the applications. */
 function snapshotApplicationPhases (applications: Application[]) {
-  return applications.reduce((acc, app) => ({ ...acc, [app.programKey]: app.phase }), {} as Record<string, ApplicationPhase>)
+  const phases: Record<string, ApplicationPhase> = {}
+  for (const app of applications) phases[app.programKey] = app.phase
+  return phases
 }
 
 /**
@@ -310,7 +345,7 @@ function evaluateApplication (ctx: EvaluationContext, application: Application, 
   const buckets = bucketRequirements(ctx, application)
   const { sortedRequirements, displayedRequirements } = selectRequirements(phase, buckets)
 
-  const { firstAwaitingCorrectionRequirement } = resolveRequirements(ctx, sortedRequirements, displayedRequirements, acc)
+  const { firstAwaitingCorrectionRequirement } = resolveRequirements(ctx, application, sortedRequirements, displayedRequirements, acc)
   application.awaitingCorrection = firstAwaitingCorrectionRequirement != null
 
   const summary = summarizeResolution(sortedRequirements)
@@ -408,17 +443,21 @@ function resolutionRequirements (phase: EvaluationPhase, buckets: RequirementBuc
  * disqualified the application (which makes later prompts moot) and the first requirement holding
  * an invalidated prompt the user can currently reach.
  */
-function resolveRequirements (ctx: EvaluationContext, sortedRequirements: ApplicationRequirement[], displayedRequirements: ApplicationRequirement[], acc: RequestAccumulators) {
+function resolveRequirements (ctx: EvaluationContext, application: Application, sortedRequirements: ApplicationRequirement[], displayedRequirements: ApplicationRequirement[], acc: RequestAccumulators) {
   const promptsSeenInApplication = new Set<string>()
+  const resolutionRequirementSet = new Set(sortedRequirements)
+  // statuses settled so far in this application, offered to later requirements through the program selector
+  const priorStatuses: Record<string, RequirementStatus> = {}
   let applicationIsIneligible = false
   let firstAwaitingCorrectionRequirement: ApplicationRequirement | undefined
   for (const requirement of displayedRequirements) {
     // identify if requirement influences eligibility (accommodate emerged non blocking that may be mixed in)
-    const isResolutionRequirement = sortedRequirements.includes(requirement)
+    const isResolutionRequirement = resolutionRequirementSet.has(requirement)
     // a prior requirement already disqualified this application, so nothing in this requirement can change its outcome
     const promptsAreMoot = applicationIsIneligible && requirement.type !== RequirementType.WORKFLOW
 
-    const { disqualifying, awaitingCorrection } = resolveRequirement(ctx, requirement, promptsAreMoot, { application: promptsSeenInApplication, request: acc.promptsSeenInRequest })
+    const { disqualifying, awaitingCorrection } = resolveRequirement(ctx, application, requirement, priorStatuses, promptsAreMoot, { application: promptsSeenInApplication, request: acc.promptsSeenInRequest })
+    priorStatuses[requirement.key] = requirement.status
 
     if (disqualifying && isResolutionRequirement) applicationIsIneligible = true
 
@@ -438,8 +477,8 @@ function resolveRequirements (ctx: EvaluationContext, sortedRequirements: Applic
  * regular prompt re-resolves, and the first unanswered one hides everything after it. Sets each
  * prompt's visibility and moot flag and the requirement's status, reason and blame.
  */
-function resolveRequirement (ctx: EvaluationContext, requirement: ApplicationRequirement, promptsAreMoot: boolean, seen: { application: Set<string>, request: Set<string> }) {
-  const { data, configLookup } = ctx
+function resolveRequirement (ctx: EvaluationContext, application: Application, requirement: ApplicationRequirement, priorStatuses: Record<string, RequirementStatus>, promptsAreMoot: boolean, seen: { application: Set<string>, request: Set<string> }) {
+  const { data } = ctx
   const prompts = ctx.promptLookup[requirement.id] ?? []
   const anyOrderPrompts = prompts.filter(p => requirement.definition.anyOrderPromptKeySet.has(p.key))
   const noDisplayPrompts = prompts.filter(p => requirement.definition.noDisplayPromptKeySet.has(p.key))
@@ -447,9 +486,9 @@ function resolveRequirement (ctx: EvaluationContext, requirement: ApplicationReq
 
   const requiredData = {} as AppRequestData
   let hasUnanswered = false
-  let resolveInfo: ReturnType<typeof requirement.definition.resolve>
+  let resolveInfo: ResolveResult
 
-  const resolve = () => requirement.definition.resolve(requiredData, configLookup[requirement.definition.key] ?? {}, configLookup)
+  const resolve = () => resolveWithCache(ctx, application, requirement, priorStatuses, requiredData)
   const markSeen = (prompt: RequirementPrompt) => {
     if (promptsAreMoot) return
     seen.application.add(prompt.key)
@@ -508,6 +547,94 @@ function resolveRequirement (ctx: EvaluationContext, requirement: ApplicationReq
   return {
     disqualifying: requirement.status === RequirementStatus.DISQUALIFYING,
     awaitingCorrection: prompts.some(p => p.invalidated && p.visibility === PromptVisibility.AVAILABLE)
+  }
+}
+
+/**
+ * Call the requirement's `resolve`, reusing an earlier result from this evaluation when nothing the
+ * requirement could observe differs.
+ *
+ * This runs for every prompt gate of every requirement, so a cache hit must cost less than the
+ * `resolve` it saves - which, for most requirements, is a few property checks. No string key is
+ * built: entries hang off the requirement key (a short, already-hashed string), then the number of
+ * prompts in hand, and a candidate matches only if its prompt keys equal `requiredData`'s
+ * one-for-one. `data` is fixed for the whole evaluation, so the same prompt keys mean the same input.
+ * Prompts arrive in `evaluationOrder` (guaranteed by `syncPromptRecords`, including its no-reload
+ * path), so every program adds them in the same order; a different order would only cost a miss,
+ * never a wrong result.
+ */
+function resolveWithCache (ctx: EvaluationContext, application: Application, requirement: ApplicationRequirement, priorStatuses: Record<string, RequirementStatus>, requiredData: AppRequestData): ResolveResult {
+  const { definition } = requirement
+  const config = ctx.configLookup[definition.key] ?? {}
+  if (!programRegistry.sharedRequirementKeys.has(requirement.key)) {
+    return definition.resolve(requiredData, config, ctx.configLookup, programSelector(application, requirement, priorStatuses))
+  }
+
+  let promptCount = 0
+  for (const _ in requiredData) promptCount++
+  let byPromptCount = ctx.resolveCache.get(requirement.key)
+  if (!byPromptCount) ctx.resolveCache.set(requirement.key, byPromptCount = [])
+  const candidates = byPromptCount[promptCount] ??= []
+  let entry = candidates.find(candidate => samePromptKeys(candidate.promptKeys, requiredData))
+  if (entry?.pure) return entry.pure
+
+  if (entry?.contextual.length) {
+    const context = programContext(application, requirement, priorStatuses)
+    for (const cached of entry.contextual) {
+      if (contextValueKey(context, cached.props) === cached.valueKey) return cached.result
+    }
+  }
+
+  const propsRead = new Set<keyof ProgramContext>()
+  const result = definition.resolve(requiredData, config, ctx.configLookup, programSelector(application, requirement, priorStatuses, propsRead))
+
+  if (!entry) candidates.push(entry = { promptKeys: Object.keys(requiredData), contextual: [] })
+  if (propsRead.size === 0) entry.pure = result
+  else {
+    const props = [...propsRead].sort()
+    entry.contextual.push({ props, valueKey: contextValueKey(programContext(application, requirement, priorStatuses), props), result })
+  }
+  return result
+}
+
+function samePromptKeys (promptKeys: string[], requiredData: AppRequestData) {
+  let i = 0
+  for (const key in requiredData) {
+    if (promptKeys[i] !== key) return false
+    i++
+  }
+  return i === promptKeys.length
+}
+
+function programContext (application: Application, requirement: ApplicationRequirement, priorStatuses: Record<string, RequirementStatus>): ProgramContext {
+  return {
+    key: application.programKey,
+    title: application.title,
+    navTitle: application.navTitle,
+    requirementIndex: requirement.evaluationOrder,
+    priorStatuses: { ...priorStatuses }
+  }
+}
+
+/** Serializes the context values a requirement read. `priorStatuses` keys are sorted so equal statuses always match. */
+function contextValueKey (context: ProgramContext, props: (keyof ProgramContext)[]) {
+  return JSON.stringify(props.map(prop => prop === 'priorStatuses'
+    ? Object.keys(context.priorStatuses).sort().map(key => [key, context.priorStatuses[key]])
+    : context[prop]))
+}
+
+/** The `program` argument handed to `resolve`. The context is built only if the requirement asks for it. */
+function programSelector (application: Application, requirement: ApplicationRequirement, priorStatuses: Record<string, RequirementStatus>, propsRead?: Set<keyof ProgramContext>): ProgramSelector {
+  let context: ProgramContext | undefined
+  return select => {
+    context ??= programContext(application, requirement, priorStatuses)
+    const picked = {} as Pick<ProgramContext, keyof ProgramContext>
+    for (const prop of Object.keys(select) as (keyof ProgramContext)[]) {
+      if (!(select as Record<string, boolean>)[prop]) continue
+      propsRead?.add(prop)
+      ;(picked as any)[prop] = context[prop]
+    }
+    return picked
   }
 }
 
@@ -720,7 +847,7 @@ function liveApplicationsStatus (ctx: EvaluationContext, acc: RequestAccumulator
 
 /** save the results of the evaluation to the database, writing only the rows whose computed columns changed */
 async function persistEvaluation (ctx: EvaluationContext, db: Queryable) {
-  await updateAppRequestComputed(ctx.appRequest, db)
+  if (JSON.stringify(appRequestComputedRow(ctx.appRequest)) !== ctx.baseline.appRequest) await updateAppRequestComputed(ctx.appRequest, db)
   await updateApplicationsComputed(changedSinceLoad(ctx.applications, applicationComputedRow, ctx.baseline.applications), db)
   await updateRequirementComputed(changedSinceLoad(ctx.requirements, requirementComputedRow, ctx.baseline.requirements), db)
   await updatePromptComputed(changedSinceLoad(ctx.prompts, promptComputedRow, ctx.baseline.prompts), db)
