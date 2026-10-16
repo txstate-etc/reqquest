@@ -16,7 +16,8 @@
   <TabLinks tabs={[...others, { label: 'Ineligible programs', panel: ineligibleList }]} />
   ```
 
-  The panel is positioned absolutely over the page content, left-aligned to the tab that opened it.
+  The panel is positioned absolutely over the page content, left-aligned to the tab that opened it,
+  shifted left as needed to stay within the tab strip, and wraps its content when wider than the strip.
   It closes on outside click, Escape, navigation, and horizontal scrolling of the tab strip.
 -->
 <script context="module" lang="ts">
@@ -107,7 +108,9 @@
   function positionPanel () {
     const tabEl = tabElements[openIndex]
     if (!wrapperEl || !tabEl) return
-    panelLeft = Math.max(0, tabEl.getBoundingClientRect().left - wrapperEl.getBoundingClientRect().left)
+    const tabLeft = tabEl.getBoundingClientRect().left - wrapperEl.getBoundingClientRect().left
+    const maxLeft = wrapperEl.clientWidth - (panelEl?.offsetWidth ?? 0)
+    panelLeft = Math.max(0, Math.min(tabLeft, maxLeft))
   }
 
   async function toggle (idx: number) {
@@ -250,9 +253,11 @@
     position: absolute;
     top: 100%;
     z-index: 100;
-    min-width: -moz-max-content;
-    min-width: max-content;
+    /* natural width, capped at the strip so long labels wrap instead of running off-screen */
+    width: -moz-max-content;
+    width: max-content;
     max-width: 100%;
+    overflow-wrap: anywhere;
     background-color: var(--cds-ui-01, #f4f4f4);
     border: 1px solid var(--cds-ui-03, #e0e0e0);
     box-shadow: 0 2px 6px rgb(0 0 0 / 0.2);
