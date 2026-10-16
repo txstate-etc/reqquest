@@ -311,7 +311,12 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     let previousAppRequestStatus: AppRequestStatus | undefined
     let previousAppPhases: Record<string, ApplicationPhase> = {}
     let appRequestData: AppRequestData | undefined
+    let attempted = false
     await appRequestTransaction(prompt.appRequestInternalId, async db => {
+      // a deadlock retries this callback, but preProcessData may have already consumed the upload streams,
+      // and running it again would save the prompt as if no files were sent
+      if (attempted && this.ctx.filesRead) throw new Error('Your files could not be saved because of a temporary conflict. Please try again.')
+      attempted = true
       const [[appRequest], [appRequestDataPair]] = await Promise.all([
         getAppRequests({ internalIds: [prompt.appRequestInternalId] }, db),
         getAppRequestData([prompt.appRequestInternalId], db)

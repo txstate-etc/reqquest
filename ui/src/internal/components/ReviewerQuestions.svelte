@@ -357,7 +357,7 @@
 <style>
   dl.prompts {
     display: grid;
-    grid-template-columns: fit-content(50%) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
     align-items: stretch;
     gap: 0;
     margin: -16px;
