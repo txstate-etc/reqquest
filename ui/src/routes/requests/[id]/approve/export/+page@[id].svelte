@@ -9,7 +9,7 @@
 
 {#if appRequest}
 
-  <div class="export-content max-w-4xl ">
+  <div class="max-w-4xl">
     <ApplicationDetailsView
       {appRequest}
       applications={applicationsReview}
@@ -19,6 +19,7 @@
       loading={false}
       {uiRegistry}
       expandable={false}
+      printMode
       showWarningsInline={true}
       title={`View ${basicRequestData.applicant.fullname} ${uiRegistry.getWord('appRequest').toLowerCase()}`}
       subtitle={`Complete ${uiRegistry.getWord('appRequest').toLowerCase()} details for review.`}
