@@ -109,7 +109,7 @@ test.describe.serial('Reviewer dashboard tabs and list', { tag: '@default' }, ()
     await expect(reviewerPage.locator('.filter-ui-container').getByRole('combobox')).toHaveCount(0)
     await expect(reviewerPage.locator('.nested-multiselect')).toHaveCount(0)
     await expect(reviewerPage.getByRole('button', { name: /(More|Add) filters/i })).toHaveCount(0)
-    await expect(reviewerPage.getByRole('heading', { name: 'Review not started' })).toBeVisible()
+    await expect(reviewerPage.getByRole('heading', { name: 'Review pending' })).toBeVisible()
     // the intro subtitle uses the panel's full width instead of wrapping at the library's 28rem cap
     const subtitleBox = (await reviewerPage.locator('.intro-subtitle').boundingBox())!
     expect(subtitleBox.height).toBeLessThan(24)
@@ -144,7 +144,7 @@ test.describe.serial('Reviewer dashboard tabs and list', { tag: '@default' }, ()
     await reviewerPage.getByRole('radio', { name: /^In Review \(\d+\)$/ }).click()
     await expect(reviewerPage).toHaveURL(/t\.status\.0=REVIEW_IN_PROGRESS/)
     expect(reviewerPage.url()).not.toMatch(/PREAPPROVAL/)
-    await expect(reviewerPage.getByRole('heading', { name: 'Review in progress' })).toBeVisible()
+    await expect(reviewerPage.getByRole('heading', { name: 'In review' })).toBeVisible()
 
     await reviewerPage.getByRole('radio', { name: /^Review Complete \(\d+\)$/ }).click()
     await expect(reviewerPage).toHaveURL(/t\.status\.0=REVIEW_COMPLETE/)
