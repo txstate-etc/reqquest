@@ -33,6 +33,10 @@
 {/if}
 
 <style>
+  /* Reviewer standard: prompt/requirement column 40%, answer column 60%. */
+  .export-content {
+    --prompt-list-columns: minmax(0, 2fr) minmax(0, 3fr);
+  }
 
   @media print {
     :global(.bx--header) {

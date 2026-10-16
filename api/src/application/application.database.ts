@@ -8,6 +8,7 @@ export interface ApplicationRow {
   appRequestId: number
   periodId: number
   programKey: string
+  evaluationOrder: number
   userId: number
   computedStatus: ApplicationStatus
   computedStatusReason?: string
@@ -45,11 +46,11 @@ export async function clearIneligiblePreSubmit (appRequestId: number, tdb: Query
   await tdb.update('UPDATE applications SET ineligiblePreSubmit = 0 WHERE appRequestId = ?', [appRequestId])
 }
 
-export async function getApplications (filter: ApplicationFilter, tdb: Queryable = db) {
+async function getApplicationRows (filter: ApplicationFilter, tdb: Queryable) {
   const { where, binds } = processFilters(filter)
   const whereClause = where.length > 0 ? `WHERE (${where.join(') AND (')})` : ''
-  const rows = await tdb.getall<ApplicationRow>(`
-    SELECT a.id, a.appRequestId, ar.periodId, a.programKey, ar.userId, a.computedStatus, a.computedStatusReason, a.computedPhase,
+  return await tdb.getall<ApplicationRow>(`
+    SELECT a.id, a.appRequestId, ar.periodId, a.programKey, a.evaluationOrder, ar.userId, a.computedStatus, a.computedStatusReason, a.computedPhase,
       a.computedIneligiblePhase, a.computedAwaitingCorrection, a.ineligiblePreSubmit, a.workflowStage,
       a.rescindedStatus, a.rescindedReason, a.restoredReason,
       ar.status AS appRequestStatus, ar.phase AS appRequestPhase, ar.computedStatus AS appRequestComputedStatus,
@@ -60,12 +61,22 @@ export async function getApplications (filter: ApplicationFilter, tdb: Queryable
     ${whereClause}
     ORDER BY evaluationOrder
   `, binds)
+}
+
+export async function getApplications (filter: ApplicationFilter, tdb: Queryable = db) {
+  const rows = await getApplicationRows(filter, tdb)
   return rows.map(row => new Application(row))
 }
 
+/**
+ * Reconcile the applications on an appRequest with the active programs. The read is the full model
+ * query, so when nothing needs writing its rows become the models and no reload is needed. Models
+ * are only built once every row is known to belong to an active program.
+ */
 export async function syncApplications (appRequestId: number, activeProgramKeySet: Set<string>, db: Queryable) {
   const activePrograms = programRegistry.list().filter(program => activeProgramKeySet.has(program.key))
-  const existingApplications = await db.getall<{ id: number, programKey: string, evaluationOrder: number }>('SELECT id, programKey, evaluationOrder FROM applications WHERE appRequestId = ?', [appRequestId])
+  const filter = { appRequestIds: [String(appRequestId)] }
+  const existingApplications = await getApplicationRows(filter, db)
   const existingByProgramKey = new Map(existingApplications.map(row => [row.programKey, row]))
   const toInsert: any[][] = []
   const toReorder: { id: number, evaluationOrder: number }[] = []
@@ -75,6 +86,7 @@ export async function syncApplications (appRequestId: number, activeProgramKeySe
     else if (existing.evaluationOrder !== i) toReorder.push({ id: existing.id, evaluationOrder: i })
   }
   const programsToDelete = existingApplications.filter(row => !activeProgramKeySet.has(row.programKey))
+  if (!toInsert.length && !programsToDelete.length && !toReorder.length) return existingApplications.map(row => new Application(row))
   if (toInsert.length) {
     const binds: any[] = []
     await db.insert(`
@@ -87,7 +99,7 @@ export async function syncApplications (appRequestId: number, activeProgramKeySe
     await db.delete(`DELETE FROM applications WHERE id IN (${db.in(binds, programsToDelete.map(row => row.id))})`, binds)
   }
   await bulkUpdateById(db, 'applications', ['evaluationOrder'], toReorder)
-  return await getApplications({ appRequestIds: [String(appRequestId)] }, db)
+  return await getApplications(filter, db)
 }
 
 /** The computed columns the evaluation writes back, shaped for `bulkUpdateById` and for change detection. */
