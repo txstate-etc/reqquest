@@ -180,7 +180,7 @@ export class ApplicationService extends AuthService<Application> {
     })
     this.loaders.clear()
     resp.appRequest = await this.svc(AppRequestService).findByInternalId(application.appRequestInternalId)
-    await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, `Rescinded ${application.navTitle}: ${reason}.`)
+    await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, 'Rescinded', { description: `${application.navTitle}: ${reason}` })
     const newApplication = (await this.findByInternalId(application.internalId))!
     try {
       await Promise.all(applicationBenefitRescindRestoreNotifications.map(n => n(this.ctx, resp.appRequest!, newApplication, reason)))
@@ -203,7 +203,7 @@ export class ApplicationService extends AuthService<Application> {
     })
     this.loaders.clear()
     resp.appRequest = await this.svc(AppRequestService).findByInternalId(application.appRequestInternalId)
-    await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, `Restored ${application.navTitle}: ${reason}.`)
+    await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, 'Restored', { description: `${application.navTitle}: ${reason}` })
     const newApplication = (await this.findByInternalId(application.internalId))!
     try {
       await Promise.all(applicationBenefitRescindRestoreNotifications.map(n => n(this.ctx, resp.appRequest!, newApplication, reason)))
@@ -225,7 +225,7 @@ export class ApplicationService extends AuthService<Application> {
     const resp = new ValidatedAppRequestResponse({ success: true, messages: [] })
     resp.appRequest = await this.svc(AppRequestService).findByInternalId(application.appRequestInternalId)
     const newApplication = (await this.findByInternalId(application.internalId))!
-    await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, `Advanced ${application.navTitle} workflow from ${programRegistry.getWorkflowStageByKey(application.workflowStageKey)?.title ?? 'review'} to ${programRegistry.getWorkflowStageByKey(newApplication.workflowStageKey)?.title ?? (newApplication.appRequestPhase === AppRequestPhase.SUBMITTED ? 'review complete' : 'completion')}.`)
+    await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, 'Advanced', { description: `${application.navTitle} workflow from ${programRegistry.getWorkflowStageByKey(application.workflowStageKey)?.title ?? 'review'} to ${programRegistry.getWorkflowStageByKey(newApplication.workflowStageKey)?.title ?? (newApplication.appRequestPhase === AppRequestPhase.SUBMITTED ? 'review complete' : 'completion')}` })
     if (resp.appRequest?.status !== application.appRequestComputedStatus) await appConfig.hooks?.appRequestStatus?.(this.ctx, resp.appRequest!, application.appRequestComputedStatus)
     if (application.phase !== newApplication.phase) {
       await appConfig.hooks?.applicationPhase?.(this.ctx, resp.appRequest!, newApplication.programKey, application.phase)
@@ -252,7 +252,7 @@ export class ApplicationService extends AuthService<Application> {
     const resp = new ValidatedAppRequestResponse({ success: true, messages: [] })
     resp.appRequest = await this.svc(AppRequestService).findByInternalId(application.appRequestInternalId)
     const newApplication = (await this.findByInternalId(application.internalId))!
-    await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, `Reversed ${application.navTitle} workflow from ${programRegistry.getWorkflowStageByKey(application.workflowStageKey)?.title ?? (application.appRequestPhase === AppRequestPhase.SUBMITTED ? 'review complete' : 'completion')} to ${programRegistry.getWorkflowStageByKey(newApplication.workflowStageKey)?.title ?? 'review'}.`)
+    await this.svc(AppRequestService).recordActivity(resp.appRequest!.internalId, 'Reversed', { description: `${application.navTitle} workflow from ${programRegistry.getWorkflowStageByKey(application.workflowStageKey)?.title ?? (application.appRequestPhase === AppRequestPhase.SUBMITTED ? 'review complete' : 'completion')} to ${programRegistry.getWorkflowStageByKey(newApplication.workflowStageKey)?.title ?? 'review'}` })
     if (resp.appRequest?.status !== application.appRequestComputedStatus) await appConfig.hooks?.appRequestStatus?.(this.ctx, resp.appRequest!, application.appRequestComputedStatus)
     if (application.phase !== newApplication.phase) await appConfig.hooks?.applicationPhase?.(this.ctx, resp.appRequest!, newApplication.programKey, application.phase)
     return resp

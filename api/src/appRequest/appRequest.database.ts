@@ -489,6 +489,7 @@ export async function appRequestReturnToNonBlocking (appRequestId: number) {
   })
 }
 
+/** action is a bare verb ("Added", "Completed", ...) so the activity log can be filtered by it; what was acted on and any details go in info.description */
 export async function recordAppRequestActivity (appRequestId: number | string, userId: number, action: string, info?: { description?: string, data?: any, impersonatedBy?: number }, tdb: Queryable = db) {
   await tdb.insert(`
     INSERT INTO app_request_activity (appRequestId, userId, impersonatedBy, action, description, data)
@@ -576,6 +577,26 @@ export async function getAppRequestActivity (filter: AppRequestActivityFilters, 
     ${pageInfo?.perPage ? `LIMIT ${pageInfo.perPage} OFFSET ${(pageInfo.currentPage - 1) * pageInfo.perPage}` : ''}
   `, binds)
   return rows.map(row => new AppRequestActivity(row))
+}
+
+/**
+ * The internal ids of everyone who appears in one app request's activity log, as the acting user or as
+ * the impersonator behind one.
+ */
+export async function getAppRequestActivityUserInternalIds (appRequestInternalId: number) {
+  return await db.getvals<number>(`
+    SELECT userId FROM app_request_activity WHERE appRequestId = ?
+    UNION
+    SELECT impersonatedBy FROM app_request_activity WHERE appRequestId = ? AND impersonatedBy IS NOT NULL
+  `, [appRequestInternalId, appRequestInternalId])
+}
+
+export async function getAppRequestActivityActions (appRequestInternalId: number) {
+  // The distinct action verbs present in one app request's activity log.
+  return await db.getvals<string>(
+    'SELECT DISTINCT action FROM app_request_activity WHERE appRequestId = ? ORDER BY action',
+    [appRequestInternalId]
+  )
 }
 
 export async function logMutation (queryTime: number, operationName: string, query: string, auth: FastifyTxStateAuthInfo, variables: any, data: any, errors: GraphQLError[] | undefined, context: Context) {

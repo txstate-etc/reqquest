@@ -1919,6 +1919,16 @@ type Query {
     id: String!
     paged: Pagination
   ): [AppRequestActivity!]!
+
+  """
+  The distinct action verbs that appear in the activity log for the associated app request, sorted alphabetically.
+  """
+  appRequestActivityActions(id: String!): [String!]!
+
+  """
+  Everyone who appears in the activity log for the associated app request, as the user that performed an activity or as the admin impersonating them.
+  """
+  appRequestActivityUsers(id: String!): [AccessUser!]!
   appRequestIndexes(
     categories: [String!]
 

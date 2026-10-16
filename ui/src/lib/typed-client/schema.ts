@@ -822,6 +822,10 @@ export interface Query {
     announcements: Announcement[]
     /** The activity log for this app request. This is a list of actions taken on the app request, such as submission, updating prompts, make an offer, add a note, etc. It will be sorted by the date of the activity in descending order. */
     appRequestActivity: AppRequestActivity[]
+    /** The distinct action verbs that appear in the activity log for the associated app request, sorted alphabetically. */
+    appRequestActivityActions: Scalars['String'][]
+    /** Everyone who appears in the activity log for the associated app request, as the user that performed an activity or as the admin impersonating them. */
+    appRequestActivityUsers: AccessUser[]
     appRequestIndexes: IndexCategory[]
     appRequests: AppRequest[]
     applicationMetrics: ApplicationMetric
@@ -1988,6 +1992,10 @@ export interface QueryGenqlSelection{
     appRequestActivity?: (AppRequestActivityGenqlSelection & { __args: {
     /** Filters to apply to the activity log. This can be used to filter by action type, date range, etc. */
     filters?: (AppRequestActivityFilters | null), id: Scalars['String'], paged?: (Pagination | null)} })
+    /** The distinct action verbs that appear in the activity log for the associated app request, sorted alphabetically. */
+    appRequestActivityActions?: { __args: {id: Scalars['String']} }
+    /** Everyone who appears in the activity log for the associated app request, as the user that performed an activity or as the admin impersonating them. */
+    appRequestActivityUsers?: (AccessUserGenqlSelection & { __args: {id: Scalars['String']} })
     appRequestIndexes?: (IndexCategoryGenqlSelection & { __args?: {categories?: (Scalars['String'][] | null), 
     /** Returns indexes that are flagged to appear in this destination. Also sorts for this destination. */
     for?: (AppRequestIndexDestination | null)} })

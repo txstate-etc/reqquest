@@ -2133,6 +2133,24 @@ export default {
                     ]
                 }
             ],
+            "appRequestActivityActions": [
+                91,
+                {
+                    "id": [
+                        91,
+                        "String!"
+                    ]
+                }
+            ],
+            "appRequestActivityUsers": [
+                17,
+                {
+                    "id": [
+                        91,
+                        "String!"
+                    ]
+                }
+            ],
             "appRequestIndexes": [
                 56,
                 {

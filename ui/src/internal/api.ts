@@ -1092,6 +1092,15 @@ class API extends APIBase {
         data: true,
         createdAt: true
       },
+      appRequestActivityActions: {
+        __args: { id: appRequestId }
+      },
+      // Includes admins who only appear as impersonators
+      appRequestActivityUsers: {
+        __args: { id: appRequestId },
+        login: true,
+        fullname: true
+      },
       pageInfo: {
         appRequestsActivity: {
           currentPage: true,
@@ -1103,6 +1112,8 @@ class API extends APIBase {
     })
     return {
       activity: response.appRequestActivity,
+      actions: response.appRequestActivityActions,
+      people: response.appRequestActivityUsers,
       pageInfo: response.pageInfo.appRequestsActivity
     }
   }

@@ -1,4 +1,5 @@
 import { Queryable } from 'mysql2-async'
+import { isBlank } from 'txstate-utils'
 import { AppRequestPhase, AppRequestStatus, AppRequestStatusDB, DatabaseMigration } from '../internal.js'
 
 export const appRequestMigrations: DatabaseMigration[] = [
@@ -114,6 +115,78 @@ export const appRequestMigrations: DatabaseMigration[] = [
     id: '20260806000000',
     async execute (db: Queryable) {
       await db.execute(`ALTER TABLE app_requests ALTER COLUMN computedStatus SET DEFAULT '${AppRequestStatus.STARTED}'`)
+    }
+  }, {
+    /**
+     * Split the activity log's `action` into a bare verb, moving everything else into `description`.
+     *
+     * The old code wrote a whole sentence into `action` ('Returned entire request to review phase.',
+     * 'Dog Adoption Updated', 'Advanced Dog Adoption workflow from Vet Check to Home Visit.'). Program
+     * titles, workflow stage titles and rescind reasons were interpolated into it, so the set of distinct
+     * values was unbounded and the `actions` filter could not be offered as a usable facet.
+     *
+     * The descriptions produced here are close to, but not always identical to, what the current code
+     * would write for the same event - they only have to read well next to it.
+     */
+    id: '20261015000000',
+    async execute (db: Queryable) {
+      /** verbs for activity log where action found at the END, e.g. 'Dog Adoption Updated', 'Note Persistence' */
+      const trailingActions: Record<string, string> = { Updated: 'Updated', Persistence: 'Persisted' }
+
+      /**
+       * Older descriptive actions with the verb buried mid-sentence or missing altogether.
+       * Mapped onto the closest current verb/description.
+       */
+      const patchedActions: Record<string, [string, string]> = {
+        'No review required, completed automatically.': ['Completed', 'Request automatically, no review required'],
+        'Made Offer': ['Completed', 'Review'],
+        'Pulled Back Offer': ['Returned', 'Offer pulled back']
+      }
+
+      /**
+       * Rewrite one old activity row into the new shape: `action` keeps only the verb, everything else moves to
+       * the front of `description`.
+       *
+       * Leading verbs ('Rescinded Dog Adoption: ...', 'Advanced Dog Adoption workflow from ...', 'Added Note',
+       * 'Submitted request for review.') need no list - whatever word comes first is the verb. That fallback
+       * also tidies up multi-word actions written by a downstream project's own recordActivity calls.
+       *
+       * idempotent: An action that is already a single word is left exactly as it is which makes this safe to run twice.
+       */
+      function splitActivityAction (action: string, description: string | null) {
+        const words = action.trim().split(/\s+/)
+        let verb = action
+        let moved = ''
+        let newDescription = description
+        if (words.length > 1) {
+          const trailingVerb = trailingActions[words[words.length - 1]]
+          if (patchedActions[action]) [verb, moved] = patchedActions[action]
+          else if (trailingVerb) [verb, moved] = [trailingVerb, words.slice(0, -1).join(' ')]
+          else [verb, moved] = [words[0], words.slice(1).join(' ')]
+          // strip before testing: a remainder of nothing but punctuation empties it
+          moved = moved.replace(/\.+$/, '')
+          if (moved) {
+            moved = moved[0].toUpperCase() + moved.slice(1)
+            newDescription = isBlank(description) ? moved : `${moved}: ${description!}`
+          }
+        }
+        return { action: verb, description: newDescription }
+      }
+      const batchSize = 500
+      let lastId = 0
+      while (true) {
+        const rows = await db.getall<{ id: number, action: string, description: string | null }>(
+          `SELECT id, action, description FROM app_request_activity WHERE id >= ? ORDER BY id LIMIT ${batchSize}`,
+          [lastId]
+        )
+        if (!rows.length) break
+        lastId = rows[rows.length - 1].id + 1
+        for (const row of rows) {
+          const next = splitActivityAction(row.action, row.description)
+          if (next.action === row.action && next.description === row.description) continue
+          await db.update('UPDATE app_request_activity SET action = ?, description = ? WHERE id = ?', [next.action, next.description, row.id])
+        }
+      }
     }
   }
 ]
