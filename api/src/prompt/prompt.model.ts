@@ -73,6 +73,7 @@ export class RequirementPrompt extends Prompt {
     this.requirementKey = row.requirementKey
     this.requirementType = row.requirementType
     this.promptKey = row.promptKey
+    this.evaluationOrder = row.evaluationOrder
     this.programKey = row.programKey
     this.applicationInternalId = row.applicationId
     this.applicationId = String(row.applicationId)
@@ -101,6 +102,7 @@ export class RequirementPrompt extends Prompt {
       requirementKey: prompt.requirementKey,
       requirementType: prompt.requirementType,
       promptKey: prompt.promptKey,
+      evaluationOrder: prompt.evaluationOrder,
       requirementId: prompt.requirementInternalId,
       appRequestId: prompt.appRequestInternalId,
       applicationId: prompt.applicationInternalId,
@@ -145,6 +147,7 @@ export class RequirementPrompt extends Prompt {
   applicationId: string
   requirementInternalId: number
   requirementId: string
+  evaluationOrder: number
   requirementKey: string
   requirementType: RequirementType
   promptKey: string
