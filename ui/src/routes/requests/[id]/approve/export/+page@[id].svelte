@@ -4,7 +4,7 @@
   import type { PageData } from './$types'
 
   export let data: PageData
-  $: ({ appRequest, appData, prequalPrompts, postqualPrompts, applicationsReview } = data)
+  $: ({ appRequest, appData, prequalPrompts, postqualPrompts, applicationsReview, basicRequestData } = data)
 </script>
 
 {#if appRequest}
@@ -20,7 +20,7 @@
       {uiRegistry}
       expandable={false}
       showWarningsInline={true}
-      title={`Review ${uiRegistry.getWord('appRequest')}`}
+      title={`View ${basicRequestData.applicant.fullname} ${uiRegistry.getWord('appRequest').toLowerCase()}`}
       subtitle={`Complete ${uiRegistry.getWord('appRequest').toLowerCase()} details for review.`}
     />
   </div>
@@ -33,6 +33,10 @@
 {/if}
 
 <style>
+  /* Reviewer standard: prompt/requirement column 40%, answer column 60%. */
+  .export-content {
+    --prompt-list-columns: minmax(0, 2fr) minmax(0, 3fr);
+  }
 
   @media print {
     :global(.bx--header) {
