@@ -26,5 +26,15 @@ export const promptMigrations: DatabaseMigration[] = [
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `)
     }
+  },
+  {
+    // without these, updates by appRequestId + promptKey intersect two single-column indexes and lock
+    // that prompt's rows on every request instead of just the target rows, causing deadlocks
+    id: '20261012000000',
+    execute: async (db: Queryable) => {
+      const existing = new Set(await db.getvals<string>("SELECT DISTINCT INDEX_NAME FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'requirement_prompts'"))
+      if (!existing.has('appRequestId_promptKey')) await db.execute('ALTER TABLE requirement_prompts ADD INDEX appRequestId_promptKey (appRequestId, promptKey)')
+      if (!existing.has('requirementId_promptKey')) await db.execute('ALTER TABLE requirement_prompts ADD INDEX requirementId_promptKey (requirementId, promptKey)')
+    }
   }
 ]

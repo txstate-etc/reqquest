@@ -162,6 +162,13 @@ export interface RQContext extends Context {
   authInfo: AuthInfo
   login: string
 
+  /**
+   * True once any uploaded file has been yielded by `files()`. The upload streams can only be
+   * read once, so work that might run twice (like a retried transaction) checks this to avoid
+   * silently proceeding without the files.
+   */
+  filesRead: boolean
+
   acceptTicket: (ticket: string) => Promise<void>
 
   waitForAuth: () => Promise<void>
@@ -202,6 +209,16 @@ export function rqContextMixin (Ctx: typeof Context): RQContextClass {
       ])
       // authInfo is shared by every request for this login, so impersonation must go on a per-request copy
       this.authInfo = { ...authInfo, impersonationUser }
+    }
+
+    // Uploads
+    filesRead = false
+
+    async* files () {
+      for await (const file of super.files()) {
+        this.filesRead = true
+        yield file
+      }
     }
 
     // Pagination
