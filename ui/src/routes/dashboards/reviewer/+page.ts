@@ -14,6 +14,8 @@ export const _defaultReviewerDashboardFilters = { t: { status: _reviewPendingSta
 
 export const load: PageLoad = async ({ url, parent }) => {
   const { access } = await parent()
+  // access is missing only when the layout failed; it renders layoutError in place of the page, so don't mask it
+  if (!access) return {} as never
   if (!access.viewReviewerInterface) throw error(403)
   if (!url.search) redirect(302, '?' + toQuery(_defaultReviewerDashboardFilters))
   const { page, pagesize } = extractPaginationParams(url)
