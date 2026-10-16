@@ -24,3 +24,4 @@ test_complex.sh
 .claude/todos/
 .claude/scheduled_tasks.*
 *.local.md
+/ui/app
