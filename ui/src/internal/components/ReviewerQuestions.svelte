@@ -33,7 +33,7 @@
 
   type PromptExtraData = Awaited<ReturnType<typeof api.getPromptData>>
   type Prompt = PageData['appRequest']['applications'][0]['requirements'][0]['prompts'][0]
-  type PromptWithExtra = Prompt & PromptExtraData
+  type PromptWithExtra = Prompt & PromptExtraData & { allowSaveWithoutChanges?: boolean }
   let editingPromptWithData: PromptWithExtra | undefined = undefined
   let promptBeingEdited: Prompt | undefined = undefined
   let showPromptDialog = false
@@ -59,7 +59,8 @@
       showPromptDialog = true
       try {
         // empty the save queue before fetching, so the version we pin to the modal includes everything
-        // this session has typed inline.        await saveQueue.drain()
+        // this session has typed inline.
+        await saveQueue.drain()
         const extra = await api.getPromptData(appRequest.id, prompt.id)
         editingPromptWithData = { ...prompt, ...extra, allowSaveWithoutChanges }
       } finally {
@@ -252,7 +253,7 @@
             <dd class="flow" class:small class:large class:isReviewerQuestion class:disabled={disabled} class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
               {#if editMode}
                 <Form bind:store={saveQueue.stores[prompt.id]} preload={prompt.preloadData} submit={onPromptSubmit(prompt)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptAutoSaved} let:data let:messages>
-                    <svelte:component this={def.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} statusReasons={promptStatusReasons[prompt.key] ?? []} />
+                    <svelte:component this={def?.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} statusReasons={promptStatusReasons[prompt.key] ?? []} />
                     {#each statusReasonsToFeedback(promptStatusReasons[prompt.key], { blamedOnly: true, statuses: uiRegistry.statusReasonNotificationStatuses(prompt.key, 'reviewer') }) as message}
                       <FormInlineNotification {message} />
                     {/each}
