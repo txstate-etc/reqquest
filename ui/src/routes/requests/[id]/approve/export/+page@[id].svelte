@@ -9,7 +9,7 @@
 
 {#if appRequest}
 
-  <div class="max-w-4xl">
+  <div class="export-content max-w-4xl">
     <ApplicationDetailsView
       {appRequest}
       applications={applicationsReview}
@@ -37,24 +37,5 @@
   /* Reviewer standard: prompt/requirement column 40%, answer column 60%. */
   .export-content {
     --prompt-list-columns: minmax(0, 2fr) minmax(0, 3fr);
-  }
-
-  @media print {
-    :global(.bx--header) {
-      display: none !important;
-    }
-
-    :global(.breadcrumbs) {
-      display: none !important;
-    }
-
-    .export-content {
-      break-inside: avoid;
-    }
-
-    .export-content :global(.panel) {
-      break-inside: avoid;
-      margin-bottom: 1rem !important;
-    }
   }
 </style>
