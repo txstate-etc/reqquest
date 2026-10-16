@@ -1917,9 +1917,14 @@ type Query {
   ): [AppRequestActivity!]!
 
   """
-  The distinct action verbs that appear in this app request's activity log, sorted alphabetically. Intended for building the activity type filter: it reports every verb the log contains, independent of any filters currently applied.
+  The distinct action verbs that appear in the activity log for the associated app request, sorted alphabetically.
   """
   appRequestActivityActions(id: String!): [String!]!
+
+  """
+  Everyone who appears in the activity log for the associated app request, as the user that performed an activity or as the admin impersonating them.
+  """
+  appRequestActivityUsers(id: String!): [AccessUser!]!
   appRequestIndexes(
     categories: [String!]
 

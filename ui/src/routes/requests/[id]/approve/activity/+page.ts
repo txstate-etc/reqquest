@@ -6,7 +6,7 @@ import { extractMergedFilters, extractPaginationParams } from '@txstate-mws/carb
 export const load: PageLoad = async ({ params, url, depends }) => {
   const filters = extractMergedFilters(url)
   const { page, pagesize } = extractPaginationParams(url)
-  const { activity, actions, pageInfo } = await api.getRequestActivity(params.id, filters, { page, perPage: pagesize })
+  const { activity, actions, people, pageInfo } = await api.getRequestActivity(params.id, filters, { page, perPage: pagesize })
   depends('request:approve:activity')
-  return { activity, actions, pageInfo }
+  return { activity, actions, people, pageInfo }
 }

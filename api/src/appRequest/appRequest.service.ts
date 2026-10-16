@@ -6,7 +6,8 @@ import {
   AuthService, AppRequest, getAppRequestData, getAppRequests, AppRequestFilter, AppRequestData,
   submitAppRequest, restoreAppRequest, updateAppRequestData, AppRequestStatusDB, ValidatedAppRequestResponse,
   AppRequestStatus, appRequestMakeOffer, getAppRequestTags, ApplicationRequirementService,
-  recordAppRequestActivity, closeAppRequest, getAppRequestActivity, getAppRequestActivityActions, AppRequestActivityFilters, PeriodService,
+  recordAppRequestActivity, closeAppRequest, getAppRequestActivity, getAppRequestActivityActions,
+  getAppRequestActivityUserInternalIds, AccessUserService, AppRequestActivityFilters, PeriodService,
   createAppRequest, Period, appConfig, AccessUser, ReqquestUser, AccessDatabase, cancelAppRequest,
   reopenAppRequest, appRequestReturnToApplicant, acceptOffer, ApplicationService, RequirementPromptService,
   AppRequestPhase, appRequestReturnToOffer, appRequestReturnToReview, promptRegistry,
@@ -103,6 +104,10 @@ export class AppRequestServiceInternal extends BaseService<AppRequest> {
 
   async getActivityActionsForAppRequest (appRequestInternalId: number) {
     return await getAppRequestActivityActions(appRequestInternalId)
+  }
+
+  async getActivityUserInternalIdsForAppRequest (appRequestInternalId: number) {
+    return await getAppRequestActivityUserInternalIds(appRequestInternalId)
   }
 
   async updateData (appRequest: AppRequest, data: AppRequestData) {
@@ -203,6 +208,14 @@ export class AppRequestService extends AuthService<AppRequest> {
     const appRequest = await this.findById(appRequestId)
     if (!appRequest || !this.mayViewAsReviewer(appRequest)) return []
     return await this.svc(AppRequestServiceInternal).getActivityActionsForAppRequest(appRequest.internalId)
+  }
+
+  async getActivityUsersForAppRequest (appRequestId: string) {
+    const appRequest = await this.findById(appRequestId)
+    if (!appRequest || !this.mayViewAsReviewer(appRequest)) return []
+    const internalIds = await this.svc(AppRequestServiceInternal).getActivityUserInternalIdsForAppRequest(appRequest.internalId)
+    const users = await Promise.all(internalIds.map(async id => await this.svc(AccessUserService).findByInternalId(id)))
+    return users.filter(u => u != null)
   }
 
   isOwn (appRequest: AppRequest) {

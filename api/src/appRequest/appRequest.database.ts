@@ -551,6 +551,18 @@ export async function getAppRequestActivity (filter: AppRequestActivityFilters, 
   return rows.map(row => new AppRequestActivity(row))
 }
 
+/**
+ * The internal ids of everyone who appears in one app request's activity log, as the acting user or as
+ * the impersonator behind one.
+ */
+export async function getAppRequestActivityUserInternalIds (appRequestInternalId: number) {
+  return await db.getvals<number>(`
+    SELECT userId FROM app_request_activity WHERE appRequestId = ?
+    UNION
+    SELECT impersonatedBy FROM app_request_activity WHERE appRequestId = ? AND impersonatedBy IS NOT NULL
+  `, [appRequestInternalId, appRequestInternalId])
+}
+
 export async function getAppRequestActivityActions (appRequestInternalId: number) {
   // The distinct action verbs present in one app request's activity log.
   return await db.getvals<string>(

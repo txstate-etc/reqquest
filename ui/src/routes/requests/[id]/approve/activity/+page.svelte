@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ColumnList, FieldDate, FieldMultiselect, FilterUI, Pagination } from '@txstate-mws/carbon-svelte'
-  import { htmlEncode, sortby, unique } from 'txstate-utils'
+  import { htmlEncode, sortby } from 'txstate-utils'
   import { longDateTime, downloadCsv } from '$internal'
   import { uiRegistry } from '../../../../../local'
   import type { PageData } from './$types'
@@ -8,9 +8,9 @@
   import DocExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
 
   export let data: PageData
-  $: ({ activity, actions, basicRequestData } = data)
+  $: ({ activity, actions, people, basicRequestData } = data)
   $: activityActions = actions.map(value => ({ value }))
-  $: activityPeople = sortby(unique(activity.map(a => ({ value: a.user.login, label: `${a.user.fullname} (${a.user.login})` })), 'value'), 'label')
+  $: activityPeople = sortby(people.map(p => ({ value: p.login, label: `${p.fullname} (${p.login})` })), 'label')
 
   function formatCSVData (d: any[]) {
     return d.map(row => ({
