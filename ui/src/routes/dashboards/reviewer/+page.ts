@@ -2,7 +2,7 @@ import { error, redirect } from '@sveltejs/kit'
 import { extractMergedFilters, extractPaginationParams } from '@txstate-mws/carbon-svelte'
 import { toQuery } from 'txstate-utils'
 import { api, splitStatusFilter } from '$internal'
-import { enumAppRequestStatus, type AppRequestFilter } from '$lib'
+import { enumAppRequestStatus, type AppRequestFilter } from '@reqquest/ui'
 import type { PageLoad } from './$types'
 
 export const _reviewPendingStatuses = [enumAppRequestStatus.PREAPPROVAL, enumAppRequestStatus.APPROVAL]

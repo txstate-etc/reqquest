@@ -1,6 +1,6 @@
-import { uiRegistry } from '../local'
+import { uiRegistry } from '$local'
 import { reviewerRequirementTypes, type PromptDataLegion, type ReviewData } from '$internal'
-import type { PromptDefinition, RequirementType } from '$lib'
+import type { PromptDefinition, RequirementType } from '@reqquest/ui'
 
 export type CoalescedAppRequest = ReturnType<typeof coalesceAppRequestPrompts>
 

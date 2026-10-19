@@ -2,7 +2,7 @@
   import { ColumnList, FieldDate, FieldMultiselect, FilterUI, Pagination } from '@txstate-mws/carbon-svelte'
   import { htmlEncode, sortby } from 'txstate-utils'
   import { longDateTime, downloadCsv } from '$internal'
-  import { uiRegistry } from '../../../../../local'
+  import { uiRegistry } from '$local'
   import type { PageData } from './$types'
   import ApproveLayout from '../ApproveLayout.svelte'
   import DocExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'

@@ -13,6 +13,8 @@
 			"$lib/*": ["./src/lib/*"],
 			"$internal": ["./src/internal"],
 			"$internal/*": ["./src/internal/*"],
+			"$local": ["./src/local"],
+			"$local/*": ["./src/local/*"],
 			"$app/types": ["./.svelte-kit/types/index.d.ts"]
 		}
 	}

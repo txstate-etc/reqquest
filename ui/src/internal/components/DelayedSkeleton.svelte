@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Loader } from "$lib/registry"
+  import type { Loader } from "@reqquest/ui"
   import ApplicantPromptSkeleton from "$internal/components/ApplicantPromptSkeleton.svelte"
 
   export let loader: Loader

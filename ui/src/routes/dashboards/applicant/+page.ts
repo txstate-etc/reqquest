@@ -1,10 +1,10 @@
 import { api, APP_REQUEST_STATUS_CONFIG, getPastStatuses } from '$internal'
 import type { DashboardAppRequest } from '$internal'
-import type { AppRequestStatus } from '$lib'
+import type { AppRequestStatus } from '@reqquest/ui'
 import { error } from '@sveltejs/kit'
 import { extractMergedFilters } from '@txstate-mws/carbon-svelte'
 import { sortby, unique } from 'txstate-utils'
-import { uiRegistry } from '../../../local/index.js'
+import { uiRegistry } from '$local'
 import type { PageLoad } from './$types'
 import { excludeApplicantRequirementIneligibleApps } from '$internal'
 

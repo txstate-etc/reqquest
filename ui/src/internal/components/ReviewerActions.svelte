@@ -2,12 +2,12 @@
   import { toasts } from '@txstate-mws/svelte-components'
   import { Loading } from "carbon-components-svelte"
   import { Button, Select, SelectItem } from 'carbon-components-svelte'
-  import { InfoCard, translateMutations } from '$lib'
-  import { phaseChangeMutations, type PhaseChangeMutations } from '$lib'
+  import { InfoCard, translateMutations } from '@reqquest/ui'
+  import { phaseChangeMutations, type PhaseChangeMutations } from '@reqquest/ui'
   import { invalidateAll } from '$app/navigation'
   import { api, type BasicRequestData } from '$internal/api'
   import type { PageData } from '../../routes/requests/[id]/approve/[programKey]/$types'
-  import { uiRegistry } from '../../local'
+  import { uiRegistry } from '$local'
   import DocumentExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
 
   

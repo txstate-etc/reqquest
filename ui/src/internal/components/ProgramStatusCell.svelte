@@ -11,7 +11,7 @@
   import { FloatingPortal, Tag } from 'carbon-components-svelte'
   import { onDestroy } from 'svelte'
   import { randomid } from 'txstate-utils'
-  import { enumAppRequestPhase } from '$lib'
+  import { enumAppRequestPhase } from '@reqquest/ui'
   import { getApplicationStatusTags } from '../status-utils.js'
 
   export let row: ProgramStatusRow

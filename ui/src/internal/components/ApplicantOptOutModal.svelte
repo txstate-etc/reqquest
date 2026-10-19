@@ -2,11 +2,11 @@
   import { Form, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import type { FormStore } from '@txstate-mws/svelte-forms'
   import { afterNavigate, invalidate, invalidateAll } from '$app/navigation'
-  import { uiRegistry } from '../../local/index.js'
+  import { uiRegistry } from '$local'
   import { api, type PromptForEditing } from '../api.js'
   import { Loading } from "carbon-components-svelte";
   import MissingDefinitionNotification from './MissingDefinitionNotification.svelte'
-  import type { AppRequestForDetails, OptOutApplication } from '$lib'
+  import type { AppRequestForDetails, OptOutApplication } from '@reqquest/ui'
 
   export let open = false
   export let optIn = false

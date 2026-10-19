@@ -6,7 +6,7 @@
   import { invalidate } from '$app/navigation'
   import { page } from '$app/stores'
   import { api } from '../api.js'
-  import type { UIRegistry } from '../../lib/registry.js'
+  import type { UIRegistry } from '@reqquest/ui'
 
   export let program: any
   export let sharedProgramRequirements: any

@@ -7,8 +7,8 @@
   import type { PageData } from './$types'
   import ProgressNavContainer from '../ProgressNavContainer.svelte'
   import { ApplicantProgramList, DEFAULT_APPLICANT_NO_PROGRAMS_MESSAGE, isHiddenFromApplicant, isIneligibleByApplicantRequirement } from '$internal'
-  import { uiRegistry } from '../../../../../local/index.js'
-  import { enumApplicationStatus } from '$lib'
+  import { uiRegistry } from '$local'
+  import { enumApplicationStatus } from '@reqquest/ui'
 
   export let data: PageData
   $: ({ applicationsForNav, appRequestForExport } = data)

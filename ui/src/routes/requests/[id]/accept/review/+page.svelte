@@ -8,9 +8,9 @@
   import { resolve } from '$app/paths'
   import type { ResolvedPathname } from '$app/types'
   import { api, ApplicationDetailsView } from '$internal'
-  import { enumAppRequestStatus } from '$lib'
+  import { enumAppRequestStatus } from '@reqquest/ui'
   import type { PageData } from './$types'
-  import { uiRegistry } from '../../../../../local'
+  import { uiRegistry } from '$local'
 
   /**
    * This page will allow applicants to review all the information they've

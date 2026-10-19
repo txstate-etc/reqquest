@@ -1,8 +1,8 @@
 <script lang="ts">
   import { api, getApplicationStatusInfo } from '$internal'
   import type { LayoutData } from '../$types.js'
-  import { uiRegistry } from '../../../../local/index.js'
-  import { enumApplicationStatus, enumRequirementStatus, InfoCard } from '$lib'
+  import { uiRegistry } from '$local'
+  import { enumApplicationStatus, enumRequirementStatus, InfoCard } from '@reqquest/ui'
   import { Loading, Modal } from 'carbon-components-svelte'
   import { Information } from 'carbon-icons-svelte'
   import StatusMessageList from '$internal/components/StatusMessageList.svelte'

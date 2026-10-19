@@ -20,6 +20,8 @@ const config = {
 		},
 		alias: {
 			$internal: 'src/internal',
+			$local: 'src/local',
+			'@reqquest/ui': 'src/lib'
 		}
 	}
 };

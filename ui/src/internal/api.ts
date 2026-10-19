@@ -10,7 +10,7 @@ import {
   type AppRequestActivityFilters, type AppRequestFilter, type IneligiblePhases, type Pagination, type PeriodUpdate, type PromptVisibility,
   type RequirementStatus, type RequirementType, type PhaseChangeMutations, type CompletionStatus, type StatusReason,
   type PeriodFilters
-} from '$lib'
+} from '@reqquest/ui'
 import { applicantVisiblePromptVisibilities } from './status-utils.js'
 
 export const showDupePrompts = PUBLIC_SHOW_DUPLICATE_PROMPTS.trim() === 'true'

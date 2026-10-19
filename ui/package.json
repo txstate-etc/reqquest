@@ -11,8 +11,14 @@
       "default": "./dist/index.js"
     }
   },
+  "bin": {
+    "reqquest-ui": "bin/reqquest-ui.js"
+  },
   "files": [
-    "dist"
+    "dist",
+    "app",
+    "bin",
+    "cli"
   ],
   "scripts": {
     "prepare": "svelte-kit sync",
@@ -20,40 +26,48 @@
     "build": "vite build",
     "preview": "vite preview",
     "package": "svelte-kit sync && svelte-package",
-    "prepublishOnly": "npm run package",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "check:registry": "node check-registry.js",
     "docs:components": "node scripts/build-components-md.js",
     "docs:components:check": "node scripts/build-components-md.js --check",
-    "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch"
+    "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
+    "prepack": "npm run package && node scripts/pack-app.js"
   },
   "peerDependencies": {
-    "@sveltejs/kit": "^2.0.0",
-    "svelte": "^5.0.0"
+    "@sveltejs/kit": "2.70.3",
+    "@sveltejs/vite-plugin-svelte": "6.2.4",
+    "svelte": "5.57.2",
+    "vite": "7.3.7"
   },
   "dependencies": {
+    "@sveltejs/adapter-static": "3.0.10",
     "@txstate-mws/carbon-svelte": "^1.5.5",
     "@txstate-mws/fastify-shared": "^1.1.0",
     "@txstate-mws/svelte-components": "^1.6.11",
+    "@txstate-mws/svelte-forms": "2.1.10",
     "@txstate-mws/sveltekit-utils": "^1.0.2",
+    "autoprefixer": "10.6.1",
+    "carbon-components-svelte": "0.112.2",
+    "carbon-icons-svelte": "13.16.0",
+    "carbon-preprocess-svelte": "0.11.49",
     "luxon": "^3.5.0",
-    "txstate-utils": "^1.8.15"
+    "postcss": "8.5.29",
+    "svelte-check": "4.7.6",
+    "tailwindcss": "3.4.19",
+    "txstate-utils": "^1.8.15",
+    "typescript": "5.9.3"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.0.0",
-    "@sveltejs/adapter-static": "^3.0.1",
-    "@sveltejs/kit": "^2.5.2",
+    "@sveltejs/kit": "2.70.3",
     "@sveltejs/package": "^2.0.0",
-    "@sveltejs/vite-plugin-svelte": "^6.0.0",
+    "@sveltejs/vite-plugin-svelte": "6.2.4",
     "@types/luxon": "^3.4.2",
     "@types/node": "^24.3.1",
-    "carbon-preprocess-svelte": "~0.11.2",
     "eslint-config-love": "^151.0.0",
     "eslint-plugin-svelte": "^3.0.0",
-    "svelte": "^5.0.0",
-    "svelte-check": "^4.0.0",
-    "typescript": "^5.3.3",
-    "vite": "^7.0.0"
+    "svelte": "5.57.2",
+    "vite": "7.3.7"
   },
   "type": "module"
 }

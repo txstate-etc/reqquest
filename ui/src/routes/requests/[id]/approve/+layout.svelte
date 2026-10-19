@@ -3,8 +3,8 @@
   import { page } from '$app/stores'
   import type { LayoutData } from './$types.js'
   import { IntroPanel, TabLinks, applicantStatuses, getReviewerStatusTags, longNumericTime } from '$internal'
-  import { uiRegistry } from '../../../../local/index.js'
-  import { enumAppRequestPhase } from '$lib'
+  import { uiRegistry } from '$local'
+  import { enumAppRequestPhase } from '@reqquest/ui'
   import { isIneligibleByApplicantRequirement } from '$internal'
 
   export let data: LayoutData
