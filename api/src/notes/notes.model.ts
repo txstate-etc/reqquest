@@ -3,6 +3,8 @@ import { NoteRow } from '../internal.js'
 import { DateTime } from 'luxon'
 import { ValidatedResponse } from '@txstate-mws/graphql-server'
 
+export const NOTE_MAX_LENGTH = 350
+
 @ObjectType({ description: 'An internal note attached to an application request. Notes are always written by reviewers and never visible to applicants. "Messages" are for reviewers and applicants communicating with one another.' })
 export class Note {
   constructor (data: NoteRow) {

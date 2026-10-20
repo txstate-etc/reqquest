@@ -19,7 +19,7 @@ export class NoteResolver {
   }
 
   @Mutation(returns => ValidatedNoteResponse, { description: 'Add a note to the app request.' })
-  async addNote (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string, @Arg('content', type => String, { description: 'The content of the note. HTML is expected.' }) content: string, @Arg('persistent', type => Boolean, { nullable: true }) persistent?: boolean, @Arg('validateOnly', type => Boolean, { nullable: true }) validateOnly?: boolean) {
+  async addNote (@Ctx() ctx: RQContext, @Arg('appRequestId', type => ID) appRequestId: string, @Arg('content', type => String, { description: 'The content of the note. HTML is expected. Maximum 350 characters.' }) content: string, @Arg('persistent', type => Boolean, { nullable: true }) persistent?: boolean, @Arg('validateOnly', type => Boolean, { nullable: true }) validateOnly?: boolean) {
     const appRequest = await ctx.svc(AppRequestService).findById(appRequestId)
     if (!appRequest) throw new Error('App request not found.')
     return await ctx.svc(NoteService).addNote(appRequest, content, persistent, validateOnly)

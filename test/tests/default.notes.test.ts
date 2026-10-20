@@ -477,6 +477,45 @@ test.describe.serial('Notes - XSS sanitization', { tag: '@default' }, () => {
     expect(warningMessages(updateNote.messages)).toEqual([])
   })
 
+  test('Reviewer - addNote at exactly 350 characters succeeds', async ({ reviewerRequest }) => {
+    const content = 'a'.repeat(350)
+    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content })
+    expect(addNote.success).toEqual(true)
+    expect(addNote.note?.content).toEqual(content)
+  })
+
+  test('Reviewer - addNote over 350 characters returns error and does not persist', async ({ reviewerRequest }) => {
+    const before = await reviewerRequest.graphql<{ appRequests: { notes: { id: string }[] }[] }>(NOTES_QUERY, { appRequestIds: [appRequestId] })
+    const beforeCount = before.appRequests[0].notes.length
+
+    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content: 'a'.repeat(351) })
+    expect(addNote.success).toEqual(false)
+    expect(addNote.note).toBeNull()
+    expect(addNote.messages).toContainEqual({ message: 'Note may not exceed 350 characters.', type: 'error', arg: 'content' })
+
+    const after = await reviewerRequest.graphql<{ appRequests: { notes: { id: string }[] }[] }>(NOTES_QUERY, { appRequestIds: [appRequestId] })
+    expect(after.appRequests[0].notes.length).toEqual(beforeCount)
+  })
+
+  test('Reviewer - addNote validateOnly over 350 characters returns error', async ({ reviewerRequest }) => {
+    const { addNote } = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content: 'a'.repeat(351), validateOnly: true })
+    expect(addNote.success).toEqual(false)
+    expect(addNote.messages).toContainEqual({ message: 'Note may not exceed 350 characters.', type: 'error', arg: 'content' })
+  })
+
+  test('Reviewer - updateNote over 350 characters returns error and leaves content unchanged', async ({ reviewerRequest }) => {
+    const created = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content: 'length limit original' })
+    expect(created.addNote.success).toEqual(true)
+    const noteId = created.addNote.note!.id
+
+    const { updateNote } = await reviewerRequest.graphql<UpdateNoteResponse>(UPDATE_NOTE_MUTATION, { noteId, content: 'a'.repeat(351) })
+    expect(updateNote.success).toEqual(false)
+    expect(updateNote.messages).toContainEqual({ message: 'Note may not exceed 350 characters.', type: 'error', arg: 'content' })
+
+    const after = await reviewerRequest.graphql<{ appRequests: { notes: { id: string, content: string }[] }[] }>(NOTES_QUERY, { appRequestIds: [appRequestId] })
+    expect(after.appRequests[0].notes.find(n => n.id === noteId)?.content).toEqual('length limit original')
+  })
+
   test('Reviewer - updateNote with blank content returns error', async ({ reviewerRequest }) => {
     const created = await reviewerRequest.graphql<AddNoteResponse>(ADD_NOTE_MUTATION, { appRequestId, content: '<p>note to attempt blanking</p>' })
     const noteId = created.addNote.note!.id

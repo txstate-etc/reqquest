@@ -1,6 +1,6 @@
 import { MutationMessageType, UnimplementedError } from '@txstate-mws/graphql-server'
 import { isBlank } from 'txstate-utils'
-import { AccessUserService, addAppRequestNote, AppRequest, AppRequestNoteFilters, AppRequestService, AuthService, deleteAppRequestNote, getAppRequestNotes, Note, RQContext, toggleNotePersistence, updateAppRequestNote, validateHTML, ValidatedAppRequestResponse, ValidatedNoteResponse } from '../internal.js'
+import { AccessUserService, addAppRequestNote, AppRequest, AppRequestNoteFilters, AppRequestService, AuthService, deleteAppRequestNote, getAppRequestNotes, Note, NOTE_MAX_LENGTH, RQContext, toggleNotePersistence, updateAppRequestNote, validateHTML, ValidatedAppRequestResponse, ValidatedNoteResponse } from '../internal.js'
 import { OneToManyLoader, PrimaryKeyLoader } from 'dataloader-factory'
 
 const notesById = new PrimaryKeyLoader({
@@ -118,6 +118,7 @@ export class NoteService extends AuthService<Note> {
     // for (const m of validateHTML(content, 'content')) response.addMessage(m.message, m.arg, m.type)
     // const cleanContent = cleanHTML(content)
     if (isBlank(content)) response.addMessage('Message is required.', 'content', MutationMessageType.error)
+    if (content.length > NOTE_MAX_LENGTH) response.addMessage(`Note may not exceed ${NOTE_MAX_LENGTH} characters.`, 'content', MutationMessageType.error)
     if (response.hasErrors() || validateOnly) return response
     const noteId = await addAppRequestNote(appRequest.internalId, this.user!.internalId, content, persistent)
     await this.svc(AppRequestService).recordActivity(appRequest.internalId, 'Added', { description: `Note: ${content}` })
@@ -134,6 +135,7 @@ export class NoteService extends AuthService<Note> {
     // for (const m of validateHTML(content, 'content')) response.addMessage(m.message, m.arg, m.type)
     // const cleanContent = cleanHTML(content)
     if (isBlank(content)) response.addMessage('Note content may not be blank. Delete the note instead.', 'content', MutationMessageType.error)
+    if (content.length > NOTE_MAX_LENGTH) response.addMessage(`Note may not exceed ${NOTE_MAX_LENGTH} characters.`, 'content', MutationMessageType.error)
     if (response.hasErrors()) return response
     const authorLogin = (await this.svc(AccessUserService).findByInternalId(note.authorId))?.login
     await updateAppRequestNote(noteId, content)

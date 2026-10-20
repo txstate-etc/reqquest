@@ -25,6 +25,7 @@
   $: application = appRequest.applications.find(a => a.programKey === programKey)!
   // mirrors the API's "no trailing work" rule
   $: nothingToReview = !application.requirements.some(r => r.workflowStage || r.type === enumRequirementType.PREAPPROVAL || r.type === enumRequirementType.APPROVAL || r.type === enumRequirementType.ACCEPTANCE)
+  const NOTE_MAX_LENGTH = 350
   $: notes = appRequest?.notes ?? []
   $: latestNote = notes[0]
 
@@ -320,7 +321,7 @@
       persistent: noteBeingEdited.persistent
     }}
   >
-    <FieldTextArea path="content" labelText="Note" required notNull rows={6} />
+    <FieldTextArea path="content" labelText="Note" required notNull rows={6} maxCount={NOTE_MAX_LENGTH} />
     <!--
     {#if appRequest.actions.createPersistentNote}
       <FieldCheckbox path="persistent" labelText="Persistent (show on the applicant's profile)" />
@@ -340,7 +341,7 @@
   centered
 >
   <div>Write a note for this application.</div>
-  <FieldTextArea path="content" labelText="Note" required notNull rows={6} placeholder="Enter your note here." />
+  <FieldTextArea path="content" labelText="Note" required notNull rows={6} maxCount={NOTE_MAX_LENGTH} placeholder="Enter your note here." />
   <div class="bx--form__helper-text">This note will only be visible to other reviewers who access this application.</div>
   <!-- {#if appRequest.actions.createPersistentNote}
     <FieldCheckbox path="persistent" labelText="Persistent (show on the applicant's profile)" />
