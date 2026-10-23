@@ -10,7 +10,7 @@
   import { resolve } from '$app/paths'
   import { api, FieldNestedMultiselect, getProgramStatusFilterItems, getReviewerStatusTags, ProgramStatusCell, twoLineDateHtml } from '$internal'
   import type { PageData } from './$types'
-  import { uiRegistry } from '../../../local/index.js'
+  import { uiRegistry } from '$local'
   import { _inReviewStatuses, _reviewCompleteStatuses, _reviewPendingStatuses } from './+page.js'
 
   export let data: PageData

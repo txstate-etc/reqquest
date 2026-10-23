@@ -34,10 +34,6 @@ import TagSkeleton from '@txstate-mws/carbon-svelte/dist/TagSkeleton.svelte'
 import UserImpersonation from '@txstate-mws/carbon-svelte/dist/UserImpersonation.svelte'
 ```
 
-`@reqquest/ui` has one of these too: `DelayedSkeleton` is compiled into `dist/components/` but is not
-re-exported from the barrel. The framework's own screens use it via `$lib`; downstream code should
-register a `loader` on the prompt instead of mounting it directly.
-
 ### When this file is not enough
 
 - **Props, exactly.** `carbon-svelte` ships unbundled, so

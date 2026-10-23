@@ -4,16 +4,16 @@
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import WatsonHealthStackedMove from 'carbon-icons-svelte/lib/WatsonHealthStackedMove.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
-  import { enumRequirementStatus, enumRequirementType, PromptIndicators, statusReasonsToFeedback, translateMutations, type PhaseChangeMutations, type StatusReason } from '$lib'
+  import { enumRequirementStatus, enumRequirementType, PromptIndicators, statusReasonsToFeedback, translateMutations, type PhaseChangeMutations, type StatusReason } from '@reqquest/ui'
   import { isInlineReviewerEditPrompt, isDisplayablePrompt, hasDisplayablePrompts, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api, PromptSaveQueue, type BasicRequestData } from '$internal'
   import { FormInlineNotification, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
   import { Tooltip } from 'carbon-components-svelte'
-  import { uiRegistry } from '../../local';
+  import { uiRegistry } from '$local';
   import { Button } from 'carbon-components-svelte'
   import type { PageData } from '../../routes/requests/[id]/approve/[programKey]/$types'
   import { invalidate, invalidateAll } from '$app/navigation'
   import Review from "carbon-icons-svelte/lib/Review.svelte";
-  import DelayedSkeleton from '$lib/components/DelayedSkeleton.svelte';
+  import DelayedSkeleton from '$internal/components/DelayedSkeleton.svelte';
   import WarningIconYellow from './WarningIconYellow.svelte';
   import MissingDefinitionNotification from './MissingDefinitionNotification.svelte';
   import { toasts } from '@txstate-mws/svelte-components';

@@ -7,8 +7,8 @@
   import { goto } from '$app/navigation'
   import { resolve } from '$app/paths'
   import { api, FieldNestedMultiselect, getProgramStatusFilterItems, getReviewerStatusFilterOptions, getReviewerStatusTags, ProgramStatusCell, twoLineDateHtml, REVIEWER_STATUS_CONFIG } from '$internal'
-  import { enumApplicationRescindedStatus } from '$lib'
-  import { uiRegistry } from '../../local/index.js'
+  import { enumApplicationRescindedStatus } from '@reqquest/ui'
+  import { uiRegistry } from '$local'
   import type { PageData } from './$types.js'
   import { _defaultRequestListFilters } from './+page.js'
 

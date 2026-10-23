@@ -184,20 +184,15 @@ green build that checks nothing:
 **The UI image — check the registration is complete:**
 
 ```dockerfile
-RUN npx svelte-kit sync && npm run check
-RUN npm run build
+RUN npx reqquest-ui build
 ```
 
-Nothing to install or import; SvelteKit already scaffolds the script for you:
-
-```json
-"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
-```
-
-This is the step that has to be deliberate. `vite build` strips types without checking them, so
-without a type check nothing else in your pipeline notices a prompt you forgot to register. If your
-app has pre-existing type errors you cannot fix yet, narrow the gate to the file holding your
-`UIConfig` rather than dropping it — a partial gate still catches the drift this guide is about.
+That is the whole gate. `build` type-checks `src/local/index.ts` before it builds, and fails naming
+any prompt you forgot to register ([downstream-ui.md](downstream-ui.md) covers the rest of the UI
+setup). `vite build` on its own strips types without checking them, which is why the check is built
+into the command rather than left for you to remember. It is narrowed to the registry file because
+the app shell still carries pre-existing type errors; `npx reqquest-ui check` runs the full check
+when you want it.
 
 ## 8. Prove the gate is live
 

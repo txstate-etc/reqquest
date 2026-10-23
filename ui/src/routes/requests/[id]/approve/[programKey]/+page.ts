@@ -1,6 +1,6 @@
 import { api } from '$internal'
 import { error } from '@sveltejs/kit'
-import { uiRegistry } from '../../../../../local/index.js'
+import { uiRegistry } from '$local'
 import type { PageLoad } from './$types'
 import { getInlineReviewerEditPrompts, coalesceAppRequestPrompts } from '$internal'
 

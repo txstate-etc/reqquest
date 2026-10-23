@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto, invalidate } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import type { ApplicationForDetails, AppRequestForDetails, Scalars } from '$lib'
+  import type { ApplicationForDetails, AppRequestForDetails, Scalars } from '@reqquest/ui'
   import {
     AnnouncementBanner, api, ApplicationDetailsView, AppRequestCard, IntroPanel, type AppRequestForExportResponse, type DashboardAppRequest,
     getPeriodDisplayInfo, getPeriodStatus, getStatusActionType, getSubmitButtonText
@@ -12,7 +12,7 @@
   import Close from 'carbon-icons-svelte/lib/Close.svelte'
   import Reset from 'carbon-icons-svelte/lib/Reset.svelte'
   import DocumentExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
-  import { uiRegistry } from '../../../local/index.js'
+  import { uiRegistry } from '$local'
   import type { PageData } from './$types'
 
   interface FilterState {

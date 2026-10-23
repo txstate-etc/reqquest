@@ -9,7 +9,7 @@
   import { pick, ucfirst } from 'txstate-utils'
   import { invalidate } from '$app/navigation'
   import { api, IntroPanel } from '$internal'
-  import type { AccessRoleGrantCreate, AccessRoleGrantUpdate, AccessTagInput } from '$lib'
+  import type { AccessRoleGrantCreate, AccessRoleGrantUpdate, AccessTagInput } from '@reqquest/ui'
   import type { PageData } from './$types'
   import ControlWithTooltip from './ControlWithTooltip.svelte'
   import TagsWithTooltip from './TagsWithTooltip.svelte'

@@ -2,7 +2,7 @@
   import { ColumnList, FieldMultiselect, FilterUI, Pagination } from '@txstate-mws/carbon-svelte'
   import type { PageData } from './$types'
   import { IntroPanel } from '$internal'
-  import { uiRegistry } from '../../../local/index.js'
+  import { uiRegistry } from '$local'
 
   export let data: PageData
   $: ({ columns, rows, filters, page, totalItems, availableApplicationRoles, roleUsersAttributeDescription } = data)

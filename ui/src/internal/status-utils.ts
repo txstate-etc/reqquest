@@ -1,7 +1,7 @@
 import type { TagItem } from '@txstate-mws/carbon-svelte'
-import { enumApplicationRescindedStatus, enumApplicationStatus, enumAppRequestPhase, enumAppRequestStatus, enumPromptVisibility, enumRequirementType, type AppRequestPhase, type AppRequestStatus, type PromptVisibility, type RequirementType } from '$lib'
+import { enumApplicationRescindedStatus, enumApplicationStatus, enumAppRequestPhase, enumAppRequestStatus, enumPromptVisibility, enumRequirementType, type AppRequestPhase, type AppRequestStatus, type PromptVisibility, type RequirementType } from '@reqquest/ui'
 import { longNumericTime } from './util.js'
-import { uiRegistry } from '../local/index.js'
+import { uiRegistry } from '$local'
 
 interface AppStatusConfig {
   description: string

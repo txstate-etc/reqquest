@@ -1,0 +1,9 @@
+{
+  "//": "a minimal downstream project for scripts/test-overlay.sh - @reqquest/ui is installed from a freshly packed tarball, never from this file",
+  "name": "reqquest-overlay-fixture",
+  "private": true,
+  "type": "module",
+  "reqquest": {
+    "disableRoutes": ["roles/users"]
+  }
+}

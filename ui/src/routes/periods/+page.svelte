@@ -10,8 +10,8 @@
   import { invalidate } from '$app/navigation'
   import { base } from '$app/paths'
   import { api } from '$internal'
-  import { uiRegistry } from '../../local/index.js'
-  import type { PeriodUpdate } from '$lib'
+  import { uiRegistry } from '$local'
+  import type { PeriodUpdate } from '@reqquest/ui'
   import type { PageData } from './$types'
 
   type Period = PageData['periods'][number] & { copyPeriodId?: string }

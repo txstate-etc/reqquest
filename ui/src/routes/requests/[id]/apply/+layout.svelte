@@ -5,7 +5,7 @@
   import { resolve } from '$app/paths'
   import { page } from '$app/stores'
   import { applicantVisiblePromptVisibilities, submissionRequirementTypes } from '$internal'
-  import { enumRequirementType } from '$lib'
+  import { enumRequirementType } from '@reqquest/ui'
   import type { LayoutData } from './$types'
 
   export let data: LayoutData

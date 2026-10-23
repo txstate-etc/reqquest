@@ -6,7 +6,7 @@
   import { page } from '$app/stores'
   import { api, MissingDefinitionNotification, PeriodPanel } from '$internal'
   import type { PageData } from './$types'
-  import { uiRegistry } from '../../../../local'
+  import { uiRegistry } from '$local'
 
   export let data: PageData
   $: ({ programs, period } = data)

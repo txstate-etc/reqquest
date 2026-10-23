@@ -9,9 +9,9 @@
   import View from 'carbon-icons-svelte/lib/View.svelte'
   import { invalidateAll } from '$app/navigation'
   import { api, getApplicationStatusInfo, hasDisplayablePrompts } from '$internal'
-  import { CommentCard, enumPromptVisibility, enumRequirementStatus, enumRequirementType, InfoCard, PromptIndicators, type StatusReason } from '$lib'
+  import { CommentCard, enumPromptVisibility, enumRequirementStatus, enumRequirementType, InfoCard, PromptIndicators, type StatusReason } from '@reqquest/ui'
   import type { PageData } from './$types'
-  import { uiRegistry } from '../../../../../local'
+  import { uiRegistry } from '$local'
   import ApproveLayout from '../ApproveLayout.svelte'
 
 

@@ -8,7 +8,7 @@
   import Settings from 'carbon-icons-svelte/lib/Settings.svelte'
   import Time from 'carbon-icons-svelte/lib/Time.svelte'
   import type { LayoutData } from './$types.js'
-  import { uiRegistry } from '../local/index.js'
+  import { uiRegistry } from '$local'
   import { invalidateAll } from '$app/navigation'
   import '../app.css'
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ApplicantPromptPage } from '$internal'
-  import DelayedSkeleton from '$lib/components/DelayedSkeleton.svelte';
-  import { uiRegistry } from '../../../../../local';
+  import DelayedSkeleton from '$internal/components/DelayedSkeleton.svelte';
+  import { uiRegistry } from '$local';
   import type { PageData } from './$types'
 
   export let data: PageData

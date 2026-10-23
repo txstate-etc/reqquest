@@ -1,9 +1,9 @@
 import { api } from '$internal'
 import { extractMergedFilters, extractPaginationParams, type ColumnDefinition, type ComboMenuItem } from '@txstate-mws/carbon-svelte'
 import type { PageLoad } from './$types'
-import type { AccessUserFilter, Pagination } from '$lib'
+import type { AccessUserFilter, Pagination } from '@reqquest/ui'
 import { omit } from 'txstate-utils'
-import { uiRegistry } from '../../../local'
+import { uiRegistry } from '$local'
 
 export const load: PageLoad = async ({ url, depends }) => {
   const roleUsersAttributeDescription = uiRegistry.config.roleUsersAttributeDescription ?? ''

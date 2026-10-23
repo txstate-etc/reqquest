@@ -6,7 +6,7 @@
   import SettingsEdit from 'carbon-icons-svelte/lib/SettingsEdit.svelte'
   import { invalidate } from '$app/navigation'
   import { api } from '$internal'
-  import type { AccessRoleInput } from '$lib'
+  import type { AccessRoleInput } from '@reqquest/ui'
   import Copy from 'carbon-icons-svelte/lib/Copy.svelte'
   import TrashCan from 'carbon-icons-svelte/lib/TrashCan.svelte'
   import View from 'carbon-icons-svelte/lib/View.svelte'

@@ -1,4 +1,4 @@
-import { enumIneligiblePhases, enumRequirementStatus, type IneligiblePhases } from '../lib'
+import { enumIneligiblePhases, enumRequirementStatus, type IneligiblePhases } from '@reqquest/ui'
 
 /**
  * True when this application is ineligible because of an applicant requirement (PREQUAL, QUALIFICATION

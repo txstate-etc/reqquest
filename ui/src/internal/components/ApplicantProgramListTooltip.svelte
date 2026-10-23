@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Tooltip } from 'carbon-components-svelte'
   import { isNotBlank } from 'txstate-utils'
-  import type { ApplicationForDetails } from '$lib'
+  import type { ApplicationForDetails } from '@reqquest/ui'
   import { isIneligibleByApplicantRequirement } from '../appreq-utils.js'
 
   export let application: ApplicationForDetails

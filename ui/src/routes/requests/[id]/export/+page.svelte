@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ApplicationDetailsView } from '$internal'
-  import { uiRegistry } from '../../../../local'
+  import { uiRegistry } from '$local'
   import type { PageData } from './$types'
 
   export let data: PageData

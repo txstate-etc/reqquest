@@ -3,7 +3,7 @@
   import { Button } from 'carbon-components-svelte'
   import { Close, InProgress, CheckmarkFilled, Information, SubtractAlt } from 'carbon-icons-svelte'
   import { isNotBlank } from 'txstate-utils'
-  import { type ApplicationForDetails, type AppRequestForDetails, enumApplicationStatus, enumIneligiblePhases, enumPromptVisibility, enumRequirementStatus, enumRequirementType, type OptOutApplication } from '$lib'
+  import { type ApplicationForDetails, type AppRequestForDetails, enumApplicationStatus, enumIneligiblePhases, enumPromptVisibility, enumRequirementStatus, enumRequirementType, type OptOutApplication } from '@reqquest/ui'
   import { getApplicationStatusTags } from '../status-utils.js'
   import { isIneligibleByApplicantRequirement } from '../appreq-utils.js'
   import ApplicantProgramListTooltip from './ApplicantProgramListTooltip.svelte'
