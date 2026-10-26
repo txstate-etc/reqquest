@@ -32,7 +32,7 @@ registerEnumType(AppRequestStatus, {
     [AppRequestStatus.READY_TO_SUBMIT]: { description: 'Applicant has completed all prompts and is ready to submit. At least one application is eligible to proceed.' },
     [AppRequestStatus.PREAPPROVAL]: { description: 'Applicant has submitted and we are waiting for pre-approval requirements to resolve (these are automations like waiting for data to show up in an external system).' },
     [AppRequestStatus.APPROVAL]: { description: 'Applicant has submitted and any pre-approval requirements have been met. We are waiting for a reviewer to do their part.' },
-    [AppRequestStatus.REVIEW_IN_PROGRESS]: { description: 'A reviewer has begun their part on at least one application, some APPROVAL requirement prompt data has been input, but application has not finished review yet.' },
+    [AppRequestStatus.REVIEW_IN_PROGRESS]: { description: 'A reviewer has begun their part on at least one application, or at least one application is ready for or in a blocking workflow stage, but the review has not finished yet.' },
     [AppRequestStatus.REVIEW_COMPLETE]: { description: 'All applications have been reviewed and any blocking workflow stages have been completed. The application is ready for results to be released to the applicant.' },
     [AppRequestStatus.ACCEPTANCE]: { description: 'Reviewer has approved an offer and we are waiting for the applicant to accept. This status is unreachable if the period has no ACCEPTANCE requirements.' },
     [AppRequestStatus.APPROVED]: { description: 'Results have been released to the applicant, there is no acceptance phase, and at least one application was found eligible.' },

@@ -811,6 +811,7 @@ function deadApplicationsStatus (ctx: EvaluationContext, acc: RequestAccumulator
     if (singleProgramReviewFinished(ctx)) return AppRequestStatus.REVIEW_COMPLETE
     if (autoCompletedReviewFinished(ctx)) return AppRequestStatus.REVIEW_COMPLETE
     if (applications.every(a => a.phase === ApplicationPhase.REVIEW_COMPLETE || isPresubmissionIneligible(a))) return AppRequestStatus.REVIEW_COMPLETE
+    if (applications.some(a => a.phase === ApplicationPhase.READY_FOR_WORKFLOW || a.phase === ApplicationPhase.WORKFLOW_BLOCKING)) return AppRequestStatus.REVIEW_IN_PROGRESS
     return acc.reviewStartedApplicationIds.size ? AppRequestStatus.REVIEW_IN_PROGRESS : AppRequestStatus.APPROVAL
   }
   if (applications.some(a => a.ineligiblePhase === IneligiblePhases.ACCEPTANCE)) return AppRequestStatus.NOT_ACCEPTED
@@ -831,13 +832,13 @@ function liveApplicationsStatus (ctx: EvaluationContext, acc: RequestAccumulator
   // once a reviewer has begun their work on any application, the whole request reads as in-progress so this trumps review-phase statuses
   if (applications.some(a => a.phase === ApplicationPhase.REVIEW_IN_PROGRESS)) return AppRequestStatus.REVIEW_IN_PROGRESS
   // exclude prequal and qual ineligible applications from affecting AppRequestStatus, since they never require approval to the next step and we don't want them blocking the appRequest from moving forward
-  // a reviewer who has answered everything or reversed a workflow back into review is mid-review, not awaiting review
-  if (appRequest.phase === AppRequestPhase.SUBMITTED && applications.filter(a => a.status !== ApplicationStatus.INELIGIBLE || (a.ineligiblePhase && [IneligiblePhases.APPROVAL].includes(a.ineligiblePhase))).some(a => a.phase === ApplicationPhase.READY_FOR_WORKFLOW)) return acc.reviewStartedApplicationIds.size ? AppRequestStatus.REVIEW_IN_PROGRESS : AppRequestStatus.APPROVAL
+  // an application waiting on or in blocking workflow is mid-review, not awaiting review
+  if (appRequest.phase === AppRequestPhase.SUBMITTED && applications.filter(a => a.status !== ApplicationStatus.INELIGIBLE || (a.ineligiblePhase && [IneligiblePhases.APPROVAL].includes(a.ineligiblePhase))).some(a => a.phase === ApplicationPhase.READY_FOR_WORKFLOW)) return AppRequestStatus.REVIEW_IN_PROGRESS
   if (applications.some(a => a.phase === ApplicationPhase.REVIEW_COMPLETE) && !anyPending && !appRequest.awaitingCorrection) return AppRequestStatus.REVIEW_COMPLETE
   if (applications.some(a => a.phase === ApplicationPhase.READY_TO_ACCEPT) && !anyPending && !appRequest.awaitingCorrection) return AppRequestStatus.READY_TO_ACCEPT
   if (applications.some(a => a.phase === ApplicationPhase.ACCEPTANCE)) return AppRequestStatus.ACCEPTANCE
   if (applications.some(a => a.phase === ApplicationPhase.PREAPPROVAL)) return AppRequestStatus.PREAPPROVAL
-  if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_BLOCKING)) return AppRequestStatus.APPROVAL
+  if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_BLOCKING)) return AppRequestStatus.REVIEW_IN_PROGRESS
   if (applications.some(a => a.phase === ApplicationPhase.APPROVAL)) return AppRequestStatus.APPROVAL
   const anyAccepted = applications.some(a => a.status === ApplicationStatus.ACCEPTED)
   if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_NONBLOCKING || a.phase === ApplicationPhase.READY_FOR_WORKFLOW)) return anyAccepted ? AppRequestStatus.ACCEPTED : AppRequestStatus.APPROVED
