@@ -2,7 +2,6 @@
   import { Form } from '@txstate-mws/svelte-forms'
   import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
-  import WatsonHealthStackedMove from 'carbon-icons-svelte/lib/WatsonHealthStackedMove.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import { enumRequirementStatus, enumRequirementType, PromptIndicators, statusReasonsToFeedback, translateMutations, type PhaseChangeMutations, type StatusReason } from '@reqquest/ui'
   import { isInlineReviewerEditPrompt, isDisplayablePrompt, hasDisplayablePrompts, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api, PromptSaveQueue, type BasicRequestData } from '$internal'
@@ -251,7 +250,7 @@
               {/if}
             {/snippet}
             <dt class:small class:large class:isReviewerQuestion class:disabled={disabled} class:bg-tagyellow-200={isAutomation}>
-            {#if promptIndicator[prompt.key]?.indicator}
+            {#if promptIndicator[prompt.key]?.indicator && (promptIndicator[prompt.key].indicator !== PromptIndicators.PENDING || editMode)}
                 <div class="indicator-tooltip">
                 <Tooltip align="start" direction="bottom">
                     <svelte:fragment slot="icon">
@@ -262,7 +261,9 @@
                     {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.DISQUALIFYING}
                         <WarningFilled size={20} class="disqualifying-icon" style="fill: var(--cds-support-01, #da1e28)" />
                     {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.PENDING}
-                        <WatsonHealthStackedMove size={20} class="pending-icon" style="fill: var(--cds-support-04, #0043ce)" />
+                        <svg class="pending-dot" xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+                          <circle cx="4" cy="4" r="4" />
+                        </svg>
                     {/if}
                     </svelte:fragment>
                     {promptIndicator[prompt.key]?.reason}
@@ -461,8 +462,11 @@
   :global(.disqualifying-icon) {
     fill: var(--cds-support-01, #da1e28);
   }
-  :global(.pending-icon) {
-    fill: var(--cds-support-04, #0043ce);
+  .pending-dot {
+    width: 8px;
+    height: 8px;
+    aspect-ratio: 1/1;
+    fill: var(--cds-support-01, #da1e28);
   }
   :global(.panel:has(.isReviewerQuestion.disabled) .panel-header) {
     background-color: #8C8C8C !important;
