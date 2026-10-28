@@ -203,6 +203,11 @@
   $: readyForWorkflow = !application.nextWorkflowStage && application.phase === 'READY_FOR_WORKFLOW' ? lastStageKey : undefined
   // otherwise the button sits on the last non-stage panel on the page, wherever the layout put it
   $: latestWorkflow = readyForWorkflow ?? sections.filter(section => section.requirements.every(r => !r.workflowStage?.key)).pop()?.key
+  // the one panel "Edit answers" sits on: the stage being reversed onto, or the last review panel when reversing back into review.
+  // Requirement statuses don't matter here - a disqualified review must be reversible, and the API decides via actions.reverseWorkflow
+  $: reverseTarget = application.previousWorkflowStage
+    ? sections.find(section => section.requirements[0]?.workflowStage?.key === application.previousWorkflowStage?.key)?.key
+    : sections.filter(section => section.requirements.every(r => !r.workflowStage?.key)).pop()?.key
 
   /** inline autoSave forms: refresh statuses/indicators only, never touch the live form */
   async function onPromptAutoSaved () {
@@ -327,7 +332,7 @@
       <div class="flex justify-end mt-8">
         {#if application.actions?.advanceWorkflow && (application.workflowStage?.key ? application.workflowStage?.key === section.requirements[0]?.workflowStage?.key : section.key === latestWorkflow)}
           <Button size="small" on:click={advanceWorkflow}>{'Send to ' + (application.nextWorkflowStage?.title ?? (!application.workflowStage?.blocking ? 'Complete' : 'Review Complete'))}</Button>
-        {:else if application.actions?.reverseWorkflow && section.requirements.every(r => r.status === enumRequirementStatus.MET || r.status === enumRequirementStatus.NOT_APPLICABLE) && application.previousWorkflowStage?.key === section.requirements[0]?.workflowStage?.key}
+        {:else if application.actions?.reverseWorkflow && section.key === reverseTarget}
           <Button kind='secondary' size="small" on:click={reverseWorkflow}>Edit answers</Button>
         {/if}
       </div>
