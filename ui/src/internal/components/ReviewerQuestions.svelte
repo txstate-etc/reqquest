@@ -6,7 +6,7 @@
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import { enumRequirementStatus, enumRequirementType, PromptIndicators, statusReasonsToFeedback, translateMutations, type PhaseChangeMutations, type StatusReason } from '@reqquest/ui'
   import { isInlineReviewerEditPrompt, isDisplayablePrompt, hasDisplayablePrompts, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api, PromptSaveQueue, type BasicRequestData } from '$internal'
-  import { FormInlineNotification, Panel, PanelFormDialog } from '@txstate-mws/carbon-svelte'
+  import { FormInlineNotification, Panel, PanelFormDialog, TagSet } from '@txstate-mws/carbon-svelte'
   import { Tooltip } from 'carbon-components-svelte'
   import { uiRegistry } from '$local';
   import { Button } from 'carbon-components-svelte'
@@ -183,6 +183,20 @@
     }
   }
 
+  // answered/total reviewer questions in a section
+  function reviewerQuestionTally (section: { requirements: ApplicationRequirement[] }) {
+    const questions = new Map<string, ApplicationRequirement['prompts'][number]>()
+    for (const requirement of section.requirements) {
+      if (!reviewerRequirementTypes.has(requirement.type)) continue
+      for (const prompt of requirement.prompts.filter(isDisplayablePrompt)) {
+        if (!uiRegistry.getPrompt(prompt.key)?.automation) questions.set(prompt.id, prompt)
+      }
+    }
+    const answered = [...questions.values()].filter(p => p.answered && !p.invalidated).length
+    return { answered, total: questions.size }
+  }
+  $: reviewerQuestionTallies = Object.fromEntries(sections.map(section => [section.key, reviewerQuestionTally(section)]))
+
   $: readyForWorkflow = !application.nextWorkflowStage && application.phase === 'READY_FOR_WORKFLOW' ? lastStageKey : undefined
   // otherwise the button sits on the last non-stage panel on the page, wherever the layout put it
   $: latestWorkflow = readyForWorkflow ?? sections.filter(section => section.requirements.every(r => !r.workflowStage?.key)).pop()?.key
@@ -202,6 +216,18 @@
 </script>
 {#each sections as section (section.key)}
   <Panel title={section.title} expandable expanded>
+    <svelte:fragment slot="headerRight">
+      {@const tally = reviewerQuestionTallies[section.key]}
+      {#if tally?.total}
+        <!-- visible pill is hidden from screen readers in favor of the spelled-out text, and the status role announces changes politely on autosave -->
+        <span role="status" class="reviewer-question-tally">
+          <span aria-hidden="true">
+            <TagSet small tags={[{ label: `${tally.answered}/${tally.total} answered`, type: tally.answered === tally.total ? 'green' : 'yellow' }]} />
+          </span>
+          <span class="bx--visually-hidden">{tally.answered} of {tally.total} questions answered</span>
+        </span>
+      {/if}
+    </svelte:fragment>
     {#if section.requirements.some(hasDisplayablePrompts)}
       <dl class="prompts">
         {#each section.requirements as requirement (requirement.id)}
