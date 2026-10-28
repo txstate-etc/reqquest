@@ -157,6 +157,7 @@ export type RcPromptKey =
   | 'software_dev_opt_out_prompt'
   | 'support_communication_prompt'
   | 'technical_troubleshooting_prompt'
+  | 'verify_reccomendation_letter_prompt'
   | 'written_automation_prompt'
 
 export type RcRequirementKey =
@@ -196,6 +197,7 @@ export type RcRequirementKey =
   | 'step1_prequal_req'
   | 'support_communication_req'
   | 'technical_troubleshooting_req'
+  | 'verify_reccomendation_letter_req'
   | 'weekend_coverage_req'
   | 'written_automation_req'
 
@@ -288,6 +290,7 @@ declare module '@reqquest/ui' {
       | 'terms_and_conditions_prompt'
       | 'thanks_or_no_thanks_prompt'
       | 'vaccine_review_prompt'
+      | 'verify_reccomendation_letter_prompt'
       | 'which_state_prompt'
       | 'written_automation_prompt'
       | 'yard_prompt'
@@ -368,6 +371,7 @@ declare module '@reqquest/ui' {
       | 'technical_troubleshooting_req'
       | 'terms_and_conditions_post_qual_req'
       | 'thanks_or_no_thanks_req'
+      | 'verify_reccomendation_letter_req'
       | 'weekend_coverage_req'
       | 'which_state_req'
       | 'written_automation_req'

@@ -143,6 +143,7 @@ import MaintainSysDocumentation from './rc/MaintainSysDocumentation.svelte'
 import AssessMaintainSysDocumentation from './rc/AssessMaintainSysDocumentation.svelte'
 import ReccomendationLetter from './rc/ReccomendationLetter.svelte'
 import AssessReccomendationLetter from './rc/AssessReccomendationLetter.svelte'
+import VerifyReccomendationLetter from './rc/VerifyReccomendationLetter.svelte'
 import PreQualDisplay from './rc/PreQualDisplay.svelte'
 import WrittenAutomationDisplay from './rc/WrittenAutomationDisplay.svelte'
 import EvidenceWrittenAutomationDisplay from './rc/EvidenceWrittenAutomationDisplay.svelte'
@@ -165,6 +166,7 @@ import MaintainSysDocumentationDisplay from './rc/MaintainSysDocumentationDispla
 import AssessMaintainSysDocumentationDisplay from './rc/AssessMaintainSysDocumentationDisplay.svelte'
 import ReccomendationLetterDisplay from './rc/ReccomendationLetterDisplay.svelte'
 import AssessReccomendationLetterDisplay from './rc/AssessReccomendationLetterDisplay.svelte'
+import VerifyReccomendationLetterDisplay from './rc/VerifyReccomendationLetterDisplay.svelte'
 import DataRelatedPuzzleDisplay from './rc/DataRelatedPuzzleDisplay.svelte'
 import RCPreQualUserInfoPrompt from './rc/PreQualUserInfoPrompt.svelte'
 import RCPreQualUserInfoPromptDisplay from './rc/PreQualUserInfoPromptDisplay.svelte'
@@ -436,7 +438,8 @@ function configureDemoInstanceParams (): AnyUIConfig {
                 'data_related_puzzle_req', 'assess_data_related_puzzle_req',
                 'outside_class_example_req', 'assess_outside_class_example_req',
                 'critical_thinking_req', 'assess_critical_thinking_req',
-                'reccomendation_letter_req', 'assess_reccomendation_lettern_req'
+                'reccomendation_letter_req', 'assess_reccomendation_lettern_req',
+                'verify_reccomendation_letter_req'
               ]
             },
             { section: 'REVIEWER' }
@@ -482,6 +485,7 @@ function configureDemoInstanceParams (): AnyUIConfig {
         assess_organization_req: {},
         reccomendation_letter_req: {},
         assess_reccomendation_lettern_req: {},
+        verify_reccomendation_letter_req: {},
         audit_software_development_non_blocking_show_submitted_req: {},
         audit_software_development_non_blocking_show_submitted_req2: {},
         audit_software_development_non_blocking_show_regular_req: {},
@@ -518,6 +522,7 @@ function configureDemoInstanceParams (): AnyUIConfig {
         assess_maintain_sys_documentation_prompt: { formComponent: AssessMaintainSysDocumentation, displayComponent: AssessMaintainSysDocumentationDisplay },
         reccomendation_letter_prompt: { formComponent: ReccomendationLetter, displayComponent: ReccomendationLetterDisplay },
         assess_reccomendation_letter_prompt: { formComponent: AssessReccomendationLetter, displayComponent: AssessReccomendationLetterDisplay },
+        verify_reccomendation_letter_prompt: { formComponent: VerifyReccomendationLetter, displayComponent: VerifyReccomendationLetterDisplay, formMode: 'full', displayMode: 'large', reviewerDialogButtonText: 'Review recommendation letter' },
         software_dev_opt_out_prompt: { formComponent: OptOut, displayComponent: OptOutDisplay },
         application_management_opt_out_prompt: { formComponent: OptOut, displayComponent: OptOutDisplay },
         operations_infrastructure_opt_out_prompt: { formComponent: OptOut, displayComponent: OptOutDisplay },

@@ -98,6 +98,15 @@ export interface PromptDefinition {
    */
   formMode?: 'small' | 'large' | 'full'
   /**
+   * Text of the button on the reviewer screen that opens this prompt's form in the full-height side
+   * dialog, also used as that dialog's title. Only applies to reviewer questions registered with
+   * `formMode: 'full'`; automation prompts and applicant prompts keep the edit pencil. Name what the
+   * reviewer will look at, e.g. "Review course information".
+   *
+   * Falls back to `UIConfig.reviewerDialogButtonText`, then to "Review".
+   */
+  reviewerDialogButtonText?: string
+  /**
    * Set this to true to make the prompt visually distinct as something that is meant to
    * be filled in by an automation. If you provide a formComponent, humans with permission
    * will still have an edit pencil and be able to edit the prompt in a modal.
@@ -323,6 +332,14 @@ export interface UIConfig<PK extends string = PromptKey, RK extends string = Req
   statusReasonNotifications?: StatusReasonNotificationConfig
 
   /**
+   * Global layer of `PromptDefinition.reviewerDialogButtonText`: the text of the reviewer screen's button
+   * that opens a `formMode: 'full'` reviewer question in the full-height side dialog, and that dialog's
+   * title. A prompt's own value
+   * overrides this one. Defaults to "Review".
+   */
+  reviewerDialogButtonText?: string
+
+  /**
    * Applicant Review submission page title and subtitle text.
    */
   applicantReview?: {
@@ -515,6 +532,10 @@ export class UIRegistry {
 
   getPrompt (key: string): PromptDefinition | undefined {
     return this.warnIfMissing('prompt', key, this.promptMap[key])
+  }
+
+  reviewerDialogButtonText (key: string) {
+    return this.promptMap[key]?.reviewerDialogButtonText ?? this.config.reviewerDialogButtonText ?? 'Review'
   }
 
   protected statusReasonStatusCache = new Map<string, Set<RequirementStatus>>()

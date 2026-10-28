@@ -38,7 +38,8 @@ const software_development: ProgramDefinition = {
     'critical_thinking_req',
     'assess_critical_thinking_req',
     'reccomendation_letter_req',
-    'assess_reccomendation_lettern_req'
+    'assess_reccomendation_lettern_req',
+    'verify_reccomendation_letter_req'
   ],
   workflowStages: [
     overrideGpaWarningWorkflow,

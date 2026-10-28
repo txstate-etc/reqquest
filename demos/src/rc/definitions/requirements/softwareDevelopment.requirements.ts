@@ -1,5 +1,5 @@
 import { RequirementDefinition, RequirementStatus, RequirementType } from '@reqquest/api'
-import { DataRelatedPuzzlePromptData, AssessPuzzleSolutionPromptData, OutsideClassExamplePromptData, AssessOutsideClassExamplePromptData, CriticalThinkingPromptData, AssessCriticalThinkingPromptData, AuditSoftwareSubmittedPromptData, AuditSoftwareRegularPromptData, ReviewSoftwarSecondEyesPromptData } from '../models'
+import { DataRelatedPuzzlePromptData, AssessPuzzleSolutionPromptData, OutsideClassExamplePromptData, AssessOutsideClassExamplePromptData, CriticalThinkingPromptData, AssessCriticalThinkingPromptData, AuditSoftwareSubmittedPromptData, AuditSoftwareRegularPromptData, ReviewSoftwarSecondEyesPromptData, VerifyReccomendationLetterPromptData } from '../models'
 import { OptOutData } from '../models/optOut.models'
 
 export const software_dev_opt_out_req: RequirementDefinition = {
@@ -173,6 +173,22 @@ export const reviewer_software_development_second_eyes_req: RequirementDefinitio
   resolve: (data, config) => {
     const secondEyes = data['reviewer_software_development_second_eyes_prompt'] as ReviewSoftwarSecondEyesPromptData
     if (secondEyes?.score == null) return { status: RequirementStatus.PENDING }
+    return { status: RequirementStatus.MET }
+  }
+}
+
+export const verify_reccomendation_letter_req: RequirementDefinition = {
+  type: RequirementType.APPROVAL,
+  key: 'verify_reccomendation_letter_req',
+  title: 'Verify recommendation letter',
+  navTitle: 'Verify recommendation letter',
+  description: 'Verify recommendation letter',
+  promptKeys: ['verify_reccomendation_letter_prompt'],
+  resolve: (data, config) => {
+    const verifyData = data['verify_reccomendation_letter_prompt'] as VerifyReccomendationLetterPromptData
+    if (verifyData?.authentic == null || verifyData.addressesTechnicalSkills == null || verifyData.relationship == null) return { status: RequirementStatus.PENDING }
+    if (!verifyData.authentic) return { status: RequirementStatus.DISQUALIFYING, reason: 'Recommendation letter could not be verified', blame: ['reccomendation_letter_prompt'] }
+    if (!verifyData.addressesTechnicalSkills) return { status: RequirementStatus.WARNING, reason: 'Letter does not address technical skills', blame: ['verify_reccomendation_letter_prompt'] }
     return { status: RequirementStatus.MET }
   }
 }

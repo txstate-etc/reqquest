@@ -3,6 +3,7 @@
   import MachineLearning from 'carbon-icons-svelte/lib/MachineLearning.svelte'
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
+  import SidePanelOpenFilled from 'carbon-icons-svelte/lib/SidePanelOpenFilled.svelte'
   import { enumRequirementStatus, enumRequirementType, PromptIndicators, statusReasonsToFeedback, translateMutations, type PhaseChangeMutations, type StatusReason } from '@reqquest/ui'
   import { isInlineReviewerEditPrompt, isDisplayablePrompt, hasDisplayablePrompts, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api, PromptSaveQueue, type BasicRequestData } from '$internal'
   import { FormInlineNotification, Panel, PanelFormDialog, TagSet } from '@txstate-mws/carbon-svelte'
@@ -35,6 +36,7 @@
   type PromptWithExtra = Prompt & PromptExtraData & { allowSaveWithoutChanges?: boolean }
   let editingPromptWithData: PromptWithExtra | undefined = undefined
   let promptBeingEdited: Prompt | undefined = undefined
+  let editingViaReviewDialog = false
   let showPromptDialog = false
   let fetchingEditPrompt = false
 
@@ -50,10 +52,11 @@
     saveQueue.adopt(appRequest.dataVersion)
   }
 
-  function editPrompt (prompt: Prompt, allowSaveWithoutChanges: boolean = false) {
+  function editPrompt (prompt: Prompt, allowSaveWithoutChanges: boolean = false, viaReviewDialog: boolean = false) {
     return async () => {
       if (fetchingEditPrompt) return
       promptBeingEdited = prompt
+      editingViaReviewDialog = viaReviewDialog
       fetchingEditPrompt = true
       showPromptDialog = true
       try {
@@ -87,6 +90,7 @@
     showPromptDialog = false
     editingPromptWithData = undefined
     promptBeingEdited = undefined
+    editingViaReviewDialog = false
   }
   function onPromptSubmit (prompt: any, modal = false) {
     return async (data: any) => {
@@ -235,6 +239,7 @@
             {@const isReviewerQuestion = reviewerRequirementTypes.has(requirement.type) && !def?.automation}
             {@const isAutomation = !!def?.automation}
             {@const editMode = isInlineReviewerEditPrompt(def, requirement.type, prompt)}
+            {@const opensReviewDialog = isReviewerQuestion && def?.formMode === 'full'}
             {@const small = editMode && def?.formMode !== 'full' ? def?.formMode !== 'large' : def?.displayMode !== 'large'}
             {@const large = editMode && def?.formMode !== 'full' ? def?.formMode === 'large' : def?.displayMode === 'large'}
             {@const dtid = `dt-title-${prompt.id}`}
@@ -244,34 +249,38 @@
               {#if prompt.actions.update}
                 {#if prompt.invalidated && !applicantRequirementTypes.has(requirement.type)}
                   <Button kind="primary" size="field" class="prompt-edit mr-2" icon={Review} iconDescription="Review corrections" id="edit-btn-{prompt.id}" aria-labelledby="edit-btn-{prompt.id} {dtid}" on:click={editPrompt(prompt, true)} />
+                {:else if opensReviewDialog}
+                  <Button kind="secondary" size="field" icon={SidePanelOpenFilled} class="prompt-dialog-open" id="edit-btn-{prompt.id}" aria-labelledby="edit-btn-{prompt.id} {dtid}" on:click={editPrompt(prompt, false, true)}>{uiRegistry.reviewerDialogButtonText(prompt.key)}</Button>
                 {:else}
                   <Button kind="ghost" size="field" icon={Edit} iconDescription="Edit" class="prompt-edit" id="edit-btn-{prompt.id}" aria-labelledby="edit-btn-{prompt.id} {dtid}" on:click={editPrompt(prompt)} />
                 {/if}
               {/if}
             {/snippet}
             <dt class:small class:large class:isReviewerQuestion class:disabled={disabled} class:bg-tagyellow-200={isAutomation}>
-            {#if promptIndicator[prompt.key]?.indicator && (promptIndicator[prompt.key].indicator !== PromptIndicators.PENDING || editMode)}
-                <div class="indicator-tooltip">
-                <Tooltip align="start" direction="bottom">
-                    <svelte:fragment slot="icon">
-                    {#if promptIndicator[prompt.key]?.indicator === PromptIndicators.AUTOMATION}
-                        <MachineLearning size={20} />
-                    {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.WARNING}
-                        <WarningIconYellow />
-                    {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.DISQUALIFYING}
-                        <WarningFilled size={20} class="disqualifying-icon" style="fill: var(--cds-support-01, #da1e28)" />
-                    {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.PENDING}
-                        <svg class="pending-dot" xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
-                          <circle cx="4" cy="4" r="4" />
-                        </svg>
-                    {/if}
-                    </svelte:fragment>
-                    {promptIndicator[prompt.key]?.reason}
-                </Tooltip>
-                </div>
-            {/if}
-            <div id={dtid}>
-                {prompt.title}
+            <div class="dt-title">
+              {#if promptIndicator[prompt.key]?.indicator && (promptIndicator[prompt.key].indicator !== PromptIndicators.PENDING || editMode)}
+                  <div class="indicator-tooltip">
+                  <Tooltip align="start" direction="bottom">
+                      <svelte:fragment slot="icon">
+                      {#if promptIndicator[prompt.key]?.indicator === PromptIndicators.AUTOMATION}
+                          <MachineLearning size={20} />
+                      {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.WARNING}
+                          <WarningIconYellow />
+                      {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.DISQUALIFYING}
+                          <WarningFilled size={20} class="disqualifying-icon" style="fill: var(--cds-support-01, #da1e28)" />
+                      {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.PENDING}
+                          <svg class="pending-dot" xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+                            <circle cx="4" cy="4" r="4" />
+                          </svg>
+                      {/if}
+                      </svelte:fragment>
+                      {promptIndicator[prompt.key]?.reason}
+                  </Tooltip>
+                  </div>
+              {/if}
+              <div id={dtid}>
+                  {prompt.title}
+              </div>
             </div>
             {#if large && !editMode}
               {@render editButtons()}
@@ -330,7 +339,7 @@
 {@const formMode = uiRegistry.getPrompt(promptBeingEdited.key)?.formMode === 'full' ? 'large' : undefined}
   <PanelFormDialog
     id={editDialogFormId}
-    title={editingPromptWithData?.invalidated ? `Review correction "${editingPromptWithData?.title}"` : 'Edit Prompt'}
+    title={editingPromptWithData?.invalidated ? `Review correction "${editingPromptWithData?.title}"` : editingViaReviewDialog ? uiRegistry.reviewerDialogButtonText(promptBeingEdited.key) : 'Edit Prompt'}
     bind:open={showPromptDialog}
     on:cancel={closePromptDialog}
     submit={onPromptSubmit(editingPromptWithData, true)}
@@ -445,6 +454,28 @@
     top: 0.35rem;
     right: 0;
     margin: 0;
+  }
+  .prompts dt .dt-title {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+  }
+  /* a large prompt's open-in-dialog button sits at the start of the answer column, so the dt borrows
+     the prompt list's column tracks */
+  .prompts dt.large:has(> :global(.prompt-dialog-open)) {
+    display: grid;
+    grid-template-columns: subgrid;
+    padding: 0;
+  }
+  .prompts dt.large:has(> :global(.prompt-dialog-open)) > .dt-title {
+    padding: 1rem 15px 1rem 32px;
+  }
+  .prompts dt.large > :global(.bx--btn.prompt-dialog-open) {
+    grid-column: 2;
+    justify-self: start;
+    align-self: center;
+    margin: 0.5rem 15px;
   }
   .prompts dt .indicator-tooltip {
     display: inline-block;

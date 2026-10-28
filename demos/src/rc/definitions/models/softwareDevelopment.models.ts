@@ -87,3 +87,14 @@ export const ReviewSoftwarSecondEyesPromptSchema = {
   additionalProperties: false
 } as const satisfies SchemaObject
 export type ReviewSoftwarSecondEyesPromptData = FromSchema<typeof ReviewSoftwarSecondEyesPromptSchema>
+
+export const VerifyReccomendationLetterSchema = {
+  type: 'object',
+  properties: {
+    authentic: { type: 'boolean' },
+    addressesTechnicalSkills: { type: 'boolean' },
+    relationship: { type: 'string' }
+  },
+  additionalProperties: false
+} as const satisfies SchemaObject
+export type VerifyReccomendationLetterPromptData = FromSchema<typeof VerifyReccomendationLetterSchema>

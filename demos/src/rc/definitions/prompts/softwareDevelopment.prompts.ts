@@ -1,6 +1,6 @@
 import { PromptDefinition } from '@reqquest/api'
 import { MutationMessageType } from '@txstate-mws/graphql-server'
-import { AssessCriticalThinkingPromptData, AssessCriticalThinkingSchema, AssessOutsideClassExamplePromptData, AssessOutsideClassExampleSchema, AssessPuzzleSolutionPromptData, AssessPuzzleSolutionSchema, AuditSoftwareRegularPromptData, AuditSoftwareRegularPromptSchema, AuditSoftwareSubmittedPromptData, AuditSoftwareSubmittedPromptSchema, CriticalThinkingPromptData, CriticalThinkingSchema, DataRelatedPuzzlePromptData, DataRelatedPuzzleSchema, OutsideClassExamplePromptData, OutsideClassExampleSchema, ReviewSoftwarSecondEyesPromptData, ReviewSoftwarSecondEyesPromptSchema } from '../models/index.js'
+import { AssessCriticalThinkingPromptData, AssessCriticalThinkingSchema, AssessOutsideClassExamplePromptData, AssessOutsideClassExampleSchema, AssessPuzzleSolutionPromptData, AssessPuzzleSolutionSchema, AuditSoftwareRegularPromptData, AuditSoftwareRegularPromptSchema, AuditSoftwareSubmittedPromptData, AuditSoftwareSubmittedPromptSchema, CriticalThinkingPromptData, CriticalThinkingSchema, DataRelatedPuzzlePromptData, DataRelatedPuzzleSchema, OutsideClassExamplePromptData, OutsideClassExampleSchema, ReviewSoftwarSecondEyesPromptData, ReviewSoftwarSecondEyesPromptSchema, VerifyReccomendationLetterPromptData, VerifyReccomendationLetterSchema } from '../models/index.js'
 import { fileHandler } from 'fastify-txstate'
 import { OptOutData, OptOutSchema } from '../models/optOut.models.js'
 import { wait } from '../../../utils.js'
@@ -191,6 +191,21 @@ export const reviewer_software_development_second_eyes_prompt: PromptDefinition<
     if (data.score == null || data.score > 100 || data.score < 0) {
       messages.push({ type: MutationMessageType.error, message: 'Please provide an overall score from 0 to 100.', arg: 'score' })
     }
+    return messages
+  }
+}
+
+// reviewed in a dialog (formMode 'full' in the UI), with its answers listed as rows under the open button
+export const verify_reccomendation_letter_prompt: PromptDefinition<VerifyReccomendationLetterPromptData> = {
+  key: 'verify_reccomendation_letter_prompt',
+  title: 'Open the applicant\'s recommendation letter to verify it:',
+  description: 'Verify the recommendation letter',
+  schema: VerifyReccomendationLetterSchema,
+  validate: (data, config) => {
+    const messages = []
+    if (data.authentic == null) messages.push({ type: MutationMessageType.error, message: 'This field is required', arg: 'authentic' })
+    if (data.addressesTechnicalSkills == null) messages.push({ type: MutationMessageType.error, message: 'This field is required', arg: 'addressesTechnicalSkills' })
+    if (data.relationship == null) messages.push({ type: MutationMessageType.error, message: 'This field is required', arg: 'relationship' })
     return messages
   }
 }
