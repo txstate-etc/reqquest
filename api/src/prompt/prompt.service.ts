@@ -16,7 +16,8 @@ import {
   PromptPrestageServerData,
   PromptPrestageClientData,
   PromptPrestageDataNodes,
-  PROMPT_PRESTAGE_NS
+  PROMPT_PRESTAGE_NS,
+  PreviousRequestService
 } from '../internal.js'
 import { DEFAULT_EXPIRY, SignedPackage, signJsonPackage, verifySignedJsonPackage } from '../util/crypto/hmac.js'
 
@@ -135,7 +136,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     const config = allPeriodConfig[requirementPrompt.key] ?? {}
     if (!appRequest) throw new Error('AppRequest not found')
     if (requirementPrompt.definition.preload != null) {
-      const preloadData = await requirementPrompt.definition.preload(appRequest!, config, data, allPeriodConfig, this.ctx)
+      const preloadData = await requirementPrompt.definition.preload(appRequest, config, data, allPeriodConfig, this.ctx, this.svc(PreviousRequestService).selector(appRequest, requirementPrompt.key))
       const mergedData = (data[requirementPrompt.key] != null) ? { ...preloadData, ...data[requirementPrompt.key] } : preloadData
       return mergedData
     }
@@ -147,7 +148,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     const config = allPeriodConfig[requirementPrompt.key] ?? {}
     if (!appRequest) throw new Error('AppRequest not found')
     if (requirementPrompt.definition.fetch != null) {
-      return requirementPrompt.definition.fetch(appRequest!, config, data, allPeriodConfig, this.ctx)
+      return requirementPrompt.definition.fetch(appRequest, config, data, allPeriodConfig, this.ctx, this.svc(PreviousRequestService).selector(appRequest, requirementPrompt.key))
     }
   }
 
@@ -176,7 +177,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     if (await this.requiresPrestaging(requirementPrompt)) {
       const config = allPeriodConfig[requirementPrompt.key] ?? {}
       const fetch = ('fetch' in requirementPrompt.definition.prestage!) ? requirementPrompt.definition.prestage.fetch : requirementPrompt.definition.prestage
-      const prestageData = await fetch!(appRequest, config, allPeriodConfig, this.ctx)
+      const prestageData = await fetch!(appRequest, config, allPeriodConfig, this.ctx, this.svc(PreviousRequestService).selector(appRequest, requirementPrompt.key))
       return this.signPrestageData(appRequest.internalId, requirementPrompt.key, prestageData, appRequest.dataVersion)
     }
   }
@@ -325,7 +326,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
       if (!appRequest) throw new Error('AppRequest not found')
       for (const message of prompt.definition.preValidate?.(data, allConfigData[prompt.key] ?? {}, appRequestData, allConfigData, db) ?? []) response.addMessage(message.message, message.arg, message.type)
       if (response.hasErrors()) return
-      const processedData = prompt.definition.preProcessData ? await prompt.definition.preProcessData(data, this.ctx, appRequest, appRequestData, allConfigData, db, validateOnly) : data
+      const processedData = prompt.definition.preProcessData ? await prompt.definition.preProcessData(data, this.ctx, appRequest, appRequestData, allConfigData, db, validateOnly, this.svc(PreviousRequestService).selector(appRequest, prompt.key)) : data
       for (const message of prompt.definition.validate?.(processedData, allConfigData[prompt.key] ?? {}, appRequestData, allConfigData, db) ?? []) response.addMessage(message.message, message.arg, message.type)
       if (dataVersion != null && appRequest.dataVersion !== dataVersion) {
         response.addMessage('Someone else is working on the same request and made changes since you loaded. Copy any unsaved work into another document and reload the page to see what has changed.')
