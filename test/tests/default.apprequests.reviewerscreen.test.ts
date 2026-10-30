@@ -95,7 +95,7 @@ test.describe.serial('Reviewer screen panels follow the program\'s reviewSection
     await reviewerPage.goto(`/requests/${appRequestId}/approve/${programKey}`)
     const panels = reviewerPage.locator('.panel')
     await expect(panels.first()).toBeVisible()
-    const titles = await panels.locator('.panel-header').allInnerTexts()
+    const titles = await panels.locator('.panel-title').allInnerTexts()
     expect(titles.map(t => t.trim())).toEqual(['General Questions', 'Adopt a Cat', 'Other cats in the home', 'Reviewer Questions'])
 
     // the applicant's other-cats answer left the program panel for the custom one...
@@ -111,6 +111,10 @@ test.describe.serial('Reviewer screen panels follow the program\'s reviewSection
     await expect(reviewerPanel.locator('dt', { hasText: 'Assess Applicant\'s Niceness' })).toBeVisible()
     await expect(customPanel.locator('dt', { hasText: 'Assess Applicant\'s Niceness' })).toHaveCount(0)
 
+    // each panel with reviewer questions tallies how many are answered
+    await expect(customPanel.locator('.reviewer-question-tally')).toContainText('1/2 answered')
+    await expect(reviewerPanel.locator('.reviewer-question-tally')).toContainText('0/1 answered')
+
     // the cat program has reviewer work, so there is no "nothing to review" notice
     await expect(reviewerPage.locator('.system-determination-notice')).toHaveCount(0)
   })
@@ -119,7 +123,7 @@ test.describe.serial('Reviewer screen panels follow the program\'s reviewSection
     await reviewerPage.goto(`/requests/${appRequestId}/approve/adopt_a_dog_program`)
     const panels = reviewerPage.locator('.panel')
     await expect(panels.first()).toBeVisible()
-    const titles = (await panels.locator('.panel-header').allInnerTexts()).map(t => t.trim())
+    const titles = (await panels.locator('.panel-title').allInnerTexts()).map(t => t.trim())
     expect(titles).toEqual(['General Questions', 'Adopt a Dog'])
     // a panel with nothing to display is not rendered at all, not shown as an empty header
     await expect(panels.filter({ hasNot: reviewerPage.locator('dt') })).toHaveCount(0)
