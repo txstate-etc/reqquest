@@ -114,6 +114,8 @@ export async function finishBlockingWorkflow (graphql: Graphql, appRequestId: nu
     const state = await getState(graphql, appRequestId)
     const advancing = state.applications.filter(a => a.phase === 'READY_FOR_WORKFLOW')
     if (!advancing.length) break
+    // waiting on or in blocking workflow reads as in review
+    expect(state.status).toEqual('REVIEW_IN_PROGRESS')
     for (const app of advancing) await expectAction(graphql, 'advanceWorkflow', applicationAction('advanceWorkflow'), { applicationId: app.id })
     await answerAvailable(graphql, appRequestId, promptMapApproveReviewerQualified)
   }
