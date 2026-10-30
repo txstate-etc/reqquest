@@ -7,6 +7,7 @@ import db from 'mysql2-async/db'
 import { Cache, isNotBlank, isNotEmpty, sortby } from 'txstate-utils'
 import { AppRequest, getIndexesInUse, Period, programRegistry, PROMPT_PRESTAGE_NS, requirementRegistry, RQContext, TagDefinition, type AppRequestData, type PromptPreStagingRecurrence } from '../internal.js'
 import type { Queryable } from 'mysql2-async'
+import type { DateTime } from 'luxon'
 import type { PromptKey } from './keys.js'
 
 export interface AppRequestMigration<DataType = Omit<AppRequestData, 'savedAtVersion'>> {
@@ -166,6 +167,56 @@ export interface ConfigurationDefinition<ConfigurationInputType = any, Configura
   default?: ConfigurationDataType
 }
 
+/**
+ * Where a value returned by the `previous` selector came from.
+ */
+export interface PreviousRequestSource {
+  appRequestId: string
+  createdAt: DateTime
+  periodId: string
+  periodCode?: string
+  periodName: string
+}
+
+export interface PreviousRequestResult<K extends PromptKey = PromptKey> {
+  /** Answers by prompt key. Keys with no usable previous answer are absent. */
+  data: Partial<Record<K, any>>
+  /** The request each entry in `data` was taken from, by prompt key. */
+  source: Partial<Record<K, PreviousRequestSource>>
+}
+
+/**
+ * Ask for the same applicant's answers from their earlier app requests, to save a returning
+ * applicant from typing the same things again: `const prior = await previous({ prompts: ['household_income'] })`.
+ *
+ * The selector is bound by the system to the applicant who owns the current request, so it can only
+ * ever return that applicant's history. "Earlier" means any of their requests created before the
+ * current one, in a previous period or (when `multipleRequestsPerPeriod` is on) earlier in the same
+ * period. The current request is never included. Nothing is queried until you call it.
+ *
+ * Only prompts that were answered in the earlier request are returned, and only when the person
+ * this hook is running for may view them there. Answers they may only see in redacted form come back
+ * through that prompt's `exposeToApplicant`. A prompt shown to applicants may only ask for prompts
+ * that applicants can see, since whatever it returns or saves may reach the applicant. Asking for a
+ * reviewer-only prompt from one throws.
+ *
+ * Data is migrated to the current schema version before you receive it. Signed prestage data is not
+ * carried over; the current request runs its own `prestage`.
+ */
+export type PreviousRequestSelector = <K extends PromptKey>(select: {
+  prompts: K[]
+  /**
+   * false (default): every key comes from the single most recent earlier request that answered
+   * any of them, so the values belong together.
+   * true: each key comes from the most recent earlier request that answered that key.
+   */
+  coalesce?: boolean
+  /**
+   * Ignore requests that were started but never submitted. Default true.
+   */
+  submittedOnly?: boolean
+}) => Promise<PreviousRequestResult<K> | undefined>
+
 export interface PromptDefinition<DataType = any, InputDataType = DataType, PrestageDataType = any, ConfigurationDataType = any, FetchType = any> {
   /**
    * A globally unique, human and machine readable key. This will be used to match up with
@@ -255,8 +306,11 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Pres
    * a requirement has been met, whether a another prompt is invalidated, etc.
    *
    * This function will not run if the user has already partially answered the prompt.
+   *
+   * Use the `previous` selector to prefill from the applicant's earlier requests (see
+   * `PreviousRequestSelector`).
    */
-  preload?: (appRequest: AppRequest, config: ConfigurationDataType, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, ctx: RQContext) => Promise<DataType> | DataType
+  preload?: (appRequest: AppRequest, config: ConfigurationDataType, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, ctx: RQContext, previous: PreviousRequestSelector) => Promise<DataType> | DataType
   /**
    * A function that can be used to fetch data from external sources that will
    * affect the prompt UI. The data from this function will be provided to the svelte
@@ -267,7 +321,7 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Pres
    * you should store it alongside the data collected from the user during the prompt, e.g.
    * use FieldHidden.
    */
-  fetch?: (appRequest: AppRequest, config: ConfigurationDataType, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, ctx: RQContext) => Promise<FetchType> | FetchType
+  fetch?: (appRequest: AppRequest, config: ConfigurationDataType, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, ctx: RQContext, previous: PreviousRequestSelector) => Promise<FetchType> | FetchType
   /**
    * By default, we do not expose prompt data to the applicant unless it is part of an
    * applicant-facing requirement. But this means that we cannot show the applicant any
@@ -395,16 +449,19 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Pres
    * has run. This is a little tricky but the validate function has to run during the app request
    * evaluation routine, so it has to operate on post-processed data. Be aware of the potential
    * transformations when you set the `arg` for each MutationMessage returned by `validate`.
+   *
+   * `validate` cannot read the applicant's earlier requests. If it needs them, copy what it needs into
+   * the saved data here using the `previous` selector (see `PreviousRequestSelector`).
    */
-  preProcessData?: (data: InputDataType, ctx: RQContext, appRequest: AppRequest, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, db: Queryable, validateOnly: boolean) => Promise<DataType> | DataType
+  preProcessData?: (data: InputDataType, ctx: RQContext, appRequest: AppRequest, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, db: Queryable, validateOnly: boolean, previous: PreviousRequestSelector) => Promise<DataType> | DataType
   /**
    * Optionally provide a function that can perform server side prompt staging operations, such as querying and returning data that is meant to be readonly to the applicant.
    * Process can be specified as recurring or run on first call only. If recur is true, the process function will run on every stage of the prompt.
    * If recur is false, NEVER or not provided, the process function will only run on the first evaluation of the app request where there is no existing data for this prompt,
    */
-  prestage?: ((appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext) => Promise<PrestageDataType> | PrestageDataType) | {
+  prestage?: ((appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext, previous: PreviousRequestSelector) => Promise<PrestageDataType> | PrestageDataType) | {
     recur?: PromptPreStagingRecurrence | boolean
-    fetch: (appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext) => Promise<PrestageDataType> | PrestageDataType
+    fetch: (appRequest: AppRequest, config: ConfigurationDataType, allPeriodConfig: Record<string, any>, ctx: RQContext, previous: PreviousRequestSelector) => Promise<PrestageDataType> | PrestageDataType
     schema?: SchemaObject
   }
   /**

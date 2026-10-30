@@ -33,9 +33,17 @@ export const communication_prompt: PromptDefinition<CommunicationData> = {
 
     return messages
   },
-  preload: async (data, config) => {
+  preload: async (appRequest, config, data, allPeriodConfig, ctx, previous) => {
     await wait(1000) // simulate a long-running preload operation
-    return {}
+    // a returning applicant starts from their most recent earlier answer, which they review and save
+    const prior = await previous({ prompts: ['communication_prompt'] })
+    return prior?.data.communication_prompt ?? {}
+  },
+  fetch: async (appRequest, config, data, allPeriodConfig, ctx, previous) => {
+    // preload only applies until the prompt is saved, so only mention where the answer came from until then
+    if (data.communication_prompt != null) return {}
+    const prior = await previous({ prompts: ['communication_prompt'] })
+    return { prefilledFrom: prior?.source.communication_prompt?.periodName }
   }
 }
 
