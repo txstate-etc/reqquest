@@ -194,6 +194,11 @@ export const uiRegistry = new UIRegistry(config)
   `'small'` is about 8 lines at 320px; `'large'` about 32 lines at 800px; `'full'` is a full-screen
   modal, which also **disables autosave in the reviewer UI** and is what supplies `appRequestId` to
   the reviewer form. All three must stay responsive down to 320px.
+- **`reviewerDialogButtonText`** `string` (default `'Review'`) - a reviewer question registered with
+  `formMode: 'full'` gets a labeled button on the reviewer screen that opens its form in the
+  full-height side dialog. This is that button's text and the dialog's title; name what the reviewer
+  will look at, e.g. `'Review course information'`. Automation prompts and applicant prompts keep the
+  edit pencil. The global fallback of the same setting lives on `UIConfig`.
 - **`displayMode`** `'small' | 'large'` (default `'small'`) - there is deliberately no `'full'`,
   because the whole prompt list has to print on one page. Use `'large'` together with
   `PromptDisplayGrid` when one prompt collects several question/answer pairs.

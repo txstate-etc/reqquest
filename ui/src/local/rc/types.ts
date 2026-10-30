@@ -110,6 +110,12 @@ export interface AssessReccomendationLetter {
   score: string
 }
 
+export interface VerifyReccomendationLetter {
+  authentic: boolean
+  addressesTechnicalSkills: boolean
+  relationship: string
+}
+
 export interface HelpDeskWeekendAvailability {
   weekendAvailable: boolean
 }
