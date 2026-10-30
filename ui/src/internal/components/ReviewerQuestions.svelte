@@ -262,30 +262,28 @@
               {/if}
             {/snippet}
             <dt class:small class:large class:isReviewerQuestion class:disabled={disabled} class:bg-tagyellow-200={isAutomation}>
-            <div class="dt-title">
-              {#if promptIndicator[prompt.key]?.indicator && (promptIndicator[prompt.key].indicator !== PromptIndicators.PENDING || editMode)}
-                  <div class="indicator-tooltip">
-                  <Tooltip align="start" direction="bottom">
-                      <svelte:fragment slot="icon">
-                      {#if promptIndicator[prompt.key]?.indicator === PromptIndicators.AUTOMATION}
-                          <MachineLearning size={20} />
-                      {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.WARNING}
-                          <WarningIconYellow />
-                      {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.DISQUALIFYING}
-                          <WarningFilled size={20} class="disqualifying-icon" style="fill: var(--cds-support-01, #da1e28)" />
-                      {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.PENDING}
-                          <svg class="pending-dot" xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
-                            <circle cx="4" cy="4" r="4" />
-                          </svg>
-                      {/if}
-                      </svelte:fragment>
-                      {promptIndicator[prompt.key]?.reason}
-                  </Tooltip>
-                  </div>
-              {/if}
-              <div id={dtid}>
-                  {prompt.title}
-              </div>
+            {#if promptIndicator[prompt.key]?.indicator && (promptIndicator[prompt.key].indicator !== PromptIndicators.PENDING || editMode)}
+                <div class="indicator-tooltip">
+                <Tooltip align="start" direction="bottom">
+                    <svelte:fragment slot="icon">
+                    {#if promptIndicator[prompt.key]?.indicator === PromptIndicators.AUTOMATION}
+                        <MachineLearning size={20} />
+                    {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.WARNING}
+                        <WarningIconYellow />
+                    {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.DISQUALIFYING}
+                        <WarningFilled size={20} class="disqualifying-icon" style="fill: var(--cds-support-01, #da1e28)" />
+                    {:else if promptIndicator[prompt.key]?.indicator === PromptIndicators.PENDING}
+                        <svg class="pending-dot" xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+                          <circle cx="4" cy="4" r="4" />
+                        </svg>
+                    {/if}
+                    </svelte:fragment>
+                    {promptIndicator[prompt.key]?.reason}
+                </Tooltip>
+                </div>
+            {/if}
+            <div id={dtid}>
+                {prompt.title}
             </div>
             {#if large && !editMode}
               {@render editButtons()}

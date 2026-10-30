@@ -30,7 +30,7 @@
   })
 </script>
 
-<ProgressNavContainer title="Your potential benefits" subtitle={noProgramsToList ? (uiRegistry.config.applicantNoProgramsMessage ?? DEFAULT_APPLICANT_NO_PROGRAMS_MESSAGE) : 'Based on your responses so far, you may be eligible for the benefits listed below.  If you believe you qualify for additional benefits, you may need to review your answers, complete additional questions, or provides supporting documentation before eligibility can be confirmed.'}>
+<ProgressNavContainer title="Your potential benefits" subtitle={noProgramsToList ? (uiRegistry.config.applicantNoProgramsMessage ?? DEFAULT_APPLICANT_NO_PROGRAMS_MESSAGE) : 'Based on your responses so far, you may be eligible for the benefits listed below.  If you believe you qualify for additional benefits, you may need to review your answers, complete additional questions, or provide supporting documentation before eligibility can be confirmed.'}>
   <div class="max-w-screen-md mx-auto">    
     {#if eligibleApplicationsForNav.length > 0} 
       <ApplicantProgramList applications={eligibleApplicationsForNav} appRequest={appRequestForExport} />

@@ -76,7 +76,7 @@ test.describe.serial('Applications with no reviewer questions advance on their o
     const appRequestId = await createAndSubmit(request.graphql, 'applicant4', mixedPeriodId)
     const state = await getState(reviewerRequest.graphql, appRequestId)
     expect(state.phase).toEqual('SUBMITTED')
-    expect(state.status).toEqual('APPROVAL')
+    expect(state.status).toEqual('REVIEW_IN_PROGRESS')
     const dogApp = application(state, dog)
     expect(dogApp.phase).toEqual('WORKFLOW_BLOCKING')
     expect(dogApp.workflowStage?.key).toEqual(dogStage)

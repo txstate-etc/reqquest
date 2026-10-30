@@ -10,47 +10,46 @@ import { appConfig, AppRequestPhase, getAppRequests, getPeriods, MailService, ty
  * period opens, unless they already have a request in the new period.
  *
  * Runs hourly. Idempotency comes from the dedup key - one email per user per newly opened period -
- * and from the 7-day window on openDate, which keeps a first deploy from announcing periods that
- * opened long ago while still catching up after a few days of downtime.
+ * and from only announcing the most recently opened period, and only within 7 days of its openDate.
+ * That keeps a first deploy from announcing a period that opened long ago while still catching up
+ * after a few days of downtime.
  */
 export const periodOpenedNotification: ScheduledHook = {
   minutesBetween: 60,
   async run (ctx) {
     const now = DateTime.now()
-    const opened = await getPeriods({ opensAfter: now.minus({ days: 7 }), opensBefore: now })
-    if (!opened.length) return
-    // getPeriods orders by openDate DESC, so the first period older than the new one is its predecessor
-    const all = await getPeriods()
+    // getPeriods orders by openDate DESC, so the first opened period is the current one and the
+    // first period older than it is its predecessor
+    const opened = await getPeriods({ opensBefore: now })
+    const period = opened[0]
+    if (!period || period.openDate < now.minus({ days: 7 })) return
+    const previous = opened.find(p => p.openDate < period.openDate)
+    if (!previous) return
 
-    for (const period of opened) {
-      const previous = all.find(p => p.openDate < period.openDate)
-      if (!previous) continue
+    const [previousRequests, currentRequests] = await Promise.all([
+      getAppRequests({ periodIds: [previous.id] }),
+      getAppRequests({ periodIds: [period.id] })
+    ])
+    const alreadyApplied = new Set(currentRequests.map(ar => ar.userInternalId))
+    // "submitted" = left the applicant phase; submittedAt is cleared on return-to-applicant, phase is the stable signal
+    const userIds = Array.from(new Set(
+      previousRequests
+        .filter(ar => ar.phase !== AppRequestPhase.STARTED && !alreadyApplied.has(ar.userInternalId))
+        .map(ar => ar.userInternalId)
+    ))
+    if (!userIds.length) return
 
-      const [previousRequests, currentRequests] = await Promise.all([
-        getAppRequests({ periodIds: [previous.id] }),
-        getAppRequests({ periodIds: [period.id] })
-      ])
-      const alreadyApplied = new Set(currentRequests.map(ar => ar.userInternalId))
-      // "submitted" = left the applicant phase; submittedAt is cleared on return-to-applicant, phase is the stable signal
-      const userIds = Array.from(new Set(
-        previousRequests
-          .filter(ar => ar.phase !== AppRequestPhase.STARTED && !alreadyApplied.has(ar.userInternalId))
-          .map(ar => ar.userInternalId)
-      ))
-      if (!userIds.length) continue
-
-      await ctx.svc(MailService).sendmulti({
-        from: appConfig.emailConfig.from,
-        userIds,
-        templateKey: 'period_opened',
-        extra: {
-          ...appConfig.emailConfig,
-          periodName: period.name,
-          openDate: period.openDate.toFormat('DDDD'),
-          closeDate: period.closeDate?.toFormat('DDDD') ?? ''
-        },
-        dedupKey: userInternalId => `period_opened_${period.id}_${userInternalId}`
-      })
-    }
+    await ctx.svc(MailService).sendmulti({
+      from: appConfig.emailConfig.from,
+      userIds,
+      templateKey: 'period_opened',
+      extra: {
+        ...appConfig.emailConfig,
+        periodName: period.name,
+        openDate: period.openDate.toFormat('DDDD'),
+        closeDate: period.closeDate?.toFormat('DDDD') ?? ''
+      },
+      dedupKey: userInternalId => `period_opened_${period.id}_${userInternalId}`
+    })
   }
 }
