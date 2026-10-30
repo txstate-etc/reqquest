@@ -95,10 +95,13 @@ test.describe.serial('Reverse a disqualified review out of blocking workflow', {
     const editAnswers = reviewerPage.getByRole('button', { name: 'Edit answers' })
     await expect(editAnswers).toHaveCount(1)
     await editAnswers.click()
-    await expect.poll(async () => application(await getState(reviewerRequest.graphql, appRequestId), swdev).phase).toEqual('APPROVAL')
+    // reversal re-evaluates, and with every review requirement already resolved the application settles at the end of
+    // review (READY_FOR_WORKFLOW with no stage) rather than APPROVAL - out of the blocking stage, back in review
+    await expect.poll(async () => application(await getState(reviewerRequest.graphql, appRequestId), swdev).workflowStage?.key ?? null).toBeNull()
+    const state = await getState(reviewerRequest.graphql, appRequestId)
+    expect(application(state, swdev).phase).toEqual('READY_FOR_WORKFLOW')
 
     // back in review, the applicant's letter can be edited again with the pencil
-    const state = await getState(reviewerRequest.graphql, appRequestId)
     const letterPrompt = requirement(state, swdev, 'reccomendation_letter_req').prompts.find(p => p.key === 'reccomendation_letter_prompt')!
     await expect(reviewerPage.locator(`#edit-btn-${letterPrompt.id}`)).toBeVisible()
   })
