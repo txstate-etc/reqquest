@@ -249,6 +249,12 @@
       </Panel>
     {/if}
 
+    {#if printMode}
+      <div class="print-actions">
+        <Button on:click={() => window.print()}>Print</Button>
+      </div>
+    {/if}
+
     <slot name="footer" />
   </div>
 {:else}
@@ -361,7 +367,27 @@
     --cds-icon-01: var(--cds-link-01);
   }
 
+  .print-mode {
+    /* keep the last row clear of the floating print button */
+    padding-bottom: 4rem;
+  }
+
+  .print-actions {
+    position: fixed;
+    right: 2rem;
+    bottom: 2rem;
+    z-index: 10;
+  }
+
   @media print {
+    .print-mode {
+      padding-bottom: 0;
+    }
+
+    .print-actions {
+      display: none;
+    }
+
     :global(body:has(.application-details.print-mode) .bx--header),
     :global(body:has(.application-details.print-mode) .breadcrumbs) {
       display: none !important;
