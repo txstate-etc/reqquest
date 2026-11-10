@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ApplicationDetailsView } from '$internal'
+  import { ApplicationDetailsView, exportTitle } from '$internal'
   import { uiRegistry } from '$local'
   import type { PageData } from './$types'
 
@@ -18,6 +18,8 @@
       {postqualPrompts}
       loading={false}
       {uiRegistry}
+      title={exportTitle(appRequest, uiRegistry, true)}
+      subtitle=""
       expandable={false}
       printMode
       showTooltipsAsText

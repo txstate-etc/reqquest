@@ -28,6 +28,12 @@ const helpDeskQualified = new Map<string, Map<string, any>>([
 // every program but help desk; their opt-out requirements start NOT_APPLICABLE, so answerAvailable never sends them
 const optOutPromptKeys = ['operations_infrastructure_opt_out_prompt', 'software_dev_opt_out_prompt', 'project_management_opt_out_prompt', 'application_management_opt_out_prompt']
 
+const previewHint = 'Select document names to preview them.'
+// '{period} {appRequest word} {request number}', the number formatted as on the dashboard card
+// on the dashboard the number is left off while it is the applicant's only request in the period
+const soleRequestHeading = /^Period 1 \S+$/
+const exportHeading = (id: number) => new RegExp(`^Period 1 \\S+ ${String(id).slice(0, 6).toUpperCase()}$`)
+
 type ListedApplication = { programKey: string, status: string, ineligiblePhase: string | null, hiddenIneligiblePreSubmit: boolean }
 async function listedApplications (graphql: Graphql, appRequestId: number) {
   const response = await graphql<{ appRequests?: { applications: ListedApplication[] }[], errors?: { message: string }[] }>(`
@@ -85,6 +91,52 @@ test.describe.serial('Applicant program list - hidden, opted-out and auto-comple
     await expect(applicantPage.getByText(opsDescription).first()).toBeAttached()
     await expect(applicantPage.getByText(/^\s*Exported \d{2}\/\d{2}\/\d{4} at \d{2}:\d{2}(AM|PM)$/)).toBeVisible()
     await expect(applicantPage.getByRole('button', { name: 'Print', exact: true })).toBeVisible()
+    // a printout names the request and drops the on-screen hint about clickable documents
+    await expect(applicantPage.getByRole('heading', { name: exportHeading(lowGpaId) })).toBeVisible()
+    await expect(applicantPage.getByText(previewHint)).toHaveCount(0)
+  })
+
+  test('Applicant - the dashboard side panel is headed like the export and keeps its document hint', async ({ applicantPage }) => {
+    await applicantPage.goto('/dashboards/applicant')
+    await applicantPage.getByRole('menuitem', { name: 'Show Actions' }).first().click()
+    await applicantPage.locator('.bx--overflow-menu-options__btn', { hasText: /^\s*View / }).click()
+    await expect(applicantPage.getByRole('heading', { name: soleRequestHeading })).toBeVisible()
+    // documents can be opened from the panel, so unlike the printout it keeps the hint
+    await expect(applicantPage.getByText(previewHint)).toBeVisible()
+    await applicantPage.getByRole('button', { name: 'Close', exact: true }).first().click()
+    await expect(applicantPage.getByText(previewHint)).toBeHidden()
+  })
+
+  test('Applicant - exporting from a dashboard card prints the export without leaving the dashboard', async ({ applicantPage }) => {
+    await applicantPage.goto('/dashboards/applicant')
+    // a real print dialog would block the page, so record the call instead
+    await applicantPage.evaluate(() => { window.print = () => { (window as any).printCalls = ((window as any).printCalls ?? 0) + 1 } })
+    await applicantPage.getByRole('menuitem', { name: 'Show Actions' }).first().click()
+    await applicantPage.locator('.bx--overflow-menu-options__btn', { hasText: /^\s*Export / }).click()
+    await expect.poll(async () => await applicantPage.evaluate(() => (window as any).printCalls)).toEqual(1)
+    expect(new URL(applicantPage.url()).pathname).toEqual('/dashboards/applicant')
+
+    // on screen the export stays out of sight; in print it is the only thing on the page
+    const exportView = applicantPage.locator('.rq-print-root .application-details')
+    const dashboard = applicantPage.locator('.applicant-dashboard')
+    await expect(exportView).toBeHidden()
+    await expect(dashboard).toBeVisible()
+    await applicantPage.emulateMedia({ media: 'print' })
+    try {
+      await expect(exportView).toBeVisible()
+      await expect(exportView.getByText(/^\s*Exported \d{2}\/\d{2}\/\d{4} at \d{2}:\d{2}(AM|PM)$/)).toBeVisible()
+      await expect(exportView.getByRole('button', { name: 'Print', exact: true })).toBeHidden()
+      await expect(exportView.getByRole('heading', { name: soleRequestHeading })).toBeVisible()
+      await expect(exportView.getByText(previewHint)).toHaveCount(0)
+      await expect(dashboard).toBeHidden()
+
+      // once the dialog closes the export is discarded, so printing the dashboard itself still works
+      await applicantPage.evaluate(() => window.dispatchEvent(new Event('afterprint')))
+      await expect(exportView).toHaveCount(0)
+      await expect(dashboard).toBeVisible()
+    } finally {
+      await applicantPage.emulateMedia({ media: null })
+    }
   })
 
   test('Applicant 2 - help desk prompts resolve and the other programs are opted out', async ({ applicant2Request }) => {
