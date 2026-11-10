@@ -3,7 +3,20 @@
   Prints an app request's export view without leaving the current page. Render it once anywhere,
   then call `print(appRequestId)`: it loads the request, renders the export into a container that
   is invisible on screen, and opens the browser's print dialog showing only that container.
+  The default is the applicant's export; pass `reviewerView` for the reviewer's.
 -->
+<script lang="ts" context="module">
+  export interface PrintExportOptions {
+    /** Applicant heading only: add the request number, for when the applicant has other requests in the same period. */
+    includeRequestNumber?: boolean
+    /** Replaces the default applicant heading. */
+    title?: string
+    subtitle?: string
+    /** Reviewer presentation: warnings beside prompts, tooltips left as tooltips, 40/60 columns. */
+    reviewerView?: boolean
+  }
+</script>
+
 <script lang="ts">
   import { tick } from 'svelte'
   import type { UIRegistry } from '@reqquest/ui'
@@ -14,15 +27,11 @@
   export let uiRegistry: UIRegistry
 
   let details: AppRequestForExportResponse | undefined
-  let includeRequestNumber = false
+  let options: PrintExportOptions = {}
 
-  /**
-   * Rejects if the request cannot be loaded; resolves once the print dialog has been requested.
-   * Set withRequestNumber when the applicant has other requests in the same period, so the
-   * heading says which one this is.
-   */
-  export async function print (appRequestId: string, withRequestNumber = false) {
-    includeRequestNumber = withRequestNumber
+  /** Rejects if the request cannot be loaded; resolves once the print dialog has been requested. */
+  export async function print (appRequestId: string, printOptions: PrintExportOptions = {}) {
+    options = printOptions
     details = await api.getAppRequestForExport(appRequestId)
     // let the display components render before the browser snapshots the page for printing
     await tick()
@@ -48,7 +57,7 @@
 
 <div class="rq-print-root" class:active={!!details?.appRequest} use:portal>
   {#if details?.appRequest}
-    <div class="max-w-4xl">
+    <div class="max-w-4xl" class:reviewer-view={options.reviewerView}>
       <ApplicationDetailsView
         appRequest={details.appRequest}
         applications={details.applicationsReview}
@@ -57,17 +66,23 @@
         postqualPrompts={details.postqualPrompts}
         loading={false}
         {uiRegistry}
-        title={exportTitle(details.appRequest, uiRegistry, includeRequestNumber)}
-        subtitle=""
+        title={options.title ?? exportTitle(details.appRequest, uiRegistry, !!options.includeRequestNumber)}
+        subtitle={options.subtitle ?? ''}
         expandable={false}
         printMode
-        showTooltipsAsText
+        showWarningsInline={!!options.reviewerView}
+        showTooltipsAsText={!options.reviewerView}
       />
     </div>
   {/if}
 </div>
 
 <style>
+  /* Reviewer standard: prompt/requirement column 40%, answer column 60%. */
+  .reviewer-view {
+    --prompt-list-columns: minmax(0, 2fr) minmax(0, 3fr);
+  }
+
   .rq-print-root {
     display: none;
   }

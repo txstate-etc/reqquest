@@ -191,7 +191,7 @@
   // print the export in place
   async function exportApplication (requestId: string) {
     try {
-      await printExport.print(requestId, hasSiblingInPeriod(requestId))
+      await printExport.print(requestId, { includeRequestNumber: hasSiblingInPeriod(requestId) })
     } catch (error) {
       showError(`Failed to export ${uiRegistry.getWord('appRequest').toLowerCase()}`)
       console.error('Error exporting application:', error)

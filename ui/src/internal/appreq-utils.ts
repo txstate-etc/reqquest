@@ -32,7 +32,8 @@ export function isHiddenFromApplicant (application: { hiddenIneligiblePreSubmit?
 
 export const DEFAULT_APPLICANT_NO_PROGRAMS_MESSAGE = 'Based on your responses, you don\'t currently qualify for any available benefits. If you believe this is incorrect, review your answers.'
 
-export function exportTitle (appRequest: { id: string, period?: { name: string } }, uiRegistry: UIRegistry, includeRequestNumber: boolean) {
+export function exportTitle (appRequest: { id: string, period?: { name: string } }, uiRegistry: UIRegistry, includeRequestNumber: boolean, applicantName?: string) {
   const requestNumber = includeRequestNumber ? String(appRequest.id).slice(0, 6).toUpperCase() : undefined
-  return [appRequest.period?.name, uiRegistry.getWord('appRequest').toLowerCase(), requestNumber].filter(Boolean).join(' ')
+  const title = [appRequest.period?.name, uiRegistry.getWord('appRequest').toLowerCase(), requestNumber].filter(Boolean).join(' ')
+  return applicantName ? `${applicantName}, ${title}` : title
 }

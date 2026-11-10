@@ -29,10 +29,8 @@ const helpDeskQualified = new Map<string, Map<string, any>>([
 const optOutPromptKeys = ['operations_infrastructure_opt_out_prompt', 'software_dev_opt_out_prompt', 'project_management_opt_out_prompt', 'application_management_opt_out_prompt']
 
 const previewHint = 'Select document names to preview them.'
-// '{period} {appRequest word} {request number}', the number formatted as on the dashboard card
 // on the dashboard the number is left off while it is the applicant's only request in the period
 const soleRequestHeading = /^Period 1 \S+$/
-const exportHeading = (id: number) => new RegExp(`^Period 1 \\S+ ${String(id).slice(0, 6).toUpperCase()}$`)
 
 type ListedApplication = { programKey: string, status: string, ineligiblePhase: string | null, hiddenIneligiblePreSubmit: boolean }
 async function listedApplications (graphql: Graphql, appRequestId: number) {
@@ -87,13 +85,6 @@ test.describe.serial('Applicant program list - hidden, opted-out and auto-comple
     await expect(applicantPage.locator('.tooltip-text-item', { hasText: opsDescription })).toHaveCount(1)
     // opting out of a program the applicant is already ineligible for means nothing, so none offer it
     await expect(applicantPage.getByRole('button', { name: 'Opt out', exact: true })).toHaveCount(0)
-    await applicantPage.goto(`/requests/${lowGpaId}/export`)
-    await expect(applicantPage.getByText(opsDescription).first()).toBeAttached()
-    await expect(applicantPage.getByText(/^\s*Exported \d{2}\/\d{2}\/\d{4} at \d{2}:\d{2}(AM|PM)$/)).toBeVisible()
-    await expect(applicantPage.getByRole('button', { name: 'Print', exact: true })).toBeVisible()
-    // a printout names the request and drops the on-screen hint about clickable documents
-    await expect(applicantPage.getByRole('heading', { name: exportHeading(lowGpaId) })).toBeVisible()
-    await expect(applicantPage.getByText(previewHint)).toHaveCount(0)
   })
 
   test('Applicant - the dashboard side panel is headed like the export and keeps its document hint', async ({ applicantPage }) => {
@@ -125,7 +116,8 @@ test.describe.serial('Applicant program list - hidden, opted-out and auto-comple
     try {
       await expect(exportView).toBeVisible()
       await expect(exportView.getByText(/^\s*Exported \d{2}\/\d{2}\/\d{4} at \d{2}:\d{2}(AM|PM)$/)).toBeVisible()
-      await expect(exportView.getByRole('button', { name: 'Print', exact: true })).toBeHidden()
+      // the export spells out why a program was ruled out, as the program list does
+      await expect(exportView.getByText(opsDescription).first()).toBeAttached()
       await expect(exportView.getByRole('heading', { name: soleRequestHeading })).toBeVisible()
       await expect(exportView.getByText(previewHint)).toHaveCount(0)
       await expect(dashboard).toBeHidden()

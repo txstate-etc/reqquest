@@ -9,6 +9,8 @@
   import type { PageData } from '../../routes/requests/[id]/approve/[programKey]/$types'
   import { uiRegistry } from '$local'
   import DocumentExport from 'carbon-icons-svelte/lib/DocumentExport.svelte'
+  import { exportTitle } from '../appreq-utils.js'
+  import PrintExport from './PrintExport.svelte'
 
   
   export let application: PageData['appRequest']['applications'][0]
@@ -18,6 +20,25 @@
   $: loading = false
 
 
+
+  let printExport: PrintExport
+
+  // prints the reviewer export in place
+  async function exportRequest () {
+    if (!basicRequestData) return
+    try {
+      // this screen only knows the one request, so ask whether the applicant has others in the period
+      const count = await api.countAppRequestsInPeriod(basicRequestData.applicant.login, basicRequestData.period.id)
+      await printExport.print(requestId, {
+        reviewerView: true,
+        title: exportTitle({ id: requestId, period: basicRequestData.period }, uiRegistry, count > 1, basicRequestData.applicant.fullname),
+        subtitle: `Complete ${uiRegistry.getWord('appRequest').toLowerCase()} details for review.`
+      })
+    } catch (error) {
+      toasts.add({ type: 'error', title: `Could not export ${uiRegistry.getWord('appRequest').toLowerCase()}`, message: 'An unknown error occurred.' })
+      console.error('Error exporting application:', error)
+    }
+  }
 
   let appRequestAction: '' | PhaseChangeMutations | 'reopen' | 'close' = ''
   async function onAppRequestAction () {
@@ -139,9 +160,11 @@
     <Loading />    
 {/if}
 
+<PrintExport bind:this={printExport} {uiRegistry} />
+
 <InfoCard title='Reviewer Actions'>
 <div slot='header-right'>
-  <Button aria-label='export' href={`/requests/${requestId}/approve/export`} kind="secondary" size="small" icon={DocumentExport} class="ml-[32px]" />
+  <Button aria-label='export' on:click={exportRequest} kind="secondary" size="small" icon={DocumentExport} class="ml-[32px]" />
 </div>
   <div class="flow">
     <!-- <Select bind:selected={appAction} labelText="Next step" size="sm">
