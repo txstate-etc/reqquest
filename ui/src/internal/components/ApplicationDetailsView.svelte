@@ -30,7 +30,7 @@
   export let showAppRequestStatus = true
   export let statusDisplay: 'tags' | 'icons' = 'tags'
   export let showTooltipsAsText = false
-  /** Apply print-export styles: hide app chrome and paginate by prompt row rather than by panel. */
+  /** Apply print-export styles: paginate by prompt row rather than by panel. PrintExport hides the rest of the page. */
   export let printMode = false
   /** Show an "Exported <date> at <time>" line under the title. Defaults on for print-export screens. */
   export let showExportTimestamp = printMode
@@ -257,12 +257,6 @@
       </Panel>
     {/if}
 
-    {#if printMode}
-      <div class="print-actions">
-        <Button on:click={() => window.print()}>Print</Button>
-      </div>
-    {/if}
-
     <slot name="footer" />
   </div>
 {:else}
@@ -380,32 +374,7 @@
     --cds-icon-01: var(--cds-link-01);
   }
 
-  .print-mode {
-    /* keep the last row clear of the floating print button */
-    padding-bottom: 4rem;
-  }
-
-  .print-actions {
-    position: fixed;
-    right: 2rem;
-    bottom: 2rem;
-    z-index: 10;
-  }
-
   @media print {
-    .print-mode {
-      padding-bottom: 0;
-    }
-
-    .print-actions {
-      display: none;
-    }
-
-    :global(body:has(.application-details.print-mode) .bx--header),
-    :global(body:has(.application-details.print-mode) .breadcrumbs) {
-      display: none !important;
-    }
-
     /* Never mark the whole view or a whole panel break-inside: avoid — when either is
        taller than the space left on a page, the browser pushes it to the next page and
        leaves the first page nearly blank. Keep only small units together instead. */

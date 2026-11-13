@@ -3,8 +3,8 @@
   import { resolve } from '$app/paths'
   import type { ApplicationForDetails, AppRequestForDetails, Scalars } from '@reqquest/ui'
   import {
-    AnnouncementBanner, api, ApplicationDetailsView, AppRequestCard, IntroPanel, type AppRequestForExportResponse, type DashboardAppRequest,
-    getPeriodDisplayInfo, getPeriodStatus, getStatusActionType, getSubmitButtonText
+    AnnouncementBanner, api, ApplicationDetailsView, AppRequestCard, exportTitle, IntroPanel, type AppRequestForExportResponse, type DashboardAppRequest,
+    getPeriodDisplayInfo, getPeriodStatus, getStatusActionType, getSubmitButtonText, PrintExport
   } from '$internal'
   import { CardGrid, FieldMultiselect, FilterUI, Panel, PanelDialog, Toasts } from '@txstate-mws/carbon-svelte'
   import { toasts } from '@txstate-mws/svelte-components'
@@ -180,8 +180,22 @@
   //   console.log('Download offer for', requestId)
   // }
 
+  let printExport: PrintExport
+
+  // only show app request number in export if more than one in period
+  function hasSiblingInPeriod (requestId: string) {
+    const periodId = appRequests.find(r => r.id === requestId)?.period.id
+    return periodId != null && appRequests.some(r => r.id !== requestId && r.period.id === periodId)
+  }
+
+  // print the export in place
   async function exportApplication (requestId: string) {
-    await goto(resolve(`/requests/${requestId}/export`))
+    try {
+      await printExport.print(requestId, { includeRequestNumber: hasSiblingInPeriod(requestId) })
+    } catch (error) {
+      showError(`Failed to export ${uiRegistry.getWord('appRequest').toLowerCase()}`)
+      console.error('Error exporting application:', error)
+    }
   }
 
   // ==========================================
@@ -448,7 +462,7 @@
         {postqualPrompts}
         {loading}
         {uiRegistry}
-        title={selectedAppRequest.period?.name ? `View your ${selectedAppRequest.period.name} ${uiRegistry.getWord('appRequest').toLowerCase()}` : `View your ${uiRegistry.getWord('appRequest').toLowerCase()}`}
+        title={exportTitle(selectedAppRequest, uiRegistry, hasSiblingInPeriod(selectedAppRequest.id))}
         showCorrectionsInline
       />
     {/if}
@@ -471,6 +485,8 @@
       {/if}
     </p>
   </Modal>
+
+  <PrintExport bind:this={printExport} {uiRegistry} />
 
   <Toasts />
 </div>

@@ -911,6 +911,17 @@ class API extends APIBase {
     return response.appRequestIndexes[0]?.values ?? []
   }
 
+  async countAppRequestsInPeriod (login: string, periodId: string) {
+    const response = await this.client.query({
+      __name: 'CountAppRequestsInPeriod',
+      appRequests: {
+        __args: { filter: { logins: [login], periodIds: [periodId] } },
+        id: true
+      }
+    })
+    return response.appRequests.length
+  }
+
   async getBasicRequestData (appRequestId: string) {
     const response = await this.client.query({
       __name: 'GetBasicRequestData',

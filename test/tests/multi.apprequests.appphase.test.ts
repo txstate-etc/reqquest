@@ -128,6 +128,15 @@ test.describe.serial('App Request - App Phase - workflows', { tag: '@multi' }, (
     appRequestId = createAppRequest.appRequest.id
     expect(createAppRequest.appRequest.applicant.login).toEqual(applicantLogin)
   })
+  test('Applicant - with two requests in one period the side panel heading names the request number', async ({ applicantPage }) => {
+    await applicantPage.goto('/dashboards/applicant')
+    // each card sits in its own wrapper on the dashboard; either of the two requests in this period will do
+    const card = applicantPage.locator('.max-w-\\[680px\\]', { hasText: name }).first()
+    await card.getByRole('menuitem', { name: 'Show Actions' }).click()
+    await applicantPage.locator('.bx--overflow-menu-options__btn', { hasText: /^\s*View / }).click()
+    await expect(applicantPage.getByRole('heading', { name: new RegExp(`^${name} \\S+ \\d+$`) })).toBeVisible()
+    await applicantPage.getByRole('button', { name: 'Close', exact: true }).first().click()
+  })
   test('Sudoer - create app request on behalf of applicant after applicant already created own', async ({ suRequest }) => {
     const query = `
       mutation CreateAppRequest($login:String!, $periodId: ID!, $validateOnly: Boolean) {

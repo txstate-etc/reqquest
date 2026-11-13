@@ -105,4 +105,32 @@ test.describe.serial('Reverse a disqualified review out of blocking workflow', {
     const letterPrompt = requirement(state, swdev, 'reccomendation_letter_req').prompts.find(p => p.key === 'reccomendation_letter_prompt')!
     await expect(reviewerPage.locator(`#edit-btn-${letterPrompt.id}`)).toBeVisible()
   })
+
+  test('Reviewer - Export in Reviewer Actions prints the reviewer export without leaving the review screen', async ({ reviewerPage }) => {
+    const reviewUrl = `/requests/${appRequestId}/approve/${swdev}`
+    await reviewerPage.goto(reviewUrl)
+    // a real print dialog would block the page, so record the call instead
+    await reviewerPage.evaluate(() => { window.print = () => { (window as any).printCalls = ((window as any).printCalls ?? 0) + 1 } })
+    await reviewerPage.getByRole('button', { name: 'export', exact: true }).click()
+    await expect.poll(async () => await reviewerPage.evaluate(() => (window as any).printCalls)).toEqual(1)
+    expect(new URL(reviewerPage.url()).pathname).toEqual(reviewUrl)
+
+    const exportView = reviewerPage.locator('.rq-print-root .application-details')
+    const reviewerActions = reviewerPage.getByText('Reviewer Actions')
+    await expect(exportView).toBeHidden()
+    await reviewerPage.emulateMedia({ media: 'print' })
+    try {
+      await expect(exportView).toBeVisible()
+      // '{applicant}, {period} {appRequest word}'; no request number while it is the applicant's only request in the period
+      await expect(exportView.getByRole('heading', { name: /^\S.*, 2025 reverse disqualified review [A-Za-z]+$/ })).toBeVisible()
+      await expect(exportView.getByText(/^Complete \S+ details for review\.$/)).toBeVisible()
+      await expect(reviewerActions).toBeHidden()
+
+      await reviewerPage.evaluate(() => window.dispatchEvent(new Event('afterprint')))
+      await expect(exportView).toHaveCount(0)
+      await expect(reviewerActions).toBeVisible()
+    } finally {
+      await reviewerPage.emulateMedia({ media: null })
+    }
+  })
 })
