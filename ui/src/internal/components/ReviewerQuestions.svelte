@@ -262,8 +262,9 @@
               {/if}
             {/snippet}
             <dt class:small class:large class:isReviewerQuestion class:disabled={disabled} class:bg-tagyellow-200={isAutomation}>
+            <div class="dt-title">
             {#if promptIndicator[prompt.key]?.indicator && (promptIndicator[prompt.key].indicator !== PromptIndicators.PENDING || (isReviewerQuestion && prompt.actions.update))}
-                <div class="indicator-tooltip">
+                <div class="indicator-tooltip" class:indicator-pending={promptIndicator[prompt.key].indicator === PromptIndicators.PENDING}>
                 <Tooltip align="start" direction="bottom">
                     <svelte:fragment slot="icon">
                     {#if promptIndicator[prompt.key]?.indicator === PromptIndicators.AUTOMATION}
@@ -284,6 +285,7 @@
             {/if}
             <div id={dtid}>
                 {prompt.title}
+            </div>
             </div>
             {#if large && !editMode}
               {@render editButtons()}
@@ -464,8 +466,6 @@
     gap: 4px;
     min-width: 0;
   }
-  /* a large prompt's open-in-dialog button sits at the start of the answer column, so the dt borrows
-     the prompt list's column tracks */
   .prompts dt.large:has(> :global(.prompt-dialog-open)) {
     display: grid;
     grid-template-columns: subgrid;
@@ -483,6 +483,12 @@
   .prompts dt .indicator-tooltip {
     display: inline-block;
     margin-left: -24px;
+  }
+  .prompts dt .indicator-tooltip.indicator-pending {
+    position: absolute;
+    top: 12px;
+    left: 4px;
+    margin-left: 0;
   }
   .prompts dt .indicator-tooltip :global(> div) {
     line-height: 0;
@@ -504,5 +510,9 @@
   }
   :global(.panel:has(.isReviewerQuestion.disabled) .panel-header) {
     background-color: #8C8C8C !important;
+  }
+  :global(.panel:has(.isReviewerQuestion.disabled) .reviewer-question-tally .bx--tag) {
+    background-color: var(--cds-tag-background-gray, #e0e0e0);
+    color: var(--cds-tag-color-gray, #393939);
   }
 </style>
