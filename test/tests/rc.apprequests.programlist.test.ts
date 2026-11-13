@@ -31,6 +31,8 @@ const optOutPromptKeys = ['operations_infrastructure_opt_out_prompt', 'software_
 const previewHint = 'Select document names to preview them.'
 // on the dashboard the number is left off while it is the applicant's only request in the period
 const soleRequestHeading = /^Period 1 \S+$/
+// other rc specs give this applicant requests in periods of their own, so pick the dashboard card by period
+const periodCardSelector = '.max-w-\\[680px\\]'
 
 type ListedApplication = { programKey: string, status: string, ineligiblePhase: string | null, hiddenIneligiblePreSubmit: boolean }
 async function listedApplications (graphql: Graphql, appRequestId: number) {
@@ -89,7 +91,7 @@ test.describe.serial('Applicant program list - hidden, opted-out and auto-comple
 
   test('Applicant - the dashboard side panel is headed like the export and keeps its document hint', async ({ applicantPage }) => {
     await applicantPage.goto('/dashboards/applicant')
-    await applicantPage.getByRole('menuitem', { name: 'Show Actions' }).first().click()
+    await applicantPage.locator(periodCardSelector, { hasText: 'Period 1' }).getByRole('menuitem', { name: 'Show Actions' }).click()
     await applicantPage.locator('.bx--overflow-menu-options__btn', { hasText: /^\s*View / }).click()
     await expect(applicantPage.getByRole('heading', { name: soleRequestHeading })).toBeVisible()
     // documents can be opened from the panel, so unlike the printout it keeps the hint
@@ -102,7 +104,7 @@ test.describe.serial('Applicant program list - hidden, opted-out and auto-comple
     await applicantPage.goto('/dashboards/applicant')
     // a real print dialog would block the page, so record the call instead
     await applicantPage.evaluate(() => { window.print = () => { (window as any).printCalls = ((window as any).printCalls ?? 0) + 1 } })
-    await applicantPage.getByRole('menuitem', { name: 'Show Actions' }).first().click()
+    await applicantPage.locator(periodCardSelector, { hasText: 'Period 1' }).getByRole('menuitem', { name: 'Show Actions' }).click()
     await applicantPage.locator('.bx--overflow-menu-options__btn', { hasText: /^\s*Export / }).click()
     await expect.poll(async () => await applicantPage.evaluate(() => (window as any).printCalls)).toEqual(1)
     expect(new URL(applicantPage.url()).pathname).toEqual('/dashboards/applicant')
