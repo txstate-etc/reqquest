@@ -14,7 +14,7 @@
  * Run it from the project root (the directory holding package.json and src/local).
  */
 import { spawnSync, spawn } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, watch } from 'node:fs'
+import { cpSync, mkdirSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { sync, SyncError } from '../cli/sync.js'
@@ -54,24 +54,7 @@ function dev () {
   svelteKitSync()
   const vite = spawn(process.execPath, [packageBin('vite', PACKAGE_ROOT), 'dev', ...args], { cwd: appRoot, stdio: 'inherit' })
   vite.on('exit', code => process.exit(code ?? 0))
-
-  // src/local is aliased in place, so Vite already watches it; routes and static are copied
-  let timer
-  const resync = () => {
-    clearTimeout(timer)
-    timer = setTimeout(() => {
-      try {
-        sync(projectRoot)
-      } catch (e) {
-        if (!(e instanceof SyncError)) throw e
-        console.error(`reqquest-ui: ${e.message}`)
-      }
-    }, 100)
-  }
-  for (const dir of ['src/routes', 'static']) {
-    if (existsSync(join(projectRoot, dir))) watch(join(projectRoot, dir), { recursive: true }, resync)
-  }
-  watch(join(projectRoot, 'package.json'), resync)
+  // src/routes, static and package.json re-sync from a plugin on Vite's own watcher - see resyncPlugin in cli/config.js
 }
 
 function build () {

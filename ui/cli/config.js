@@ -9,7 +9,7 @@
  *
  * Mirrors ui/svelte.config.js and ui/vite.config.ts; change them together.
  */
-import { join } from 'node:path'
+import { isAbsolute, join, relative } from 'node:path'
 import adapter from '@sveltejs/adapter-static'
 import { sveltekit } from '@sveltejs/kit/vite'
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
@@ -17,6 +17,7 @@ import carbonSvelteTailwind from '@txstate-mws/carbon-svelte/tailwind'
 import autoprefixer from 'autoprefixer'
 import { optimizeImports } from 'carbon-preprocess-svelte'
 import tailwindcss from 'tailwindcss'
+import { sync, SyncError } from './sync.js'
 import { packageDir } from './util.js'
 
 /**
@@ -71,7 +72,7 @@ export function svelteConfig ({ projectRoot, appRoot, basePath = '' }) {
 export function viteConfig ({ projectRoot, appRoot }) {
   const globs = '**/*.{html,js,svelte,ts}'
   return {
-    plugins: [sveltekit()],
+    plugins: [sveltekit(), resyncPlugin(projectRoot)],
     build: {
       sourcemap: true
     },
@@ -100,6 +101,47 @@ export function viteConfig ({ projectRoot, appRoot }) {
           autoprefixer()
         ]
       }
+    }
+  }
+}
+
+/**
+ * Dev only: re-runs sync when the project's src/routes, static or package.json change, since those
+ * are copied into .reqquest/ rather than aliased like src/local.
+ *
+ * This rides Vite's own chokidar watcher instead of fs.watch. On Node 24 and earlier a recursive
+ * fs.watch on Linux watches each file's inode, so once a file is replaced by rename (an atomic save,
+ * or a write that a docker bind mount never propagates) its watcher is orphaned and every later edit
+ * to that file is missed until restart. Chokidar recovers from that, and it also honours
+ * CHOKIDAR_USEPOLLING when events do not reach the container at all.
+ *
+ * @param {string} projectRoot
+ * @returns {import('vite').Plugin}
+ */
+function resyncPlugin (projectRoot) {
+  const watched = ['src/routes', 'static', 'package.json'].map(p => join(projectRoot, p))
+  const isWatched = path => watched.some(w => {
+    const rel = relative(w, path)
+    return !rel.startsWith('..') && !isAbsolute(rel)
+  })
+  return {
+    name: 'reqquest-resync',
+    apply: 'serve',
+    configureServer (server) {
+      server.watcher.add(watched)
+      let timer
+      server.watcher.on('all', (_event, path) => {
+        if (!isWatched(path)) return
+        clearTimeout(timer)
+        timer = setTimeout(() => {
+          try {
+            sync(projectRoot)
+          } catch (e) {
+            // log rather than throw: an exception here would take the dev server down with it
+            server.config.logger.error(`reqquest-ui: ${e instanceof SyncError ? e.message : e.stack}`)
+          }
+        }, 100)
+      })
     }
   }
 }
