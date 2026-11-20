@@ -357,6 +357,12 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
       if (updated) {
         const applications = await this.svc(ApplicationService).findByAppRequest(updatedAppRequest)
         await appConfig.hooks?.updatePrompt?.(this.ctx, updatedAppRequest, appRequestData!, prompt.key, savedData)
+        // isolated so one prompt's broken side effect cannot stop the status and phase hooks below
+        try {
+          await prompt.definition.afterUpdate?.(appRequestData![prompt.key], savedData, this.ctx, updatedAppRequest, appRequestData!)
+        } catch (err) {
+          console.error(err)
+        }
         if (updatedAppRequest.status !== previousAppRequestStatus) {
           await appConfig.hooks?.appRequestStatus?.(this.ctx, updatedAppRequest, previousAppRequestStatus)
         }
