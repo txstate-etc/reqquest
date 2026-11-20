@@ -452,8 +452,41 @@ export interface PromptDefinition<DataType = any, InputDataType = DataType, Pres
    *
    * `validate` cannot read the applicant's earlier requests. If it needs them, copy what it needs into
    * the saved data here using the `previous` selector (see `PreviousRequestSelector`).
+   *
+   * **Never send an email or call another system from here.** This function runs inside the save's
+   * transaction, before the optimistic concurrency check, and runs again if the transaction hits a
+   * deadlock - so a side effect here can happen for a save that is then thrown away, or happen twice.
+   * Use `afterUpdate` for side effects.
    */
   preProcessData?: (data: InputDataType, ctx: RQContext, appRequest: AppRequest, appRequestData: Record<string, any>, allPeriodConfig: Record<string, any>, db: Queryable, validateOnly: boolean, previous: PreviousRequestSelector) => Promise<DataType> | DataType
+  /**
+   * Code that runs after a save of this prompt has committed, for side effects like emailing the
+   * applicant or notifying another system. It only runs when the saved data actually changed, and
+   * never for a `validateOnly` request, so you can compare `data` against `oldData` to decide whether
+   * anything happened that you care about. `oldData` is undefined the first time the prompt is saved.
+   *
+   * Be careful with prompts the reviewer edits inline: those forms autosave a few hundred milliseconds
+   * after every pause in typing, so "the message field changed" fires on every half-typed draft. If the
+   * user needs to decide when something happens, give them a `PromptActionButton` from `@reqquest/ui`
+   * and check for it here with `promptActionFired`:
+   *
+   * ```ts
+   * afterUpdate: async (data, oldData, ctx, appRequest) => {
+   *   const fired = promptActionFired(data.sendNote, oldData?.sendNote)
+   *   if (!fired || !data.note?.trim()) return
+   *   await ctx.svc(MailService).sendmulti({
+   *     userIds: [appRequest.userInternalId],
+   *     templateKey: 'my_note_template',
+   *     extra: { note: data.note },
+   *     dedupKey: userId => `my_note:${appRequest.id}:${fired.clickId}:${userId}` // a retried request cannot send it twice
+   *   })
+   * }
+   * ```
+   *
+   * This runs after the app-level `hooks.updatePrompt`. An error thrown here is logged and swallowed,
+   * because the save has already committed and the user should not see it reported as a failure.
+   */
+  afterUpdate?: (data: DataType, oldData: DataType | undefined, ctx: RQContext, appRequest: AppRequest, appRequestData: AppRequestData) => void | Promise<void>
   /**
    * Optionally provide a function that can perform server side prompt staging operations, such as querying and returning data that is meant to be readonly to the applicant.
    * Process can be specified as recurring or run on first call only. If recur is true, the process function will run on every stage of the prompt.

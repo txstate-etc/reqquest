@@ -426,6 +426,38 @@ only, and is always rendered in a full-screen modal.
 <FieldSelect path="term" labelText="Term" items={terms} />
 ```
 
+### 6. Reviewer prompt that emails the applicant
+
+The tempting version is "email the applicant when the note changes", and on the reviewer screen it
+emails every half-typed draft, because inline reviewer forms autosave a few hundred milliseconds
+after each pause in typing. Let the reviewer decide when with `PromptActionButton`:
+
+```svelte
+<script lang="ts">
+  import { FieldTextArea } from '@txstate-mws/carbon-svelte'
+  import { PromptActionButton } from '@reqquest/ui'
+  export let data
+</script>
+
+<FieldTextArea path="note" labelText="Message to the applicant" />
+<PromptActionButton
+  path="sendNote"
+  label="Send note to applicant"
+  againLabel="Resend note"
+  doneText="Sent to applicant"
+  snapshot={data.note?.trim()}
+  disabled={!data.note?.trim()}
+  confirmText="The applicant will receive this note by email."
+/>
+```
+
+Clicking saves immediately and records the click at `sendNote`. The API definition adds
+`sendNote: promptActionSchema` to its schema and does the sending in `afterUpdate`, using
+`promptActionFired(data.sendNote, oldData?.sendNote)` to tell the click apart from ordinary saves -
+both are exported from `@reqquest/api`, and the doc comment on `afterUpdate` has the full example.
+Passing the note as `snapshot` makes the button point out when the note has been edited since it was
+sent.
+
 ## Field idioms
 
 Three patterns that are not obvious from the prop tables and cause real bugs when missed.
