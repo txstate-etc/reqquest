@@ -4,7 +4,7 @@ import { findIndex, groupby, keyby } from 'txstate-utils'
 import {
   Application, applicationComputedRow, ApplicationPhase, ApplicationRequirement, ApplicationStatus, AppRequest, AppRequestPhase, appRequestPhaseReached,
   AppRequestStatus, AppRequestStatusDB, appRequestTransaction, deriveApplicationStatus, getAppRequestForEvaluation, appRequestComputedRow,
-  getPeriodWorkflowStages, IneligiblePhases, PeriodWorkflowStage, programRegistry, promptComputedRow, promptRegistry, PromptVisibility, RequirementPrompt,
+  getPeriodWorkflowStages, IneligiblePhases, nonBlockingSunsetReached, PeriodWorkflowStage, programRegistry, promptComputedRow, promptRegistry, PromptVisibility, RequirementPrompt,
   requirementComputedRow, RequirementStatus, RequirementType, syncApplications, syncPromptRecords, syncRequirementRecords, updateAppRequestComputed,
   updateApplicationsComputed, updatePromptComputed, updateRequirementComputed, type AppRequestData, type ProgramContext, type ProgramSelector, type ResolveResult
 } from '../internal.js'
@@ -58,6 +58,12 @@ interface EvaluationContext {
    * read program context - then only programs with the same values for what it read reuse it.
    */
   resolveCache: Map<string, ResolveCacheEntry[][]>
+  /**
+   * true while previewing an unsaved answer (see `previewAppRequestEvaluation`). Nothing is persisted
+   * and a `resolve` that throws is treated as PENDING, since it may be looking at data that has not
+   * passed validation.
+   */
+  preview?: boolean
 }
 
 interface ResolveCacheEntry {
@@ -83,6 +89,7 @@ interface RequirementBuckets {
   currentWorkflow: ApplicationRequirement[]
   /** non-blocking workflow requirements whose emergence phase the request has reached */
   emergedNonblocking: ApplicationRequirement[]
+  openNonblocking: ApplicationRequirement[]
   presubmit: ApplicationRequirement[]
   review: ApplicationRequirement[]
   accept: ApplicationRequirement[]
@@ -230,6 +237,43 @@ export async function evaluateAppRequest (appRequestInternalId: number, tdb?: Qu
 }
 
 /**
+ * Evaluate the appRequest as it would stand if `promptData` were saved as the answer to `promptKey`,
+ * without saving anything. This is what lets a form show a requirement's status, reason and blame
+ * while the user is still typing: the same `resolve` functions run through the same gating as a real
+ * evaluation, so what is shown cannot disagree with what a save would then store.
+ *
+ * One deliberate difference from a real evaluation: the prompt being edited counts as answered even
+ * if its validation has errors, so feedback can appear before the whole form is valid. Requirements
+ * therefore may see data that has not passed `validate`; one that throws is treated as PENDING.
+ *
+ * Returns the evaluated in-memory models, or undefined when the request is not open. They are
+ * throwaway copies - tagging, prompt locks, the request rollup and persistence are all skipped.
+ */
+export async function previewAppRequestEvaluation (appRequestInternalId: number, promptKey: string, promptData: any, db: Queryable) {
+  const ctx = await loadEvaluationContext(appRequestInternalId, db)
+  if (!ctx) return undefined
+  ctx.preview = true
+  ctx.data = { ...ctx.data, [promptKey]: promptData }
+
+  await markPromptsAnswered(ctx, db)
+  for (const prompt of ctx.prompts) {
+    if (prompt.key !== promptKey) continue
+    prompt.answered = true
+    // saving a prompt clears its own invalidation, so the preview assumes the same
+    prompt.invalidated = false
+  }
+
+  const acc: RequestAccumulators = {
+    promptsSeenInRequest: new Set(),
+    promptKeysLocked: new Set(),
+    reviewStartedApplicationIds: new Set()
+  }
+  for (const application of ctx.applications) evaluateApplication(ctx, application, acc)
+
+  return { applications: ctx.applications, requirements: ctx.requirements, prompts: ctx.prompts }
+}
+
+/**
  * Load the appRequest and everything the evaluation reads. Returns undefined when the request is
  * not OPEN: a closed request is not evaluated. COMPLETE requests are still evaluated because an
  * application can be RESCINDED or restored after completion and the request-level status has to follow it.
@@ -372,7 +416,7 @@ function evaluateApplication (ctx: EvaluationContext, application: Application, 
   const noTrailingWork = !buckets.preapproval.length && !buckets.approval.length && !buckets.acceptance.length && !buckets.blockingWorkflow.length && !buckets.nonblockingWorkflow.length
 
   // phase reads the ineligiblePhase from the previous evaluation, so it is computed before ineligiblePhase is refreshed
-  application.phase = computeApplicationPhase(phase, application, summary, firstAwaitingCorrectionRequirement, reviewInProgress, buckets.nonblockingWorkflow.length > 0, noTrailingWork)
+  application.phase = computeApplicationPhase(phase, application, summary, firstAwaitingCorrectionRequirement, reviewInProgress, buckets.openNonblocking.length > 0, noTrailingWork)
   application.ineligiblePhase = computeIneligiblePhase(phase, summary, application.ineligiblePhase)
 
   for (const requirement of requirementsToLock(phase, application, buckets)) {
@@ -383,7 +427,8 @@ function evaluateApplication (ctx: EvaluationContext, application: Application, 
 function classifyEvaluationPhase (appRequest: AppRequest, application: Application, activeWorkflowStage: PeriodWorkflowStage | undefined): EvaluationPhase {
   // checked before 'complete': an application auto-completed at submission must be re-evaluated when the request is returned to the applicant
   if (appRequest.phase === AppRequestPhase.STARTED) return 'applicant'
-  if (application.phase === ApplicationPhase.COMPLETE || application.phase === ApplicationPhase.READY_TO_COMPLETE) return 'complete'
+  // READY_TO_COMPLETE is not complete: its non-blocking answers are still editable until a reviewer marks the program complete, so it keeps being evaluated
+  if (application.phase === ApplicationPhase.COMPLETE) return 'complete'
   if (appRequest.phase === AppRequestPhase.ACCEPTANCE) return 'acceptance'
   if (application.workflowStageKey) return activeWorkflowStage?.blocking ? 'blocking' : 'nonblocking'
   if (appRequest.phase === AppRequestPhase.WORKFLOW_NONBLOCKING) return 'nonblocking'
@@ -411,7 +456,9 @@ function bucketRequirements (ctx: EvaluationContext, application: Application): 
     const emergence = programRegistry.getWorkflowStageByKey(req.workflowStageKey)?.nonBlockingEmergence ?? AppRequestPhase.WORKFLOW_NONBLOCKING
     return appRequestPhaseReached(ctx.appRequest.phase, emergence)
   })
-  return { prequal, qualification, postqual, preapproval, approval, acceptance, blockingWorkflow, nonblockingWorkflow, currentWorkflow, emergedNonblocking, presubmit, review, accept }
+  // still editable in this request phase, so there is still something for a reviewer to finish and mark complete
+  const openNonblocking = nonblockingWorkflow.filter(req => !nonBlockingSunsetReached(programRegistry.getWorkflowStageByKey(req.workflowStageKey), ctx.appRequest.phase))
+  return { prequal, qualification, postqual, preapproval, approval, acceptance, blockingWorkflow, nonblockingWorkflow, currentWorkflow, emergedNonblocking, openNonblocking, presubmit, review, accept }
 }
 
 /**
@@ -488,7 +535,14 @@ function resolveRequirement (ctx: EvaluationContext, application: Application, r
   let hasUnanswered = false
   let resolveInfo: ResolveResult
 
-  const resolve = () => resolveWithCache(ctx, application, requirement, priorStatuses, requiredData)
+  const resolve = (): ResolveResult => {
+    if (!ctx.preview) return resolveWithCache(ctx, application, requirement, priorStatuses, requiredData)
+    try {
+      return resolveWithCache(ctx, application, requirement, priorStatuses, requiredData)
+    } catch {
+      return { status: RequirementStatus.PENDING }
+    }
+  }
   const markSeen = (prompt: RequirementPrompt) => {
     if (promptsAreMoot) return
     seen.application.add(prompt.key)
@@ -542,7 +596,7 @@ function resolveRequirement (ctx: EvaluationContext, application: Application, r
 
   requirement.status = resolveInfo!.status
   requirement.statusReason = resolveInfo!.reason
-  requirement.blame = resolveInfo!.blame?.length ? resolveInfo!.blame : undefined
+  requirement.setBlame(resolveInfo!.blame)
 
   return {
     disqualifying: requirement.status === RequirementStatus.DISQUALIFYING,
@@ -687,7 +741,7 @@ function computeApplicationPhase (
   summary: ResolutionSummary,
   firstAwaitingCorrectionRequirement: ApplicationRequirement | undefined,
   reviewInProgress: boolean,
-  hasNonblockingWorkflowRequirements: boolean,
+  hasOpenNonblockingWorkflow: boolean,
   noTrailingWork: boolean
 ): ApplicationPhase {
   const settled = summary.resolution !== 'pending' && !application.awaitingCorrection
@@ -698,10 +752,10 @@ function computeApplicationPhase (
   case 'complete':
     return ApplicationPhase.COMPLETE
   case 'nonblocking':
-    if (isPresubmissionIneligible(application)) return ApplicationPhase.READY_TO_COMPLETE
+    if (isPresubmissionIneligible(application)) return ApplicationPhase.COMPLETE
     // not `settled`: that reads the aggregate resolution, where a fail outranks a pending, and here a failed requirement must never hide a pending one
     if (summary.firstPending != null || application.awaitingCorrection) return ApplicationPhase.WORKFLOW_NONBLOCKING
-    return hasNonblockingWorkflowRequirements ? ApplicationPhase.READY_FOR_WORKFLOW : ApplicationPhase.READY_TO_COMPLETE
+    return hasOpenNonblockingWorkflow ? ApplicationPhase.READY_TO_COMPLETE : ApplicationPhase.COMPLETE
   case 'acceptance':
     return settled ? ApplicationPhase.READY_TO_ACCEPT : ApplicationPhase.ACCEPTANCE
   case 'applicant':
@@ -763,7 +817,8 @@ function requirementsToLock (phase: EvaluationPhase, application: Application, b
     const activeStageIndex = findIndex(buckets.blockingWorkflow, r => r.workflowStageKey === application.workflowStageKey) ?? buckets.blockingWorkflow.length
     return [...buckets.review, ...buckets.blockingWorkflow.slice(0, activeStageIndex)]
   }
-  // never lock non-blocking workflow requirements, once emerged they stay editable for the remainder of the lifecycle.
+  // never lock non-blocking workflow requirements here: once emerged they stay editable until their stage's nonBlockingSunset, which
+  // RequirementPromptService.mayUpdate enforces per stage. A lock is per prompt key across the whole request, too broad for that.
   if (phase === 'nonblocking') return [...buckets.review, ...buckets.blockingWorkflow, ...buckets.acceptance]
   if (phase === 'acceptance') return [...buckets.review, ...buckets.blockingWorkflow]
   return []
@@ -780,7 +835,8 @@ function rollupAppRequest (ctx: EvaluationContext, acc: RequestAccumulators) {
   appRequest.awaitingCorrection = applications.some(a => a.awaitingCorrection)
   const allDead = applications.every(a => a.status === ApplicationStatus.INELIGIBLE || a.status === ApplicationStatus.REJECTED || a.status === ApplicationStatus.RESCINDED)
   appRequest.status = allDead ? deadApplicationsStatus(ctx, acc) : liveApplicationsStatus(ctx, acc)
-  appRequest.readyToComplete = appRequest.phase === AppRequestPhase.WORKFLOW_NONBLOCKING && applications.every(a => a.phase === ApplicationPhase.READY_TO_COMPLETE || a.phase === ApplicationPhase.COMPLETE)
+  // READY_TO_COMPLETE does not count: that program is finished but a reviewer has not marked it complete yet
+  appRequest.readyToComplete = appRequest.phase === AppRequestPhase.WORKFLOW_NONBLOCKING && applications.every(a => a.phase === ApplicationPhase.COMPLETE)
 }
 
 /**
@@ -841,7 +897,7 @@ function liveApplicationsStatus (ctx: EvaluationContext, acc: RequestAccumulator
   if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_BLOCKING)) return AppRequestStatus.REVIEW_IN_PROGRESS
   if (applications.some(a => a.phase === ApplicationPhase.APPROVAL)) return AppRequestStatus.APPROVAL
   const anyAccepted = applications.some(a => a.status === ApplicationStatus.ACCEPTED)
-  if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_NONBLOCKING || a.phase === ApplicationPhase.READY_FOR_WORKFLOW)) return anyAccepted ? AppRequestStatus.ACCEPTED : AppRequestStatus.APPROVED
+  if (applications.some(a => a.phase === ApplicationPhase.WORKFLOW_NONBLOCKING || a.phase === ApplicationPhase.READY_FOR_WORKFLOW || a.phase === ApplicationPhase.READY_TO_COMPLETE)) return anyAccepted ? AppRequestStatus.ACCEPTED : AppRequestStatus.APPROVED
   if (applications.every(a => a.phase === ApplicationPhase.COMPLETE || a.phase === ApplicationPhase.READY_TO_COMPLETE)) return anyAccepted ? AppRequestStatus.ACCEPTED : AppRequestStatus.APPROVED
   return AppRequestStatus.STARTED
 }

@@ -358,6 +358,8 @@ export interface Application {
     applicantDescription: (Scalars['String'] | null)
     /** True when at least one reachable prompt on this application has been invalidated and must be re-answered. Status is still computed from the answers on file, so pair status displays with this flag to indicate that a correction is outstanding. */
     awaitingCorrection: Scalars['Boolean']
+    /** True when this program has a non-blocking workflow stage that is still editable once the appRequest reaches WORKFLOW_NONBLOCKING, so a reviewer finishes it there with completeApplication. False when the program has no non-blocking stages, or every one of them reaches its nonBlockingSunset by then: such an application is finished by its last review or blocking workflow advance and goes to COMPLETE on its own. */
+    completesAfterNonBlocking: Scalars['Boolean']
     /** A prose summary of the applicant-side requirements of the program this application is for. Intended to be shown alongside statusReason when the application becomes ineligible before submission, since an applicant disqualified early may never have seen the program's prompts and the statusReason alone lacks context. */
     eligibilityDescription: (Scalars['String'] | null)
     /** True when the program sets showIneligiblePreSubmit: false and this application is hidden by it: ineligible because of an applicant requirement, and that ineligibility arose before submission (the request is unsubmitted, or the application was already ineligible when it was submitted). Only the applicant ever receives a hidden application, so they can still change the answers that disqualified them; UIs should leave it out of program lists. */
@@ -396,6 +398,8 @@ export interface Application {
 
 export interface ApplicationActions {
     advanceWorkflow: Scalars['Boolean']
+    completeApplication: Scalars['Boolean']
+    reopenApplication: Scalars['Boolean']
     rescindApplication: Scalars['Boolean']
     restoreApplication: Scalars['Boolean']
     reverseWorkflow: Scalars['Boolean']
@@ -464,6 +468,8 @@ export interface ApplicationRequirement {
     application: Application
     /** The prompt keys the requirement named as responsible for its current status. Used to attach status indicators to the specific answers at fault instead of every prompt the requirement consults. Null when the requirement did not name any, in which case all of its prompts are implicated. */
     blame: (Scalars['String'][] | null)
+    /** The same answers as `blame`, one entry per blame, with the specific form fields at fault and a helper message for them when the requirement named any. Null when `blame` is null. */
+    blameFields: (RequirementBlame[] | null)
     /** The configuration data for this requirement in the app request's period. */
     configurationData: (Scalars['JsonData'] | null)
     /** An internal description of the requirement. Probably not shown to users. */
@@ -579,12 +585,14 @@ export interface Mutation {
     acceptOffer: ValidatedAppRequestResponse
     /** Add a note to the app request. */
     addNote: ValidatedNoteResponse
-    /** Moves the application to the next blocking workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. In the non-blocking (WORKFLOW_NONBLOCKING) phase the workflow is non-sequential with all non-blocking requirements editable at once and once they are all resolved this becomes a single "Send to Complete" action that moves the application to COMPLETE. */
+    /** Moves the application to the next blocking workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. Non-blocking workflow is not sequential and is not advanced: once all of its requirements are resolved the application is READY_TO_COMPLETE and is finished with completeApplication. */
     advanceWorkflow: ValidatedAppRequestResponse
     /** Cancel or withdraw the app request, depending on its current phase. This is only available if the app request is in a cancellable state. */
     cancelAppRequest: ValidatedAppRequestResponse
     /** Close the app request. Generally this is always available and will freeze the request/applications in their current phase/status. */
     closeAppRequest: ValidatedAppRequestResponse
+    /** Marks a program complete during non-blocking workflow. Available when the application is READY_TO_COMPLETE, meaning none of its non-blocking requirements are PENDING. The application moves to COMPLETE, which locks its non-blocking prompts; the appRequest stays in WORKFLOW_NONBLOCKING until completeRequest, which requires every application to be COMPLETE. */
+    completeApplication: ValidatedAppRequestResponse
     /** Complete the app request. This is generally only available if request is in non-blocking workflow and all applications are complete. */
     completeRequest: ValidatedAppRequestResponse
     /** Make an offer on the app request. If all applications are ineligible, or if there are no acceptance requirements, the applications will advance to the non-blocking workflow, or absent that, be marked complete. */
@@ -602,6 +610,8 @@ export interface Mutation {
     markPeriodReviewed: ValidatedPeriodResponse
     /** Reopen the app request. This is only available if the app request is in a state that allows reopening. */
     reopenAppRequest: ValidatedAppRequestResponse
+    /** Reopens a program that was marked complete with completeApplication, while the appRequest is still in WORKFLOW_NONBLOCKING, so its non-blocking prompts can be edited again. Not available for an application that completed on its own because it had no non-blocking workflow left open. */
+    reopenApplication: ValidatedAppRequestResponse
     /** Rescinds the approved and/or accepted application. */
     rescind: ValidatedAppRequestResponse
     /** Restores a previously rescinded application to its previous state. */
@@ -806,6 +816,33 @@ export interface Program {
 }
 
 
+/** A helper message a requirement attached to specific form fields of a prompt. */
+export interface PromptFieldReason {
+    /** Dotted paths into the prompt's data naming the form fields the message belongs on. */
+    fields: Scalars['String'][]
+    /** The message for those fields. When null, the statusReason of the enclosing entry applies. */
+    message: (Scalars['String'] | null)
+    /** How the message should be presented under those fields. Presentation only. When null, the status of the enclosing entry applies. */
+    status: (RequirementStatus | null)
+    __typename: 'PromptFieldReason'
+}
+
+
+/** What one requirement currently has to say about one prompt: its status, its overall reason, and any messages aimed at individual form fields. */
+export interface PromptStatusReason {
+    /** True when the requirement explicitly named this prompt in its blame. False when the requirement named nothing and the prompt is implicated only by belonging to it. */
+    blamed: Scalars['Boolean']
+    /** Messages aimed at individual form fields of this prompt. Empty when the requirement named no fields. */
+    fieldReasons: PromptFieldReason[]
+    /** The title of the program whose application this requirement belongs to. */
+    programName: Scalars['String']
+    status: RequirementStatus
+    /** The requirement's overall reason for its status. */
+    statusReason: (Scalars['String'] | null)
+    __typename: 'PromptStatusReason'
+}
+
+
 /** The visibility of a prompt on a request. This is used to determine whether the prompt should be shown to the user in the UI. */
 export type PromptVisibility = 'APPLICATION_DUPE' | 'AVAILABLE' | 'REQUEST_DUPE' | 'UNREACHABLE'
 
@@ -842,6 +879,20 @@ export interface Query {
     scopes: Scalars['String'][]
     userIndexes: IndexCategory[]
     __typename: 'Query'
+}
+
+
+/** One answer a requirement holds responsible for its current status, optionally narrowed to specific form fields. */
+export interface RequirementBlame {
+    /** Dotted paths into the prompt's data naming the form fields at fault. Null when the whole prompt is implicated. */
+    fields: (Scalars['String'][] | null)
+    /** A helper message for the named fields. When null, the requirement's statusReason applies. */
+    message: (Scalars['String'] | null)
+    /** The key of the prompt whose answer is at fault. */
+    promptKey: Scalars['String']
+    /** How the message on the named fields should be presented. It does not affect the requirement, whose own status decides its outcome. When null, the requirement's status applies. */
+    status: (RequirementStatus | null)
+    __typename: 'RequirementBlame'
 }
 
 
@@ -917,6 +968,8 @@ export interface ValidatedAnnouncementResponse {
 export interface ValidatedAppRequestResponse {
     appRequest: (AppRequest | null)
     messages: MutationMessage[]
+    /** Returned by updatePrompt: what each requirement has to say about the prompt being updated. With validateOnly this reflects the unsaved answer, evaluated without being stored, so a form can show requirement feedback as the user types; otherwise it reflects what was just saved. Null from other mutations. */
+    statusReasons: (PromptStatusReason[] | null)
     /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
     success: Scalars['Boolean']
     __typename: 'ValidatedAppRequestResponse'
@@ -1446,6 +1499,8 @@ export interface ApplicationGenqlSelection{
     applicantDescription?: boolean | number
     /** True when at least one reachable prompt on this application has been invalidated and must be re-answered. Status is still computed from the answers on file, so pair status displays with this flag to indicate that a correction is outstanding. */
     awaitingCorrection?: boolean | number
+    /** True when this program has a non-blocking workflow stage that is still editable once the appRequest reaches WORKFLOW_NONBLOCKING, so a reviewer finishes it there with completeApplication. False when the program has no non-blocking stages, or every one of them reaches its nonBlockingSunset by then: such an application is finished by its last review or blocking workflow advance and goes to COMPLETE on its own. */
+    completesAfterNonBlocking?: boolean | number
     /** A prose summary of the applicant-side requirements of the program this application is for. Intended to be shown alongside statusReason when the application becomes ineligible before submission, since an applicant disqualified early may never have seen the program's prompts and the statusReason alone lacks context. */
     eligibilityDescription?: boolean | number
     /** True when the program sets showIneligiblePreSubmit: false and this application is hidden by it: ineligible because of an applicant requirement, and that ineligibility arose before submission (the request is unsubmitted, or the application was already ineligible when it was submitted). Only the applicant ever receives a hidden application, so they can still change the answers that disqualified them; UIs should leave it out of program lists. */
@@ -1485,6 +1540,10 @@ export interface ApplicationGenqlSelection{
 
 export interface ApplicationActionsGenqlSelection{
     advanceWorkflow?: boolean | number
+    /** True when the current user may mark this program complete: the appRequest is in non-blocking workflow and none of the application's non-blocking requirements are PENDING. */
+    completeApplication?: boolean | number
+    /** True when the current user may reopen this program after it was marked complete, to edit its non-blocking workflow again. */
+    reopenApplication?: boolean | number
     rescindApplication?: boolean | number
     restoreApplication?: boolean | number
     reverseWorkflow?: boolean | number
@@ -1548,6 +1607,8 @@ export interface ApplicationRequirementGenqlSelection{
     application?: ApplicationGenqlSelection
     /** The prompt keys the requirement named as responsible for its current status. Used to attach status indicators to the specific answers at fault instead of every prompt the requirement consults. Null when the requirement did not name any, in which case all of its prompts are implicated. */
     blame?: boolean | number
+    /** The same answers as `blame`, one entry per blame, with the specific form fields at fault and a helper message for them when the requirement named any. Null when `blame` is null. */
+    blameFields?: RequirementBlameGenqlSelection
     /** The configuration data for this requirement in the app request's period. */
     configurationData?: boolean | number
     /** An internal description of the requirement. Probably not shown to users. */
@@ -1703,9 +1764,9 @@ export interface MutationGenqlSelection{
     acceptOffer?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Add a note to the app request. */
     addNote?: (ValidatedNoteResponseGenqlSelection & { __args: {appRequestId: Scalars['ID'], 
-    /** The content of the note. HTML is expected. */
+    /** The content of the note. HTML is expected. Maximum 350 characters. */
     content: Scalars['String'], persistent?: (Scalars['Boolean'] | null), validateOnly?: (Scalars['Boolean'] | null)} })
-    /** Moves the application to the next blocking workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. In the non-blocking (WORKFLOW_NONBLOCKING) phase the workflow is non-sequential with all non-blocking requirements editable at once and once they are all resolved this becomes a single "Send to Complete" action that moves the application to COMPLETE. */
+    /** Moves the application to the next blocking workflow stage. If phase is READY_FOR_WORKFLOW, moves to the first or next blocking workflow stage. If on the last blocking workflow, moves to REVIEW_COMPLETE. Non-blocking workflow is not sequential and is not advanced: once all of its requirements are resolved the application is READY_TO_COMPLETE and is finished with completeApplication. */
     advanceWorkflow?: (ValidatedAppRequestResponseGenqlSelection & { __args: {applicationId: Scalars['ID']} })
     /** Cancel or withdraw the app request, depending on its current phase. This is only available if the app request is in a cancellable state. */
     cancelAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID'], 
@@ -1713,6 +1774,8 @@ export interface MutationGenqlSelection{
     dataVersion?: (Scalars['Int'] | null)} })
     /** Close the app request. Generally this is always available and will freeze the request/applications in their current phase/status. */
     closeAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
+    /** Marks a program complete during non-blocking workflow. Available when the application is READY_TO_COMPLETE, meaning none of its non-blocking requirements are PENDING. The application moves to COMPLETE, which locks its non-blocking prompts; the appRequest stays in WORKFLOW_NONBLOCKING until completeRequest, which requires every application to be COMPLETE. */
+    completeApplication?: (ValidatedAppRequestResponseGenqlSelection & { __args: {applicationId: Scalars['ID']} })
     /** Complete the app request. This is generally only available if request is in non-blocking workflow and all applications are complete. */
     completeRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
     /** Make an offer on the app request. If all applications are ineligible, or if there are no acceptance requirements, the applications will advance to the non-blocking workflow, or absent that, be marked complete. */
@@ -1730,6 +1793,8 @@ export interface MutationGenqlSelection{
     markPeriodReviewed?: (ValidatedPeriodResponseGenqlSelection & { __args: {periodId: Scalars['ID'], validateOnly?: (Scalars['Boolean'] | null)} })
     /** Reopen the app request. This is only available if the app request is in a state that allows reopening. */
     reopenAppRequest?: (ValidatedAppRequestResponseGenqlSelection & { __args: {appRequestId: Scalars['ID']} })
+    /** Reopens a program that was marked complete with completeApplication, while the appRequest is still in WORKFLOW_NONBLOCKING, so its non-blocking prompts can be edited again. Not available for an application that completed on its own because it had no non-blocking workflow left open. */
+    reopenApplication?: (ValidatedAppRequestResponseGenqlSelection & { __args: {applicationId: Scalars['ID']} })
     /** Rescinds the approved and/or accepted application. */
     rescind?: (ValidatedAppRequestResponseGenqlSelection & { __args: {applicationId: Scalars['ID'], reason: Scalars['String'], validateOnly?: (Scalars['Boolean'] | null)} })
     /** Restores a previously rescinded application to its previous state. */
@@ -1977,6 +2042,35 @@ export interface ProgramGenqlSelection{
 
 export interface ProgramFilters {keys?: (Scalars['String'][] | null)}
 
+
+/** A helper message a requirement attached to specific form fields of a prompt. */
+export interface PromptFieldReasonGenqlSelection{
+    /** Dotted paths into the prompt's data naming the form fields the message belongs on. */
+    fields?: boolean | number
+    /** The message for those fields. When null, the statusReason of the enclosing entry applies. */
+    message?: boolean | number
+    /** How the message should be presented under those fields. Presentation only. When null, the status of the enclosing entry applies. */
+    status?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** What one requirement currently has to say about one prompt: its status, its overall reason, and any messages aimed at individual form fields. */
+export interface PromptStatusReasonGenqlSelection{
+    /** True when the requirement explicitly named this prompt in its blame. False when the requirement named nothing and the prompt is implicated only by belonging to it. */
+    blamed?: boolean | number
+    /** Messages aimed at individual form fields of this prompt. Empty when the requirement named no fields. */
+    fieldReasons?: PromptFieldReasonGenqlSelection
+    /** The title of the program whose application this requirement belongs to. */
+    programName?: boolean | number
+    status?: boolean | number
+    /** The requirement's overall reason for its status. */
+    statusReason?: boolean | number
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
 export interface QueryGenqlSelection{
     /**
      * 
@@ -2015,6 +2109,21 @@ export interface QueryGenqlSelection{
     userIndexes?: (IndexCategoryGenqlSelection & { __args?: {
     /** Returns indexes that are flagged to appear in this destination. Also sorts for this destination. */
     for?: (AppRequestIndexDestination | null)} })
+    __typename?: boolean | number
+    __scalar?: boolean | number
+}
+
+
+/** One answer a requirement holds responsible for its current status, optionally narrowed to specific form fields. */
+export interface RequirementBlameGenqlSelection{
+    /** Dotted paths into the prompt's data naming the form fields at fault. Null when the whole prompt is implicated. */
+    fields?: boolean | number
+    /** A helper message for the named fields. When null, the requirement's statusReason applies. */
+    message?: boolean | number
+    /** The key of the prompt whose answer is at fault. */
+    promptKey?: boolean | number
+    /** How the message on the named fields should be presented. It does not affect the requirement, whose own status decides its outcome. When null, the requirement's status applies. */
+    status?: boolean | number
     __typename?: boolean | number
     __scalar?: boolean | number
 }
@@ -2106,6 +2215,8 @@ export interface ValidatedAnnouncementResponseGenqlSelection{
 export interface ValidatedAppRequestResponseGenqlSelection{
     appRequest?: AppRequestGenqlSelection
     messages?: MutationMessageGenqlSelection
+    /** Returned by updatePrompt: what each requirement has to say about the prompt being updated. With validateOnly this reflects the unsaved answer, evaluated without being stored, so a form can show requirement feedback as the user types; otherwise it reflects what was just saved. Null from other mutations. */
+    statusReasons?: PromptStatusReasonGenqlSelection
     /** True if the mutation succeeded (e.g. saved data or passed validation), even if there were warnings. */
     success?: boolean | number
     __typename?: boolean | number
@@ -2517,10 +2628,34 @@ export interface ValidatedResponseGenqlSelection{
     
 
 
+    const PromptFieldReason_possibleTypes: string[] = ['PromptFieldReason']
+    export const isPromptFieldReason = (obj?: { __typename?: any } | null): obj is PromptFieldReason => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPromptFieldReason"')
+      return PromptFieldReason_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const PromptStatusReason_possibleTypes: string[] = ['PromptStatusReason']
+    export const isPromptStatusReason = (obj?: { __typename?: any } | null): obj is PromptStatusReason => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isPromptStatusReason"')
+      return PromptStatusReason_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
     const Query_possibleTypes: string[] = ['Query']
     export const isQuery = (obj?: { __typename?: any } | null): obj is Query => {
       if (!obj?.__typename) throw new Error('__typename is missing in "isQuery"')
       return Query_possibleTypes.includes(obj.__typename)
+    }
+    
+
+
+    const RequirementBlame_possibleTypes: string[] = ['RequirementBlame']
+    export const isRequirementBlame = (obj?: { __typename?: any } | null): obj is RequirementBlame => {
+      if (!obj?.__typename) throw new Error('__typename is missing in "isRequirementBlame"')
+      return RequirementBlame_possibleTypes.includes(obj.__typename)
     }
     
 

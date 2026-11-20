@@ -7,7 +7,8 @@
  *   reqquest-ui sync [--strict] [--accept]   assemble .reqquest/ (see cli/sync.js)
  *   reqquest-ui dev [vite args...]           sync, then the Vite dev server; re-syncs on changes
  *   reqquest-ui build                        sync --strict, registry check, production build
- *                                            -> build/ (static site) and build-runtime/ (nginx)
+ *                                            -> build/ (static site) and build-runtime/ (nginx,
+ *                                               with the project's runtime/ - see cli/runtime.js)
  *   reqquest-ui check [svelte-check args]    type-check everything, including src/local
  *   reqquest-ui check-registry               fail if src/local/index.ts has type errors
  *
@@ -17,6 +18,7 @@ import { spawnSync, spawn } from 'node:child_process'
 import { cpSync, mkdirSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { writeRuntime } from '../cli/runtime.js'
 import { sync, SyncError } from '../cli/sync.js'
 import { packageBin } from '../cli/util.js'
 
@@ -62,10 +64,9 @@ function build () {
   svelteKitSync()
   checkRegistry()
   run('vite', 'vite', ['build'])
-  const runtime = join(projectRoot, 'build-runtime')
-  mkdirSync(runtime, { recursive: true })
-  cpSync(join(PACKAGE_ROOT, 'app/runtime'), runtime, { recursive: true })
-  console.log('reqquest-ui: site written to build/, nginx.conf and apply-env.sh to build-runtime/')
+  const { replaced, dropIns } = writeRuntime(projectRoot)
+  console.log('reqquest-ui: site written to build/, the nginx runtime to build-runtime/' +
+    (replaced.length || dropIns.length ? ` (from your runtime/: ${[...replaced, ...dropIns].join(', ')})` : ''))
 }
 
 try {

@@ -7,7 +7,7 @@ import {
   requirementRegistry, AppRequestStatusDB, AppRequest, updateAppRequestData, getAppRequests,
   getAppRequestData, appRequestTransaction, recordAppRequestActivity, appConfig, AppRequestData,
   AppRequestStatus, ApplicationPhase, ApplicationService, setRequirementPromptsInvalid,
-  AppRequestServiceInternal, AppRequestPhase, appRequestPhaseReached, RequirementType, periodConfigCache, programRegistry, resolveProgramLabels,
+  AppRequestServiceInternal, AppRequestPhase, appRequestPhaseReached, nonBlockingSunsetReached, RequirementType, periodConfigCache, programRegistry, resolveProgramLabels,
   statusVisibleToApplicant, applicantRequirementTypes, setRequirementPromptsValid,
   RQContext,
   RequirementPromptFilter,
@@ -17,9 +17,44 @@ import {
   PromptPrestageClientData,
   PromptPrestageDataNodes,
   PROMPT_PRESTAGE_NS,
-  PreviousRequestService
+  PreviousRequestService,
+  previewAppRequestEvaluation,
+  ApplicationRequirementService,
+  PromptStatusReason,
+  PromptVisibility,
+  type Application
 } from '../internal.js'
 import { DEFAULT_EXPIRY, SignedPackage, signJsonPackage, verifySignedJsonPackage } from '../util/crypto/hmac.js'
+
+/**
+ * What each requirement has to say about one prompt, in the shape `updatePrompt` returns it.
+ *
+ * A requirement that named answers in its `blame` speaks only about the prompts it named; one that
+ * named nothing speaks about every prompt of its own that is currently reachable. This is the same
+ * rule the UI applies when it builds each prompt's status reasons from a loaded request.
+ *
+ * `requirements` must already be filtered and redacted for the viewer.
+ */
+export function promptStatusReasons (promptKey: string, applications: Pick<Application, 'internalId' | 'title'>[], requirements: ApplicationRequirement[], prompts: RequirementPrompt[]): PromptStatusReason[] {
+  const programNames = new Map(applications.map(a => [a.internalId, a.title]))
+  const reachable = new Set(prompts.filter(p => p.key === promptKey && p.visibility !== PromptVisibility.UNREACHABLE).map(p => p.requirementInternalId))
+  const reasons: PromptStatusReason[] = []
+  for (const requirement of requirements) {
+    const programName = programNames.get(requirement.applicationInternalId)
+    if (programName == null) continue
+    const blamed = !!requirement.blameFields?.length
+    const entries = requirement.blameFields?.filter(b => b.promptKey === promptKey) ?? []
+    if (blamed ? !entries.length : !reachable.has(requirement.internalId)) continue
+    reasons.push({
+      status: requirement.status,
+      statusReason: requirement.statusReason,
+      programName,
+      blamed,
+      fieldReasons: entries.filter(b => b.fields?.length).map(b => ({ fields: b.fields!, message: b.message, status: b.status }))
+    })
+  }
+  return reasons
+}
 
 const byInternalIdLoader = new PrimaryKeyLoader({
   fetch: async (ids: number[]) => {
@@ -259,12 +294,14 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     }
     const hasUpdate = this.hasControl('PromptAnswer', 'update', { ...prompt.authorizationKeys, ...prompt.appRequestTags })
     const hasUpdateAnytime = this.hasControl('PromptAnswer', 'update_anytime', { ...prompt.authorizationKeys, ...prompt.appRequestTags })
-    // non-blocking workflow stages stay editable once their emergence phase is reached for the remainder of the request lifecycle
+    // non-blocking workflow stages are editable from their emergence phase until their sunset phase or until their program is marked complete, whichever comes first
     if (prompt.requirementType === RequirementType.WORKFLOW) {
       const stage = programRegistry.getWorkflowStageByKey(prompt.workflowStage)
-      const emergence = stage?.nonBlockingEmergence ?? AppRequestPhase.WORKFLOW_NONBLOCKING
-      if (stage?.nonBlocking && appRequestPhaseReached(prompt.appRequestDbPhase, emergence)) {
-        return hasUpdate || hasUpdateAnytime
+      if (stage?.nonBlocking) {
+        if (nonBlockingSunsetReached(stage, prompt.appRequestDbPhase)) return false
+        if (prompt.applicationPhase === ApplicationPhase.COMPLETE) return false
+        const emergence = stage.nonBlockingEmergence ?? AppRequestPhase.WORKFLOW_NONBLOCKING
+        if (appRequestPhaseReached(prompt.appRequestDbPhase, emergence)) return hasUpdate || hasUpdateAnytime
       }
     }
     if (prompt.appRequestDbPhase === AppRequestPhase.SUBMITTED) {
@@ -313,6 +350,7 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
     let previousAppPhases: Record<string, ApplicationPhase> = {}
     let appRequestData: AppRequestData | undefined
     let attempted = false
+    let preview: Awaited<ReturnType<typeof previewAppRequestEvaluation>>
     await appRequestTransaction(prompt.appRequestInternalId, async db => {
       // a deadlock retries this callback, but preProcessData may have already consumed the upload streams,
       // and running it again would save the prompt as if no files were sent
@@ -332,7 +370,16 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
         response.addMessage('Someone else is working on the same request and made changes since you loaded. Copy any unsaved work into another document and reload the page to see what has changed.')
         return
       }
-      if (validateOnly) return
+      if (validateOnly) {
+        // requirement feedback is a courtesy on top of validation, so a failure here must never
+        // take the validation response down with it
+        try {
+          preview = await previewAppRequestEvaluation(appRequest.internalId, prompt.key, processedData, db)
+        } catch (err) {
+          console.error(err)
+        }
+        return
+      }
       response.success = true // if we got this far, it's saving the data, so that's a success even if the data isn't quite valid yet
       if (!equal(appRequestData[prompt.key], processedData) || (prompt.invalidated && overrideInvalidated)) {
         updated = true
@@ -370,6 +417,24 @@ export class RequirementPromptService extends AuthService<RequirementPrompt> {
       console.error(err)
     }
     response.appRequest = updatedAppRequest
+    try {
+      const requirementSvc = this.svc(ApplicationRequirementService)
+      if (validateOnly) {
+        if (preview) {
+          for (const requirement of preview.requirements) requirement.appRequestTags = prompt.appRequestTags
+          response.statusReasons = promptStatusReasons(prompt.key, preview.applications, requirementSvc.authorize(preview.requirements), preview.prompts)
+        }
+      } else {
+        const [applications, requirements, prompts] = await Promise.all([
+          this.svc(ApplicationService).findByAppRequest(updatedAppRequest),
+          requirementSvc.findByAppRequest(updatedAppRequest),
+          this.raw.findByAppRequest(updatedAppRequest)
+        ])
+        response.statusReasons = promptStatusReasons(prompt.key, applications, requirements, prompts)
+      }
+    } catch (err) {
+      console.error(err)
+    }
     return response
   }
 }

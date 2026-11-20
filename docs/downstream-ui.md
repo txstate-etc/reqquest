@@ -16,12 +16,13 @@ ui/
 ├── package.json                  dependencies: { "@reqquest/ui": "1.16.0" } and nothing else
 ├── package-lock.json
 ├── tsconfig.json                 { "extends": "./.reqquest/tsconfig.json" } (written for you)
-├── reqquest-overrides.lock.json  only if you override routes (written for you, commit it)
+├── reqquest-overrides.lock.json  only if you override routes or replace a runtime file (written for you, commit it)
 ├── src/
 │   ├── local/                    required: index.ts exporting `uiRegistry`, plus your components
 │   ├── lib/                      optional: your own shared code, imported as $lib
 │   └── routes/                   optional: overrides and additions, see below
-└── static/                       optional: merged over ReqQuest's static files
+├── static/                       optional: merged over ReqQuest's static files
+└── runtime/                      optional: additions to the nginx image, see "Customizing nginx and startup"
 ```
 
 **Gitignore `.reqquest/`, `build/` and `build-runtime/`.**
@@ -110,6 +111,10 @@ RUN apk update && apk upgrade && apk add brotli envsubst grep nginx nginx-mod-ht
 COPY --from=build /usr/app/build /usr/share/nginx/html
 COPY --from=build /usr/app/build-runtime/nginx.conf /etc/nginx/nginx.conf
 COPY --from=build /usr/app/build-runtime/apply-env.sh /apply-env.sh
+# Only needed if you add a runtime/ folder (extra nginx config or startup scripts) - see
+# "Customizing nginx and startup" below. Uncomment both when you do.
+# COPY --from=build /usr/app/build-runtime/nginx/ /etc/nginx/reqquest/
+# COPY --from=build /usr/app/build-runtime/apply-env.d/ /apply-env.d/
 CMD ["/bin/sh", "-c", "/apply-env.sh && nginx -g 'daemon off;'"]
 ```
 
@@ -123,11 +128,46 @@ Bind-mount `ui/src` and `ui/static` into `/usr/app`.
 
 The build needs Node 22 or later.
 
+## Customizing nginx and startup
+
+ReqQuest's `nginx.conf` and `apply-env.sh` change between releases; the applicant guide redirect, for one, lives in them. Add to them instead of replacing them, so you keep receiving those changes. Put your additions in a `runtime/` folder in your project root:
+
+| Your file | What it does |
+|---|---|
+| `runtime/nginx/server.d/*.conf` | Included inside ReqQuest's `server` block. Use for extra `location`s and headers. |
+| `runtime/nginx/http.d/*.conf` | Included inside ReqQuest's `http` block. Use for `map`, `upstream` and rate-limit zones. |
+| `runtime/apply-env.d/*.sh` | Run with `sh` when the container starts, after ReqQuest's own steps, in name order. |
+| `runtime/nginx.conf` | Replaces ReqQuest's file entirely. |
+| `runtime/apply-env.sh` | Replaces ReqQuest's file entirely. |
+
+`reqquest-ui build` copies these into `build-runtime/` next to ReqQuest's files.
+
+- **Your Dockerfile must copy the drop-in folders.** They only reach the image through the two `COPY` lines for `build-runtime/nginx/` and `build-runtime/apply-env.d/`, which the sample Dockerfile above carries commented out. Uncomment both when you add a `runtime/` folder; if your Dockerfile predates them, add them. With the lines commented or missing the image still builds and runs; your drop-ins are simply not in it.
+- **A startup script that fails stops the container.** It exits non-zero and nginx never starts, so a broken step is visible instead of half-applied.
+- **You cannot redefine a location ReqQuest already defines.** nginx refuses to start on a duplicate `location`. Add new paths; to change an existing one you have to replace `nginx.conf`.
+- **Replacing a file forks it.** It is recorded in `reqquest-overrides.lock.json` exactly like a route override: when an upgrade changes ReqQuest's version, sync warns you, `build` fails, and you carry the change over and run `npx reqquest-ui sync --accept`. Compare against `node_modules/@reqquest/ui/app/runtime/`.
+- **Anything else in `runtime/` fails the build.** A misspelled file name would otherwise be ignored without a word.
+- **None of this applies under `reqquest-ui dev`.** The dev server is Vite, not nginx.
+
 ## Environment
 
 `PUBLIC_*` variables use ReqQuest's runtime-substitution scheme: placeholders are baked in at build time, and `apply-env.sh` replaces them when the container starts. Set them on the container as before.
 
 A `.env` in your project root is merged over ReqQuest's template by key, so you only list what you add or change.
+
+## Applicant guide for AI agents
+
+ReqQuest can publish a Markdown guide that an applicant's AI agent reads to explain a prompt or the next step. It is off by default. Turn it on in your API:
+
+```ts
+await server.start({ appConfig: { applicantGuide: true, ... }, ... })
+```
+
+- The API renders the guide once at startup from your program, requirement and prompt definitions and serves it at `GET /help/applicant-guide.md`.
+- Your UI needs no changes. `/help/applicant-guide.md` on the UI origin redirects to the API's copy without asking for a login: the dev server does it with a route in the app shell, and the built image does it in nginx, from a snippet `apply-env.sh` writes using `PUBLIC_API_BASE`.
+- **It is public.** Anyone can read it without logging in. It contains titles, descriptions, default configuration, and the source of each applicant-facing requirement's `resolve` and prompt's `validate`, with comments removed. Reviewer-side requirements (PREAPPROVAL, APPROVAL, workflow) and their prompts are not described. An applicant rule that reads staff-provided data is still published in full, so it shows that staff prompt's key and how its answer is used (for example, that an override exists).
+- It shows the defaults in your code. Values an administrator changed for a period, and requirements disabled for a period, are not reflected.
+- If your API authenticates with `authenticateAll`, add `/help/applicant-guide.md` to `exceptRoutes`, otherwise the route answers 401.
 
 ## `package.json` options
 

@@ -9,7 +9,7 @@ import {
   type AccessRoleGrantCreate, type AccessRoleGrantUpdate, type AccessRoleGroup, type AccessRoleInput, type AccessUserFilter,
   type AppRequestActivityFilters, type AppRequestFilter, type IneligiblePhases, type Pagination, type PeriodUpdate, type PromptVisibility,
   type RequirementStatus, type RequirementType, type PhaseChangeMutations, type CompletionStatus, type StatusReason,
-  type PeriodFilters
+  type PeriodFilters, fieldReasonsForPrompt
 } from '@reqquest/ui'
 import { applicantVisiblePromptVisibilities } from './status-utils.js'
 
@@ -331,7 +331,7 @@ class API extends APIBase {
   }
 
   async updatePrompt (promptId: string, data: any, validateOnly: boolean, dataVersion?: number, overrideInvalidated?: boolean) {
-    const response = await this.graphqlWithUploads<{ updatePrompt: MutationResponseFromAPI }>(`
+    const response = await this.graphqlWithUploads<{ updatePrompt: MutationResponseFromAPI & { statusReasons?: StatusReason[] | null } }>(`
       mutation UpdatePrompt($promptId: ID!, $data: JsonData!, $validateOnly: Boolean!, $dataVersion: Int, $overrideInvalidated: Boolean) {
         updatePrompt(promptId: $promptId, data: $data, validateOnly: $validateOnly, dataVersion: $dataVersion, overrideInvalidated: $overrideInvalidated) {
           success
@@ -344,10 +344,21 @@ class API extends APIBase {
             data
             dataVersion
           }
+          statusReasons {
+            status
+            statusReason
+            programName
+            blamed
+            fieldReasons {
+              fields
+              message
+              status
+            }
+          }
         }
       }
     `, { promptId, data, validateOnly, dataVersion, overrideInvalidated })
-    return { ...this.mutationForDialog(response.updatePrompt), data: response.updatePrompt.appRequest.data, dataVersion: response.updatePrompt.appRequest.dataVersion as number | undefined }
+    return { ...this.mutationForDialog(response.updatePrompt), data: response.updatePrompt.appRequest.data, dataVersion: response.updatePrompt.appRequest.dataVersion as number | undefined, statusReasons: response.updatePrompt.statusReasons ?? undefined }
   }
 
   async updateConfiguration (periodId: string, definitionKey: string, data: any, validateOnly: boolean) {
@@ -388,7 +399,7 @@ class API extends APIBase {
     return appRequest
   }
 
-  static splitPromptsForApplicant<P extends { id: string, key: string, visibility: PromptVisibility, moot: boolean }, R extends { type: RequirementType, status: RequirementStatus, statusReason: string | null, blame?: string[] | null, prompts: P[] }, A extends { title: string, ineligiblePhase: IneligiblePhases | null, requirements: R[] }>(applications: A[]) {
+  static splitPromptsForApplicant<P extends { id: string, key: string, visibility: PromptVisibility, moot: boolean }, R extends { type: RequirementType, status: RequirementStatus, statusReason: string | null, blame?: string[] | null, blameFields?: { promptKey: string, fields?: string[] | null, message?: string | null, status?: string | null }[] | null, prompts: P[] }, A extends { title: string, ineligiblePhase: IneligiblePhases | null, requirements: R[] }>(applications: A[]) {
     type ReturnPrompt = P & { statusReasons: StatusReason[] }
     type ReturnRequirement = R & { prompts: ReturnPrompt[] }
     type ReturnApplication = A & { requirements: ReturnRequirement[], completionStatus: CompletionStatus, hasWarning: boolean, warningReasons: string[], ineligibleReasons: string[], metReasons: string[]}
@@ -525,7 +536,7 @@ class API extends APIBase {
           ? requirement.blame!
           : requirement.prompts.filter(p => p.visibility !== enumPromptVisibility.UNREACHABLE).map(p => p.key)
         for (const key of targets) {
-          (reasonsByKey[key] ??= []).push({ ...pick(requirement, 'status', 'statusReason'), programName: application.title, blamed })
+          (reasonsByKey[key] ??= []).push({ ...pick(requirement, 'status', 'statusReason'), programName: application.title, blamed, fieldReasons: fieldReasonsForPrompt(requirement.blameFields, key) })
         }
       }
     }
@@ -564,6 +575,7 @@ class API extends APIBase {
             status: true,
             statusReason: true,
             blame: true,
+            blameFields: { promptKey: true, fields: true, message: true, status: true },
             prompts: {
               id: true,
               key: true,
@@ -691,6 +703,38 @@ class API extends APIBase {
       }
     })
     return this.mutationForDialog(response.advanceWorkflow)
+  }
+
+  async completeApplication (applicationId: string) {
+    const response = await this.client.mutation({
+      __name: 'CompleteApplication',
+      completeApplication: {
+        __args: { applicationId },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.completeApplication)
+  }
+
+  async reopenApplication (applicationId: string) {
+    const response = await this.client.mutation({
+      __name: 'ReopenApplication',
+      reopenApplication: {
+        __args: { applicationId },
+        success: true,
+        messages: {
+          message: true,
+          type: true,
+          arg: true
+        }
+      }
+    })
+    return this.mutationForDialog(response.reopenApplication)
   }
 
   async reverseWorkflow (applicationId: string) {
@@ -1001,6 +1045,7 @@ class API extends APIBase {
             key: true,
             blocking: true
           },
+          completesAfterNonBlocking: true,
           nextWorkflowStage: {
             key: true,
             title: true
@@ -1012,6 +1057,8 @@ class API extends APIBase {
           actions: {
             advanceWorkflow: true,
             reverseWorkflow: true,
+            completeApplication: true,
+            reopenApplication: true,
             rescindApplication: true,
             restoreApplication: true
           },
@@ -1023,6 +1070,7 @@ class API extends APIBase {
             status: true,
             statusReason: true,
             blame: true,
+            blameFields: { promptKey: true, fields: true, message: true, status: true },
             workflowStage: {
               key: true,
               title: true,
@@ -1207,15 +1255,19 @@ class API extends APIBase {
 
   private async attachPromptConfigs<P extends { id: string, key: string, visibility: PromptVisibility, moot: boolean | null }> (appRequestId: string, applications: { requirements: { prompts: P[] }[] }[]) {
     const representativeByKey: Record<string, string> = {}
+    const mootRepresentativeByKey: Record<string, string> = {}
     const instancesByKey: Record<string, P[]> = {}
     for (const application of applications) {
       for (const requirement of application.requirements) {
         for (const prompt of requirement.prompts) {
           (instancesByKey[prompt.key] ??= []).push(prompt)
-          if (representativeByKey[prompt.key] == null && !prompt.moot && prompt.visibility !== enumPromptVisibility.UNREACHABLE) representativeByKey[prompt.key] = prompt.id
+          if (prompt.visibility === enumPromptVisibility.UNREACHABLE) continue
+          if (prompt.moot) mootRepresentativeByKey[prompt.key] ??= prompt.id
+          else representativeByKey[prompt.key] ??= prompt.id
         }
       }
     }
+    for (const [key, id] of Object.entries(mootRepresentativeByKey)) representativeByKey[key] ??= id
     const configs = await this.getPromptConfigs(appRequestId, Object.values(representativeByKey))
     const configByKey = keyby(configs, 'key')
     for (const [key, instances] of Object.entries(instancesByKey)) {

@@ -4,7 +4,7 @@
   import WarningFilled from 'carbon-icons-svelte/lib/WarningFilled.svelte'
   import Edit from 'carbon-icons-svelte/lib/Edit.svelte'
   import SidePanelOpenFilled from 'carbon-icons-svelte/lib/SidePanelOpenFilled.svelte'
-  import { enumRequirementStatus, enumRequirementType, PromptIndicators, statusReasonsToFeedback, translateMutations, type PhaseChangeMutations, type StatusReason } from '@reqquest/ui'
+  import { enumRequirementStatus, enumRequirementType, PromptIndicators, statusReasonsToFeedback, statusReasonsToFieldFeedback, translateMutations, type PhaseChangeMutations, type StatusReason } from '@reqquest/ui'
   import { isInlineReviewerEditPrompt, isDisplayablePrompt, hasDisplayablePrompts, RenderDisplayComponent, applicantRequirementTypes, reviewerRequirementTypes, api, PromptSaveQueue, type BasicRequestData } from '$internal'
   import { FormInlineNotification, Panel, PanelFormDialog, TagSet } from '@txstate-mws/carbon-svelte'
   import { Tooltip } from 'carbon-components-svelte'
@@ -16,16 +16,20 @@
   import DelayedSkeleton from '$internal/components/DelayedSkeleton.svelte';
   import WarningIconYellow from './WarningIconYellow.svelte';
   import MissingDefinitionNotification from './MissingDefinitionNotification.svelte';
+  import ProgramCompletionPanel from './ProgramCompletionPanel.svelte';
   import { toasts } from '@txstate-mws/svelte-components';
   import { randomid } from 'txstate-utils'
 
   type ApplicationRequirement = (typeof appRequest)['applications'][number]['requirements'][number]
 
   export let sections: { key: string, title: string, requirements: ApplicationRequirement[] }[]
-  /** the stage panel that gets the "Send to" button once the application is ready for workflow */
+  /** the stage panel that gets the blocking-workflow "Mark complete" button once the application is ready for workflow */
   export let lastStageKey: string | undefined = undefined
   export let promptIndicator: Record<string, any>
   export let promptStatusReasons: Record<string, StatusReason[]> = {}
+  let liveStatusReasons: Record<string, StatusReason[]> = {}
+  $: resetLiveStatusReasons(promptStatusReasons)
+  $: currentStatusReasons = { ...promptStatusReasons, ...liveStatusReasons }
   export let loading = false
   export let appRequest: PageData['appRequest']
   export let application: PageData['appRequest']['applications'][0]
@@ -92,6 +96,15 @@
     promptBeingEdited = undefined
     editingViaReviewDialog = false
   }
+  function resetLiveStatusReasons (..._: any[]) {
+    liveStatusReasons = {}
+  }
+
+  function withFieldFeedback<M> (prompt: { key: string }, messages: M[], reasons: StatusReason[] | undefined) {
+    if (reasons) liveStatusReasons = { ...liveStatusReasons, [prompt.key]: reasons }
+    return [...messages, ...statusReasonsToFieldFeedback(reasons)]
+  }
+
   function onPromptSubmit (prompt: any, modal = false) {
     return async (data: any) => {
       if (modal) { loading = true; hideEditModalPrompt() }
@@ -107,7 +120,7 @@
         if (modal && !response.success) { loading = false; showEditModalPrompt() }
         // prev resp.data was replacing the store's data with a wrongly-shaped object and
         // re-baselines beforeUserChanges to it. Reduce to this prompt's slice like ApplicantPromptPage.onSubmit
-        return { ...response, data: response.data?.[prompt.key] }
+        return { ...response, messages: withFieldFeedback(prompt, response.messages, response.statusReasons), data: response.data?.[prompt.key] }
       } catch (e) {
         if (modal) { loading = false; showEditModalPrompt() }
         throw e
@@ -118,7 +131,7 @@
   function onPromptValidate (prompt: any) {
     return async (data: any) => {
       const response = await api.updatePrompt(prompt.id, data, true, prompt.dataVersion)
-      return response.messages
+      return withFieldFeedback(prompt, response.messages, response.statusReasons)
     }
   }
 
@@ -186,6 +199,27 @@
     }
   }
 
+  // marking a program complete locks its non-blocking answers, reopening unlocks them. Neither touches the request itself,
+  // which waits for its own Complete action, so unlike advanceWorkflow nothing is chained on afterwards.
+  async function setProgramComplete (complete: boolean) {
+    loading = true
+    const response = complete ? await api.completeApplication(application.id) : await api.reopenApplication(application.id)
+    await invalidateAll()
+    loading = false
+    if (!response.success) {
+      toasts.add({
+        type: 'error',
+        title: complete ? 'Could not complete program review' : 'Could not reopen program review',
+        message: response.messages.map(m => m.message).join('\n') || 'An unknown error occurred.'
+      })
+    } else {
+      toasts.add({
+        type: 'success',
+        message: complete ? 'Program review completed.' : 'Program review reopened for editing.'
+      })
+    }
+  }
+
   // answered/total reviewer questions in a section
   function reviewerQuestionTally (section: { requirements: ApplicationRequirement[] }) {
     const questions = new Map<string, ApplicationRequirement['prompts'][number]>()
@@ -200,9 +234,50 @@
   }
   $: reviewerQuestionTallies = Object.fromEntries(sections.map(section => [section.key, reviewerQuestionTally(section)]))
 
+  function isPromptDisabled (app: typeof application, section: { requirements: ApplicationRequirement[] }, requirement: ApplicationRequirement, prompt: ApplicationRequirement['prompts'][number]) {
+    const def = uiRegistry.getPrompt(prompt.key)
+    const editMode = isInlineReviewerEditPrompt(def, requirement.type, prompt)
+    const currentWorkflow = app.workflowStage ? app.workflowStage.key === section.requirements[0]?.workflowStage?.key : undefined
+    return !!((!editMode && def?.formMode !== 'full') && (currentWorkflow || requirement.status !== enumRequirementStatus.MET))
+  }
+  $: disabledSections = new Set(sections.filter(section => section.requirements.some(requirement =>
+    reviewerRequirementTypes.has(requirement.type) && requirement.prompts.filter(isDisplayablePrompt).some(prompt =>
+      !uiRegistry.getPrompt(prompt.key)?.automation && isPromptDisabled(application, section, requirement, prompt)))).map(section => section.key))
+
   $: readyForWorkflow = !application.nextWorkflowStage && application.phase === 'READY_FOR_WORKFLOW' ? lastStageKey : undefined
   // otherwise the button sits on the last non-stage panel on the page, wherever the layout put it
   $: latestWorkflow = readyForWorkflow ?? sections.filter(section => section.requirements.every(r => !r.workflowStage?.key)).pop()?.key
+  // the "Complete program review" panel counts the prompts on this page carrying the red "Required" dot
+  $: requiredAnswerCount = new Set(sections.flatMap(section => section.requirements.flatMap(r => r.prompts.filter(isDisplayablePrompt).map(p => p.key)))
+    .filter(key => promptIndicator[key]?.indicator === PromptIndicators.PENDING)).size
+  // A program with non-blocking workflow still open in the non-blocking phase is finished there, with completeApplication.
+  // Any other program has nothing after its last review or blocking workflow step, so the "Complete program review" panel
+  // takes over that step: it performs the final advance in place of that section's "Mark complete", and undoes it in place
+  // of "Edit answers".
+  $: selfClosing = !application.completesAfterNonBlocking
+  // the advance that lands on REVIEW_COMPLETE
+  $: finalAdvance = selfClosing && !!application.actions?.advanceWorkflow && !application.nextWorkflowStage
+  // a single program with no blocking stages is never advanced: the API offers the request's Complete Review directly
+  $: finalCompleteReview = selfClosing && !application.actions?.advanceWorkflow && application.phase === 'READY_FOR_WORKFLOW' &&
+    !application.workflowStage && !!basicRequestData?.actions.completeReview
+  $: finalReverse = selfClosing && application.phase === 'REVIEW_COMPLETE' && !!application.actions?.reverseWorkflow
+  let completionState: 'notready' | 'ready' | 'complete'
+  $: completionState = selfClosing
+    ? (['REVIEW_COMPLETE', 'ACCEPTANCE', 'READY_TO_ACCEPT', 'COMPLETE'].includes(application.phase) ? 'complete' : finalAdvance || finalCompleteReview ? 'ready' : 'notready')
+    : (application.phase === 'COMPLETE' ? 'complete' : application.phase === 'READY_TO_COMPLETE' ? 'ready' : 'notready')
+
+  async function completeProgramReview () {
+    if (!selfClosing) return await setProgramComplete(true)
+    if (finalAdvance) return await advanceWorkflow()
+    loading = true
+    await appRequestPhaseChange('completeReview')
+  }
+
+  async function editProgramReview () {
+    if (selfClosing) await reverseWorkflow()
+    else await setProgramComplete(false)
+  }
+
   // the one panel "Edit answers" sits on: the stage being reversed onto, or the last review panel when reversing back into review.
   // Requirement statuses don't matter here - a disqualified review must be reversible, and the API decides via actions.reverseWorkflow
   $: reverseTarget = application.previousWorkflowStage
@@ -230,7 +305,7 @@
         <!-- visible pill is hidden from screen readers in favor of the spelled-out text, and the status role announces changes politely on autosave -->
         <span role="status" class="reviewer-question-tally">
           <span aria-hidden="true">
-            <TagSet small tags={[{ label: `${tally.answered}/${tally.total} answered`, type: tally.answered === tally.total ? 'green' : 'yellow' }]} />
+            <TagSet small tags={[{ label: `${tally.answered}/${tally.total} answered`, type: disabledSections.has(section.key) ? 'gray' : tally.answered === tally.total ? 'green' : 'yellow' }]} />
           </span>
           <span class="bx--visually-hidden">{tally.answered} of {tally.total} questions answered</span>
         </span>
@@ -248,8 +323,7 @@
             {@const small = editMode && def?.formMode !== 'full' ? def?.formMode !== 'large' : def?.displayMode !== 'large'}
             {@const large = editMode && def?.formMode !== 'full' ? def?.formMode === 'large' : def?.displayMode === 'large'}
             {@const dtid = `dt-title-${prompt.id}`}
-            {@const currentWorkflow = application.workflowStage ? application.workflowStage?.key === section.requirements[0]?.workflowStage?.key : undefined}
-            {@const disabled = ((!editMode && def?.formMode !== 'full') && (currentWorkflow || requirement.status !== enumRequirementStatus.MET))}
+            {@const disabled = isPromptDisabled(application, section, requirement, prompt)}
             {#snippet editButtons()}
               {#if prompt.actions.update}
                 {#if prompt.invalidated && !applicantRequirementTypes.has(requirement.type)}
@@ -294,8 +368,8 @@
             <dd class="flow" class:small class:large class:isReviewerQuestion class:disabled={disabled} class:bg-tagyellow-200={isAutomation} role={editMode ? 'group' : undefined} aria-labelledby={dtid}>
               {#if editMode}
                 <Form bind:store={saveQueue.stores[prompt.id]} preload={prompt.preloadData} submit={onPromptSubmit(prompt)} validate={onPromptValidate(prompt)} autoSave on:autosaved={onPromptAutoSaved} let:data let:messages>
-                    <svelte:component this={def?.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} statusReasons={promptStatusReasons[prompt.key] ?? []} />
-                    {#each statusReasonsToFeedback(promptStatusReasons[prompt.key], { blamedOnly: true, statuses: uiRegistry.statusReasonNotificationStatuses(prompt.key, 'reviewer') }) as message}
+                    <svelte:component this={def?.formComponent} {data} appRequestData={appRequest.data} prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}} fetched={prompt.fetchedData} configData={prompt.configurationData} gatheredConfigData={prompt.gatheredConfigData}  invalidated={prompt.invalidated} invalidatedReason={prompt.invalidatedReason} statusReasons={currentStatusReasons[prompt.key] ?? []} />
+                    {#each statusReasonsToFeedback(currentStatusReasons[prompt.key], { blamedOnly: true, statuses: uiRegistry.statusReasonNotificationStatuses(prompt.key, 'reviewer') }) as message}
                       <FormInlineNotification {message} />
                     {/each}
                     {#each messages as message (message.message, message.type)}
@@ -303,7 +377,7 @@
                     {/each}
                   </Form>
               {:else}
-                <div class="pr-4">
+                <div class="display-wrap">
                   <RenderDisplayComponent
                     {def}
                     appRequestId={appRequest.id}
@@ -311,8 +385,8 @@
                     prompt={prompt}
                     prestageData={{latest: prompt.prestageData, current: appRequest.data[prompt.key]?.__prestage}}
                     configData={prompt.configurationData}
-                    gatheredConfigData={prompt.gatheredConfigData} showMoot
-                    statusReasons={promptStatusReasons[prompt.key] ?? []}
+                    gatheredConfigData={prompt.gatheredConfigData}
+                    statusReasons={currentStatusReasons[prompt.key] ?? []}
                     showInlineReviewNotification={prompt.actions.update && prompt.invalidated && !applicantRequirementTypes.has(requirement.type)} />
                 </div>
                 {#if !large}
@@ -328,17 +402,26 @@
     {:else}
       No questions in this section.
     {/if}
-    {#if !section.requirements.every(r => r.type === enumRequirementType.PREQUAL) && (application.actions?.advanceWorkflow || application.actions?.reverseWorkflow)}
+    {#if !section.requirements.every(r => r.type === enumRequirementType.PREQUAL) && ((application.actions?.advanceWorkflow && !finalAdvance) || (application.actions?.reverseWorkflow && !finalReverse))}
       <div class="flex justify-end mt-8">
-        {#if application.actions?.advanceWorkflow && (application.workflowStage?.key ? application.workflowStage?.key === section.requirements[0]?.workflowStage?.key : section.key === latestWorkflow)}
-          <Button size="small" on:click={advanceWorkflow}>{'Send to ' + (application.nextWorkflowStage?.title ?? (!application.workflowStage?.blocking ? 'Complete' : 'Review Complete'))}</Button>
-        {:else if application.actions?.reverseWorkflow && section.key === reverseTarget}
+        {#if application.actions?.advanceWorkflow && !finalAdvance && (application.workflowStage?.key ? application.workflowStage?.key === section.requirements[0]?.workflowStage?.key : section.key === latestWorkflow)}
+          <Button size="small" on:click={advanceWorkflow}>Mark complete</Button>
+        {:else if application.actions?.reverseWorkflow && !finalReverse && section.key === reverseTarget}
           <Button kind='secondary' size="small" on:click={reverseWorkflow}>Edit answers</Button>
         {/if}
       </div>
     {/if}
   </Panel>
 {/each}
+<ProgramCompletionPanel
+  title={application.title}
+  state={completionState}
+  canComplete={selfClosing ? finalAdvance || finalCompleteReview : !!application.actions?.completeApplication}
+  canReopen={selfClosing ? finalReverse : !!application.actions?.reopenApplication}
+  requiredCount={requiredAnswerCount}
+  on:complete={completeProgramReview}
+  on:reopen={editProgramReview}
+/>
 
 {#if showPromptDialog && promptBeingEdited}
 {@const formMode = uiRegistry.getPrompt(promptBeingEdited.key)?.formMode === 'full' ? 'large' : undefined}
@@ -378,9 +461,9 @@
         gatheredConfigData={editingPromptWithData.gatheredConfigData}
         invalidated={editingPromptWithData.invalidated}
         invalidatedReason={editingPromptWithData.invalidatedReason}
-        statusReasons={promptStatusReasons[editingPromptWithData.key] ?? []}
+        statusReasons={currentStatusReasons[editingPromptWithData.key] ?? []}
       />
-      {#each statusReasonsToFeedback(promptStatusReasons[editingPromptWithData.key], { blamedOnly: true, statuses: uiRegistry.statusReasonNotificationStatuses(editingPromptWithData.key, 'reviewer') }) as message}
+      {#each statusReasonsToFeedback(currentStatusReasons[editingPromptWithData.key], { blamedOnly: true, statuses: uiRegistry.statusReasonNotificationStatuses(editingPromptWithData.key, 'reviewer') }) as message}
         <FormInlineNotification {message} />
       {/each}
       {/if}
@@ -415,10 +498,16 @@
   .prompts dt.large, .prompts dd.large {
     grid-column: span 2;
   }
-  /* When a display component's root is a PromptDisplayGrid — directly, or through the
-     <form> of an inline edit (formMode 'large') — hand it our column tracks via subgrid
-     so its challenge/response rows align with the real prompt rows. */
+  /* keeps read-only answers clear of the absolutely positioned edit button */
+  .prompts dd .display-wrap {
+    padding-right: 1rem;
+  }
+  /* When a display component's root is a PromptDisplayGrid — directly, through the
+     read-only .display-wrap, or through the <form> of an inline edit (formMode 'large') —
+     hand it our column tracks via subgrid so its challenge/response rows align with the
+     real prompt rows. */
   .prompts dd.large:has(> :global(.prompt-display-grid)),
+  .prompts dd.large:has(> .display-wrap > :global(.prompt-display-grid)),
   .prompts dd.large:has(> :global(form > .prompt-display-grid)) {
     display: grid;
     grid-template-columns: subgrid;
@@ -430,7 +519,16 @@
     --prompt-display-challenge-padding-left: 32px;
   }
   .prompts dd.large:has(> :global(.prompt-display-grid)) > :global(*),
+  .prompts dd.large:has(> .display-wrap > :global(.prompt-display-grid)) > :global(*),
   .prompts dd.large:has(> :global(form > .prompt-display-grid)) > :global(*) {
+    grid-column: 1 / -1;
+  }
+  .prompts dd.large > .display-wrap:has(> :global(.prompt-display-grid)) {
+    display: grid;
+    grid-template-columns: subgrid;
+    padding-right: 0;
+  }
+  .prompts dd.large > .display-wrap:has(> :global(.prompt-display-grid)) > :global(*) {
     grid-column: 1 / -1;
   }
   .prompts dd.large > :global(form:has(> .prompt-display-grid)) {
@@ -442,6 +540,9 @@
   }
   .prompts dt.isReviewerQuestion, .prompts dd.isReviewerQuestion {
     background-color: var(--background-cool-light);
+  }
+  .prompts dt.isReviewerQuestion:not(.disabled), .prompts dd.isReviewerQuestion:not(.disabled) {
+    border-bottom-color: var(--cds-ui-04, #8d8d8d);
   }
   .prompts dt.isReviewerQuestion.disabled, .prompts dd.isReviewerQuestion.disabled {
     background-color: #f2f2f2;
@@ -510,9 +611,5 @@
   }
   :global(.panel:has(.isReviewerQuestion.disabled) .panel-header) {
     background-color: #8C8C8C !important;
-  }
-  :global(.panel:has(.isReviewerQuestion.disabled) .reviewer-question-tally .bx--tag) {
-    background-color: var(--cds-tag-background-gray, #e0e0e0);
-    color: var(--cds-tag-color-gray, #393939);
   }
 </style>

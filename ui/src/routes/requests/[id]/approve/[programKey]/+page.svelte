@@ -9,7 +9,7 @@
   import View from 'carbon-icons-svelte/lib/View.svelte'
   import { invalidateAll } from '$app/navigation'
   import { api, getApplicationStatusInfo, hasDisplayablePrompts, reviewerRequirementTypes } from '$internal'
-  import { CommentCard, enumPromptVisibility, enumRequirementStatus, enumRequirementType, InfoCard, PromptIndicators, type StatusReason } from '@reqquest/ui'
+  import { CommentCard, enumPromptVisibility, enumRequirementStatus, enumRequirementType, fieldReasonsForPrompt, InfoCard, PromptIndicators, type StatusReason } from '@reqquest/ui'
   import type { PageData } from './$types'
   import { uiRegistry } from '$local'
   import ApproveLayout from '../ApproveLayout.svelte'
@@ -102,7 +102,7 @@
   // them; the default panels keep whatever is left, in requirementKeys order. Panels the layout does not
   // mention trail it in the default order, so a layout may be partial.
   let sections: Section[]
-  // the stage panel the "Send to" button lands on once the application is ready for workflow - the last
+  // the stage panel the "Mark complete" button lands on once the application is ready for workflow - the last
   // stage in lifecycle order, whatever order the layout displays the panels in
   let lastStageKey: string | undefined
   // it's not enough to show an indicator for the prompt's requirement status; since we only show the prompt
@@ -143,7 +143,7 @@
         ? req.blame
         : req.prompts.filter(p => p.visibility !== enumPromptVisibility.UNREACHABLE).map(p => p.key)
       for (const key of faulted) {
-        (promptStatusReasons[key] ??= []).push({ status: req.status, statusReason: req.statusReason, programName: application.title, blamed: !!req.blame?.length })
+        (promptStatusReasons[key] ??= []).push({ status: req.status, statusReason: req.statusReason, programName: application.title, blamed: !!req.blame?.length, fieldReasons: fieldReasonsForPrompt(req.blameFields, key) })
         if (req.status === enumRequirementStatus.DISQUALIFYING && (promptIndicator[key]?.indicator ?? 0) < PromptIndicators.DISQUALIFYING) {
           promptIndicator[key] = { indicator: PromptIndicators.DISQUALIFYING, reason: req.statusReason ?? undefined }
         } else if (req.status === enumRequirementStatus.WARNING && (promptIndicator[key]?.indicator ?? 0) < PromptIndicators.WARNING) {
